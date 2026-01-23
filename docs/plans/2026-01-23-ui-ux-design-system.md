@@ -366,19 +366,19 @@ export function getTheme(): ThemeName {
 
 ---
 
-## Recommended Default: Clean (Theme 1)
+## Recommended Default: Forest (Theme 6)
 
 **Why:**
-1. Blue primary = maximum trust (research-backed)
-2. White background = clean, professional
-3. Medium density = balances power users and newcomers
-4. Most similar to successful competitors (TaxTank, Landlord Studio)
-5. Neutral enough that users who prefer other styles can switch
+1. Green = money, growth, prosperity - speaks directly to investor mindset
+2. Differentiates from competitors (TaxTank, Landlord Studio both use blue)
+3. Wise (fintech unicorn) proved bright green works for financial trust
+4. Optimistic vibe matches "your investment is working for you" message
+5. Still professional with white background - not gimmicky
 
 **A/B Test Plan:**
-1. 50% of new users see "Clean" (Theme 1)
-2. 25% see "Friendly" (Theme 3)
-3. 25% see "Dark" (Theme 2)
+1. 50% of new users see "Forest" (Theme 6) - default
+2. 25% see "Clean" (Theme 1) - traditional trust
+3. 25% see "Dark" (Theme 2) - power user appeal
 4. Track: Signup completion, 7-day retention, feature engagement
 
 ---
