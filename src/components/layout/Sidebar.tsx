@@ -17,6 +17,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
+import { PortfolioSwitcher } from "./PortfolioSwitcher";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -49,6 +50,8 @@ export function Sidebar() {
           <span className="font-semibold text-lg">PropertyTracker</span>
         </Link>
       </div>
+
+      <PortfolioSwitcher />
 
       <nav className="space-y-1">
         {navItems.map((item) => {
