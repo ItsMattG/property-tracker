@@ -11,6 +11,7 @@ import { recurringRouter } from "./recurring";
 import { propertyValueRouter } from "./propertyValue";
 import { portfolioRouter } from "./portfolio";
 import { onboardingRouter } from "./onboarding";
+import { anomalyRouter } from "./anomaly";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -25,6 +26,7 @@ export const appRouter = router({
   propertyValue: propertyValueRouter,
   portfolio: portfolioRouter,
   onboarding: onboardingRouter,
+  anomaly: anomalyRouter,
 });
 
 export type AppRouter = typeof appRouter;
