@@ -110,6 +110,8 @@ export const expectedStatusEnum = pgEnum("expected_status", [
   "skipped",
 ]);
 
+export const valueSourceEnum = pgEnum("value_source", ["manual", "api"]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -365,6 +367,29 @@ export const expectedTransactions = pgTable(
   ]
 );
 
+export const propertyValues = pgTable(
+  "property_values",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    estimatedValue: decimal("estimated_value", { precision: 12, scale: 2 }).notNull(),
+    valueDate: date("value_date").notNull(),
+    source: valueSourceEnum("source").default("manual").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("property_values_property_id_idx").on(table.propertyId),
+    index("property_values_user_id_idx").on(table.userId),
+    index("property_values_date_idx").on(table.valueDate),
+  ]
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
@@ -382,6 +407,7 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
   loans: many(loans),
   sales: many(propertySales),
   documents: many(documents),
+  propertyValues: many(propertyValues),
 }));
 
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
@@ -494,6 +520,17 @@ export const expectedTransactionsRelations = relations(
   })
 );
 
+export const propertyValuesRelations = relations(propertyValues, ({ one }) => ({
+  property: one(properties, {
+    fields: [propertyValues.propertyId],
+    references: [properties.id],
+  }),
+  user: one(users, {
+    fields: [propertyValues.userId],
+    references: [users.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -513,3 +550,5 @@ export type RecurringTransaction = typeof recurringTransactions.$inferSelect;
 export type NewRecurringTransaction = typeof recurringTransactions.$inferInsert;
 export type ExpectedTransaction = typeof expectedTransactions.$inferSelect;
 export type NewExpectedTransaction = typeof expectedTransactions.$inferInsert;
+export type PropertyValue = typeof propertyValues.$inferSelect;
+export type NewPropertyValue = typeof propertyValues.$inferInsert;
