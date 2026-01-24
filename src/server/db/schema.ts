@@ -112,6 +112,30 @@ export const expectedStatusEnum = pgEnum("expected_status", [
 
 export const valueSourceEnum = pgEnum("value_source", ["manual", "api"]);
 
+export const connectionStatusEnum = pgEnum("connection_status", [
+  "connected",
+  "disconnected",
+  "error",
+]);
+
+export const syncStatusEnum = pgEnum("sync_status", [
+  "success",
+  "failed",
+  "pending",
+]);
+
+export const alertTypeEnum = pgEnum("alert_type", [
+  "disconnected",
+  "requires_reauth",
+  "sync_failed",
+]);
+
+export const alertStatusEnum = pgEnum("alert_status", [
+  "active",
+  "dismissed",
+  "resolved",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -155,6 +179,10 @@ export const bankAccounts = pgTable("bank_accounts", {
     onDelete: "set null",
   }),
   isConnected: boolean("is_connected").default(true).notNull(),
+  connectionStatus: connectionStatusEnum("connection_status").default("connected").notNull(),
+  lastSyncStatus: syncStatusEnum("last_sync_status"),
+  lastSyncError: text("last_sync_error"),
+  lastManualSyncAt: timestamp("last_manual_sync_at"),
   lastSyncedAt: timestamp("last_synced_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -390,6 +418,31 @@ export const propertyValues = pgTable(
   ]
 );
 
+export const connectionAlerts = pgTable(
+  "connection_alerts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    bankAccountId: uuid("bank_account_id")
+      .references(() => bankAccounts.id, { onDelete: "cascade" })
+      .notNull(),
+    alertType: alertTypeEnum("alert_type").notNull(),
+    status: alertStatusEnum("status").default("active").notNull(),
+    errorMessage: text("error_message"),
+    emailSentAt: timestamp("email_sent_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    dismissedAt: timestamp("dismissed_at"),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (table) => [
+    index("connection_alerts_user_id_idx").on(table.userId),
+    index("connection_alerts_bank_account_id_idx").on(table.bankAccountId),
+    index("connection_alerts_status_idx").on(table.status),
+  ]
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
@@ -420,6 +473,7 @@ export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => 
     references: [properties.id],
   }),
   transactions: many(transactions),
+  alerts: many(connectionAlerts),
 }));
 
 export const transactionsRelations = relations(transactions, ({ one, many }) => ({
@@ -531,6 +585,17 @@ export const propertyValuesRelations = relations(propertyValues, ({ one }) => ({
   }),
 }));
 
+export const connectionAlertsRelations = relations(connectionAlerts, ({ one }) => ({
+  user: one(users, {
+    fields: [connectionAlerts.userId],
+    references: [users.id],
+  }),
+  bankAccount: one(bankAccounts, {
+    fields: [connectionAlerts.bankAccountId],
+    references: [bankAccounts.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -552,3 +617,5 @@ export type ExpectedTransaction = typeof expectedTransactions.$inferSelect;
 export type NewExpectedTransaction = typeof expectedTransactions.$inferInsert;
 export type PropertyValue = typeof propertyValues.$inferSelect;
 export type NewPropertyValue = typeof propertyValues.$inferInsert;
+export type ConnectionAlert = typeof connectionAlerts.$inferSelect;
+export type NewConnectionAlert = typeof connectionAlerts.$inferInsert;
