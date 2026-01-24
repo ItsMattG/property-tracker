@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc";
 import { propertyValues, properties } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -17,7 +18,7 @@ export const propertyValueRouter = router({
       });
 
       if (!property) {
-        throw new Error("Property not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
       return ctx.db.query.propertyValues.findMany({
@@ -29,11 +30,20 @@ export const propertyValueRouter = router({
   getLatest: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.query.propertyValues.findFirst({
+      // Verify property belongs to user
+      const property = await ctx.db.query.properties.findFirst({
         where: and(
-          eq(propertyValues.propertyId, input.propertyId),
-          eq(propertyValues.userId, ctx.user.id)
+          eq(properties.id, input.propertyId),
+          eq(properties.userId, ctx.user.id)
         ),
+      });
+
+      if (!property) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
+      }
+
+      return ctx.db.query.propertyValues.findFirst({
+        where: eq(propertyValues.propertyId, input.propertyId),
         orderBy: [desc(propertyValues.valueDate)],
       });
     }),
@@ -77,7 +87,7 @@ export const propertyValueRouter = router({
       });
 
       if (!property) {
-        throw new Error("Property not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
       // Get valuation from provider
@@ -86,7 +96,7 @@ export const propertyValueRouter = router({
       const result = await provider.getValuation(fullAddress, "house");
 
       if (!result) {
-        throw new Error("Failed to get valuation from provider");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to get valuation from provider" });
       }
 
       // Store the valuation
@@ -129,7 +139,7 @@ export const propertyValueRouter = router({
       });
 
       if (!property) {
-        throw new Error("Property not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
       const [value] = await ctx.db
