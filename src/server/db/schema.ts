@@ -110,7 +110,12 @@ export const expectedStatusEnum = pgEnum("expected_status", [
   "skipped",
 ]);
 
-export const valueSourceEnum = pgEnum("value_source", ["manual", "api"]);
+export const valuationSourceEnum = pgEnum("valuation_source", [
+  "manual",
+  "mock",
+  "corelogic",
+  "proptrack",
+]);
 
 export const connectionStatusEnum = pgEnum("connection_status", [
   "connected",
@@ -438,8 +443,11 @@ export const propertyValues = pgTable(
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     estimatedValue: decimal("estimated_value", { precision: 12, scale: 2 }).notNull(),
+    confidenceLow: decimal("confidence_low", { precision: 12, scale: 2 }),
+    confidenceHigh: decimal("confidence_high", { precision: 12, scale: 2 }),
+    apiResponseId: text("api_response_id"),
     valueDate: date("value_date").notNull(),
-    source: valueSourceEnum("source").default("manual").notNull(),
+    source: valuationSourceEnum("source").default("manual").notNull(),
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
