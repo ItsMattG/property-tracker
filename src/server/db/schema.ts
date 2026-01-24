@@ -173,6 +173,29 @@ export const notificationStatusEnum = pgEnum("notification_status", [
   "skipped_quiet_hours",
 ]);
 
+export const portfolioMemberRoleEnum = pgEnum("portfolio_member_role", [
+  "owner",
+  "partner",
+  "accountant",
+]);
+
+export const inviteStatusEnum = pgEnum("invite_status", [
+  "pending",
+  "accepted",
+  "declined",
+  "expired",
+]);
+
+export const auditActionEnum = pgEnum("audit_action", [
+  "member_invited",
+  "member_removed",
+  "role_changed",
+  "invite_accepted",
+  "invite_declined",
+  "bank_connected",
+  "bank_disconnected",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -875,6 +898,111 @@ export const userOnboardingRelations = relations(userOnboarding, ({ one }) => ({
   }),
 }));
 
+export const portfolioMembers = pgTable(
+  "portfolio_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    role: portfolioMemberRoleEnum("role").notNull(),
+    invitedBy: uuid("invited_by")
+      .references(() => users.id, { onDelete: "set null" }),
+    invitedAt: timestamp("invited_at").defaultNow().notNull(),
+    joinedAt: timestamp("joined_at"),
+  },
+  (table) => [
+    index("portfolio_members_owner_id_idx").on(table.ownerId),
+    index("portfolio_members_user_id_idx").on(table.userId),
+  ]
+);
+
+export const portfolioInvites = pgTable(
+  "portfolio_invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    email: text("email").notNull(),
+    role: portfolioMemberRoleEnum("role").notNull(),
+    status: inviteStatusEnum("status").default("pending").notNull(),
+    token: text("token").notNull().unique(),
+    invitedBy: uuid("invited_by")
+      .references(() => users.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("portfolio_invites_owner_id_idx").on(table.ownerId),
+    index("portfolio_invites_token_idx").on(table.token),
+    index("portfolio_invites_email_idx").on(table.email),
+  ]
+);
+
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    actorId: uuid("actor_id")
+      .references(() => users.id, { onDelete: "set null" }),
+    action: auditActionEnum("action").notNull(),
+    targetEmail: text("target_email"),
+    metadata: text("metadata"), // JSON string
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("audit_log_owner_id_idx").on(table.ownerId),
+    index("audit_log_created_at_idx").on(table.createdAt),
+  ]
+);
+
+export const portfolioMembersRelations = relations(portfolioMembers, ({ one }) => ({
+  owner: one(users, {
+    fields: [portfolioMembers.ownerId],
+    references: [users.id],
+    relationName: "portfolioOwner",
+  }),
+  user: one(users, {
+    fields: [portfolioMembers.userId],
+    references: [users.id],
+    relationName: "portfolioMember",
+  }),
+  inviter: one(users, {
+    fields: [portfolioMembers.invitedBy],
+    references: [users.id],
+    relationName: "portfolioInviter",
+  }),
+}));
+
+export const portfolioInvitesRelations = relations(portfolioInvites, ({ one }) => ({
+  owner: one(users, {
+    fields: [portfolioInvites.ownerId],
+    references: [users.id],
+  }),
+  inviter: one(users, {
+    fields: [portfolioInvites.invitedBy],
+    references: [users.id],
+  }),
+}));
+
+export const auditLogRelations = relations(auditLog, ({ one }) => ({
+  owner: one(users, {
+    fields: [auditLog.ownerId],
+    references: [users.id],
+  }),
+  actor: one(users, {
+    fields: [auditLog.actorId],
+    references: [users.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -912,3 +1040,9 @@ export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type NewPushSubscription = typeof pushSubscriptions.$inferInsert;
 export type NotificationLogEntry = typeof notificationLog.$inferSelect;
 export type NewNotificationLogEntry = typeof notificationLog.$inferInsert;
+export type PortfolioMember = typeof portfolioMembers.$inferSelect;
+export type NewPortfolioMember = typeof portfolioMembers.$inferInsert;
+export type PortfolioInvite = typeof portfolioInvites.$inferSelect;
+export type NewPortfolioInvite = typeof portfolioInvites.$inferInsert;
+export type AuditLogEntry = typeof auditLog.$inferSelect;
+export type NewAuditLogEntry = typeof auditLog.$inferInsert;
