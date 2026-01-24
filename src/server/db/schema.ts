@@ -596,6 +596,26 @@ export const connectionAlertsRelations = relations(connectionAlerts, ({ one }) =
   }),
 }));
 
+export const userOnboarding = pgTable("user_onboarding", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  wizardDismissedAt: timestamp("wizard_dismissed_at"),
+  checklistDismissedAt: timestamp("checklist_dismissed_at"),
+  completedSteps: text("completed_steps").array().default([]).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const userOnboardingRelations = relations(userOnboarding, ({ one }) => ({
+  user: one(users, {
+    fields: [userOnboarding.userId],
+    references: [users.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -619,3 +639,5 @@ export type PropertyValue = typeof propertyValues.$inferSelect;
 export type NewPropertyValue = typeof propertyValues.$inferInsert;
 export type ConnectionAlert = typeof connectionAlerts.$inferSelect;
 export type NewConnectionAlert = typeof connectionAlerts.$inferInsert;
+export type UserOnboarding = typeof userOnboarding.$inferSelect;
+export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
