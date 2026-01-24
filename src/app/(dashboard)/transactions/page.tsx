@@ -101,9 +101,9 @@ export default function TransactionsPage() {
         onFiltersChange={setFilters}
       />
 
-      {transactions && transactions.length > 0 ? (
+      {transactions && transactions.transactions.length > 0 ? (
         <TransactionTable
-          transactions={transactions as any}
+          transactions={transactions.transactions as any}
           properties={properties ?? []}
           onCategoryChange={handleCategoryChange}
           onToggleVerified={handleToggleVerified}

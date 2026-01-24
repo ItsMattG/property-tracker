@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { transactions } from "../db/schema";
-import { eq, and, desc, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, desc, gte, lte, inArray, sql, count } from "drizzle-orm";
 import { parseCSV } from "../services/csv-import";
 
 const categoryValues = [
@@ -66,8 +66,11 @@ export const transactionRouter = router({
         conditions.push(lte(transactions.date, input.endDate));
       }
 
+      const whereClause = and(...conditions);
+
+      // Get paginated results
       const results = await ctx.db.query.transactions.findMany({
-        where: and(...conditions),
+        where: whereClause,
         orderBy: [desc(transactions.date)],
         limit: input.limit,
         offset: input.offset,
@@ -77,7 +80,19 @@ export const transactionRouter = router({
         },
       });
 
-      return results;
+      // Get total count
+      const [{ count: total }] = await ctx.db
+        .select({ count: sql<number>`count(*)` })
+        .from(transactions)
+        .where(whereClause);
+
+      const hasMore = input.offset + results.length < total;
+
+      return {
+        transactions: results,
+        total,
+        hasMore,
+      };
     }),
 
   updateCategory: protectedProcedure
