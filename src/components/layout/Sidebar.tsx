@@ -14,6 +14,7 @@ import {
   PieChart,
   Bell,
   TrendingUp,
+  Settings,
 } from "lucide-react";
 
 const navItems = [
@@ -27,6 +28,10 @@ const navItems = [
   { href: "/banking", label: "Banking", icon: Landmark },
   { href: "/loans", label: "Loans", icon: Wallet },
   { href: "/export", label: "Export", icon: FileDown },
+];
+
+const settingsItems = [
+  { href: "/settings/notifications", label: "Notifications", icon: Bell },
 ];
 
 export function Sidebar() {
@@ -65,6 +70,35 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      <div className="mt-8 pt-4 border-t border-border">
+        <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <Settings className="w-4 h-4" />
+          Settings
+        </div>
+        <nav className="space-y-1 mt-1">
+          {settingsItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                )}
+              >
+                <Icon className="w-5 h-5" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </aside>
   );
 }
