@@ -17,7 +17,23 @@ export default function DashboardPage() {
   const utils = trpc.useUtils();
 
   const dismissAlert = trpc.banking.dismissAlert.useMutation({
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      await utils.banking.listAlerts.cancel();
+      const previous = utils.banking.listAlerts.getData();
+
+      utils.banking.listAlerts.setData(undefined, (old) => {
+        if (!old) return old;
+        return old.filter((alert) => alert.id !== newData.alertId);
+      });
+
+      return { previous };
+    },
+    onError: (_err, _newData, context) => {
+      if (context?.previous) {
+        utils.banking.listAlerts.setData(undefined, context.previous);
+      }
+    },
+    onSettled: () => {
       utils.banking.listAlerts.invalidate();
     },
   });
