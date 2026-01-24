@@ -4,6 +4,7 @@ import { useState } from "react";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
+import { ImportCSVDialog } from "@/components/transactions/ImportCSVDialog";
 import { trpc } from "@/lib/trpc/client";
 import { ArrowLeftRight } from "lucide-react";
 
@@ -88,7 +89,10 @@ export default function TransactionsPage() {
             Review and categorize your transactions
           </p>
         </div>
-        <AddTransactionDialog onSuccess={() => refetch()} />
+        <div className="flex items-center gap-2">
+          <ImportCSVDialog onSuccess={() => refetch()} />
+          <AddTransactionDialog onSuccess={() => refetch()} />
+        </div>
       </div>
 
       <TransactionFilters
