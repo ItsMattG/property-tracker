@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface SyncButtonProps {
-  onSync: () => Promise<void>;
-  lastManualSyncAt: Date | null;
+  onSync: () => Promise<unknown>;
+  lastManualSyncAt: Date | string | null;
   rateLimitMinutes?: number;
   className?: string;
 }

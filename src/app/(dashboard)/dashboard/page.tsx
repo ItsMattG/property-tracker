@@ -4,12 +4,38 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, ArrowLeftRight, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import Link from "next/link";
+import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = trpc.stats.dashboard.useQuery();
+  const { data: alerts } = trpc.banking.listAlerts.useQuery();
+  const utils = trpc.useUtils();
+
+  const dismissAlert = trpc.banking.dismissAlert.useMutation({
+    onSuccess: () => {
+      utils.banking.listAlerts.invalidate();
+    },
+  });
+
+  const handleDismissAllAlerts = async () => {
+    if (!alerts) return;
+    for (const alert of alerts) {
+      await dismissAlert.mutateAsync({ alertId: alert.id });
+    }
+  };
+
+  const hasAuthError = alerts?.some((a) => a.alertType === "requires_reauth") ?? false;
 
   return (
     <div className="space-y-6">
+      {alerts && alerts.length > 0 && (
+        <ConnectionAlertBanner
+          alertCount={alerts.length}
+          hasAuthError={hasAuthError}
+          onDismiss={handleDismissAllAlerts}
+        />
+      )}
+
       <div>
         <h2 className="text-2xl font-bold">Welcome to PropertyTracker</h2>
         <p className="text-muted-foreground">
