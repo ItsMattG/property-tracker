@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, PieChart, Download } from "lucide-react";
+import { FileText, PieChart, Download, TrendingUp } from "lucide-react";
 
 const reportTypes = [
   {
@@ -22,6 +22,12 @@ const reportTypes = [
     description: "Download a complete export package for your accountant",
     icon: Download,
     href: "/reports/export",
+  },
+  {
+    title: "Capital Gains Tax",
+    description: "Track cost base, record sales, and calculate CGT with 50% discount",
+    icon: TrendingUp,
+    href: "/reports/cgt",
   },
 ];
 

@@ -85,6 +85,8 @@ export const rateTypeEnum = pgEnum("rate_type", [
   "split",
 ]);
 
+export const propertyStatusEnum = pgEnum("property_status", ["active", "sold"]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -107,6 +109,8 @@ export const properties = pgTable("properties", {
   purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }).notNull(),
   purchaseDate: date("purchase_date").notNull(),
   entityName: text("entity_name").default("Personal").notNull(),
+  status: propertyStatusEnum("status").default("active").notNull(),
+  soldAt: date("sold_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -192,6 +196,35 @@ export const loans = pgTable("loans", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const propertySales = pgTable("property_sales", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  propertyId: uuid("property_id")
+    .references(() => properties.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+
+  // Sale details
+  salePrice: decimal("sale_price", { precision: 12, scale: 2 }).notNull(),
+  settlementDate: date("settlement_date").notNull(),
+  contractDate: date("contract_date"),
+
+  // Selling costs
+  agentCommission: decimal("agent_commission", { precision: 12, scale: 2 }).default("0").notNull(),
+  legalFees: decimal("legal_fees", { precision: 12, scale: 2 }).default("0").notNull(),
+  marketingCosts: decimal("marketing_costs", { precision: 12, scale: 2 }).default("0").notNull(),
+  otherSellingCosts: decimal("other_selling_costs", { precision: 12, scale: 2 }).default("0").notNull(),
+
+  // Calculated CGT fields (stored for historical accuracy)
+  costBase: decimal("cost_base", { precision: 12, scale: 2 }).notNull(),
+  capitalGain: decimal("capital_gain", { precision: 12, scale: 2 }).notNull(),
+  discountedGain: decimal("discounted_gain", { precision: 12, scale: 2 }),
+  heldOverTwelveMonths: boolean("held_over_twelve_months").notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
@@ -207,6 +240,7 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
   transactions: many(transactions),
   bankAccounts: many(bankAccounts),
   loans: many(loans),
+  sales: many(propertySales),
 }));
 
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
@@ -251,6 +285,17 @@ export const loansRelations = relations(loans, ({ one }) => ({
   }),
 }));
 
+export const propertySalesRelations = relations(propertySales, ({ one }) => ({
+  property: one(properties, {
+    fields: [propertySales.propertyId],
+    references: [properties.id],
+  }),
+  user: one(users, {
+    fields: [propertySales.userId],
+    references: [users.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -262,3 +307,5 @@ export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type Loan = typeof loans.$inferSelect;
 export type NewLoan = typeof loans.$inferInsert;
+export type PropertySale = typeof propertySales.$inferSelect;
+export type NewPropertySale = typeof propertySales.$inferInsert;
