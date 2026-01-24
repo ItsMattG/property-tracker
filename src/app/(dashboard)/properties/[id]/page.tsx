@@ -95,7 +95,7 @@ export default function PropertyDetailPage() {
         </div>
         <h3 className="text-lg font-semibold">Property Not Found</h3>
         <p className="text-muted-foreground max-w-sm mt-2 mx-auto">
-          The property you're looking for doesn't exist or you don't have access to it.
+          The property you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to it.
         </p>
       </div>
     );
