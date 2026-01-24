@@ -1,21 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { trpc } from "@/lib/trpc/client";
 import { ArrowLeft, Landmark, Shield, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function BankingConnectPage() {
-  const router = useRouter();
-  const { data: connectionInfo, isLoading } = trpc.banking.getConnectionUrl.useQuery();
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  const handleConnect = () => {
-    if (connectionInfo?.url) {
-      // In production, this would redirect to the Basiq consent flow
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      // In production, this would call the Basiq API to create a user and auth link
       // For now, show a placeholder message
-      alert("Basiq connection flow would open here. Configure your Basiq API key to enable this feature.");
+      toast.info("Basiq connection flow would open here. Configure your Basiq API key to enable this feature.");
+    } catch (error) {
+      toast.error("Failed to start connection flow");
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -96,9 +100,9 @@ export default function BankingConnectPage() {
             onClick={handleConnect}
             className="w-full"
             size="lg"
-            disabled={isLoading}
+            disabled={isConnecting}
           >
-            {isLoading ? "Loading..." : "Connect Bank Account"}
+            {isConnecting ? "Connecting..." : "Connect Bank Account"}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
