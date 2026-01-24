@@ -3,7 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, DollarSign, MoreVertical } from "lucide-react";
+import { Building2, MapPin, Calendar, DollarSign, MoreVertical, FileText } from "lucide-react";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,6 +57,12 @@ export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) 
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit?.(property.id)}>
               Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/properties/${property.id}/documents`}>
+                <FileText className="w-4 h-4 mr-2" />
+                Documents
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"

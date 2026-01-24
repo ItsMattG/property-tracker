@@ -87,6 +87,14 @@ export const rateTypeEnum = pgEnum("rate_type", [
 
 export const propertyStatusEnum = pgEnum("property_status", ["active", "sold"]);
 
+export const documentCategoryEnum = pgEnum("document_category", [
+  "receipt",
+  "contract",
+  "depreciation",
+  "lease",
+  "other",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -225,6 +233,41 @@ export const propertySales = pgTable("property_sales", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const documents = pgTable(
+  "documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+
+    // Polymorphic association - linked to property OR transaction
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "cascade",
+    }),
+    transactionId: uuid("transaction_id").references(() => transactions.id, {
+      onDelete: "cascade",
+    }),
+
+    // File metadata
+    fileName: text("file_name").notNull(),
+    fileType: text("file_type").notNull(), // "image/jpeg", "application/pdf", etc.
+    fileSize: decimal("file_size", { precision: 12, scale: 0 }).notNull(), // bytes
+    storagePath: text("storage_path").notNull(), // Supabase storage path
+
+    // Optional categorization
+    category: documentCategoryEnum("category"),
+    description: text("description"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("documents_user_id_idx").on(table.userId),
+    index("documents_property_id_idx").on(table.propertyId),
+    index("documents_transaction_id_idx").on(table.transactionId),
+  ]
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
@@ -241,6 +284,7 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
   bankAccounts: many(bankAccounts),
   loans: many(loans),
   sales: many(propertySales),
+  documents: many(documents),
 }));
 
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
@@ -255,7 +299,7 @@ export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => 
   transactions: many(transactions),
 }));
 
-export const transactionsRelations = relations(transactions, ({ one }) => ({
+export const transactionsRelations = relations(transactions, ({ one, many }) => ({
   user: one(users, {
     fields: [transactions.userId],
     references: [users.id],
@@ -268,6 +312,7 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
     fields: [transactions.propertyId],
     references: [properties.id],
   }),
+  documents: many(documents),
 }));
 
 export const loansRelations = relations(loans, ({ one }) => ({
@@ -296,6 +341,21 @@ export const propertySalesRelations = relations(propertySales, ({ one }) => ({
   }),
 }));
 
+export const documentsRelations = relations(documents, ({ one }) => ({
+  user: one(users, {
+    fields: [documents.userId],
+    references: [users.id],
+  }),
+  property: one(properties, {
+    fields: [documents.propertyId],
+    references: [properties.id],
+  }),
+  transaction: one(transactions, {
+    fields: [documents.transactionId],
+    references: [transactions.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -309,3 +369,5 @@ export type Loan = typeof loans.$inferSelect;
 export type NewLoan = typeof loans.$inferInsert;
 export type PropertySale = typeof propertySales.$inferSelect;
 export type NewPropertySale = typeof propertySales.$inferInsert;
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;
