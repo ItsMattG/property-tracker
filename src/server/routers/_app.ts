@@ -8,6 +8,7 @@ import { reportsRouter } from "./reports";
 import { cgtRouter } from "./cgt";
 import { documentsRouter } from "./documents";
 import { recurringRouter } from "./recurring";
+import { propertyValueRouter } from "./propertyValue";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -19,6 +20,7 @@ export const appRouter = router({
   cgt: cgtRouter,
   documents: documentsRouter,
   recurring: recurringRouter,
+  propertyValue: propertyValueRouter,
 });
 
 export type AppRouter = typeof appRouter;
