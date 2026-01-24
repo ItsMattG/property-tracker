@@ -1,11 +1,12 @@
 import { test, expect } from "./fixtures/auth";
 
-// These tests require CLERK_TESTING_TOKEN to be configured in .env.local
-// Skip if not available
-const hasClerkTestingToken = !!process.env.CLERK_TESTING_TOKEN;
+// These tests require test user credentials to be configured in .env.local
+// E2E_CLERK_USER_EMAIL and E2E_CLERK_USER_PASSWORD
+const hasTestUserCredentials =
+  !!process.env.E2E_CLERK_USER_EMAIL && !!process.env.E2E_CLERK_USER_PASSWORD;
 
 test.describe("Dashboard", () => {
-  test.skip(!hasClerkTestingToken, "Requires CLERK_TESTING_TOKEN");
+  test.skip(!hasTestUserCredentials, "Requires E2E_CLERK_USER_EMAIL and E2E_CLERK_USER_PASSWORD in .env.local");
   test("should display welcome message", async ({ authenticatedPage: page }) => {
     await expect(page.getByRole("heading", { name: /welcome to propertytracker/i })).toBeVisible();
   });
