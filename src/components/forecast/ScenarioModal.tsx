@@ -12,13 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2, Plus, Star } from "lucide-react";
-import type { ForecastScenario } from "@/server/db/schema";
+
+type Scenario = {
+  id: string;
+  name: string;
+  isDefault: boolean;
+};
 
 type ScenarioModalProps = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  scenarios?: ForecastScenario[];
+  scenarios?: Scenario[];
 };
 
 export function ScenarioModal({ open, onClose, onSuccess, scenarios }: ScenarioModalProps) {

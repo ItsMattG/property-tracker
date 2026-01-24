@@ -13,6 +13,7 @@ import {
   FileDown,
   PieChart,
   Bell,
+  TrendingUp,
 } from "lucide-react";
 
 const navItems = [
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/properties", label: "Properties", icon: Building2 },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/reports/forecast", label: "Forecast", icon: TrendingUp },
   { href: "/banking", label: "Banking", icon: Landmark },
   { href: "/loans", label: "Loans", icon: Wallet },
   { href: "/export", label: "Export", icon: FileDown },
