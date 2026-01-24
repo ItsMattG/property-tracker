@@ -5,13 +5,18 @@ import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
 import { ImportCSVDialog } from "@/components/transactions/ImportCSVDialog";
+import { ReconciliationView } from "@/components/recurring/ReconciliationView";
 import { Pagination } from "@/components/ui/pagination";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, List, Calendar } from "lucide-react";
+
+type ViewMode = "transactions" | "reconciliation";
 
 const PAGE_SIZE = 50;
 
 export default function TransactionsPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("transactions");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<{
     propertyId?: string;
@@ -116,13 +121,34 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <TransactionFilters
-        properties={properties ?? []}
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-      />
+      <div className="flex items-center gap-2">
+        <Button
+          variant={viewMode === "transactions" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setViewMode("transactions")}
+        >
+          <List className="w-4 h-4 mr-2" />
+          All Transactions
+        </Button>
+        <Button
+          variant={viewMode === "reconciliation" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setViewMode("reconciliation")}
+        >
+          <Calendar className="w-4 h-4 mr-2" />
+          Reconciliation
+        </Button>
+      </div>
 
-      {transactions && transactions.transactions.length > 0 ? (
+      {viewMode === "transactions" ? (
+        <>
+          <TransactionFilters
+            properties={properties ?? []}
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+          />
+
+          {transactions && transactions.transactions.length > 0 ? (
         <>
           <TransactionTable
             transactions={transactions.transactions as any}
@@ -151,6 +177,10 @@ export default function TransactionsPage() {
             add them manually.
           </p>
         </div>
+      )}
+        </>
+      ) : (
+        <ReconciliationView propertyId={filters.propertyId} />
       )}
     </div>
   );

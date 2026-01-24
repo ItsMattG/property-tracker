@@ -7,6 +7,7 @@ import { loanRouter } from "./loan";
 import { reportsRouter } from "./reports";
 import { cgtRouter } from "./cgt";
 import { documentsRouter } from "./documents";
+import { recurringRouter } from "./recurring";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -17,6 +18,7 @@ export const appRouter = router({
   reports: reportsRouter,
   cgt: cgtRouter,
   documents: documentsRouter,
+  recurring: recurringRouter,
 });
 
 export type AppRouter = typeof appRouter;
