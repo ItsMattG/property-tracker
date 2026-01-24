@@ -13,10 +13,17 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, parseISO } from "date-fns";
-import type { CashFlowForecast } from "@/server/db/schema";
+
+type ForecastData = {
+  id: string;
+  forecastMonth: string;
+  projectedIncome: string;
+  projectedExpenses: string;
+  projectedNet: string;
+};
 
 type ForecastChartProps = {
-  forecasts: CashFlowForecast[];
+  forecasts: ForecastData[];
 };
 
 export function ForecastChart({ forecasts }: ForecastChartProps) {
@@ -58,7 +65,7 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
                 tickFormatter={formatCurrency}
               />
               <Tooltip
-                formatter={(value: number) => formatCurrency(value)}
+                formatter={(value) => formatCurrency(Number(value))}
                 contentStyle={{
                   backgroundColor: "hsl(var(--card))",
                   border: "1px solid hsl(var(--border))",
