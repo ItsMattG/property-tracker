@@ -10,6 +10,7 @@ import { documentsRouter } from "./documents";
 import { recurringRouter } from "./recurring";
 import { propertyValueRouter } from "./propertyValue";
 import { portfolioRouter } from "./portfolio";
+import { onboardingRouter } from "./onboarding";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -23,6 +24,7 @@ export const appRouter = router({
   recurring: recurringRouter,
   propertyValue: propertyValueRouter,
   portfolio: portfolioRouter,
+  onboarding: onboardingRouter,
 });
 
 export type AppRouter = typeof appRouter;
