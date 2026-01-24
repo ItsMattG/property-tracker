@@ -140,6 +140,7 @@ describe("propertyValue router", () => {
       ctx.db = {
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
+          properties: { findFirst: vi.fn().mockResolvedValue(mockProperty) },
           propertyValues: {
             findFirst: vi.fn().mockResolvedValue(mockPropertyValue),
           },
@@ -160,6 +161,7 @@ describe("propertyValue router", () => {
       ctx.db = {
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
+          properties: { findFirst: vi.fn().mockResolvedValue(mockProperty) },
           propertyValues: { findFirst: vi.fn().mockResolvedValue(null) },
         },
       };
@@ -170,6 +172,24 @@ describe("propertyValue router", () => {
       });
 
       expect(result).toBeNull();
+    });
+
+    it("throws error if property not found", async () => {
+      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+
+      ctx.db = {
+        query: {
+          users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
+          properties: { findFirst: vi.fn().mockResolvedValue(null) },
+        },
+      };
+
+      const caller = createTestCaller(ctx);
+      await expect(
+        caller.propertyValue.getLatest({
+          propertyId: "00000000-0000-0000-0000-000000000000",
+        })
+      ).rejects.toThrow("Property not found");
     });
   });
 
