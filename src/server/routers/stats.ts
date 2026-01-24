@@ -8,13 +8,13 @@ export const statsRouter = router({
     const propertiesResult = await ctx.db
       .select({ count: sql<number>`count(*)::int` })
       .from(properties)
-      .where(eq(properties.userId, ctx.user.id));
+      .where(eq(properties.userId, ctx.portfolio.ownerId));
 
     // Count all transactions
     const transactionsResult = await ctx.db
       .select({ count: sql<number>`count(*)::int` })
       .from(transactions)
-      .where(eq(transactions.userId, ctx.user.id));
+      .where(eq(transactions.userId, ctx.portfolio.ownerId));
 
     // Count uncategorized transactions
     const uncategorizedResult = await ctx.db
@@ -22,7 +22,7 @@ export const statsRouter = router({
       .from(transactions)
       .where(
         and(
-          eq(transactions.userId, ctx.user.id),
+          eq(transactions.userId, ctx.portfolio.ownerId),
           eq(transactions.category, "uncategorized")
         )
       );

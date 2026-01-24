@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { propertyValues, properties } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { getValuationProvider } from "../services/valuation";
@@ -16,7 +16,7 @@ export const propertyValueRouter = router({
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.user.id)
+          eq(properties.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -38,7 +38,7 @@ export const propertyValueRouter = router({
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.user.id)
+          eq(properties.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -58,7 +58,7 @@ export const propertyValueRouter = router({
       const valuation = await ctx.db.query.propertyValues.findFirst({
         where: and(
           eq(propertyValues.propertyId, input.propertyId),
-          eq(propertyValues.userId, ctx.user.id)
+          eq(propertyValues.userId, ctx.portfolio.ownerId)
         ),
         orderBy: [desc(propertyValues.valueDate)],
       });
@@ -79,14 +79,14 @@ export const propertyValueRouter = router({
       };
     }),
 
-  refresh: protectedProcedure
+  refresh: writeProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Get property with address
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.user.id)
+          eq(properties.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -108,7 +108,7 @@ export const propertyValueRouter = router({
         .insert(propertyValues)
         .values({
           propertyId: input.propertyId,
-          userId: ctx.user.id,
+          userId: ctx.portfolio.ownerId,
           estimatedValue: result.estimatedValue.toString(),
           confidenceLow: result.confidenceLow.toString(),
           confidenceHigh: result.confidenceHigh.toString(),
@@ -121,7 +121,7 @@ export const propertyValueRouter = router({
       return value;
     }),
 
-  create: protectedProcedure
+  create: writeProcedure
     .input(
       z.object({
         propertyId: z.string().uuid(),
@@ -138,7 +138,7 @@ export const propertyValueRouter = router({
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.user.id)
+          eq(properties.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -150,7 +150,7 @@ export const propertyValueRouter = router({
         .insert(propertyValues)
         .values({
           propertyId: input.propertyId,
-          userId: ctx.user.id,
+          userId: ctx.portfolio.ownerId,
           estimatedValue: input.estimatedValue,
           valueDate: input.valueDate,
           source: input.source,
@@ -163,14 +163,14 @@ export const propertyValueRouter = router({
       return value;
     }),
 
-  delete: protectedProcedure
+  delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Find the valuation first
       const valuation = await ctx.db.query.propertyValues.findFirst({
         where: and(
           eq(propertyValues.id, input.id),
-          eq(propertyValues.userId, ctx.user.id)
+          eq(propertyValues.userId, ctx.portfolio.ownerId)
         ),
       });
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import {
   forecastScenarios,
   cashFlowForecasts,
@@ -27,12 +27,12 @@ const assumptionsSchema = z.object({
 export const forecastRouter = router({
   listScenarios: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.query.forecastScenarios.findMany({
-      where: eq(forecastScenarios.userId, ctx.user.id),
+      where: eq(forecastScenarios.userId, ctx.portfolio.ownerId),
       orderBy: [desc(forecastScenarios.isDefault), desc(forecastScenarios.createdAt)],
     });
   }),
 
-  createScenario: protectedProcedure
+  createScenario: writeProcedure
     .input(
       z.object({
         name: z.string().min(1).max(100),
@@ -47,25 +47,25 @@ export const forecastRouter = router({
         await ctx.db
           .update(forecastScenarios)
           .set({ isDefault: false })
-          .where(eq(forecastScenarios.userId, ctx.user.id));
+          .where(eq(forecastScenarios.userId, ctx.portfolio.ownerId));
       }
 
       const [scenario] = await ctx.db
         .insert(forecastScenarios)
         .values({
-          userId: ctx.user.id,
+          userId: ctx.portfolio.ownerId,
           name: input.name,
           assumptions: JSON.stringify(assumptions),
           isDefault: input.isDefault ?? false,
         })
         .returning();
 
-      await generateForecastsForScenario(ctx.db, ctx.user.id, scenario.id);
+      await generateForecastsForScenario(ctx.db, ctx.portfolio.ownerId, scenario.id);
 
       return scenario;
     }),
 
-  updateScenario: protectedProcedure
+  updateScenario: writeProcedure
     .input(
       z.object({
         id: z.string().uuid(),
@@ -77,7 +77,7 @@ export const forecastRouter = router({
       const existing = await ctx.db.query.forecastScenarios.findFirst({
         where: and(
           eq(forecastScenarios.id, input.id),
-          eq(forecastScenarios.userId, ctx.user.id)
+          eq(forecastScenarios.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -96,13 +96,13 @@ export const forecastRouter = router({
         .returning();
 
       if (input.assumptions) {
-        await generateForecastsForScenario(ctx.db, ctx.user.id, scenario.id);
+        await generateForecastsForScenario(ctx.db, ctx.portfolio.ownerId, scenario.id);
       }
 
       return scenario;
     }),
 
-  deleteScenario: protectedProcedure
+  deleteScenario: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const [deleted] = await ctx.db
@@ -110,7 +110,7 @@ export const forecastRouter = router({
         .where(
           and(
             eq(forecastScenarios.id, input.id),
-            eq(forecastScenarios.userId, ctx.user.id)
+            eq(forecastScenarios.userId, ctx.portfolio.ownerId)
           )
         )
         .returning();
@@ -122,13 +122,13 @@ export const forecastRouter = router({
       return deleted;
     }),
 
-  setDefaultScenario: protectedProcedure
+  setDefaultScenario: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .update(forecastScenarios)
         .set({ isDefault: false })
-        .where(eq(forecastScenarios.userId, ctx.user.id));
+        .where(eq(forecastScenarios.userId, ctx.portfolio.ownerId));
 
       const [scenario] = await ctx.db
         .update(forecastScenarios)
@@ -136,7 +136,7 @@ export const forecastRouter = router({
         .where(
           and(
             eq(forecastScenarios.id, input.id),
-            eq(forecastScenarios.userId, ctx.user.id)
+            eq(forecastScenarios.userId, ctx.portfolio.ownerId)
           )
         )
         .returning();
@@ -157,7 +157,7 @@ export const forecastRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const conditions = [
-        eq(cashFlowForecasts.userId, ctx.user.id),
+        eq(cashFlowForecasts.userId, ctx.portfolio.ownerId),
         eq(cashFlowForecasts.scenarioId, input.scenarioId),
       ];
 
@@ -200,7 +200,7 @@ export const forecastRouter = router({
 
       for (const scenarioId of input.scenarioIds) {
         const conditions = [
-          eq(cashFlowForecasts.userId, ctx.user.id),
+          eq(cashFlowForecasts.userId, ctx.portfolio.ownerId),
           eq(cashFlowForecasts.scenarioId, scenarioId),
         ];
 
@@ -217,13 +217,13 @@ export const forecastRouter = router({
       return results;
     }),
 
-  regenerate: protectedProcedure
+  regenerate: writeProcedure
     .input(z.object({ scenarioId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const scenario = await ctx.db.query.forecastScenarios.findFirst({
         where: and(
           eq(forecastScenarios.id, input.scenarioId),
-          eq(forecastScenarios.userId, ctx.user.id)
+          eq(forecastScenarios.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -231,7 +231,7 @@ export const forecastRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
       }
 
-      await generateForecastsForScenario(ctx.db, ctx.user.id, input.scenarioId);
+      await generateForecastsForScenario(ctx.db, ctx.portfolio.ownerId, input.scenarioId);
 
       return { success: true };
     }),

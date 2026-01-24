@@ -11,5 +11,6 @@ export async function getServerTRPC() {
   return createCaller({
     db,
     clerkId: userId,
+    portfolioOwnerId: undefined,
   });
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import {
   notificationPreferences,
   pushSubscriptions,
@@ -12,7 +12,7 @@ export const notificationRouter = router({
   // Get or create preferences
   getPreferences: protectedProcedure.query(async ({ ctx }) => {
     let prefs = await ctx.db.query.notificationPreferences.findFirst({
-      where: eq(notificationPreferences.userId, ctx.user.id),
+      where: eq(notificationPreferences.userId, ctx.portfolio.ownerId),
     });
 
     if (!prefs) {
@@ -20,7 +20,7 @@ export const notificationRouter = router({
       const [created] = await ctx.db
         .insert(notificationPreferences)
         .values({
-          userId: ctx.user.id,
+          userId: ctx.portfolio.ownerId,
           ...defaults,
         })
         .returning();
@@ -31,7 +31,7 @@ export const notificationRouter = router({
   }),
 
   // Update preferences
-  updatePreferences: protectedProcedure
+  updatePreferences: writeProcedure
     .input(
       z.object({
         emailEnabled: z.boolean().optional(),
@@ -47,7 +47,7 @@ export const notificationRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Ensure preferences exist
       const existing = await ctx.db.query.notificationPreferences.findFirst({
-        where: eq(notificationPreferences.userId, ctx.user.id),
+        where: eq(notificationPreferences.userId, ctx.portfolio.ownerId),
       });
 
       if (!existing) {
@@ -55,7 +55,7 @@ export const notificationRouter = router({
         const [created] = await ctx.db
           .insert(notificationPreferences)
           .values({
-            userId: ctx.user.id,
+            userId: ctx.portfolio.ownerId,
             ...defaults,
             ...input,
           })
@@ -66,14 +66,14 @@ export const notificationRouter = router({
       const [updated] = await ctx.db
         .update(notificationPreferences)
         .set({ ...input, updatedAt: new Date() })
-        .where(eq(notificationPreferences.userId, ctx.user.id))
+        .where(eq(notificationPreferences.userId, ctx.portfolio.ownerId))
         .returning();
 
       return updated;
     }),
 
   // Register push subscription
-  registerPushSubscription: protectedProcedure
+  registerPushSubscription: writeProcedure
     .input(
       z.object({
         endpoint: z.string().url(),
@@ -86,7 +86,7 @@ export const notificationRouter = router({
       // Check if subscription already exists
       const existing = await ctx.db.query.pushSubscriptions.findFirst({
         where: and(
-          eq(pushSubscriptions.userId, ctx.user.id),
+          eq(pushSubscriptions.userId, ctx.portfolio.ownerId),
           eq(pushSubscriptions.endpoint, input.endpoint)
         ),
       });
@@ -98,7 +98,7 @@ export const notificationRouter = router({
       const [subscription] = await ctx.db
         .insert(pushSubscriptions)
         .values({
-          userId: ctx.user.id,
+          userId: ctx.portfolio.ownerId,
           ...input,
         })
         .returning();
@@ -107,14 +107,14 @@ export const notificationRouter = router({
     }),
 
   // Unregister push subscription
-  unregisterPushSubscription: protectedProcedure
+  unregisterPushSubscription: writeProcedure
     .input(z.object({ endpoint: z.string() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .delete(pushSubscriptions)
         .where(
           and(
-            eq(pushSubscriptions.userId, ctx.user.id),
+            eq(pushSubscriptions.userId, ctx.portfolio.ownerId),
             eq(pushSubscriptions.endpoint, input.endpoint)
           )
         );
@@ -125,7 +125,7 @@ export const notificationRouter = router({
   // List user's push subscriptions
   listPushSubscriptions: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.query.pushSubscriptions.findMany({
-      where: eq(pushSubscriptions.userId, ctx.user.id),
+      where: eq(pushSubscriptions.userId, ctx.portfolio.ownerId),
       orderBy: [desc(pushSubscriptions.createdAt)],
     });
   }),
@@ -135,7 +135,7 @@ export const notificationRouter = router({
     .input(z.object({ limit: z.number().min(1).max(50).default(20) }))
     .query(async ({ ctx, input }) => {
       return ctx.db.query.notificationLog.findMany({
-        where: eq(notificationLog.userId, ctx.user.id),
+        where: eq(notificationLog.userId, ctx.portfolio.ownerId),
         orderBy: [desc(notificationLog.sentAt)],
         limit: input.limit,
       });

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { properties } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -16,7 +16,7 @@ const propertySchema = z.object({
 export const propertyRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.query.properties.findMany({
-      where: eq(properties.userId, ctx.user.id),
+      where: eq(properties.userId, ctx.portfolio.ownerId),
       orderBy: (properties, { desc }) => [desc(properties.createdAt)],
     });
   }),
@@ -27,7 +27,7 @@ export const propertyRouter = router({
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, input.id),
-          eq(properties.userId, ctx.user.id)
+          eq(properties.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -38,13 +38,13 @@ export const propertyRouter = router({
       return property;
     }),
 
-  create: protectedProcedure
+  create: writeProcedure
     .input(propertySchema)
     .mutation(async ({ ctx, input }) => {
       const [property] = await ctx.db
         .insert(properties)
         .values({
-          userId: ctx.user.id,
+          userId: ctx.portfolio.ownerId,
           address: input.address,
           suburb: input.suburb,
           state: input.state,
@@ -58,7 +58,7 @@ export const propertyRouter = router({
       return property;
     }),
 
-  update: protectedProcedure
+  update: writeProcedure
     .input(z.object({ id: z.string().uuid() }).merge(propertySchema.partial()))
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
@@ -69,19 +69,19 @@ export const propertyRouter = router({
           ...data,
           updatedAt: new Date(),
         })
-        .where(and(eq(properties.id, id), eq(properties.userId, ctx.user.id)))
+        .where(and(eq(properties.id, id), eq(properties.userId, ctx.portfolio.ownerId)))
         .returning();
 
       return property;
     }),
 
-  delete: protectedProcedure
+  delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .delete(properties)
         .where(
-          and(eq(properties.id, input.id), eq(properties.userId, ctx.user.id))
+          and(eq(properties.id, input.id), eq(properties.userId, ctx.portfolio.ownerId))
         );
 
       return { success: true };

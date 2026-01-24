@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { anomalyAlerts } from "../db/schema";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -16,7 +16,7 @@ export const anomalyRouter = router({
       }).optional()
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(anomalyAlerts.userId, ctx.user.id)];
+      const conditions = [eq(anomalyAlerts.userId, ctx.portfolio.ownerId)];
 
       if (input?.status) {
         conditions.push(eq(anomalyAlerts.status, input.status));
@@ -48,7 +48,7 @@ export const anomalyRouter = router({
       const alert = await ctx.db.query.anomalyAlerts.findFirst({
         where: and(
           eq(anomalyAlerts.id, input.id),
-          eq(anomalyAlerts.userId, ctx.user.id)
+          eq(anomalyAlerts.userId, ctx.portfolio.ownerId)
         ),
         with: {
           property: true,
@@ -68,7 +68,7 @@ export const anomalyRouter = router({
   getActiveCount: protectedProcedure.query(async ({ ctx }) => {
     const alerts = await ctx.db.query.anomalyAlerts.findMany({
       where: and(
-        eq(anomalyAlerts.userId, ctx.user.id),
+        eq(anomalyAlerts.userId, ctx.portfolio.ownerId),
         eq(anomalyAlerts.status, "active")
       ),
       columns: { severity: true },
@@ -82,13 +82,13 @@ export const anomalyRouter = router({
     };
   }),
 
-  dismiss: protectedProcedure
+  dismiss: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const existing = await ctx.db.query.anomalyAlerts.findFirst({
         where: and(
           eq(anomalyAlerts.id, input.id),
-          eq(anomalyAlerts.userId, ctx.user.id)
+          eq(anomalyAlerts.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -109,7 +109,7 @@ export const anomalyRouter = router({
       return alert;
     }),
 
-  bulkDismiss: protectedProcedure
+  bulkDismiss: writeProcedure
     .input(z.object({ ids: z.array(z.string().uuid()) }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
@@ -121,14 +121,14 @@ export const anomalyRouter = router({
         .where(
           and(
             inArray(anomalyAlerts.id, input.ids),
-            eq(anomalyAlerts.userId, ctx.user.id)
+            eq(anomalyAlerts.userId, ctx.portfolio.ownerId)
           )
         );
 
       return { dismissed: input.ids.length };
     }),
 
-  resolve: protectedProcedure
+  resolve: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const [alert] = await ctx.db
@@ -140,7 +140,7 @@ export const anomalyRouter = router({
         .where(
           and(
             eq(anomalyAlerts.id, input.id),
-            eq(anomalyAlerts.userId, ctx.user.id)
+            eq(anomalyAlerts.userId, ctx.portfolio.ownerId)
           )
         )
         .returning();

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { loans } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -22,7 +22,7 @@ export const loanRouter = router({
   list: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(loans.userId, ctx.user.id)];
+      const conditions = [eq(loans.userId, ctx.portfolio.ownerId)];
 
       if (input?.propertyId) {
         conditions.push(eq(loans.propertyId, input.propertyId));
@@ -42,7 +42,7 @@ export const loanRouter = router({
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const loan = await ctx.db.query.loans.findFirst({
-        where: and(eq(loans.id, input.id), eq(loans.userId, ctx.user.id)),
+        where: and(eq(loans.id, input.id), eq(loans.userId, ctx.portfolio.ownerId)),
         with: {
           property: true,
           offsetAccount: true,
@@ -56,11 +56,11 @@ export const loanRouter = router({
       return loan;
     }),
 
-  create: protectedProcedure.input(loanSchema).mutation(async ({ ctx, input }) => {
+  create: writeProcedure.input(loanSchema).mutation(async ({ ctx, input }) => {
     const [loan] = await ctx.db
       .insert(loans)
       .values({
-        userId: ctx.user.id,
+        userId: ctx.portfolio.ownerId,
         propertyId: input.propertyId,
         lender: input.lender,
         accountNumberMasked: input.accountNumberMasked,
@@ -79,7 +79,7 @@ export const loanRouter = router({
     return loan;
   }),
 
-  update: protectedProcedure
+  update: writeProcedure
     .input(z.object({ id: z.string().uuid() }).merge(loanSchema.partial()))
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
@@ -90,23 +90,23 @@ export const loanRouter = router({
           ...data,
           updatedAt: new Date(),
         })
-        .where(and(eq(loans.id, id), eq(loans.userId, ctx.user.id)))
+        .where(and(eq(loans.id, id), eq(loans.userId, ctx.portfolio.ownerId)))
         .returning();
 
       return loan;
     }),
 
-  delete: protectedProcedure
+  delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .delete(loans)
-        .where(and(eq(loans.id, input.id), eq(loans.userId, ctx.user.id)));
+        .where(and(eq(loans.id, input.id), eq(loans.userId, ctx.portfolio.ownerId)));
 
       return { success: true };
     }),
 
-  updateBalance: protectedProcedure
+  updateBalance: writeProcedure
     .input(
       z.object({
         id: z.string().uuid(),
@@ -120,7 +120,7 @@ export const loanRouter = router({
           currentBalance: input.currentBalance,
           updatedAt: new Date(),
         })
-        .where(and(eq(loans.id, input.id), eq(loans.userId, ctx.user.id)))
+        .where(and(eq(loans.id, input.id), eq(loans.userId, ctx.portfolio.ownerId)))
         .returning();
 
       return loan;

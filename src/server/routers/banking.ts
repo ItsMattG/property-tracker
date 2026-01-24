@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure, bankProcedure } from "../trpc";
 import { anomalyAlerts, bankAccounts, connectionAlerts, transactions } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -18,7 +18,7 @@ import { metrics } from "@/lib/metrics";
 export const bankingRouter = router({
   listAccounts: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.query.bankAccounts.findMany({
-      where: eq(bankAccounts.userId, ctx.user.id),
+      where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
       with: {
         defaultProperty: true,
         alerts: {
@@ -30,7 +30,7 @@ export const bankingRouter = router({
 
   getConnectionStatus: protectedProcedure.query(async ({ ctx }) => {
     const accounts = await ctx.db.query.bankAccounts.findMany({
-      where: eq(bankAccounts.userId, ctx.user.id),
+      where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
       with: {
         alerts: {
           where: eq(connectionAlerts.status, "active"),
@@ -50,14 +50,14 @@ export const bankingRouter = router({
     }));
   }),
 
-  syncAccount: protectedProcedure
+  syncAccount: bankProcedure
     .input(z.object({ accountId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Verify account belongs to user
       const account = await ctx.db.query.bankAccounts.findFirst({
         where: and(
           eq(bankAccounts.id, input.accountId),
-          eq(bankAccounts.userId, ctx.user.id)
+          eq(bankAccounts.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -91,7 +91,7 @@ export const bankingRouter = router({
         // Fetch new transactions
         const fromDate = account.lastSyncedAt?.toISOString().split("T")[0];
         const { data: basiqTransactions } = await basiqService.getTransactions(
-          ctx.user.id,
+          ctx.portfolio.ownerId,
           account.basiqAccountId,
           fromDate
         );
@@ -101,7 +101,7 @@ export const bankingRouter = router({
         for (const txn of basiqTransactions) {
           try {
             await ctx.db.insert(transactions).values({
-              userId: ctx.user.id,
+              userId: ctx.portfolio.ownerId,
               bankAccountId: account.id,
               basiqTransactionId: txn.id,
               propertyId: account.defaultPropertyId,
@@ -120,7 +120,7 @@ export const bankingRouter = router({
         if (transactionsAdded > 0) {
           const recentTxns = await ctx.db.query.transactions.findMany({
             where: and(
-              eq(transactions.userId, ctx.user.id),
+              eq(transactions.userId, ctx.portfolio.ownerId),
               eq(transactions.bankAccountId, account.id)
             ),
             orderBy: [desc(transactions.createdAt)],
@@ -129,7 +129,7 @@ export const bankingRouter = router({
 
           const knownMerchants = await getKnownMerchants(
             ctx.db,
-            ctx.user.id,
+            ctx.portfolio.ownerId,
             account.defaultPropertyId ?? undefined
           );
 
@@ -144,13 +144,13 @@ export const bankingRouter = router({
             // Check for unusual amount
             const historical = await getHistoricalAverage(
               ctx.db,
-              ctx.user.id,
+              ctx.portfolio.ownerId,
               txn.description.split(" ")[0]
             );
             const unusualResult = detectUnusualAmount(txnInput, historical);
             if (unusualResult) {
               await ctx.db.insert(anomalyAlerts).values({
-                userId: ctx.user.id,
+                userId: ctx.portfolio.ownerId,
                 propertyId: account.defaultPropertyId,
                 ...unusualResult,
               });
@@ -168,7 +168,7 @@ export const bankingRouter = router({
             );
             if (duplicateResult) {
               await ctx.db.insert(anomalyAlerts).values({
-                userId: ctx.user.id,
+                userId: ctx.portfolio.ownerId,
                 propertyId: account.defaultPropertyId,
                 ...duplicateResult,
               });
@@ -178,7 +178,7 @@ export const bankingRouter = router({
             const unexpectedResult = detectUnexpectedExpense(txnInput, knownMerchants);
             if (unexpectedResult) {
               await ctx.db.insert(anomalyAlerts).values({
-                userId: ctx.user.id,
+                userId: ctx.portfolio.ownerId,
                 propertyId: account.defaultPropertyId,
                 ...unexpectedResult,
               });
@@ -242,7 +242,7 @@ export const bankingRouter = router({
 
         if (shouldCreateAlert(activeAlerts, alertType)) {
           await ctx.db.insert(connectionAlerts).values({
-            userId: ctx.user.id,
+            userId: ctx.portfolio.ownerId,
             bankAccountId: input.accountId,
             alertType,
             errorMessage,
@@ -262,7 +262,7 @@ export const bankingRouter = router({
   listAlerts: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.query.connectionAlerts.findMany({
       where: and(
-        eq(connectionAlerts.userId, ctx.user.id),
+        eq(connectionAlerts.userId, ctx.portfolio.ownerId),
         eq(connectionAlerts.status, "active")
       ),
       with: {
@@ -272,7 +272,7 @@ export const bankingRouter = router({
     });
   }),
 
-  dismissAlert: protectedProcedure
+  dismissAlert: writeProcedure
     .input(z.object({ alertId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const [alert] = await ctx.db
@@ -284,7 +284,7 @@ export const bankingRouter = router({
         .where(
           and(
             eq(connectionAlerts.id, input.alertId),
-            eq(connectionAlerts.userId, ctx.user.id)
+            eq(connectionAlerts.userId, ctx.portfolio.ownerId)
           )
         )
         .returning();
@@ -296,7 +296,7 @@ export const bankingRouter = router({
       return alert;
     }),
 
-  linkAccountToProperty: protectedProcedure
+  linkAccountToProperty: writeProcedure
     .input(
       z.object({
         accountId: z.string().uuid(),
@@ -312,7 +312,7 @@ export const bankingRouter = router({
         .where(
           and(
             eq(bankAccounts.id, input.accountId),
-            eq(bankAccounts.userId, ctx.user.id)
+            eq(bankAccounts.userId, ctx.portfolio.ownerId)
           )
         )
         .returning();
@@ -320,13 +320,13 @@ export const bankingRouter = router({
       return account;
     }),
 
-  reconnect: protectedProcedure
+  reconnect: bankProcedure
     .input(z.object({ accountId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const account = await ctx.db.query.bankAccounts.findFirst({
         where: and(
           eq(bankAccounts.id, input.accountId),
-          eq(bankAccounts.userId, ctx.user.id)
+          eq(bankAccounts.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -335,7 +335,7 @@ export const bankingRouter = router({
       }
 
       // Generate new auth link via Basiq
-      const { links } = await basiqService.createAuthLink(ctx.user.id);
+      const { links } = await basiqService.createAuthLink(ctx.portfolio.ownerId);
 
       return { url: links.public };
     }),
