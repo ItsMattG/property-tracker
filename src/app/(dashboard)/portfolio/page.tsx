@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PortfolioToolbar } from "@/components/portfolio/PortfolioToolbar";
+import { PortfolioEquityCard } from "@/components/portfolio/PortfolioEquityCard";
 import { PortfolioCard } from "@/components/portfolio/PortfolioCard";
 import { AddPropertyValueDialog } from "@/components/portfolio/AddPropertyValueDialog";
 import { ComparisonTable } from "@/components/portfolio/ComparisonTable";
@@ -111,6 +112,15 @@ export default function PortfolioPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Add equity summary card */}
+      {summary && (
+        <PortfolioEquityCard
+          totalValue={summary.totalValue}
+          totalLoans={summary.totalDebt}
+          propertyCount={metrics?.length ?? 0}
+        />
+      )}
 
       <PortfolioToolbar
         viewMode={viewMode}
