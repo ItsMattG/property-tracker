@@ -124,8 +124,7 @@ export const transactions = pgTable("transactions", {
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   bankAccountId: uuid("bank_account_id")
-    .references(() => bankAccounts.id, { onDelete: "cascade" })
-    .notNull(),
+    .references(() => bankAccounts.id, { onDelete: "cascade" }),
   basiqTransactionId: text("basiq_transaction_id").unique(),
   propertyId: uuid("property_id").references(() => properties.id, {
     onDelete: "set null",
