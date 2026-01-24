@@ -202,6 +202,29 @@ export const suggestionStatusEnum = pgEnum("suggestion_status", [
   "rejected",
 ]);
 
+export const depreciationCategoryEnum = pgEnum("depreciation_category", [
+  "plant_equipment",
+  "capital_works",
+]);
+
+export const depreciationMethodEnum = pgEnum("depreciation_method", [
+  "diminishing_value",
+  "prime_cost",
+]);
+
+export const taxSuggestionTypeEnum = pgEnum("tax_suggestion_type", [
+  "prepay_interest",
+  "schedule_repairs",
+  "claim_depreciation",
+  "missed_deduction",
+]);
+
+export const taxSuggestionStatusEnum = pgEnum("tax_suggestion_status", [
+  "active",
+  "dismissed",
+  "actioned",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -1049,6 +1072,77 @@ export const categorizationExamples = pgTable(
   ]
 );
 
+export const depreciationSchedules = pgTable(
+  "depreciation_schedules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    documentId: uuid("document_id").references(() => documents.id, {
+      onDelete: "set null",
+    }),
+    effectiveDate: date("effective_date").notNull(),
+    totalValue: decimal("total_value", { precision: 12, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("depreciation_schedules_property_id_idx").on(table.propertyId),
+    index("depreciation_schedules_user_id_idx").on(table.userId),
+  ]
+);
+
+export const depreciationAssets = pgTable(
+  "depreciation_assets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    scheduleId: uuid("schedule_id")
+      .references(() => depreciationSchedules.id, { onDelete: "cascade" })
+      .notNull(),
+    assetName: text("asset_name").notNull(),
+    category: depreciationCategoryEnum("category").notNull(),
+    originalCost: decimal("original_cost", { precision: 12, scale: 2 }).notNull(),
+    effectiveLife: decimal("effective_life", { precision: 5, scale: 2 }).notNull(),
+    method: depreciationMethodEnum("method").notNull(),
+    yearlyDeduction: decimal("yearly_deduction", { precision: 12, scale: 2 }).notNull(),
+    remainingValue: decimal("remaining_value", { precision: 12, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("depreciation_assets_schedule_id_idx").on(table.scheduleId),
+  ]
+);
+
+export const taxSuggestions = pgTable(
+  "tax_suggestions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "cascade",
+    }),
+    type: taxSuggestionTypeEnum("type").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    estimatedSavings: decimal("estimated_savings", { precision: 12, scale: 2 }),
+    actionUrl: text("action_url"),
+    financialYear: decimal("financial_year", { precision: 4, scale: 0 }).notNull(),
+    status: taxSuggestionStatusEnum("status").default("active").notNull(),
+    expiresAt: timestamp("expires_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("tax_suggestions_user_id_idx").on(table.userId),
+    index("tax_suggestions_status_idx").on(table.status),
+    index("tax_suggestions_financial_year_idx").on(table.financialYear),
+  ]
+);
+
 export const merchantCategoriesRelations = relations(merchantCategories, ({ one }) => ({
   user: one(users, {
     fields: [merchantCategories.userId],
@@ -1060,6 +1154,46 @@ export const categorizationExamplesRelations = relations(categorizationExamples,
   user: one(users, {
     fields: [categorizationExamples.userId],
     references: [users.id],
+  }),
+}));
+
+export const depreciationSchedulesRelations = relations(
+  depreciationSchedules,
+  ({ one, many }) => ({
+    property: one(properties, {
+      fields: [depreciationSchedules.propertyId],
+      references: [properties.id],
+    }),
+    user: one(users, {
+      fields: [depreciationSchedules.userId],
+      references: [users.id],
+    }),
+    document: one(documents, {
+      fields: [depreciationSchedules.documentId],
+      references: [documents.id],
+    }),
+    assets: many(depreciationAssets),
+  })
+);
+
+export const depreciationAssetsRelations = relations(
+  depreciationAssets,
+  ({ one }) => ({
+    schedule: one(depreciationSchedules, {
+      fields: [depreciationAssets.scheduleId],
+      references: [depreciationSchedules.id],
+    }),
+  })
+);
+
+export const taxSuggestionsRelations = relations(taxSuggestions, ({ one }) => ({
+  user: one(users, {
+    fields: [taxSuggestions.userId],
+    references: [users.id],
+  }),
+  property: one(properties, {
+    fields: [taxSuggestions.propertyId],
+    references: [properties.id],
   }),
 }));
 
@@ -1110,3 +1244,9 @@ export type MerchantCategory = typeof merchantCategories.$inferSelect;
 export type NewMerchantCategory = typeof merchantCategories.$inferInsert;
 export type CategorizationExample = typeof categorizationExamples.$inferSelect;
 export type NewCategorizationExample = typeof categorizationExamples.$inferInsert;
+export type DepreciationSchedule = typeof depreciationSchedules.$inferSelect;
+export type NewDepreciationSchedule = typeof depreciationSchedules.$inferInsert;
+export type DepreciationAsset = typeof depreciationAssets.$inferSelect;
+export type NewDepreciationAsset = typeof depreciationAssets.$inferInsert;
+export type TaxSuggestion = typeof taxSuggestions.$inferSelect;
+export type NewTaxSuggestion = typeof taxSuggestions.$inferInsert;
