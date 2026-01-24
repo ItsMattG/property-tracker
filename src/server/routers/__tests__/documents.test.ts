@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createMockContext, createTestCaller } from "../../__tests__/test-utils";
+import { TRPCError } from "@trpc/server";
+import {
+  createMockContext,
+  createTestCaller,
+  createUnauthenticatedContext,
+  createAuthenticatedContext,
+} from "../../__tests__/test-utils";
 
 // Mock supabaseAdmin
 vi.mock("@/lib/supabase/server", () => ({
@@ -57,6 +63,68 @@ describe("documents router", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe("authentication", () => {
+    it("getUploadUrl throws UNAUTHORIZED when not authenticated", async () => {
+      const ctx = createUnauthenticatedContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(
+        caller.documents.getUploadUrl({
+          fileName: "test.pdf",
+          fileType: "application/pdf",
+          fileSize: 1024,
+          propertyId: "550e8400-e29b-41d4-a716-446655440000",
+        })
+      ).rejects.toThrow(TRPCError);
+      await expect(
+        caller.documents.getUploadUrl({
+          fileName: "test.pdf",
+          fileType: "application/pdf",
+          fileSize: 1024,
+          propertyId: "550e8400-e29b-41d4-a716-446655440000",
+        })
+      ).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+      });
+    });
+
+    it("list throws UNAUTHORIZED when not authenticated", async () => {
+      const ctx = createUnauthenticatedContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(
+        caller.documents.list({
+          propertyId: "550e8400-e29b-41d4-a716-446655440000",
+        })
+      ).rejects.toThrow(TRPCError);
+      await expect(
+        caller.documents.list({
+          propertyId: "550e8400-e29b-41d4-a716-446655440000",
+        })
+      ).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+      });
+    });
+
+    it("delete throws UNAUTHORIZED when not authenticated", async () => {
+      const ctx = createUnauthenticatedContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(
+        caller.documents.delete({
+          id: "550e8400-e29b-41d4-a716-446655440000",
+        })
+      ).rejects.toThrow(TRPCError);
+      await expect(
+        caller.documents.delete({
+          id: "550e8400-e29b-41d4-a716-446655440000",
+        })
+      ).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+      });
+    });
   });
 
   describe("getUploadUrl", () => {
