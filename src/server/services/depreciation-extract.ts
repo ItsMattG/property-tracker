@@ -1,14 +1,28 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Lazy initialization to avoid issues during test imports
+let anthropicClient: Anthropic | null = null;
+let supabaseClient: SupabaseClient | null = null;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getAnthropic(): Anthropic {
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+  }
+  return anthropicClient;
+}
+
+function getSupabase(): SupabaseClient {
+  if (!supabaseClient) {
+    supabaseClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+  return supabaseClient;
+}
 
 export interface ExtractedAsset {
   assetName: string;
@@ -56,7 +70,7 @@ Rules:
  * Download PDF from Supabase storage and get as base64
  */
 async function getPdfContent(storagePath: string): Promise<string> {
-  const { data, error } = await supabase.storage
+  const { data, error } = await getSupabase().storage
     .from("documents")
     .download(storagePath);
 
@@ -77,7 +91,7 @@ export async function extractDepreciationSchedule(
   try {
     const pdfBase64 = await getPdfContent(storagePath);
 
-    const message = await anthropic.messages.create({
+    const message = await getAnthropic().messages.create({
       model: "claude-3-haiku-20240307",
       max_tokens: 4096,
       messages: [
