@@ -10,10 +10,9 @@ env:
   NODE_VERSION: "20"
 
 jobs:
-  lint-and-typecheck:
-    name: Lint & Type Check
+  setup:
+    name: Setup & Cache
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,13 +21,68 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: npm ci
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: [setup]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (fallback)
+        run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
 
       - name: Run ESLint
         run: npm run lint
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    needs: [setup]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (fallback)
+        run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
 
       - name: Run TypeScript type check
         run: npx tsc --noEmit
@@ -36,7 +90,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-
+    needs: [setup]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,19 +99,67 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
 
-      - name: Install dependencies
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (fallback)
         run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
 
-      - name: Run unit tests
-        run: npm run test:unit
+      - name: Run unit tests with coverage
+        run: npm run test:unit:coverage
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: [setup]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (fallback)
+        run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Check for critical vulnerabilities
+        run: |
+          CRITICAL=$(npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities.critical // 0')
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "::error::Found $CRITICAL critical vulnerabilities"
+            exit 1
+          fi
+          echo "No critical vulnerabilities found"
 
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, unit-tests]
-
+    needs: [lint, typecheck, unit-tests, security]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,26 +168,54 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
 
-      - name: Install dependencies
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
+      - name: Cache Next.js build
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-nextjs-
+
+      - name: Install dependencies (fallback)
         run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
 
       - name: Build
         run: npm run build
         env:
-          # Provide dummy env vars for build (no runtime needed)
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_dummy
           CLERK_SECRET_KEY: sk_test_dummy
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
-  e2e-tests:
-    name: E2E Tests
+  wait-for-vercel:
+    name: Wait for Vercel Preview
     runs-on: ubuntu-latest
     needs: [build]
-    # Only run E2E on main branch or when PR is ready
-    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    if: github.event_name == 'pull_request'
+    outputs:
+      preview_url: ${{ steps.vercel.outputs.url }}
+    steps:
+      - name: Wait for Vercel deployment
+        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
+        id: vercel
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          max_timeout: 300
+          check_interval: 10
 
+  e2e-tests-preview:
+    name: E2E Tests (Preview)
+    runs-on: ubuntu-latest
+    needs: [wait-for-vercel]
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -94,13 +224,88 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
 
-      - name: Install dependencies
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (fallback)
         run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+      - name: Install Playwright deps only
+        run: npx playwright install-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+
+      - name: Run E2E tests against preview
+        run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ needs.wait-for-vercel.outputs.preview_url }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+          E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  e2e-tests-main:
+    name: E2E Tests (Main)
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies (fallback)
+        run: npm ci
+        if: hashFiles('node_modules/.package-lock.json') == ''
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+      - name: Install Playwright deps only
+        run: npx playwright install-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
 
       - name: Run E2E tests
         run: npm run test:e2e
@@ -120,21 +325,55 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  # Add comment with deployment status
-  deployment-status:
-    name: Deployment Status
+  coverage-report:
+    name: Coverage Report
     runs-on: ubuntu-latest
-    needs: [e2e-tests]
+    needs: [unit-tests]
     if: github.event_name == 'pull_request'
-
     steps:
-      - name: Comment PR with deployment link
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Report coverage
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          json-summary-path: coverage/coverage-summary.json
+          json-final-path: coverage/coverage-final.json
+
+  status-comment:
+    name: Status Comment
+    runs-on: ubuntu-latest
+    needs: [e2e-tests-preview, coverage-report]
+    if: github.event_name == 'pull_request' && always()
+    steps:
+      - name: Comment PR with status
         uses: actions/github-script@v7
         with:
           script: |
+            const e2eResult = '${{ needs.e2e-tests-preview.result }}';
+            const coverageResult = '${{ needs.coverage-report.result }}';
+
+            let status = '✅';
+            let message = 'All checks passed!';
+
+            if (e2eResult === 'failure' || coverageResult === 'failure') {
+              status = '❌';
+              message = 'Some checks failed. Please review.';
+            } else if (e2eResult === 'skipped') {
+              status = '⏭️';
+              message = 'E2E tests skipped (draft PR).';
+            }
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ All checks passed! Preview deployment is available on Vercel.'
-            })
+              body: `${status} **CI Status**: ${message}\n\nPreview deployment is available on Vercel.`
+            });
