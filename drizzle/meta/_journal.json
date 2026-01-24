@@ -57,6 +57,13 @@
       "when": 1769261085434,
       "tag": "0007_dark_scarlet_spider",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1769262417067,
+      "tag": "0008_odd_sunset_bain",
+      "breakpoints": true
     }
   ]
 }
