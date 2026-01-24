@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import {
   userOnboarding,
   properties,
@@ -15,13 +15,13 @@ export const onboardingRouter = router({
   getProgress: protectedProcedure.query(async ({ ctx }) => {
     // Get or create onboarding record
     let onboarding = await ctx.db.query.userOnboarding.findFirst({
-      where: eq(userOnboarding.userId, ctx.user.id),
+      where: eq(userOnboarding.userId, ctx.portfolio.ownerId),
     });
 
     if (!onboarding) {
       const [created] = await ctx.db
         .insert(userOnboarding)
-        .values({ userId: ctx.user.id })
+        .values({ userId: ctx.portfolio.ownerId })
         .returning();
       onboarding = created;
     }
@@ -37,28 +37,28 @@ export const onboardingRouter = router({
       ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(properties)
-        .where(eq(properties.userId, ctx.user.id)),
+        .where(eq(properties.userId, ctx.portfolio.ownerId)),
       ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(bankAccounts)
-        .where(eq(bankAccounts.userId, ctx.user.id)),
+        .where(eq(bankAccounts.userId, ctx.portfolio.ownerId)),
       ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(transactions)
         .where(
           and(
-            eq(transactions.userId, ctx.user.id),
+            eq(transactions.userId, ctx.portfolio.ownerId),
             ne(transactions.category, "uncategorized")
           )
         ),
       ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(recurringTransactions)
-        .where(eq(recurringTransactions.userId, ctx.user.id)),
+        .where(eq(recurringTransactions.userId, ctx.portfolio.ownerId)),
       ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(propertyValues)
-        .where(eq(propertyValues.userId, ctx.user.id)),
+        .where(eq(propertyValues.userId, ctx.portfolio.ownerId)),
     ]);
 
     const counts: OnboardingCounts = {
@@ -80,37 +80,37 @@ export const onboardingRouter = router({
     };
   }),
 
-  dismissWizard: protectedProcedure.mutation(async ({ ctx }) => {
+  dismissWizard: writeProcedure.mutation(async ({ ctx }) => {
     const [updated] = await ctx.db
       .update(userOnboarding)
       .set({
         wizardDismissedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(userOnboarding.userId, ctx.user.id))
+      .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
       .returning();
 
     return updated;
   }),
 
-  dismissChecklist: protectedProcedure.mutation(async ({ ctx }) => {
+  dismissChecklist: writeProcedure.mutation(async ({ ctx }) => {
     const [updated] = await ctx.db
       .update(userOnboarding)
       .set({
         checklistDismissedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(eq(userOnboarding.userId, ctx.user.id))
+      .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
       .returning();
 
     return updated;
   }),
 
-  markStepComplete: protectedProcedure
+  markStepComplete: writeProcedure
     .input(z.object({ stepId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const onboarding = await ctx.db.query.userOnboarding.findFirst({
-        where: eq(userOnboarding.userId, ctx.user.id),
+        where: eq(userOnboarding.userId, ctx.portfolio.ownerId),
       });
 
       if (!onboarding) return null;
@@ -126,7 +126,7 @@ export const onboardingRouter = router({
           completedSteps: [...currentSteps, input.stepId],
           updatedAt: new Date(),
         })
-        .where(eq(userOnboarding.userId, ctx.user.id))
+        .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
         .returning();
 
       return updated;

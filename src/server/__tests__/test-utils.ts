@@ -34,10 +34,20 @@ export function createMockContext(overrides: {
   clerkId?: string | null;
   user?: MockUser | null;
 } = {}) {
+  const user = overrides.user ?? null;
   return {
     db: {} as any, // Will be mocked per test
     clerkId: overrides.clerkId ?? null,
-    user: overrides.user ?? null,
+    user,
+    portfolio: {
+      ownerId: user?.id ?? "user-1",
+      role: "owner" as const,
+      canWrite: true,
+      canManageMembers: true,
+      canManageBanks: true,
+      canViewAuditLog: true,
+      canUploadDocuments: true,
+    },
   };
 }
 

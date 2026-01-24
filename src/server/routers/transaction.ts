@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { transactions } from "../db/schema";
 import { eq, and, desc, gte, lte, inArray, sql, count } from "drizzle-orm";
 import { parseCSV } from "../services/csv-import";
@@ -49,7 +49,7 @@ export const transactionRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(transactions.userId, ctx.user.id)];
+      const conditions = [eq(transactions.userId, ctx.portfolio.ownerId)];
 
       if (input.propertyId) {
         conditions.push(eq(transactions.propertyId, input.propertyId));
@@ -96,7 +96,7 @@ export const transactionRouter = router({
       };
     }),
 
-  updateCategory: protectedProcedure
+  updateCategory: writeProcedure
     .input(
       z.object({
         id: z.string().uuid(),
@@ -109,7 +109,7 @@ export const transactionRouter = router({
       const existingTx = await ctx.db.query.transactions.findFirst({
         where: and(
           eq(transactions.id, input.id),
-          eq(transactions.userId, ctx.user.id)
+          eq(transactions.userId, ctx.portfolio.ownerId)
         ),
         columns: { category: true },
       });
@@ -153,7 +153,7 @@ export const transactionRouter = router({
           updatedAt: new Date(),
         })
         .where(
-          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.user.id))
+          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.portfolio.ownerId))
         )
         .returning();
 
@@ -165,7 +165,7 @@ export const transactionRouter = router({
       return transaction;
     }),
 
-  bulkUpdateCategory: protectedProcedure
+  bulkUpdateCategory: writeProcedure
     .input(
       z.object({
         ids: z.array(z.string().uuid()),
@@ -214,20 +214,20 @@ export const transactionRouter = router({
         .where(
           and(
             inArray(transactions.id, input.ids),
-            eq(transactions.userId, ctx.user.id)
+            eq(transactions.userId, ctx.portfolio.ownerId)
           )
         );
 
       return { success: true, count: input.ids.length };
     }),
 
-  toggleVerified: protectedProcedure
+  toggleVerified: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       const existing = await ctx.db.query.transactions.findFirst({
         where: and(
           eq(transactions.id, input.id),
-          eq(transactions.userId, ctx.user.id)
+          eq(transactions.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -247,7 +247,7 @@ export const transactionRouter = router({
       return transaction;
     }),
 
-  updateNotes: protectedProcedure
+  updateNotes: writeProcedure
     .input(z.object({ id: z.string().uuid(), notes: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const [transaction] = await ctx.db
@@ -257,14 +257,14 @@ export const transactionRouter = router({
           updatedAt: new Date(),
         })
         .where(
-          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.user.id))
+          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.portfolio.ownerId))
         )
         .returning();
 
       return transaction;
     }),
 
-  create: protectedProcedure
+  create: writeProcedure
     .input(
       z.object({
         propertyId: z.string().uuid(),
@@ -307,7 +307,7 @@ export const transactionRouter = router({
       const [transaction] = await ctx.db
         .insert(transactions)
         .values({
-          userId: ctx.user.id,
+          userId: ctx.portfolio.ownerId,
           propertyId: input.propertyId,
           date: input.date,
           description: input.description,
@@ -322,19 +322,19 @@ export const transactionRouter = router({
       return transaction;
     }),
 
-  delete: protectedProcedure
+  delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .delete(transactions)
         .where(
-          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.user.id))
+          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.portfolio.ownerId))
         );
 
       return { success: true };
     }),
 
-  importCSV: protectedProcedure
+  importCSV: writeProcedure
     .input(
       z.object({
         propertyId: z.string().uuid(),
@@ -352,7 +352,7 @@ export const transactionRouter = router({
           const [transaction] = await ctx.db
             .insert(transactions)
             .values({
-              userId: ctx.user.id,
+              userId: ctx.portfolio.ownerId,
               propertyId: input.propertyId,
               date: row.date,
               description: row.description,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { documents, properties, transactions } from "../db/schema";
 import { eq, and, or } from "drizzle-orm";
 import { supabaseAdmin } from "@/lib/supabase/server";
@@ -18,7 +18,7 @@ export const documentsRouter = router({
   /**
    * Get a signed upload URL for direct upload to Supabase Storage
    */
-  getUploadUrl: protectedProcedure
+  getUploadUrl: writeProcedure
     .input(
       z.object({
         fileName: z.string().min(1),
@@ -44,7 +44,7 @@ export const documentsRouter = router({
         const property = await ctx.db.query.properties.findFirst({
           where: and(
             eq(properties.id, propertyId),
-            eq(properties.userId, ctx.user.id)
+            eq(properties.userId, ctx.portfolio.ownerId)
           ),
         });
 
@@ -60,7 +60,7 @@ export const documentsRouter = router({
         const transaction = await ctx.db.query.transactions.findFirst({
           where: and(
             eq(transactions.id, transactionId),
-            eq(transactions.userId, ctx.user.id)
+            eq(transactions.userId, ctx.portfolio.ownerId)
           ),
         });
 
@@ -76,7 +76,7 @@ export const documentsRouter = router({
       const entityId = propertyId || transactionId;
       const timestamp = Date.now();
       const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const storagePath = `${ctx.user.id}/${entityId}/${timestamp}-${sanitizedFileName}`;
+      const storagePath = `${ctx.portfolio.ownerId}/${entityId}/${timestamp}-${sanitizedFileName}`;
 
       // Create signed upload URL
       const { data, error } = await supabaseAdmin.storage
@@ -101,7 +101,7 @@ export const documentsRouter = router({
   /**
    * Create document record after successful upload
    */
-  create: protectedProcedure
+  create: writeProcedure
     .input(
       z.object({
         storagePath: z.string().min(1),
@@ -141,7 +141,7 @@ export const documentsRouter = router({
         const property = await ctx.db.query.properties.findFirst({
           where: and(
             eq(properties.id, propertyId),
-            eq(properties.userId, ctx.user.id)
+            eq(properties.userId, ctx.portfolio.ownerId)
           ),
         });
 
@@ -157,7 +157,7 @@ export const documentsRouter = router({
         const transaction = await ctx.db.query.transactions.findFirst({
           where: and(
             eq(transactions.id, transactionId),
-            eq(transactions.userId, ctx.user.id)
+            eq(transactions.userId, ctx.portfolio.ownerId)
           ),
         });
 
@@ -173,7 +173,7 @@ export const documentsRouter = router({
       const [document] = await ctx.db
         .insert(documents)
         .values({
-          userId: ctx.user.id,
+          userId: ctx.portfolio.ownerId,
           propertyId,
           transactionId,
           fileName,
@@ -205,7 +205,7 @@ export const documentsRouter = router({
       let whereClause;
       if (propertyId && transactionId) {
         whereClause = and(
-          eq(documents.userId, ctx.user.id),
+          eq(documents.userId, ctx.portfolio.ownerId),
           or(
             eq(documents.propertyId, propertyId),
             eq(documents.transactionId, transactionId)
@@ -213,17 +213,17 @@ export const documentsRouter = router({
         );
       } else if (propertyId) {
         whereClause = and(
-          eq(documents.userId, ctx.user.id),
+          eq(documents.userId, ctx.portfolio.ownerId),
           eq(documents.propertyId, propertyId)
         );
       } else if (transactionId) {
         whereClause = and(
-          eq(documents.userId, ctx.user.id),
+          eq(documents.userId, ctx.portfolio.ownerId),
           eq(documents.transactionId, transactionId)
         );
       } else {
         // Return all user documents
-        whereClause = eq(documents.userId, ctx.user.id);
+        whereClause = eq(documents.userId, ctx.portfolio.ownerId);
       }
 
       const docs = await ctx.db.query.documents.findMany({
@@ -252,14 +252,14 @@ export const documentsRouter = router({
   /**
    * Delete a document (removes from storage + database)
    */
-  delete: protectedProcedure
+  delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Find document and verify ownership
       const document = await ctx.db.query.documents.findFirst({
         where: and(
           eq(documents.id, input.id),
-          eq(documents.userId, ctx.user.id)
+          eq(documents.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -298,7 +298,7 @@ export const documentsRouter = router({
       const document = await ctx.db.query.documents.findFirst({
         where: and(
           eq(documents.id, input.id),
-          eq(documents.userId, ctx.user.id)
+          eq(documents.userId, ctx.portfolio.ownerId)
         ),
       });
 

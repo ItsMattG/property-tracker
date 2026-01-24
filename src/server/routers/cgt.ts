@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { properties, transactions, propertySales } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import {
@@ -22,7 +22,7 @@ export const cgtRouter = router({
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, propertyId),
-          eq(properties.userId, ctx.user.id)
+          eq(properties.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -37,7 +37,7 @@ export const cgtRouter = router({
       const allTxns = await ctx.db.query.transactions.findMany({
         where: and(
           eq(transactions.propertyId, propertyId),
-          eq(transactions.userId, ctx.user.id)
+          eq(transactions.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -80,7 +80,7 @@ export const cgtRouter = router({
 
       // Get all properties
       let userProperties = await ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ctx.user.id),
+        where: eq(properties.userId, ctx.portfolio.ownerId),
         with: {
           sales: true,
         },
@@ -95,7 +95,7 @@ export const cgtRouter = router({
 
       // Get all capital transactions for the user
       const allTxns = await ctx.db.query.transactions.findMany({
-        where: eq(transactions.userId, ctx.user.id),
+        where: eq(transactions.userId, ctx.portfolio.ownerId),
       });
 
       // Build summary for each property
@@ -151,7 +151,7 @@ export const cgtRouter = router({
   /**
    * Record a property sale and archive the property
    */
-  recordSale: protectedProcedure
+  recordSale: writeProcedure
     .input(
       z.object({
         propertyId: z.string().uuid(),
@@ -171,7 +171,7 @@ export const cgtRouter = router({
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, propertyId),
-          eq(properties.userId, ctx.user.id)
+          eq(properties.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -202,7 +202,7 @@ export const cgtRouter = router({
       const allTxns = await ctx.db.query.transactions.findMany({
         where: and(
           eq(transactions.propertyId, propertyId),
-          eq(transactions.userId, ctx.user.id)
+          eq(transactions.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -232,7 +232,7 @@ export const cgtRouter = router({
         .insert(propertySales)
         .values({
           propertyId,
-          userId: ctx.user.id,
+          userId: ctx.portfolio.ownerId,
           salePrice,
           settlementDate,
           contractDate,
@@ -272,7 +272,7 @@ export const cgtRouter = router({
       const sale = await ctx.db.query.propertySales.findFirst({
         where: and(
           eq(propertySales.propertyId, input.propertyId),
-          eq(propertySales.userId, ctx.user.id)
+          eq(propertySales.userId, ctx.portfolio.ownerId)
         ),
         with: {
           property: true,
@@ -321,7 +321,7 @@ export const cgtRouter = router({
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.user.id)
+          eq(properties.userId, ctx.portfolio.ownerId)
         ),
       });
 
@@ -336,7 +336,7 @@ export const cgtRouter = router({
       const potentialCosts = await ctx.db.query.transactions.findMany({
         where: and(
           eq(transactions.propertyId, input.propertyId),
-          eq(transactions.userId, ctx.user.id)
+          eq(transactions.userId, ctx.portfolio.ownerId)
         ),
         orderBy: (t, { desc }) => [desc(t.date)],
       });

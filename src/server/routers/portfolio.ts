@@ -30,7 +30,7 @@ export const portfolioRouter = router({
 
       // Get filtered properties
       let propertyList = await ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ctx.user.id),
+        where: eq(properties.userId, ctx.portfolio.ownerId),
       });
 
       // Apply filters
@@ -61,7 +61,7 @@ export const portfolioRouter = router({
       // Get latest values for each property
       const allValues = await ctx.db.query.propertyValues.findMany({
         where: and(
-          eq(propertyValues.userId, ctx.user.id),
+          eq(propertyValues.userId, ctx.portfolio.ownerId),
           inArray(propertyValues.propertyId, propertyIds)
         ),
         orderBy: [desc(propertyValues.valueDate)],
@@ -78,7 +78,7 @@ export const portfolioRouter = router({
       // Get all loans
       const allLoans = await ctx.db.query.loans.findMany({
         where: and(
-          eq(loans.userId, ctx.user.id),
+          eq(loans.userId, ctx.portfolio.ownerId),
           inArray(loans.propertyId, propertyIds)
         ),
       });
@@ -93,7 +93,7 @@ export const portfolioRouter = router({
       // Get transactions in period
       const periodTransactions = await ctx.db.query.transactions.findMany({
         where: and(
-          eq(transactions.userId, ctx.user.id),
+          eq(transactions.userId, ctx.portfolio.ownerId),
           gte(transactions.date, startDate.toISOString().split("T")[0]),
           lte(transactions.date, endDate.toISOString().split("T")[0])
         ),
@@ -148,7 +148,7 @@ export const portfolioRouter = router({
 
       // Get filtered properties
       let propertyList = await ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ctx.user.id),
+        where: eq(properties.userId, ctx.portfolio.ownerId),
       });
 
       if (input.state) {
@@ -170,7 +170,7 @@ export const portfolioRouter = router({
       // Get latest values
       const allValues = await ctx.db.query.propertyValues.findMany({
         where: and(
-          eq(propertyValues.userId, ctx.user.id),
+          eq(propertyValues.userId, ctx.portfolio.ownerId),
           inArray(propertyValues.propertyId, propertyIds)
         ),
         orderBy: [desc(propertyValues.valueDate)],
@@ -186,7 +186,7 @@ export const portfolioRouter = router({
       // Get all loans
       const allLoans = await ctx.db.query.loans.findMany({
         where: and(
-          eq(loans.userId, ctx.user.id),
+          eq(loans.userId, ctx.portfolio.ownerId),
           inArray(loans.propertyId, propertyIds)
         ),
       });
@@ -200,7 +200,7 @@ export const portfolioRouter = router({
       // Get transactions in period
       const periodTransactions = await ctx.db.query.transactions.findMany({
         where: and(
-          eq(transactions.userId, ctx.user.id),
+          eq(transactions.userId, ctx.portfolio.ownerId),
           gte(transactions.date, startDate.toISOString().split("T")[0]),
           lte(transactions.date, endDate.toISOString().split("T")[0])
         ),

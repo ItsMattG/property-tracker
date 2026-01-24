@@ -23,7 +23,7 @@ export const reportsRouter = router({
         maxDate: sql<string>`MAX(${transactions.date})`,
       })
       .from(transactions)
-      .where(eq(transactions.userId, ctx.user.id));
+      .where(eq(transactions.userId, ctx.portfolio.ownerId));
 
     const minDate = result[0]?.minDate;
     const maxDate = result[0]?.maxDate;
@@ -68,7 +68,7 @@ export const reportsRouter = router({
         const property = await ctx.db.query.properties.findFirst({
           where: and(
             eq(properties.id, propertyId),
-            eq(properties.userId, ctx.user.id)
+            eq(properties.userId, ctx.portfolio.ownerId)
           ),
         });
         if (!property) {
@@ -81,12 +81,12 @@ export const reportsRouter = router({
 
       // Get all user properties
       const userProperties = await ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ctx.user.id),
+        where: eq(properties.userId, ctx.portfolio.ownerId),
       });
 
       // Get transactions for the financial year
       const txns = await getFinancialYearTransactions(
-        ctx.user.id,
+        ctx.portfolio.ownerId,
         year,
         propertyId
       );
@@ -163,7 +163,7 @@ export const reportsRouter = router({
       const { period, months } = input;
 
       // Get properties with loans
-      const userProperties = await getPropertiesWithLoans(ctx.user.id);
+      const userProperties = await getPropertiesWithLoans(ctx.portfolio.ownerId);
 
       // Calculate date range
       const endDate = new Date();
@@ -173,7 +173,7 @@ export const reportsRouter = router({
       // Get transactions in range
       const txns = await ctx.db.query.transactions.findMany({
         where: and(
-          eq(transactions.userId, ctx.user.id),
+          eq(transactions.userId, ctx.portfolio.ownerId),
           gte(transactions.date, startDate.toISOString().split("T")[0]),
           lte(transactions.date, endDate.toISOString().split("T")[0])
         ),
