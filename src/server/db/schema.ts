@@ -160,6 +160,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "anomaly_critical",
   "anomaly_warning",
   "weekly_digest",
+  "eofy_suggestions",
 ]);
 
 export const notificationChannelEnum = pgEnum("notification_channel", [

@@ -10,7 +10,8 @@ export type NotificationType =
   | "sync_failed"
   | "anomaly_critical"
   | "anomaly_warning"
-  | "weekly_digest";
+  | "weekly_digest"
+  | "eofy_suggestions";
 
 export type NotificationChannel = "email" | "push";
 
