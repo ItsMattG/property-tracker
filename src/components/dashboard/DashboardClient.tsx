@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { SetupChecklist } from "@/components/onboarding/SetupChecklist";
+import { PushPermissionBanner } from "@/components/notifications/PushPermissionBanner";
 
 interface DashboardStats {
   propertyCount: number;
@@ -92,6 +93,8 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
           tax reports.
         </p>
       </div>
+
+      <PushPermissionBanner />
 
       {showChecklist && onboarding?.progress && (
         <SetupChecklist progress={onboarding.progress} />
