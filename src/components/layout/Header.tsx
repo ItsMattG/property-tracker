@@ -2,6 +2,7 @@
 
 import { UserButton } from "@clerk/nextjs";
 import { QuickAddButton } from "./QuickAddButton";
+import { AlertBadge } from "@/components/alerts/AlertBadge";
 
 export function Header() {
   return (
@@ -10,6 +11,7 @@ export function Header() {
         <h1 className="text-lg font-semibold">Dashboard</h1>
       </div>
       <div className="flex items-center gap-4">
+        <AlertBadge />
         <QuickAddButton />
         <UserButton afterSignOutUrl="/" />
       </div>
