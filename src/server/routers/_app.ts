@@ -12,6 +12,7 @@ import { propertyValueRouter } from "./propertyValue";
 import { portfolioRouter } from "./portfolio";
 import { onboardingRouter } from "./onboarding";
 import { anomalyRouter } from "./anomaly";
+import { forecastRouter } from "./forecast";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -27,6 +28,7 @@ export const appRouter = router({
   portfolio: portfolioRouter,
   onboarding: onboardingRouter,
   anomaly: anomalyRouter,
+  forecast: forecastRouter,
 });
 
 export type AppRouter = typeof appRouter;
