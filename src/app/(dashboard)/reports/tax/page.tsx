@@ -13,7 +13,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc/client";
 import { TaxReportView } from "@/components/reports/TaxReportView";
-import { FileText, Download, Loader2 } from "lucide-react";
+import { SuggestionList } from "@/components/tax/SuggestionList";
+import { DepreciationUpload } from "@/components/tax/DepreciationUpload";
+import { FileText, Download, Loader2, Lightbulb } from "lucide-react";
 
 export default function TaxReportPage() {
   const currentYear = new Date().getMonth() >= 6
@@ -27,6 +29,8 @@ export default function TaxReportPage() {
     trpc.reports.getAvailableYears.useQuery();
 
   const { data: properties } = trpc.property.list.useQuery();
+
+  const { data: suggestionCount } = trpc.taxOptimization.getSuggestionCount.useQuery();
 
   const {
     data: taxReport,
@@ -48,6 +52,34 @@ export default function TaxReportPage() {
           Generate ATO-compliant rental property tax reports
         </p>
       </div>
+
+      {/* Tax Optimization Suggestions */}
+      {suggestionCount && suggestionCount.count > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-amber-500" />
+              Tax Optimization Suggestions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SuggestionList />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Depreciation Schedules */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Depreciation Schedules</CardTitle>
+            <DepreciationUpload />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <DepreciationSchedulesList />
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Card>
@@ -149,6 +181,45 @@ export default function TaxReportPage() {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function DepreciationSchedulesList() {
+  const { data: schedules, isLoading } =
+    trpc.taxOptimization.getDepreciationSchedules.useQuery({});
+
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground">Loading...</p>;
+  }
+
+  if (!schedules || schedules.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No depreciation schedules uploaded yet. Upload a quantity surveyor report to track depreciation.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {schedules.map((schedule) => (
+        <div
+          key={schedule.id}
+          className="flex items-center justify-between p-3 border rounded-lg"
+        >
+          <div>
+            <p className="font-medium">{schedule.property?.address}</p>
+            <p className="text-sm text-muted-foreground">
+              {schedule.assets?.length || 0} assets • $
+              {parseFloat(schedule.totalValue).toLocaleString()} total
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Effective {schedule.effectiveDate}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }
