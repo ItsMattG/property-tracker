@@ -136,6 +136,19 @@ export const alertStatusEnum = pgEnum("alert_status", [
   "resolved",
 ]);
 
+export const anomalyAlertTypeEnum = pgEnum("anomaly_alert_type", [
+  "missed_rent",
+  "unusual_amount",
+  "unexpected_expense",
+  "duplicate_transaction",
+]);
+
+export const anomalySeverityEnum = pgEnum("anomaly_severity", [
+  "info",
+  "warning",
+  "critical",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -443,6 +456,47 @@ export const connectionAlerts = pgTable(
   ]
 );
 
+export const anomalyAlerts = pgTable(
+  "anomaly_alerts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "cascade",
+    }),
+    alertType: anomalyAlertTypeEnum("alert_type").notNull(),
+    severity: anomalySeverityEnum("severity").notNull(),
+    transactionId: uuid("transaction_id").references(() => transactions.id, {
+      onDelete: "set null",
+    }),
+    recurringId: uuid("recurring_id").references(() => recurringTransactions.id, {
+      onDelete: "set null",
+    }),
+    expectedTransactionId: uuid("expected_transaction_id").references(
+      () => expectedTransactions.id,
+      { onDelete: "set null" }
+    ),
+    description: text("description").notNull(),
+    suggestedAction: text("suggested_action"),
+    metadata: text("metadata"), // JSON string
+    status: alertStatusEnum("status").default("active").notNull(),
+    dismissalCount: decimal("dismissal_count", { precision: 3, scale: 0 })
+      .default("0")
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    dismissedAt: timestamp("dismissed_at"),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (table) => [
+    index("anomaly_alerts_user_id_idx").on(table.userId),
+    index("anomaly_alerts_property_id_idx").on(table.propertyId),
+    index("anomaly_alerts_status_idx").on(table.status),
+    index("anomaly_alerts_created_at_idx").on(table.createdAt),
+  ]
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
@@ -596,6 +650,29 @@ export const connectionAlertsRelations = relations(connectionAlerts, ({ one }) =
   }),
 }));
 
+export const anomalyAlertsRelations = relations(anomalyAlerts, ({ one }) => ({
+  user: one(users, {
+    fields: [anomalyAlerts.userId],
+    references: [users.id],
+  }),
+  property: one(properties, {
+    fields: [anomalyAlerts.propertyId],
+    references: [properties.id],
+  }),
+  transaction: one(transactions, {
+    fields: [anomalyAlerts.transactionId],
+    references: [transactions.id],
+  }),
+  recurringTransaction: one(recurringTransactions, {
+    fields: [anomalyAlerts.recurringId],
+    references: [recurringTransactions.id],
+  }),
+  expectedTransaction: one(expectedTransactions, {
+    fields: [anomalyAlerts.expectedTransactionId],
+    references: [expectedTransactions.id],
+  }),
+}));
+
 export const userOnboarding = pgTable("user_onboarding", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
@@ -641,3 +718,5 @@ export type ConnectionAlert = typeof connectionAlerts.$inferSelect;
 export type NewConnectionAlert = typeof connectionAlerts.$inferInsert;
 export type UserOnboarding = typeof userOnboarding.$inferSelect;
 export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
+export type AnomalyAlert = typeof anomalyAlerts.$inferSelect;
+export type NewAnomalyAlert = typeof anomalyAlerts.$inferInsert;
