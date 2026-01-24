@@ -1,8 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EquityDonutChart } from "./EquityDonutChart";
-import { CashFlowBarChart } from "./CashFlowBarChart";
 import {
   Table,
   TableBody,
@@ -14,6 +13,28 @@ import {
 import Link from "next/link";
 import { Building2, DollarSign, TrendingUp, Percent, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const EquityDonutChart = dynamic(
+  () =>
+    import("./EquityDonutChart").then((m) => ({ default: m.EquityDonutChart })),
+  {
+    loading: () => (
+      <div className="h-[300px] bg-muted animate-pulse rounded" />
+    ),
+    ssr: false,
+  }
+);
+
+const CashFlowBarChart = dynamic(
+  () =>
+    import("./CashFlowBarChart").then((m) => ({ default: m.CashFlowBarChart })),
+  {
+    loading: () => (
+      <div className="h-[300px] bg-muted animate-pulse rounded" />
+    ),
+    ssr: false,
+  }
+);
 
 interface PortfolioSummary {
   propertyCount: number;

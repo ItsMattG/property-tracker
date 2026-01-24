@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc/client";
-import { CashFlowChart } from "@/components/reports/CashFlowChart";
 import {
   TrendingUp,
   TrendingDown,
@@ -19,6 +19,19 @@ import {
   Building2,
   Loader2,
 } from "lucide-react";
+
+const CashFlowChart = dynamic(
+  () =>
+    import("@/components/reports/CashFlowChart").then((m) => ({
+      default: m.CashFlowChart,
+    })),
+  {
+    loading: () => (
+      <div className="h-[300px] bg-muted animate-pulse rounded" />
+    ),
+    ssr: false,
+  }
+);
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-AU", {
