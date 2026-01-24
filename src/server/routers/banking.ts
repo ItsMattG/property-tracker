@@ -6,6 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { checkRateLimit, mapBasiqErrorToAlertType, mapAlertTypeToConnectionStatus } from "../services/sync";
 import { shouldCreateAlert } from "../services/alerts";
 import { basiqService } from "../services/basiq";
+import { metrics } from "@/lib/metrics";
 
 export const bankingRouter = router({
   listAccounts: protectedProcedure.query(async ({ ctx }) => {
@@ -133,6 +134,9 @@ export const bankingRouter = router({
             )
           );
 
+        // Track successful sync for monitoring
+        metrics.bankSyncSuccess(input.accountId, transactionsAdded);
+
         return { success: true, transactionsAdded };
       } catch (error) {
         // Determine error type and create alert
@@ -167,6 +171,9 @@ export const bankingRouter = router({
             errorMessage,
           });
         }
+
+        // Track failed sync for monitoring
+        metrics.bankSyncFailed(input.accountId, errorMessage);
 
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

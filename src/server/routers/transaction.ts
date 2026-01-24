@@ -3,6 +3,7 @@ import { router, protectedProcedure } from "../trpc";
 import { transactions } from "../db/schema";
 import { eq, and, desc, gte, lte, inArray, sql, count } from "drizzle-orm";
 import { parseCSV } from "../services/csv-import";
+import { metrics } from "@/lib/metrics";
 
 const categoryValues = [
   "rental_income",
@@ -104,6 +105,15 @@ export const transactionRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Get existing transaction to track category changes
+      const existingTx = await ctx.db.query.transactions.findFirst({
+        where: and(
+          eq(transactions.id, input.id),
+          eq(transactions.userId, ctx.user.id)
+        ),
+        columns: { category: true },
+      });
+
       // Determine transaction type and deductibility based on category
       const incomeCategories = ["rental_income", "other_rental_income"];
       const capitalCategories = [
@@ -146,6 +156,11 @@ export const transactionRouter = router({
           and(eq(transactions.id, input.id), eq(transactions.userId, ctx.user.id))
         )
         .returning();
+
+      // Track category override for monitoring
+      if (existingTx && existingTx.category !== input.category) {
+        metrics.categorizationOverride(input.id, existingTx.category, input.category);
+      }
 
       return transaction;
     }),

@@ -71,6 +71,9 @@ describe("transaction router", () => {
       });
 
       ctx.db.update = updateMock;
+      ctx.db.query.transactions = {
+        findFirst: vi.fn().mockResolvedValue({ category: "uncategorized" }),
+      };
 
       const caller = createTestCaller(ctx);
       const result = await caller.transaction.updateCategory({
