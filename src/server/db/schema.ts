@@ -73,6 +73,17 @@ export const transactionTypeEnum = pgEnum("transaction_type", [
   "personal",
 ]);
 
+export const loanTypeEnum = pgEnum("loan_type", [
+  "principal_and_interest",
+  "interest_only",
+]);
+
+export const rateTypeEnum = pgEnum("rate_type", [
+  "variable",
+  "fixed",
+  "split",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -141,6 +152,31 @@ export const transactions = pgTable("transactions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const loans = pgTable("loans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  propertyId: uuid("property_id")
+    .references(() => properties.id, { onDelete: "cascade" })
+    .notNull(),
+  lender: text("lender").notNull(),
+  accountNumberMasked: text("account_number_masked"),
+  loanType: loanTypeEnum("loan_type").notNull(),
+  rateType: rateTypeEnum("rate_type").notNull(),
+  originalAmount: decimal("original_amount", { precision: 12, scale: 2 }).notNull(),
+  currentBalance: decimal("current_balance", { precision: 12, scale: 2 }).notNull(),
+  interestRate: decimal("interest_rate", { precision: 5, scale: 2 }).notNull(),
+  fixedRateExpiry: date("fixed_rate_expiry"),
+  repaymentAmount: decimal("repayment_amount", { precision: 12, scale: 2 }).notNull(),
+  repaymentFrequency: text("repayment_frequency").notNull(),
+  offsetAccountId: uuid("offset_account_id").references(() => bankAccounts.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
@@ -155,6 +191,7 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
   }),
   transactions: many(transactions),
   bankAccounts: many(bankAccounts),
+  loans: many(loans),
 }));
 
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
@@ -184,6 +221,21 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
   }),
 }));
 
+export const loansRelations = relations(loans, ({ one }) => ({
+  user: one(users, {
+    fields: [loans.userId],
+    references: [users.id],
+  }),
+  property: one(properties, {
+    fields: [loans.propertyId],
+    references: [properties.id],
+  }),
+  offsetAccount: one(bankAccounts, {
+    fields: [loans.offsetAccountId],
+    references: [bankAccounts.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -193,3 +245,5 @@ export type BankAccount = typeof bankAccounts.$inferSelect;
 export type NewBankAccount = typeof bankAccounts.$inferInsert;
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
+export type Loan = typeof loans.$inferSelect;
+export type NewLoan = typeof loans.$inferInsert;
