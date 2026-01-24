@@ -17,7 +17,9 @@ import {
   Settings,
   Users,
   History,
+  Sparkles,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
 
 const navItems = [
@@ -26,6 +28,7 @@ const navItems = [
   { href: "/portfolio", label: "Portfolio", icon: PieChart },
   { href: "/properties", label: "Properties", icon: Building2 },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
+  { href: "/transactions/review", label: "Review", icon: Sparkles, showBadge: true },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/reports/forecast", label: "Forecast", icon: TrendingUp },
   { href: "/banking", label: "Banking", icon: Landmark },
@@ -41,6 +44,7 @@ const settingsItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: pendingCount } = trpc.categorization.getPendingCount.useQuery();
 
   return (
     <aside className="w-64 border-r border-border bg-card min-h-screen p-4">
@@ -59,6 +63,7 @@ export function Sidebar() {
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
+          const showBadge = "showBadge" in item && item.showBadge && pendingCount?.count && pendingCount.count > 0;
 
           return (
             <Link
@@ -73,6 +78,11 @@ export function Sidebar() {
             >
               <Icon className="w-5 h-5" />
               {item.label}
+              {showBadge && (
+                <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                  {pendingCount.count > 99 ? "99+" : pendingCount.count}
+                </span>
+              )}
             </Link>
           );
         })}
