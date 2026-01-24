@@ -15,6 +15,7 @@ import {
   Bell,
   TrendingUp,
   Settings,
+  Users,
 } from "lucide-react";
 
 const navItems = [
@@ -32,6 +33,7 @@ const navItems = [
 
 const settingsItems = [
   { href: "/settings/notifications", label: "Notifications", icon: Bell },
+  { href: "/settings/team", label: "Team", icon: Users },
 ];
 
 export function Sidebar() {
