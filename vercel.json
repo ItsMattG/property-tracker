@@ -1,0 +1,28 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "regions": ["syd1"],
+  "env": {
+    "NEXT_PUBLIC_APP_URL": "https://propertytracker.vercel.app"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/sync-banks",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}
