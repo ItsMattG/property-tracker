@@ -11,10 +11,12 @@ import {
   Landmark,
   Wallet,
   FileDown,
+  PieChart,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/portfolio", label: "Portfolio", icon: PieChart },
   { href: "/properties", label: "Properties", icon: Building2 },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/reports", label: "Reports", icon: BarChart3 },
