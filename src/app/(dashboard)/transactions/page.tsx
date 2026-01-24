@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
+import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
 import { trpc } from "@/lib/trpc/client";
 import { ArrowLeftRight } from "lucide-react";
 
@@ -80,11 +81,14 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Transactions</h2>
-        <p className="text-muted-foreground">
-          Review and categorize your transactions
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Transactions</h2>
+          <p className="text-muted-foreground">
+            Review and categorize your transactions
+          </p>
+        </div>
+        <AddTransactionDialog onSuccess={() => refetch()} />
       </div>
 
       <TransactionFilters
