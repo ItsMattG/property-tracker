@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure, bankProcedure } from "../trpc";
 import { anomalyAlerts, bankAccounts, connectionAlerts, transactions } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { batchCategorize } from "../services/categorization";
 import { TRPCError } from "@trpc/server";
 import { checkRateLimit, mapBasiqErrorToAlertType, mapAlertTypeToConnectionStatus } from "../services/sync";
 import { shouldCreateAlert } from "../services/alerts";
@@ -183,6 +184,29 @@ export const bankingRouter = router({
                 ...unexpectedResult,
               });
             }
+          }
+
+          // Run AI categorization on new uncategorized transactions
+          const uncategorizedTxns = await ctx.db.query.transactions.findMany({
+            where: and(
+              eq(transactions.userId, ctx.portfolio.ownerId),
+              eq(transactions.bankAccountId, account.id),
+              eq(transactions.category, "uncategorized"),
+              sql`${transactions.suggestionStatus} IS NULL`
+            ),
+            orderBy: [desc(transactions.createdAt)],
+            limit: 50,
+          });
+
+          if (uncategorizedTxns.length > 0) {
+            await batchCategorize(
+              ctx.portfolio.ownerId,
+              uncategorizedTxns.map((t) => ({
+                id: t.id,
+                description: t.description,
+                amount: parseFloat(t.amount),
+              }))
+            );
           }
         }
 

@@ -15,6 +15,7 @@ import { anomalyRouter } from "./anomaly";
 import { forecastRouter } from "./forecast";
 import { notificationRouter } from "./notification";
 import { teamRouter } from "./team";
+import { categorizationRouter } from "./categorization";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -33,6 +34,7 @@ export const appRouter = router({
   forecast: forecastRouter,
   notification: notificationRouter,
   team: teamRouter,
+  categorization: categorizationRouter,
 });
 
 export type AppRouter = typeof appRouter;

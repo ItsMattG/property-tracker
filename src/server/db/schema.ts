@@ -196,6 +196,12 @@ export const auditActionEnum = pgEnum("audit_action", [
   "bank_disconnected",
 ]);
 
+export const suggestionStatusEnum = pgEnum("suggestion_status", [
+  "pending",
+  "accepted",
+  "rejected",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -271,6 +277,9 @@ export const transactions = pgTable(
     isDeductible: boolean("is_deductible").default(false).notNull(),
     isVerified: boolean("is_verified").default(false).notNull(),
     notes: text("notes"),
+    suggestedCategory: categoryEnum("suggested_category"),
+    suggestionConfidence: decimal("suggestion_confidence", { precision: 5, scale: 2 }),
+    suggestionStatus: suggestionStatusEnum("suggestion_status"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -1003,6 +1012,57 @@ export const auditLogRelations = relations(auditLog, ({ one }) => ({
   }),
 }));
 
+export const merchantCategories = pgTable(
+  "merchant_categories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    merchantName: text("merchant_name").notNull(),
+    category: categoryEnum("category").notNull(),
+    confidence: decimal("confidence", { precision: 5, scale: 2 }).default("80.00").notNull(),
+    usageCount: decimal("usage_count", { precision: 8, scale: 0 }).default("1").notNull(),
+    lastUsedAt: timestamp("last_used_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("merchant_categories_user_id_idx").on(table.userId),
+    index("merchant_categories_merchant_name_idx").on(table.merchantName),
+  ]
+);
+
+export const categorizationExamples = pgTable(
+  "categorization_examples",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    description: text("description").notNull(),
+    category: categoryEnum("category").notNull(),
+    wasCorrection: boolean("was_correction").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("categorization_examples_user_id_idx").on(table.userId),
+  ]
+);
+
+export const merchantCategoriesRelations = relations(merchantCategories, ({ one }) => ({
+  user: one(users, {
+    fields: [merchantCategories.userId],
+    references: [users.id],
+  }),
+}));
+
+export const categorizationExamplesRelations = relations(categorizationExamples, ({ one }) => ({
+  user: one(users, {
+    fields: [categorizationExamples.userId],
+    references: [users.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -1046,3 +1106,7 @@ export type PortfolioInvite = typeof portfolioInvites.$inferSelect;
 export type NewPortfolioInvite = typeof portfolioInvites.$inferInsert;
 export type AuditLogEntry = typeof auditLog.$inferSelect;
 export type NewAuditLogEntry = typeof auditLog.$inferInsert;
+export type MerchantCategory = typeof merchantCategories.$inferSelect;
+export type NewMerchantCategory = typeof merchantCategories.$inferInsert;
+export type CategorizationExample = typeof categorizationExamples.$inferSelect;
+export type NewCategorizationExample = typeof categorizationExamples.$inferInsert;
