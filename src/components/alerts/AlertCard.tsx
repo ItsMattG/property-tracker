@@ -16,7 +16,8 @@ import Link from "next/link";
 import type { AnomalyAlert } from "@/server/db/schema";
 
 type AlertCardProps = {
-  alert: AnomalyAlert & {
+  alert: Omit<AnomalyAlert, 'createdAt'> & {
+    createdAt: Date | string;
     property?: { address: string } | null;
     transaction?: { id: string } | null;
   };
