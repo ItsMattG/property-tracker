@@ -43,7 +43,7 @@ export const propertyValueRouter = router({
         propertyId: z.string().uuid(),
         estimatedValue: z.string().regex(/^\d+\.?\d*$/, "Invalid value"),
         valueDate: z.string(),
-        source: z.enum(["manual", "api"]).default("manual"),
+        source: z.enum(["manual", "mock", "corelogic", "proptrack"]).default("manual"),
         notes: z.string().optional(),
       })
     )
