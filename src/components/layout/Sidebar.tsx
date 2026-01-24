@@ -8,6 +8,7 @@ import {
   Building2,
   ArrowLeftRight,
   Landmark,
+  Wallet,
   FileDown,
 } from "lucide-react";
 
@@ -16,6 +17,7 @@ const navItems = [
   { href: "/properties", label: "Properties", icon: Building2 },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/banking", label: "Banking", icon: Landmark },
+  { href: "/loans", label: "Loans", icon: Wallet },
   { href: "/export", label: "Export", icon: FileDown },
 ];
 
