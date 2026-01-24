@@ -232,4 +232,74 @@ export const transactionRouter = router({
 
       return transaction;
     }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        propertyId: z.string().uuid(),
+        date: z.string(),
+        description: z.string().min(1, "Description is required"),
+        amount: z.string().regex(/^-?\d+\.?\d*$/, "Invalid amount"),
+        category: z.enum(categoryValues).default("uncategorized"),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const incomeCategories = ["rental_income", "other_rental_income"];
+      const capitalCategories = [
+        "stamp_duty",
+        "conveyancing",
+        "buyers_agent_fees",
+        "initial_repairs",
+      ];
+      const nonDeductibleCategories = [
+        ...capitalCategories,
+        "transfer",
+        "personal",
+        "uncategorized",
+      ];
+
+      let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
+        "expense";
+      if (incomeCategories.includes(input.category)) {
+        transactionType = "income";
+      } else if (capitalCategories.includes(input.category)) {
+        transactionType = "capital";
+      } else if (input.category === "transfer") {
+        transactionType = "transfer";
+      } else if (input.category === "personal") {
+        transactionType = "personal";
+      }
+
+      const isDeductible = !nonDeductibleCategories.includes(input.category);
+
+      const [transaction] = await ctx.db
+        .insert(transactions)
+        .values({
+          userId: ctx.user.id,
+          propertyId: input.propertyId,
+          date: input.date,
+          description: input.description,
+          amount: input.amount,
+          category: input.category,
+          transactionType,
+          isDeductible,
+          notes: input.notes,
+        })
+        .returning();
+
+      return transaction;
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(transactions)
+        .where(
+          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.user.id))
+        );
+
+      return { success: true };
+    }),
 });
