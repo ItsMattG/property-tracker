@@ -28,11 +28,12 @@ export default function TransactionsPage() {
 
   const offset = (page - 1) * PAGE_SIZE;
 
+  const utils = trpc.useUtils();
+
   const { data: properties } = trpc.property.list.useQuery();
   const {
     data: transactions,
     isLoading,
-    refetch,
   } = trpc.transaction.list.useQuery({
     propertyId: filters.propertyId,
     category: filters.category as any,
@@ -48,23 +49,87 @@ export default function TransactionsPage() {
     : 1;
 
   const updateCategory = trpc.transaction.updateCategory.useMutation({
-    onSuccess: () => refetch(),
+    onMutate: async (newData) => {
+      await utils.transaction.list.cancel();
+      const queryKey = {
+        propertyId: filters.propertyId,
+        category: filters.category as any,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        isVerified: filters.isVerified,
+        limit: PAGE_SIZE,
+        offset,
+      };
+      const previous = utils.transaction.list.getData(queryKey);
+
+      utils.transaction.list.setData(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          transactions: old.transactions.map((t) =>
+            t.id === newData.id ? { ...t, category: newData.category } : t
+          ),
+        };
+      });
+
+      return { previous, queryKey };
+    },
+    onError: (_err, _newData, context) => {
+      if (context?.previous) {
+        utils.transaction.list.setData(context.queryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      utils.transaction.list.invalidate();
+    },
   });
 
   const bulkUpdateCategory = trpc.transaction.bulkUpdateCategory.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => utils.transaction.list.invalidate(),
   });
 
   const toggleVerified = trpc.transaction.toggleVerified.useMutation({
-    onSuccess: () => refetch(),
+    onMutate: async (newData) => {
+      await utils.transaction.list.cancel();
+      const queryKey = {
+        propertyId: filters.propertyId,
+        category: filters.category as any,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        isVerified: filters.isVerified,
+        limit: PAGE_SIZE,
+        offset,
+      };
+      const previous = utils.transaction.list.getData(queryKey);
+
+      utils.transaction.list.setData(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          transactions: old.transactions.map((t) =>
+            t.id === newData.id ? { ...t, isVerified: !t.isVerified } : t
+          ),
+        };
+      });
+
+      return { previous, queryKey };
+    },
+    onError: (_err, _newData, context) => {
+      if (context?.previous) {
+        utils.transaction.list.setData(context.queryKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      utils.transaction.list.invalidate();
+    },
   });
 
-  const handleCategoryChange = async (
+  const handleCategoryChange = (
     id: string,
     category: string,
     propertyId?: string
   ) => {
-    await updateCategory.mutateAsync({
+    updateCategory.mutate({
       id,
       category: category as any,
       propertyId,
@@ -78,8 +143,8 @@ export default function TransactionsPage() {
     });
   };
 
-  const handleToggleVerified = async (id: string) => {
-    await toggleVerified.mutateAsync({ id });
+  const handleToggleVerified = (id: string) => {
+    toggleVerified.mutate({ id });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -116,8 +181,8 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ImportCSVDialog onSuccess={() => refetch()} />
-          <AddTransactionDialog onSuccess={() => refetch()} />
+          <ImportCSVDialog onSuccess={() => utils.transaction.list.invalidate()} />
+          <AddTransactionDialog onSuccess={() => utils.transaction.list.invalidate()} />
         </div>
       </div>
 
