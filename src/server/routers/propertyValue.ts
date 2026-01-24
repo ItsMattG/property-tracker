@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { propertyValues, properties } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { getValuationProvider } from "../services/valuation";
 
 export const propertyValueRouter = router({
   list: protectedProcedure
@@ -37,6 +38,75 @@ export const propertyValueRouter = router({
       });
     }),
 
+  getCurrent: protectedProcedure
+    .input(z.object({ propertyId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const valuation = await ctx.db.query.propertyValues.findFirst({
+        where: and(
+          eq(propertyValues.propertyId, input.propertyId),
+          eq(propertyValues.userId, ctx.user.id)
+        ),
+        orderBy: [desc(propertyValues.valueDate)],
+      });
+
+      if (!valuation) {
+        return null;
+      }
+
+      const valuationDate = new Date(valuation.valueDate);
+      const today = new Date();
+      const daysSinceUpdate = Math.floor(
+        (today.getTime() - valuationDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      return {
+        valuation,
+        daysSinceUpdate,
+      };
+    }),
+
+  refresh: protectedProcedure
+    .input(z.object({ propertyId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      // Get property with address
+      const property = await ctx.db.query.properties.findFirst({
+        where: and(
+          eq(properties.id, input.propertyId),
+          eq(properties.userId, ctx.user.id)
+        ),
+      });
+
+      if (!property) {
+        throw new Error("Property not found");
+      }
+
+      // Get valuation from provider
+      const provider = getValuationProvider();
+      const fullAddress = `${property.address}, ${property.suburb} ${property.state} ${property.postcode}`;
+      const result = await provider.getValuation(fullAddress, "house");
+
+      if (!result) {
+        throw new Error("Failed to get valuation from provider");
+      }
+
+      // Store the valuation
+      const [value] = await ctx.db
+        .insert(propertyValues)
+        .values({
+          propertyId: input.propertyId,
+          userId: ctx.user.id,
+          estimatedValue: result.estimatedValue.toString(),
+          confidenceLow: result.confidenceLow.toString(),
+          confidenceHigh: result.confidenceHigh.toString(),
+          valueDate: new Date().toISOString().split("T")[0],
+          source: result.source as "mock" | "corelogic" | "proptrack",
+          apiResponseId: `mock-${Date.now()}`,
+        })
+        .returning();
+
+      return value;
+    }),
+
   create: protectedProcedure
     .input(
       z.object({
@@ -45,6 +115,8 @@ export const propertyValueRouter = router({
         valueDate: z.string(),
         source: z.enum(["manual", "mock", "corelogic", "proptrack"]).default("manual"),
         notes: z.string().optional(),
+        confidenceLow: z.string().regex(/^\d+\.?\d*$/).optional(),
+        confidenceHigh: z.string().regex(/^\d+\.?\d*$/).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -69,6 +141,8 @@ export const propertyValueRouter = router({
           valueDate: input.valueDate,
           source: input.source,
           notes: input.notes,
+          confidenceLow: input.confidenceLow,
+          confidenceHigh: input.confidenceHigh,
         })
         .returning();
 
