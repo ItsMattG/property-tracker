@@ -5,10 +5,14 @@ import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
 import { ImportCSVDialog } from "@/components/transactions/ImportCSVDialog";
+import { Pagination } from "@/components/ui/pagination";
 import { trpc } from "@/lib/trpc/client";
 import { ArrowLeftRight } from "lucide-react";
 
+const PAGE_SIZE = 50;
+
 export default function TransactionsPage() {
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<{
     propertyId?: string;
     category?: string;
@@ -16,6 +20,8 @@ export default function TransactionsPage() {
     endDate?: string;
     isVerified?: boolean;
   }>({});
+
+  const offset = (page - 1) * PAGE_SIZE;
 
   const { data: properties } = trpc.property.list.useQuery();
   const {
@@ -28,8 +34,13 @@ export default function TransactionsPage() {
     startDate: filters.startDate,
     endDate: filters.endDate,
     isVerified: filters.isVerified,
-    limit: 100,
+    limit: PAGE_SIZE,
+    offset,
   });
+
+  const totalPages = transactions?.total
+    ? Math.ceil(transactions.total / PAGE_SIZE)
+    : 1;
 
   const updateCategory = trpc.transaction.updateCategory.useMutation({
     onSuccess: () => refetch(),
@@ -66,6 +77,16 @@ export default function TransactionsPage() {
     await toggleVerified.mutateAsync({ id });
   };
 
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  // Reset to page 1 when filters change
+  const handleFiltersChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setPage(1);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -98,17 +119,27 @@ export default function TransactionsPage() {
       <TransactionFilters
         properties={properties ?? []}
         filters={filters}
-        onFiltersChange={setFilters}
+        onFiltersChange={handleFiltersChange}
       />
 
       {transactions && transactions.transactions.length > 0 ? (
-        <TransactionTable
-          transactions={transactions.transactions as any}
-          properties={properties ?? []}
-          onCategoryChange={handleCategoryChange}
-          onToggleVerified={handleToggleVerified}
-          onBulkCategoryChange={handleBulkCategoryChange}
-        />
+        <>
+          <TransactionTable
+            transactions={transactions.transactions as any}
+            properties={properties ?? []}
+            onCategoryChange={handleCategoryChange}
+            onToggleVerified={handleToggleVerified}
+            onBulkCategoryChange={handleBulkCategoryChange}
+          />
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              isLoading={isLoading}
+            />
+          )}
+        </>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
