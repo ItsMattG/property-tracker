@@ -12,8 +12,14 @@ import {
 import { categories } from "@/lib/categories";
 import type { Property } from "@/server/db/schema";
 
+// When serialized through tRPC, Date fields become strings
+type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
 interface TransactionFiltersProps {
-  properties: Property[];
+  properties: SerializedProperty[];
   filters: {
     propertyId?: string;
     category?: string;

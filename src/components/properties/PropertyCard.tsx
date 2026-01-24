@@ -13,8 +13,14 @@ import {
 import { format } from "date-fns";
 import type { Property } from "@/server/db/schema";
 
+// When serialized through tRPC, Date fields become strings
+type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
 interface PropertyCardProps {
-  property: Property;
+  property: SerializedProperty;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }

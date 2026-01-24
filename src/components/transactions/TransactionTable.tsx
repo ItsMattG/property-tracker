@@ -18,14 +18,30 @@ import { format } from "date-fns";
 import { Check, X } from "lucide-react";
 import type { Transaction, Property, BankAccount } from "@/server/db/schema";
 
-interface TransactionWithRelations extends Transaction {
-  property: Property | null;
-  bankAccount: BankAccount;
+// When serialized through tRPC, Date fields become strings
+type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+type SerializedTransaction = Omit<Transaction, "createdAt" | "updatedAt"> & {
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+type SerializedBankAccount = Omit<BankAccount, "createdAt" | "lastSyncedAt"> & {
+  createdAt: Date | string;
+  lastSyncedAt: Date | string | null;
+};
+
+interface TransactionWithRelations extends SerializedTransaction {
+  property: SerializedProperty | null;
+  bankAccount: SerializedBankAccount;
 }
 
 interface TransactionTableProps {
   transactions: TransactionWithRelations[];
-  properties: Property[];
+  properties: SerializedProperty[];
   onCategoryChange: (id: string, category: string, propertyId?: string) => void;
   onToggleVerified: (id: string) => void;
   onBulkCategoryChange: (ids: string[], category: string) => void;

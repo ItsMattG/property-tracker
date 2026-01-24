@@ -26,7 +26,7 @@ const states = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
 const propertyFormSchema = z.object({
   address: z.string().min(1, "Address is required"),
   suburb: z.string().min(1, "Suburb is required"),
-  state: z.enum(states, { required_error: "State is required" }),
+  state: z.enum(states, { error: "State is required" }),
   postcode: z.string().regex(/^\d{4}$/, "Invalid postcode (must be 4 digits)"),
   purchasePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid price"),
   purchaseDate: z.string().min(1, "Purchase date is required"),
