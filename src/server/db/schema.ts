@@ -673,6 +673,75 @@ export const anomalyAlertsRelations = relations(anomalyAlerts, ({ one }) => ({
   }),
 }));
 
+export const forecastScenarios = pgTable(
+  "forecast_scenarios",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    name: text("name").notNull(),
+    assumptions: text("assumptions").notNull(), // JSON string
+    isDefault: boolean("is_default").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("forecast_scenarios_user_id_idx").on(table.userId),
+  ]
+);
+
+export const cashFlowForecasts = pgTable(
+  "cash_flow_forecasts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    scenarioId: uuid("scenario_id")
+      .references(() => forecastScenarios.id, { onDelete: "cascade" })
+      .notNull(),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "cascade",
+    }),
+    forecastMonth: date("forecast_month").notNull(),
+    projectedIncome: decimal("projected_income", { precision: 12, scale: 2 }).notNull(),
+    projectedExpenses: decimal("projected_expenses", { precision: 12, scale: 2 }).notNull(),
+    projectedNet: decimal("projected_net", { precision: 12, scale: 2 }).notNull(),
+    breakdown: text("breakdown"), // JSON string
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("cash_flow_forecasts_user_id_idx").on(table.userId),
+    index("cash_flow_forecasts_scenario_id_idx").on(table.scenarioId),
+    index("cash_flow_forecasts_property_id_idx").on(table.propertyId),
+    index("cash_flow_forecasts_month_idx").on(table.forecastMonth),
+  ]
+);
+
+export const forecastScenariosRelations = relations(forecastScenarios, ({ one, many }) => ({
+  user: one(users, {
+    fields: [forecastScenarios.userId],
+    references: [users.id],
+  }),
+  forecasts: many(cashFlowForecasts),
+}));
+
+export const cashFlowForecastsRelations = relations(cashFlowForecasts, ({ one }) => ({
+  user: one(users, {
+    fields: [cashFlowForecasts.userId],
+    references: [users.id],
+  }),
+  scenario: one(forecastScenarios, {
+    fields: [cashFlowForecasts.scenarioId],
+    references: [forecastScenarios.id],
+  }),
+  property: one(properties, {
+    fields: [cashFlowForecasts.propertyId],
+    references: [properties.id],
+  }),
+}));
+
 export const userOnboarding = pgTable("user_onboarding", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
@@ -720,3 +789,7 @@ export type UserOnboarding = typeof userOnboarding.$inferSelect;
 export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
 export type AnomalyAlert = typeof anomalyAlerts.$inferSelect;
 export type NewAnomalyAlert = typeof anomalyAlerts.$inferInsert;
+export type ForecastScenario = typeof forecastScenarios.$inferSelect;
+export type NewForecastScenario = typeof forecastScenarios.$inferInsert;
+export type CashFlowForecast = typeof cashFlowForecasts.$inferSelect;
+export type NewCashFlowForecast = typeof cashFlowForecasts.$inferInsert;
