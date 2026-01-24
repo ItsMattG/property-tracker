@@ -1,14 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, ArrowLeftRight, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import Link from "next/link";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
+import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { SetupChecklist } from "@/components/onboarding/SetupChecklist";
 
 export default function DashboardPage() {
+  const [wizardClosed, setWizardClosed] = useState(false);
   const { data: stats, isLoading } = trpc.stats.dashboard.useQuery();
   const { data: alerts } = trpc.banking.listAlerts.useQuery();
+  const { data: onboarding } = trpc.onboarding.getProgress.useQuery();
   const utils = trpc.useUtils();
 
   const dismissAlert = trpc.banking.dismissAlert.useMutation({
@@ -26,8 +31,15 @@ export default function DashboardPage() {
 
   const hasAuthError = alerts?.some((a) => a.alertType === "requires_reauth") ?? false;
 
+  const showWizard = onboarding?.showWizard && !wizardClosed;
+  const showChecklist = onboarding?.showChecklist;
+
   return (
     <div className="space-y-6">
+      {showWizard && (
+        <OnboardingWizard onClose={() => setWizardClosed(true)} />
+      )}
+
       {alerts && alerts.length > 0 && (
         <ConnectionAlertBanner
           alertCount={alerts.length}
@@ -42,6 +54,10 @@ export default function DashboardPage() {
           Track your investment properties, automate bank feeds, and generate tax reports.
         </p>
       </div>
+
+      {showChecklist && onboarding?.progress && (
+        <SetupChecklist progress={onboarding.progress} />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Link href="/properties">
