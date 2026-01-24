@@ -7,7 +7,10 @@ import { getValuationProvider } from "../services/valuation";
 
 export const propertyValueRouter = router({
   list: protectedProcedure
-    .input(z.object({ propertyId: z.string().uuid() }))
+    .input(z.object({
+      propertyId: z.string().uuid(),
+      limit: z.number().optional(),
+    }))
     .query(async ({ ctx, input }) => {
       // Verify property belongs to user
       const property = await ctx.db.query.properties.findFirst({
@@ -24,6 +27,7 @@ export const propertyValueRouter = router({
       return ctx.db.query.propertyValues.findMany({
         where: eq(propertyValues.propertyId, input.propertyId),
         orderBy: [desc(propertyValues.valueDate)],
+        limit: input.limit,
       });
     }),
 
@@ -162,14 +166,29 @@ export const propertyValueRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      // Find the valuation first
+      const valuation = await ctx.db.query.propertyValues.findFirst({
+        where: and(
+          eq(propertyValues.id, input.id),
+          eq(propertyValues.userId, ctx.user.id)
+        ),
+      });
+
+      if (!valuation) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Valuation not found" });
+      }
+
+      // Only allow deleting manual valuations
+      if (valuation.source !== "manual") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only manual valuations can be deleted",
+        });
+      }
+
       await ctx.db
         .delete(propertyValues)
-        .where(
-          and(
-            eq(propertyValues.id, input.id),
-            eq(propertyValues.userId, ctx.user.id)
-          )
-        );
+        .where(eq(propertyValues.id, input.id));
 
       return { success: true };
     }),

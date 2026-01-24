@@ -194,12 +194,13 @@ describe("propertyValue router", () => {
   });
 
   describe("delete", () => {
-    it("deletes a property value entry", async () => {
+    it("deletes a manual property value entry", async () => {
       const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
 
       ctx.db = {
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
+          propertyValues: { findFirst: vi.fn().mockResolvedValue(mockPropertyValue) },
         },
         delete: vi.fn().mockReturnValue({
           where: vi.fn().mockResolvedValue(undefined),
@@ -213,6 +214,39 @@ describe("propertyValue router", () => {
 
       expect(result.success).toBe(true);
       expect(ctx.db.delete).toHaveBeenCalled();
+    });
+
+    it("throws error when trying to delete non-manual valuation", async () => {
+      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const automatedValuation = { ...mockPropertyValue, source: "mock" };
+
+      ctx.db = {
+        query: {
+          users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
+          propertyValues: { findFirst: vi.fn().mockResolvedValue(automatedValuation) },
+        },
+      };
+
+      const caller = createTestCaller(ctx);
+      await expect(
+        caller.propertyValue.delete({ id: mockPropertyValue.id })
+      ).rejects.toThrow("Only manual valuations can be deleted");
+    });
+
+    it("throws error if valuation not found", async () => {
+      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+
+      ctx.db = {
+        query: {
+          users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
+          propertyValues: { findFirst: vi.fn().mockResolvedValue(null) },
+        },
+      };
+
+      const caller = createTestCaller(ctx);
+      await expect(
+        caller.propertyValue.delete({ id: "00000000-0000-0000-0000-000000000000" })
+      ).rejects.toThrow("Valuation not found");
     });
   });
 });
