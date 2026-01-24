@@ -1,11 +1,18 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { bankAccounts, connectionAlerts, transactions } from "../db/schema";
+import { anomalyAlerts, bankAccounts, connectionAlerts, transactions } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { checkRateLimit, mapBasiqErrorToAlertType, mapAlertTypeToConnectionStatus } from "../services/sync";
 import { shouldCreateAlert } from "../services/alerts";
 import { basiqService } from "../services/basiq";
+import {
+  detectUnusualAmount,
+  detectDuplicates,
+  detectUnexpectedExpense,
+  getHistoricalAverage,
+  getKnownMerchants,
+} from "../services/anomaly";
 import { metrics } from "@/lib/metrics";
 
 export const bankingRouter = router({
@@ -106,6 +113,76 @@ export const bankingRouter = router({
             transactionsAdded++;
           } catch {
             // Skip duplicates
+          }
+        }
+
+        // Run anomaly detection on new transactions
+        if (transactionsAdded > 0) {
+          const recentTxns = await ctx.db.query.transactions.findMany({
+            where: and(
+              eq(transactions.userId, ctx.user.id),
+              eq(transactions.bankAccountId, account.id)
+            ),
+            orderBy: [desc(transactions.createdAt)],
+            limit: 100,
+          });
+
+          const knownMerchants = await getKnownMerchants(
+            ctx.db,
+            ctx.user.id,
+            account.defaultPropertyId ?? undefined
+          );
+
+          for (const txn of basiqTransactions.slice(0, transactionsAdded)) {
+            const txnInput = {
+              id: txn.id,
+              amount: txn.direction === "credit" ? txn.amount : `-${txn.amount}`,
+              description: txn.description,
+              date: txn.postDate,
+            };
+
+            // Check for unusual amount
+            const historical = await getHistoricalAverage(
+              ctx.db,
+              ctx.user.id,
+              txn.description.split(" ")[0]
+            );
+            const unusualResult = detectUnusualAmount(txnInput, historical);
+            if (unusualResult) {
+              await ctx.db.insert(anomalyAlerts).values({
+                userId: ctx.user.id,
+                propertyId: account.defaultPropertyId,
+                ...unusualResult,
+              });
+            }
+
+            // Check for duplicates
+            const duplicateResult = detectDuplicates(
+              txnInput,
+              recentTxns.map((t) => ({
+                id: t.id,
+                amount: t.amount,
+                description: t.description,
+                date: t.date,
+              }))
+            );
+            if (duplicateResult) {
+              await ctx.db.insert(anomalyAlerts).values({
+                userId: ctx.user.id,
+                propertyId: account.defaultPropertyId,
+                ...duplicateResult,
+              });
+            }
+
+            // Check for unexpected expense
+            const unexpectedResult = detectUnexpectedExpense(txnInput, knownMerchants);
+            if (unexpectedResult) {
+              await ctx.db.insert(anomalyAlerts).values({
+                userId: ctx.user.id,
+                propertyId: account.defaultPropertyId,
+                ...unexpectedResult,
+              });
+            }
           }
         }
 
