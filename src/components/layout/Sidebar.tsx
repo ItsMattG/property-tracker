@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Settings,
   Users,
+  History,
 } from "lucide-react";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
 
@@ -35,6 +36,7 @@ const navItems = [
 const settingsItems = [
   { href: "/settings/notifications", label: "Notifications", icon: Bell },
   { href: "/settings/team", label: "Team", icon: Users },
+  { href: "/settings/audit-log", label: "Audit Log", icon: History },
 ];
 
 export function Sidebar() {

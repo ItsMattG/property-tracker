@@ -1,8 +1,8 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { SignIn, useAuth, useUser } from "@clerk/nextjs";
+import { useState } from "react";
+import { SignIn, useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,27 +16,22 @@ export function AcceptInviteContent() {
   const token = searchParams.get("token");
   const { isSignedIn, isLoaded } = useAuth();
 
-  const [status, setStatus] = useState<"loading" | "ready" | "success" | "error" | "expired">("loading");
-  const [invite, setInvite] = useState<{
-    ownerName: string;
-    role: string;
-    email: string;
-  } | null>(null);
+  const [mutationStatus, setMutationStatus] = useState<"idle" | "success" | "error">("idle");
 
-  const { data: inviteData, error: inviteError } = trpc.team.getInviteByToken.useQuery(
+  const { data: inviteData, error: inviteError, isLoading: isInviteLoading } = trpc.team.getInviteByToken.useQuery(
     { token: token || "" },
     { enabled: !!token && isSignedIn }
   );
 
   const acceptMutation = trpc.team.acceptInvite.useMutation({
     onSuccess: () => {
-      setStatus("success");
+      setMutationStatus("success");
       toast.success("Invitation accepted!");
       setTimeout(() => router.push("/dashboard"), 2000);
     },
     onError: (error) => {
       toast.error(error.message);
-      setStatus("error");
+      setMutationStatus("error");
     },
   });
 
@@ -50,19 +45,10 @@ export function AcceptInviteContent() {
     },
   });
 
-  useEffect(() => {
-    if (inviteData) {
-      setInvite(inviteData);
-      setStatus("ready");
-    }
-    if (inviteError) {
-      if (inviteError.message.includes("expired")) {
-        setStatus("expired");
-      } else {
-        setStatus("error");
-      }
-    }
-  }, [inviteData, inviteError]);
+  // Derive invite and status from query data directly
+  const invite = inviteData ?? null;
+  const isExpired = inviteError?.message.includes("expired") ?? false;
+  const hasQueryError = !!inviteError && !isExpired;
 
   if (!isLoaded) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -101,7 +87,7 @@ export function AcceptInviteContent() {
     );
   }
 
-  if (status === "expired") {
+  if (isExpired) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
@@ -117,7 +103,7 @@ export function AcceptInviteContent() {
     );
   }
 
-  if (status === "success") {
+  if (mutationStatus === "success") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
@@ -133,10 +119,7 @@ export function AcceptInviteContent() {
     );
   }
 
-  if (status === "error" || status === "loading" && !invite) {
-    if (status === "loading") {
-      return <div className="flex items-center justify-center min-h-screen">Loading invitation...</div>;
-    }
+  if (hasQueryError || mutationStatus === "error") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
@@ -152,7 +135,7 @@ export function AcceptInviteContent() {
     );
   }
 
-  if (!invite) {
+  if (isInviteLoading || !invite) {
     return <div className="flex items-center justify-center min-h-screen">Loading invitation...</div>;
   }
 
