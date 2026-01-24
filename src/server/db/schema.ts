@@ -7,6 +7,7 @@ import {
   date,
   boolean,
   pgEnum,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -129,28 +130,42 @@ export const bankAccounts = pgTable("bank_accounts", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const transactions = pgTable("transactions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .references(() => users.id, { onDelete: "cascade" })
-    .notNull(),
-  bankAccountId: uuid("bank_account_id")
-    .references(() => bankAccounts.id, { onDelete: "cascade" }),
-  basiqTransactionId: text("basiq_transaction_id").unique(),
-  propertyId: uuid("property_id").references(() => properties.id, {
-    onDelete: "set null",
-  }),
-  date: date("date").notNull(),
-  description: text("description").notNull(),
-  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
-  category: categoryEnum("category").default("uncategorized").notNull(),
-  transactionType: transactionTypeEnum("transaction_type").default("expense").notNull(),
-  isDeductible: boolean("is_deductible").default(false).notNull(),
-  isVerified: boolean("is_verified").default(false).notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const transactions = pgTable(
+  "transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
+      onDelete: "cascade",
+    }),
+    basiqTransactionId: text("basiq_transaction_id").unique(),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "set null",
+    }),
+    date: date("date").notNull(),
+    description: text("description").notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    category: categoryEnum("category").default("uncategorized").notNull(),
+    transactionType: transactionTypeEnum("transaction_type")
+      .default("expense")
+      .notNull(),
+    isDeductible: boolean("is_deductible").default(false).notNull(),
+    isVerified: boolean("is_verified").default(false).notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    // Add indexes for common queries
+    index("transactions_user_id_idx").on(table.userId),
+    index("transactions_property_id_idx").on(table.propertyId),
+    index("transactions_date_idx").on(table.date),
+    index("transactions_category_idx").on(table.category),
+    index("transactions_user_date_idx").on(table.userId, table.date),
+  ]
+);
 
 export const loans = pgTable("loans", {
   id: uuid("id").primaryKey().defaultRandom(),
