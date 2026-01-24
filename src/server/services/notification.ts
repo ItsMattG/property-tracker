@@ -1,5 +1,8 @@
 import webpush from "web-push";
 import { Resend } from "resend";
+import { db } from "@/server/db";
+import { notificationPreferences, pushSubscriptions, notificationLog } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
 
 // Types
 export type NotificationType =
@@ -176,4 +179,69 @@ export function getDefaultPreferences(): NotificationPrefs & {
     quietHoursStart: "21:00",
     quietHoursEnd: "08:00",
   };
+}
+
+/**
+ * Send notification to user across all enabled channels
+ */
+export async function notifyUser(
+  userId: string,
+  userEmail: string,
+  type: NotificationType,
+  payload: {
+    title: string;
+    body: string;
+    url?: string;
+    emailHtml?: string;
+    emailSubject?: string;
+  }
+): Promise<void> {
+  // Get user preferences
+  const prefs = await db.query.notificationPreferences.findFirst({
+    where: eq(notificationPreferences.userId, userId),
+  });
+
+  if (!prefs) return;
+
+  const now = new Date();
+  const inQuietHours = isQuietHours(
+    prefs.quietHoursStart,
+    prefs.quietHoursEnd,
+    now.getHours(),
+    now.getMinutes()
+  );
+
+  // Send push notifications (if not quiet hours)
+  if (shouldSendNotification(prefs, type, "push") && !inQuietHours) {
+    const subscriptions = await db.query.pushSubscriptions.findMany({
+      where: eq(pushSubscriptions.userId, userId),
+    });
+
+    for (const sub of subscriptions) {
+      const success = await sendPushNotification(
+        { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+        { title: payload.title, body: payload.body, data: { url: payload.url || "/dashboard" } }
+      );
+
+      await db.insert(notificationLog).values({
+        userId,
+        type,
+        channel: "push",
+        status: success ? "sent" : "failed",
+        metadata: JSON.stringify({ subscriptionId: sub.id }),
+      });
+    }
+  }
+
+  // Send email
+  if (shouldSendNotification(prefs, type, "email") && payload.emailHtml && payload.emailSubject) {
+    const success = await sendEmailNotification(userEmail, payload.emailSubject, payload.emailHtml);
+
+    await db.insert(notificationLog).values({
+      userId,
+      type,
+      channel: "email",
+      status: success ? "sent" : (inQuietHours ? "skipped_quiet_hours" : "failed"),
+    });
+  }
 }
