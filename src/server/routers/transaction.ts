@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { transactions } from "../db/schema";
 import { eq, and, desc, gte, lte, inArray } from "drizzle-orm";
+import { parseCSV } from "../services/csv-import";
 
 const categoryValues = [
   "rental_income",
@@ -301,5 +302,47 @@ export const transactionRouter = router({
         );
 
       return { success: true };
+    }),
+
+  importCSV: protectedProcedure
+    .input(
+      z.object({
+        propertyId: z.string().uuid(),
+        csvContent: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const rows = parseCSV(input.csvContent);
+
+      const imported: string[] = [];
+      const errors: string[] = [];
+
+      for (const row of rows) {
+        try {
+          const [transaction] = await ctx.db
+            .insert(transactions)
+            .values({
+              userId: ctx.user.id,
+              propertyId: input.propertyId,
+              date: row.date,
+              description: row.description,
+              amount: row.amount,
+              category: "uncategorized",
+              transactionType: parseFloat(row.amount) >= 0 ? "income" : "expense",
+              isDeductible: false,
+            })
+            .returning();
+
+          imported.push(transaction.id);
+        } catch (error) {
+          errors.push(`Row ${row.date} ${row.description}: ${error}`);
+        }
+      }
+
+      return {
+        importedCount: imported.length,
+        errorCount: errors.length,
+        errors: errors.slice(0, 5),
+      };
     }),
 });
