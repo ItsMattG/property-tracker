@@ -7,15 +7,19 @@ import {
   LayoutDashboard,
   Building2,
   ArrowLeftRight,
+  BarChart3,
   Landmark,
   Wallet,
   FileDown,
+  PieChart,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/portfolio", label: "Portfolio", icon: PieChart },
   { href: "/properties", label: "Properties", icon: Building2 },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
+  { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/banking", label: "Banking", icon: Landmark },
   { href: "/loans", label: "Loans", icon: Wallet },
   { href: "/export", label: "Export", icon: FileDown },

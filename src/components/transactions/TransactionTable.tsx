@@ -9,23 +9,46 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CategorySelect } from "./CategorySelect";
+import { MakeRecurringDialog } from "@/components/recurring/MakeRecurringDialog";
 import { getCategoryLabel, getCategoryInfo } from "@/lib/categories";
 import { format } from "date-fns";
-import { Check, X } from "lucide-react";
+import { Check, X, MoreHorizontal, Repeat } from "lucide-react";
 import type { Transaction, Property, BankAccount } from "@/server/db/schema";
 
-interface TransactionWithRelations extends Transaction {
-  property: Property | null;
-  bankAccount: BankAccount;
+// When serialized through tRPC, Date fields become strings
+type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+type SerializedTransaction = Omit<Transaction, "createdAt" | "updatedAt"> & {
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+type SerializedBankAccount = Omit<BankAccount, "createdAt" | "lastSyncedAt"> & {
+  createdAt: Date | string;
+  lastSyncedAt: Date | string | null;
+};
+
+interface TransactionWithRelations extends SerializedTransaction {
+  property: SerializedProperty | null;
+  bankAccount: SerializedBankAccount;
 }
 
 interface TransactionTableProps {
   transactions: TransactionWithRelations[];
-  properties: Property[];
+  properties: SerializedProperty[];
   onCategoryChange: (id: string, category: string, propertyId?: string) => void;
   onToggleVerified: (id: string) => void;
   onBulkCategoryChange: (ids: string[], category: string) => void;
@@ -39,6 +62,13 @@ export function TransactionTable({
   onBulkCategoryChange,
 }: TransactionTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithRelations | null>(null);
+
+  const handleMakeRecurring = (transaction: TransactionWithRelations) => {
+    setSelectedTransaction(transaction);
+    setRecurringDialogOpen(true);
+  };
 
   const toggleSelection = (id: string) => {
     const newSelected = new Set(selectedIds);
@@ -108,12 +138,13 @@ export function TransactionTable({
               <TableHead>Category</TableHead>
               <TableHead>Property</TableHead>
               <TableHead className="w-20">Verified</TableHead>
+              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {transactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No transactions found
                 </TableCell>
               </TableRow>
@@ -184,6 +215,24 @@ export function TransactionTable({
                         )}
                       </Button>
                     </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleMakeRecurring(transaction)}
+                            disabled={!transaction.propertyId}
+                          >
+                            <Repeat className="w-4 h-4 mr-2" />
+                            Make Recurring
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 );
               })
@@ -191,6 +240,14 @@ export function TransactionTable({
           </TableBody>
         </Table>
       </div>
+
+      {selectedTransaction && (
+        <MakeRecurringDialog
+          transaction={selectedTransaction as unknown as Transaction}
+          open={recurringDialogOpen}
+          onOpenChange={setRecurringDialogOpen}
+        />
+      )}
     </div>
   );
 }

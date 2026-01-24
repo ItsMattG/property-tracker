@@ -7,6 +7,7 @@ import {
   date,
   boolean,
   pgEnum,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -84,6 +85,57 @@ export const rateTypeEnum = pgEnum("rate_type", [
   "split",
 ]);
 
+export const propertyStatusEnum = pgEnum("property_status", ["active", "sold"]);
+
+export const documentCategoryEnum = pgEnum("document_category", [
+  "receipt",
+  "contract",
+  "depreciation",
+  "lease",
+  "other",
+]);
+
+export const frequencyEnum = pgEnum("frequency", [
+  "weekly",
+  "fortnightly",
+  "monthly",
+  "quarterly",
+  "annually",
+]);
+
+export const expectedStatusEnum = pgEnum("expected_status", [
+  "pending",
+  "matched",
+  "missed",
+  "skipped",
+]);
+
+export const valueSourceEnum = pgEnum("value_source", ["manual", "api"]);
+
+export const connectionStatusEnum = pgEnum("connection_status", [
+  "connected",
+  "disconnected",
+  "error",
+]);
+
+export const syncStatusEnum = pgEnum("sync_status", [
+  "success",
+  "failed",
+  "pending",
+]);
+
+export const alertTypeEnum = pgEnum("alert_type", [
+  "disconnected",
+  "requires_reauth",
+  "sync_failed",
+]);
+
+export const alertStatusEnum = pgEnum("alert_status", [
+  "active",
+  "dismissed",
+  "resolved",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -106,6 +158,8 @@ export const properties = pgTable("properties", {
   purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }).notNull(),
   purchaseDate: date("purchase_date").notNull(),
   entityName: text("entity_name").default("Personal").notNull(),
+  status: propertyStatusEnum("status").default("active").notNull(),
+  soldAt: date("sold_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -125,32 +179,50 @@ export const bankAccounts = pgTable("bank_accounts", {
     onDelete: "set null",
   }),
   isConnected: boolean("is_connected").default(true).notNull(),
+  connectionStatus: connectionStatusEnum("connection_status").default("connected").notNull(),
+  lastSyncStatus: syncStatusEnum("last_sync_status"),
+  lastSyncError: text("last_sync_error"),
+  lastManualSyncAt: timestamp("last_manual_sync_at"),
   lastSyncedAt: timestamp("last_synced_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const transactions = pgTable("transactions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .references(() => users.id, { onDelete: "cascade" })
-    .notNull(),
-  bankAccountId: uuid("bank_account_id")
-    .references(() => bankAccounts.id, { onDelete: "cascade" }),
-  basiqTransactionId: text("basiq_transaction_id").unique(),
-  propertyId: uuid("property_id").references(() => properties.id, {
-    onDelete: "set null",
-  }),
-  date: date("date").notNull(),
-  description: text("description").notNull(),
-  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
-  category: categoryEnum("category").default("uncategorized").notNull(),
-  transactionType: transactionTypeEnum("transaction_type").default("expense").notNull(),
-  isDeductible: boolean("is_deductible").default(false).notNull(),
-  isVerified: boolean("is_verified").default(false).notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const transactions = pgTable(
+  "transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
+      onDelete: "cascade",
+    }),
+    basiqTransactionId: text("basiq_transaction_id").unique(),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "set null",
+    }),
+    date: date("date").notNull(),
+    description: text("description").notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    category: categoryEnum("category").default("uncategorized").notNull(),
+    transactionType: transactionTypeEnum("transaction_type")
+      .default("expense")
+      .notNull(),
+    isDeductible: boolean("is_deductible").default(false).notNull(),
+    isVerified: boolean("is_verified").default(false).notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    // Add indexes for common queries
+    index("transactions_user_id_idx").on(table.userId),
+    index("transactions_property_id_idx").on(table.propertyId),
+    index("transactions_date_idx").on(table.date),
+    index("transactions_category_idx").on(table.category),
+    index("transactions_user_date_idx").on(table.userId, table.date),
+  ]
+);
 
 export const loans = pgTable("loans", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -177,6 +249,200 @@ export const loans = pgTable("loans", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const propertySales = pgTable("property_sales", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  propertyId: uuid("property_id")
+    .references(() => properties.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+
+  // Sale details
+  salePrice: decimal("sale_price", { precision: 12, scale: 2 }).notNull(),
+  settlementDate: date("settlement_date").notNull(),
+  contractDate: date("contract_date"),
+
+  // Selling costs
+  agentCommission: decimal("agent_commission", { precision: 12, scale: 2 }).default("0").notNull(),
+  legalFees: decimal("legal_fees", { precision: 12, scale: 2 }).default("0").notNull(),
+  marketingCosts: decimal("marketing_costs", { precision: 12, scale: 2 }).default("0").notNull(),
+  otherSellingCosts: decimal("other_selling_costs", { precision: 12, scale: 2 }).default("0").notNull(),
+
+  // Calculated CGT fields (stored for historical accuracy)
+  costBase: decimal("cost_base", { precision: 12, scale: 2 }).notNull(),
+  capitalGain: decimal("capital_gain", { precision: 12, scale: 2 }).notNull(),
+  discountedGain: decimal("discounted_gain", { precision: 12, scale: 2 }),
+  heldOverTwelveMonths: boolean("held_over_twelve_months").notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const documents = pgTable(
+  "documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+
+    // Polymorphic association - linked to property OR transaction
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "cascade",
+    }),
+    transactionId: uuid("transaction_id").references(() => transactions.id, {
+      onDelete: "cascade",
+    }),
+
+    // File metadata
+    fileName: text("file_name").notNull(),
+    fileType: text("file_type").notNull(), // "image/jpeg", "application/pdf", etc.
+    fileSize: decimal("file_size", { precision: 12, scale: 0 }).notNull(), // bytes
+    storagePath: text("storage_path").notNull(), // Supabase storage path
+
+    // Optional categorization
+    category: documentCategoryEnum("category"),
+    description: text("description"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("documents_user_id_idx").on(table.userId),
+    index("documents_property_id_idx").on(table.propertyId),
+    index("documents_transaction_id_idx").on(table.transactionId),
+  ]
+);
+
+export const recurringTransactions = pgTable(
+  "recurring_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+
+    // Template details
+    description: text("description").notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    category: categoryEnum("category").notNull(),
+    transactionType: transactionTypeEnum("transaction_type").notNull(),
+
+    // Frequency
+    frequency: frequencyEnum("frequency").notNull(),
+    dayOfMonth: decimal("day_of_month", { precision: 2, scale: 0 }), // 1-31
+    dayOfWeek: decimal("day_of_week", { precision: 1, scale: 0 }), // 0-6
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date"),
+
+    // Matching config
+    linkedBankAccountId: uuid("linked_bank_account_id").references(
+      () => bankAccounts.id,
+      { onDelete: "set null" }
+    ),
+    amountTolerance: decimal("amount_tolerance", { precision: 5, scale: 2 })
+      .default("5.00")
+      .notNull(), // percentage
+    dateTolerance: decimal("date_tolerance", { precision: 2, scale: 0 })
+      .default("3")
+      .notNull(), // days
+    alertDelayDays: decimal("alert_delay_days", { precision: 2, scale: 0 })
+      .default("3")
+      .notNull(),
+
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("recurring_transactions_user_id_idx").on(table.userId),
+    index("recurring_transactions_property_id_idx").on(table.propertyId),
+  ]
+);
+
+export const expectedTransactions = pgTable(
+  "expected_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    recurringTransactionId: uuid("recurring_transaction_id")
+      .references(() => recurringTransactions.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+
+    expectedDate: date("expected_date").notNull(),
+    expectedAmount: decimal("expected_amount", { precision: 12, scale: 2 }).notNull(),
+
+    status: expectedStatusEnum("status").default("pending").notNull(),
+    matchedTransactionId: uuid("matched_transaction_id").references(
+      () => transactions.id,
+      { onDelete: "set null" }
+    ),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("expected_transactions_user_id_idx").on(table.userId),
+    index("expected_transactions_recurring_id_idx").on(table.recurringTransactionId),
+    index("expected_transactions_status_idx").on(table.status),
+    index("expected_transactions_date_idx").on(table.expectedDate),
+  ]
+);
+
+export const propertyValues = pgTable(
+  "property_values",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    estimatedValue: decimal("estimated_value", { precision: 12, scale: 2 }).notNull(),
+    valueDate: date("value_date").notNull(),
+    source: valueSourceEnum("source").default("manual").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("property_values_property_id_idx").on(table.propertyId),
+    index("property_values_user_id_idx").on(table.userId),
+    index("property_values_date_idx").on(table.valueDate),
+  ]
+);
+
+export const connectionAlerts = pgTable(
+  "connection_alerts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    bankAccountId: uuid("bank_account_id")
+      .references(() => bankAccounts.id, { onDelete: "cascade" })
+      .notNull(),
+    alertType: alertTypeEnum("alert_type").notNull(),
+    status: alertStatusEnum("status").default("active").notNull(),
+    errorMessage: text("error_message"),
+    emailSentAt: timestamp("email_sent_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    dismissedAt: timestamp("dismissed_at"),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (table) => [
+    index("connection_alerts_user_id_idx").on(table.userId),
+    index("connection_alerts_bank_account_id_idx").on(table.bankAccountId),
+    index("connection_alerts_status_idx").on(table.status),
+  ]
+);
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
@@ -192,6 +458,9 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
   transactions: many(transactions),
   bankAccounts: many(bankAccounts),
   loans: many(loans),
+  sales: many(propertySales),
+  documents: many(documents),
+  propertyValues: many(propertyValues),
 }));
 
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
@@ -204,9 +473,10 @@ export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => 
     references: [properties.id],
   }),
   transactions: many(transactions),
+  alerts: many(connectionAlerts),
 }));
 
-export const transactionsRelations = relations(transactions, ({ one }) => ({
+export const transactionsRelations = relations(transactions, ({ one, many }) => ({
   user: one(users, {
     fields: [transactions.userId],
     references: [users.id],
@@ -219,6 +489,7 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
     fields: [transactions.propertyId],
     references: [properties.id],
   }),
+  documents: many(documents),
 }));
 
 export const loansRelations = relations(loans, ({ one }) => ({
@@ -236,6 +507,115 @@ export const loansRelations = relations(loans, ({ one }) => ({
   }),
 }));
 
+export const propertySalesRelations = relations(propertySales, ({ one }) => ({
+  property: one(properties, {
+    fields: [propertySales.propertyId],
+    references: [properties.id],
+  }),
+  user: one(users, {
+    fields: [propertySales.userId],
+    references: [users.id],
+  }),
+}));
+
+export const documentsRelations = relations(documents, ({ one }) => ({
+  user: one(users, {
+    fields: [documents.userId],
+    references: [users.id],
+  }),
+  property: one(properties, {
+    fields: [documents.propertyId],
+    references: [properties.id],
+  }),
+  transaction: one(transactions, {
+    fields: [documents.transactionId],
+    references: [transactions.id],
+  }),
+}));
+
+export const recurringTransactionsRelations = relations(
+  recurringTransactions,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [recurringTransactions.userId],
+      references: [users.id],
+    }),
+    property: one(properties, {
+      fields: [recurringTransactions.propertyId],
+      references: [properties.id],
+    }),
+    linkedBankAccount: one(bankAccounts, {
+      fields: [recurringTransactions.linkedBankAccountId],
+      references: [bankAccounts.id],
+    }),
+    expectedTransactions: many(expectedTransactions),
+  })
+);
+
+export const expectedTransactionsRelations = relations(
+  expectedTransactions,
+  ({ one }) => ({
+    recurringTransaction: one(recurringTransactions, {
+      fields: [expectedTransactions.recurringTransactionId],
+      references: [recurringTransactions.id],
+    }),
+    user: one(users, {
+      fields: [expectedTransactions.userId],
+      references: [users.id],
+    }),
+    property: one(properties, {
+      fields: [expectedTransactions.propertyId],
+      references: [properties.id],
+    }),
+    matchedTransaction: one(transactions, {
+      fields: [expectedTransactions.matchedTransactionId],
+      references: [transactions.id],
+    }),
+  })
+);
+
+export const propertyValuesRelations = relations(propertyValues, ({ one }) => ({
+  property: one(properties, {
+    fields: [propertyValues.propertyId],
+    references: [properties.id],
+  }),
+  user: one(users, {
+    fields: [propertyValues.userId],
+    references: [users.id],
+  }),
+}));
+
+export const connectionAlertsRelations = relations(connectionAlerts, ({ one }) => ({
+  user: one(users, {
+    fields: [connectionAlerts.userId],
+    references: [users.id],
+  }),
+  bankAccount: one(bankAccounts, {
+    fields: [connectionAlerts.bankAccountId],
+    references: [bankAccounts.id],
+  }),
+}));
+
+export const userOnboarding = pgTable("user_onboarding", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  wizardDismissedAt: timestamp("wizard_dismissed_at"),
+  checklistDismissedAt: timestamp("checklist_dismissed_at"),
+  completedSteps: text("completed_steps").array().default([]).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const userOnboardingRelations = relations(userOnboarding, ({ one }) => ({
+  user: one(users, {
+    fields: [userOnboarding.userId],
+    references: [users.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -247,3 +627,17 @@ export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type Loan = typeof loans.$inferSelect;
 export type NewLoan = typeof loans.$inferInsert;
+export type PropertySale = typeof propertySales.$inferSelect;
+export type NewPropertySale = typeof propertySales.$inferInsert;
+export type Document = typeof documents.$inferSelect;
+export type NewDocument = typeof documents.$inferInsert;
+export type RecurringTransaction = typeof recurringTransactions.$inferSelect;
+export type NewRecurringTransaction = typeof recurringTransactions.$inferInsert;
+export type ExpectedTransaction = typeof expectedTransactions.$inferSelect;
+export type NewExpectedTransaction = typeof expectedTransactions.$inferInsert;
+export type PropertyValue = typeof propertyValues.$inferSelect;
+export type NewPropertyValue = typeof propertyValues.$inferInsert;
+export type ConnectionAlert = typeof connectionAlerts.$inferSelect;
+export type NewConnectionAlert = typeof connectionAlerts.$inferInsert;
+export type UserOnboarding = typeof userOnboarding.$inferSelect;
+export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
