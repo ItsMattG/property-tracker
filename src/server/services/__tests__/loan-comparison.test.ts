@@ -5,7 +5,6 @@ import {
   calculateTotalInterestSaved,
   calculateBreakEvenMonths,
   generateAmortizationSchedule,
-  AmortizationEntry,
 } from "../loan-comparison";
 
 describe("loan-comparison service", () => {
