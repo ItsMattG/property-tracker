@@ -23,6 +23,7 @@ import {
   Share2,
   ClipboardCheck,
   Briefcase,
+  ShieldCheck,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
@@ -56,6 +57,7 @@ const settingsItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { data: pendingCount } = trpc.categorization.getPendingCount.useQuery();
+  const { data: activeEntity } = trpc.entity.getActive.useQuery();
 
   return (
     <aside className="w-64 border-r border-border bg-card min-h-screen p-4">
@@ -72,6 +74,20 @@ export function Sidebar() {
 
       <div className="mb-4">
         <EntitySwitcher />
+        {activeEntity && (activeEntity.type === "trust" || activeEntity.type === "smsf") && (
+          <Link
+            href={`/entities/${activeEntity.id}/compliance`}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 mt-2 rounded-md text-sm font-medium transition-colors",
+              pathname === `/entities/${activeEntity.id}/compliance`
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            )}
+          >
+            <ShieldCheck className="w-5 h-5" />
+            Entity Compliance
+          </Link>
+        )}
       </div>
 
       <nav className="space-y-1">
