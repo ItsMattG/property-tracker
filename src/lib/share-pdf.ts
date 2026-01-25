@@ -13,6 +13,29 @@ function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
+function addWatermark(doc: jsPDF): void {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Set watermark style - light gray
+  doc.setTextColor(220, 220, 220);
+  doc.setFontSize(45);
+
+  // Calculate center position
+  const text = "Powered by PropertyTracker";
+  const centerX = pageWidth / 2;
+  const centerY = pageHeight / 2;
+
+  // Draw watermark diagonally across the page
+  doc.text(text, centerX, centerY, {
+    angle: 45,
+    align: "center",
+  });
+
+  // Reset text color for subsequent content
+  doc.setTextColor(0, 0, 0);
+}
+
 export function generateSharePDF(
   data: PortfolioSnapshot,
   privacyMode: string,
@@ -20,6 +43,9 @@ export function generateSharePDF(
 ): Blob {
   const doc = new jsPDF();
   let y = 20;
+
+  // Add watermark to first page
+  addWatermark(doc);
 
   // Title
   doc.setFontSize(20);
@@ -98,6 +124,7 @@ export function generateSharePDF(
       // Check if we need a new page
       if (y > 250) {
         doc.addPage();
+        addWatermark(doc);
         y = 20;
       }
 
