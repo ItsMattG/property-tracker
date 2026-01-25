@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ValuationCard } from "@/components/valuation";
 import { PropertyComplianceSection } from "@/components/compliance/PropertyComplianceSection";
 import { MilestonesSection } from "@/components/properties/MilestonesSection";
+import { ClimateRiskCard } from "@/components/climate-risk";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign } from "lucide-react";
 
 const formatCurrency = (value: string | number) => {
@@ -168,6 +169,12 @@ export default function PropertyDetailPage() {
 
       {/* Valuation Card */}
       <ValuationCard propertyId={propertyId} />
+
+      {/* Climate Risk Card */}
+      <ClimateRiskCard
+        propertyId={propertyId}
+        climateRisk={property.climateRisk}
+      />
 
       {/* Milestones Section */}
       {milestones && milestones.length > 0 && (
