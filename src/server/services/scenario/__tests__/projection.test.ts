@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { applyInterestRateFactor } from "../projection";
-import type { InterestRateFactorConfig } from "../types";
+import { applyInterestRateFactor, applyVacancyFactor } from "../projection";
+import type { InterestRateFactorConfig, VacancyFactorConfig } from "../types";
 
 describe("Projection Engine", () => {
   describe("applyInterestRateFactor", () => {
@@ -53,6 +53,44 @@ describe("Projection Engine", () => {
 
       // Should not be affected
       expect(result.adjustedInterest).toBeCloseTo(2500, 0);
+    });
+  });
+
+  describe("applyVacancyFactor", () => {
+    it("returns zero income during vacancy months", () => {
+      const property = {
+        id: "prop-1",
+        monthlyRent: 2000,
+      };
+      const config: VacancyFactorConfig = { propertyId: "prop-1", months: 3 };
+
+      const result = applyVacancyFactor(property, config, 0); // month 0
+      expect(result.adjustedRent).toBe(0);
+      expect(result.isVacant).toBe(true);
+    });
+
+    it("returns normal income after vacancy period ends", () => {
+      const property = {
+        id: "prop-1",
+        monthlyRent: 2000,
+      };
+      const config: VacancyFactorConfig = { propertyId: "prop-1", months: 3 };
+
+      const result = applyVacancyFactor(property, config, 4); // month 4 (after vacancy)
+      expect(result.adjustedRent).toBe(2000);
+      expect(result.isVacant).toBe(false);
+    });
+
+    it("does not affect other properties", () => {
+      const property = {
+        id: "prop-2",
+        monthlyRent: 2000,
+      };
+      const config: VacancyFactorConfig = { propertyId: "prop-1", months: 3 };
+
+      const result = applyVacancyFactor(property, config, 0);
+      expect(result.adjustedRent).toBe(2000);
+      expect(result.isVacant).toBe(false);
     });
   });
 });

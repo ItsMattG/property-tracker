@@ -1,4 +1,4 @@
-import type { InterestRateFactorConfig } from "./types";
+import type { InterestRateFactorConfig, VacancyFactorConfig } from "./types";
 
 export interface LoanForProjection {
   id: string;
@@ -33,5 +33,39 @@ export function applyInterestRateFactor(
     originalInterest: originalMonthlyInterest,
     adjustedInterest: adjustedMonthlyInterest,
     adjustedRate,
+  };
+}
+
+export interface PropertyForProjection {
+  id: string;
+  monthlyRent: number;
+}
+
+export interface VacancyResult {
+  propertyId: string;
+  originalRent: number;
+  adjustedRent: number;
+  isVacant: boolean;
+}
+
+export function applyVacancyFactor(
+  property: PropertyForProjection,
+  config: VacancyFactorConfig,
+  currentMonth: number,
+  startMonth: number = 0
+): VacancyResult {
+  const vacancyStart = startMonth;
+  const vacancyEnd = startMonth + config.months;
+
+  const isThisPropertyVacant =
+    config.propertyId === property.id &&
+    currentMonth >= vacancyStart &&
+    currentMonth < vacancyEnd;
+
+  return {
+    propertyId: property.id,
+    originalRent: property.monthlyRent,
+    adjustedRent: isThisPropertyVacant ? 0 : property.monthlyRent,
+    isVacant: isThisPropertyVacant,
   };
 }
