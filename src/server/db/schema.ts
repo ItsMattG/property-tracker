@@ -304,6 +304,25 @@ export const milestoneTypeEnum = pgEnum("milestone_type", [
   "equity_amount",
 ]);
 
+export const entityTypeEnum = pgEnum("entity_type", [
+  "personal",
+  "trust",
+  "smsf",
+  "company",
+]);
+
+export const trusteeTypeEnum = pgEnum("trustee_type", [
+  "individual",
+  "corporate",
+]);
+
+export const entityMemberRoleEnum = pgEnum("entity_member_role", [
+  "owner",
+  "admin",
+  "member",
+  "accountant",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -313,6 +332,71 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const entities = pgTable(
+  "entities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    type: entityTypeEnum("type").notNull(),
+    name: text("name").notNull(),
+    abn: text("abn"),
+    tfn: text("tfn"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [index("entities_user_id_idx").on(table.userId)]
+);
+
+export const trustDetails = pgTable("trust_details", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id")
+    .references(() => entities.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  trusteeType: trusteeTypeEnum("trustee_type").notNull(),
+  trusteeName: text("trustee_name").notNull(),
+  settlementDate: date("settlement_date"),
+  trustDeedDate: date("trust_deed_date"),
+});
+
+export const smsfDetails = pgTable("smsf_details", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  entityId: uuid("entity_id")
+    .references(() => entities.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  fundName: text("fund_name").notNull(),
+  fundAbn: text("fund_abn"),
+  establishmentDate: date("establishment_date"),
+  auditorName: text("auditor_name"),
+  auditorContact: text("auditor_contact"),
+});
+
+export const entityMembers = pgTable(
+  "entity_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    entityId: uuid("entity_id")
+      .references(() => entities.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    role: entityMemberRoleEnum("role").notNull(),
+    invitedBy: uuid("invited_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    invitedAt: timestamp("invited_at").defaultNow().notNull(),
+    joinedAt: timestamp("joined_at"),
+  },
+  (table) => [
+    index("entity_members_entity_id_idx").on(table.entityId),
+    index("entity_members_user_id_idx").on(table.userId),
+  ]
+);
 
 export const properties = pgTable("properties", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -743,6 +827,48 @@ export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
   bankAccounts: many(bankAccounts),
   transactions: many(transactions),
+  entities: many(entities),
+}));
+
+export const entitiesRelations = relations(entities, ({ one, many }) => ({
+  user: one(users, {
+    fields: [entities.userId],
+    references: [users.id],
+  }),
+  trustDetails: one(trustDetails),
+  smsfDetails: one(smsfDetails),
+  members: many(entityMembers),
+  properties: many(properties),
+}));
+
+export const trustDetailsRelations = relations(trustDetails, ({ one }) => ({
+  entity: one(entities, {
+    fields: [trustDetails.entityId],
+    references: [entities.id],
+  }),
+}));
+
+export const smsfDetailsRelations = relations(smsfDetails, ({ one }) => ({
+  entity: one(entities, {
+    fields: [smsfDetails.entityId],
+    references: [entities.id],
+  }),
+}));
+
+export const entityMembersRelations = relations(entityMembers, ({ one }) => ({
+  entity: one(entities, {
+    fields: [entityMembers.entityId],
+    references: [entities.id],
+  }),
+  user: one(users, {
+    fields: [entityMembers.userId],
+    references: [users.id],
+  }),
+  inviter: one(users, {
+    fields: [entityMembers.invitedBy],
+    references: [users.id],
+    relationName: "entityInviter",
+  }),
 }));
 
 export const propertiesRelations = relations(properties, ({ one, many }) => ({
@@ -1734,6 +1860,14 @@ export const refinanceAlertsRelations = relations(refinanceAlerts, ({ one }) => 
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type Entity = typeof entities.$inferSelect;
+export type NewEntity = typeof entities.$inferInsert;
+export type TrustDetails = typeof trustDetails.$inferSelect;
+export type NewTrustDetails = typeof trustDetails.$inferInsert;
+export type SmsfDetails = typeof smsfDetails.$inferSelect;
+export type NewSmsfDetails = typeof smsfDetails.$inferInsert;
+export type EntityMember = typeof entityMembers.$inferSelect;
+export type NewEntityMember = typeof entityMembers.$inferInsert;
 export type Property = typeof properties.$inferSelect;
 export type NewProperty = typeof properties.$inferInsert;
 export type BankAccount = typeof bankAccounts.$inferSelect;
