@@ -165,6 +165,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "eofy_suggestions",
   "refinance_opportunity",
   "cash_rate_changed",
+  "compliance_reminder",
 ]);
 
 export const notificationChannelEnum = pgEnum("notification_channel", [
@@ -1040,6 +1041,7 @@ export const notificationPreferences = pgTable("notification_preferences", {
   syncFailed: boolean("sync_failed").default(true).notNull(),
   anomalyDetected: boolean("anomaly_detected").default(true).notNull(),
   weeklyDigest: boolean("weekly_digest").default(true).notNull(),
+  complianceReminders: boolean("compliance_reminders").default(true).notNull(),
   quietHoursStart: text("quiet_hours_start").default("21:00").notNull(),
   quietHoursEnd: text("quiet_hours_end").default("08:00").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

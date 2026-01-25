@@ -40,6 +40,7 @@ describe("notification service", () => {
       syncFailed: true,
       anomalyDetected: true,
       weeklyDigest: true,
+      complianceReminders: true,
     };
 
     it("returns true when preference is enabled", () => {

@@ -13,7 +13,8 @@ export type NotificationType =
   | "weekly_digest"
   | "eofy_suggestions"
   | "refinance_opportunity"
-  | "cash_rate_changed";
+  | "cash_rate_changed"
+  | "compliance_reminder";
 
 export type NotificationChannel = "email" | "push";
 
@@ -24,6 +25,7 @@ export interface NotificationPrefs {
   syncFailed: boolean;
   anomalyDetected: boolean;
   weeklyDigest: boolean;
+  complianceReminders: boolean;
 }
 
 export interface PushSubscriptionData {
@@ -107,6 +109,8 @@ export function shouldSendNotification(
       return prefs.anomalyDetected;
     case "weekly_digest":
       return prefs.weeklyDigest;
+    case "compliance_reminder":
+      return prefs.complianceReminders;
     default:
       return false;
   }
@@ -179,6 +183,7 @@ export function getDefaultPreferences(): NotificationPrefs & {
     syncFailed: true,
     anomalyDetected: true,
     weeklyDigest: true,
+    complianceReminders: true,
     quietHoursStart: "21:00",
     quietHoursEnd: "08:00",
   };
