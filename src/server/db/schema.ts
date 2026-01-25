@@ -298,6 +298,11 @@ export const privacyModeEnum = pgEnum("privacy_mode", [
   "redacted",
 ]);
 
+export const milestoneTypeEnum = pgEnum("milestone_type", [
+  "lvr",
+  "equity_amount",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -1506,6 +1511,28 @@ export const complianceRecords = pgTable(
   ]
 );
 
+export const equityMilestones = pgTable(
+  "equity_milestones",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    milestoneType: milestoneTypeEnum("milestone_type").notNull(),
+    milestoneValue: decimal("milestone_value", { precision: 12, scale: 2 }).notNull(),
+    equityAtAchievement: decimal("equity_at_achievement", { precision: 12, scale: 2 }).notNull(),
+    lvrAtAchievement: decimal("lvr_at_achievement", { precision: 5, scale: 2 }).notNull(),
+    achievedAt: timestamp("achieved_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("equity_milestones_property_id_idx").on(table.propertyId),
+    index("equity_milestones_user_id_idx").on(table.userId),
+  ]
+);
+
 // Scenario Relations
 export const scenariosRelations = relations(scenarios, ({ one, many }) => ({
   user: one(users, {
@@ -1721,3 +1748,5 @@ export type PortfolioShare = typeof portfolioShares.$inferSelect;
 export type NewPortfolioShare = typeof portfolioShares.$inferInsert;
 export type ComplianceRecord = typeof complianceRecords.$inferSelect;
 export type NewComplianceRecord = typeof complianceRecords.$inferInsert;
+export type EquityMilestone = typeof equityMilestones.$inferSelect;
+export type NewEquityMilestone = typeof equityMilestones.$inferInsert;
