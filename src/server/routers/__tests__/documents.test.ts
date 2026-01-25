@@ -20,6 +20,23 @@ vi.mock("@/lib/supabase/server", () => ({
   },
 }));
 
+// Mock document extraction service
+vi.mock("../../services/document-extraction", () => ({
+  extractDocument: vi.fn().mockResolvedValue({
+    success: false,
+    data: null,
+    error: "Mocked - extraction disabled in tests",
+  }),
+}));
+
+// Mock property matcher
+vi.mock("../../services/property-matcher", () => ({
+  matchPropertyByAddress: vi.fn().mockReturnValue({
+    propertyId: null,
+    confidence: 0,
+  }),
+}));
+
 import { supabaseAdmin } from "@/lib/supabase/server";
 
 describe("documents router", () => {
@@ -228,9 +245,28 @@ describe("documents router", () => {
     it("creates document record for property", async () => {
       const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
 
-      const insertMock = vi.fn().mockReturnValue({
-        values: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([mockDocument]),
+      const mockExtraction = {
+        id: "880e8400-e29b-41d4-a716-446655440003",
+        documentId: mockDocument.id,
+        status: "processing",
+      };
+
+      // Track call count to return different values
+      let insertCallCount = 0;
+      const insertMock = vi.fn().mockImplementation(() => {
+        insertCallCount++;
+        return {
+          values: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue(
+              insertCallCount === 1 ? [mockDocument] : [mockExtraction]
+            ),
+          }),
+        };
+      });
+
+      const updateMock = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(undefined),
         }),
       });
 
@@ -240,6 +276,7 @@ describe("documents router", () => {
           properties: { findFirst: vi.fn().mockResolvedValue(mockProperty) },
         },
         insert: insertMock,
+        update: updateMock,
       };
 
       const caller = createTestCaller(ctx);
