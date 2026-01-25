@@ -4,6 +4,8 @@ import {
   calculateMonthlySavings,
   calculateTotalInterestSaved,
   calculateBreakEvenMonths,
+  generateAmortizationSchedule,
+  AmortizationEntry,
 } from "../loan-comparison";
 
 describe("loan-comparison service", () => {
@@ -85,6 +87,47 @@ describe("loan-comparison service", () => {
     it("returns 0 when switching costs are zero", () => {
       const months = calculateBreakEvenMonths(159, 0);
       expect(months).toBe(0);
+    });
+  });
+
+  describe("generateAmortizationSchedule", () => {
+    it("generates correct number of entries", () => {
+      const schedule = generateAmortizationSchedule(100000, 5, 12);
+      expect(schedule).toHaveLength(12);
+    });
+
+    it("has correct structure for each entry", () => {
+      const schedule = generateAmortizationSchedule(100000, 5, 12);
+      const first = schedule[0];
+
+      expect(first).toHaveProperty("month");
+      expect(first).toHaveProperty("payment");
+      expect(first).toHaveProperty("principal");
+      expect(first).toHaveProperty("interest");
+      expect(first).toHaveProperty("balance");
+    });
+
+    it("ends with zero balance", () => {
+      const schedule = generateAmortizationSchedule(100000, 5, 60);
+      const last = schedule[schedule.length - 1];
+
+      expect(last.balance).toBeCloseTo(0, 0);
+    });
+
+    it("first payment interest is correct", () => {
+      // $100,000 at 5% = $416.67 first month interest
+      const schedule = generateAmortizationSchedule(100000, 5, 60);
+      expect(schedule[0].interest).toBeCloseTo(416.67, 0);
+    });
+
+    it("monthly payment stays constant", () => {
+      const schedule = generateAmortizationSchedule(100000, 5, 60);
+      const payments = schedule.map(e => e.payment);
+      const firstPayment = payments[0];
+
+      payments.forEach(p => {
+        expect(p).toBeCloseTo(firstPayment, 0);
+      });
     });
   });
 });

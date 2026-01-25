@@ -53,3 +53,39 @@ export function calculateBreakEvenMonths(
 
   return Math.ceil(switchingCosts / monthlySavings);
 }
+
+export interface AmortizationEntry {
+  month: number;
+  payment: number;
+  principal: number;
+  interest: number;
+  balance: number;
+}
+
+export function generateAmortizationSchedule(
+  principal: number,
+  annualRatePercent: number,
+  termMonths: number
+): AmortizationEntry[] {
+  const schedule: AmortizationEntry[] = [];
+  const monthlyPayment = calculateMonthlyPayment(principal, annualRatePercent, termMonths);
+  const monthlyRate = annualRatePercent / 100 / 12;
+
+  let balance = principal;
+
+  for (let month = 1; month <= termMonths; month++) {
+    const interest = balance * monthlyRate;
+    const principalPaid = monthlyPayment - interest;
+    balance = Math.max(0, balance - principalPaid);
+
+    schedule.push({
+      month,
+      payment: monthlyPayment,
+      principal: principalPaid,
+      interest,
+      balance,
+    });
+  }
+
+  return schedule;
+}
