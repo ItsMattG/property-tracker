@@ -18,6 +18,8 @@ import {
   Users,
   History,
   Sparkles,
+  Scale,
+  BellRing,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
@@ -33,11 +35,13 @@ const navItems = [
   { href: "/reports/forecast", label: "Forecast", icon: TrendingUp },
   { href: "/banking", label: "Banking", icon: Landmark },
   { href: "/loans", label: "Loans", icon: Wallet },
+  { href: "/loans/compare", label: "Compare Loans", icon: Scale },
   { href: "/export", label: "Export", icon: FileDown },
 ];
 
 const settingsItems = [
   { href: "/settings/notifications", label: "Notifications", icon: Bell },
+  { href: "/settings/refinance-alerts", label: "Refinance Alerts", icon: BellRing },
   { href: "/settings/team", label: "Team", icon: Users },
   { href: "/settings/audit-log", label: "Audit Log", icon: History },
 ];
