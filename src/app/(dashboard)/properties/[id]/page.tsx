@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ValuationCard } from "@/components/valuation";
+import { PropertyComplianceSection } from "@/components/compliance/PropertyComplianceSection";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign } from "lucide-react";
 
 const formatCurrency = (value: string | number) => {
@@ -161,6 +162,11 @@ export default function PropertyDetailPage() {
 
       {/* Valuation Card */}
       <ValuationCard propertyId={propertyId} />
+
+      {/* Compliance Section */}
+      <div className="lg:col-span-2">
+        <PropertyComplianceSection propertyId={propertyId} />
+      </div>
     </div>
   );
 }
