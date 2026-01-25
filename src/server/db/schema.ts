@@ -727,6 +727,21 @@ export const documentsRelations = relations(documents, ({ one }) => ({
   }),
 }));
 
+export const documentExtractionsRelations = relations(documentExtractions, ({ one }) => ({
+  document: one(documents, {
+    fields: [documentExtractions.documentId],
+    references: [documents.id],
+  }),
+  matchedProperty: one(properties, {
+    fields: [documentExtractions.matchedPropertyId],
+    references: [properties.id],
+  }),
+  draftTransaction: one(transactions, {
+    fields: [documentExtractions.draftTransactionId],
+    references: [transactions.id],
+  }),
+}));
+
 export const recurringTransactionsRelations = relations(
   recurringTransactions,
   ({ one, many }) => ({
@@ -1379,3 +1394,5 @@ export type LoanComparison = typeof loanComparisons.$inferSelect;
 export type NewLoanComparison = typeof loanComparisons.$inferInsert;
 export type RefinanceAlert = typeof refinanceAlerts.$inferSelect;
 export type NewRefinanceAlert = typeof refinanceAlerts.$inferInsert;
+export type DocumentExtraction = typeof documentExtractions.$inferSelect;
+export type NewDocumentExtraction = typeof documentExtractions.$inferInsert;

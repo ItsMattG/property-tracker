@@ -5,6 +5,8 @@ import {
   documentExtractions,
   transactionStatusEnum,
   transactions,
+  documentExtractionsRelations,
+  DocumentExtraction,
 } from "../schema";
 
 describe("document extraction schema", () => {
@@ -49,5 +51,27 @@ describe("document extraction schema", () => {
   it("has status column on transactions table", () => {
     const columns = Object.keys(transactions);
     expect(columns).toContain("status");
+  });
+
+  it("exports DocumentExtraction type", () => {
+    const extraction: DocumentExtraction = {
+      id: "test",
+      documentId: "test",
+      status: "processing",
+      documentType: "receipt",
+      extractedData: null,
+      confidence: null,
+      matchedPropertyId: null,
+      propertyMatchConfidence: null,
+      draftTransactionId: null,
+      error: null,
+      createdAt: new Date(),
+      completedAt: null,
+    };
+    expect(extraction.status).toBe("processing");
+  });
+
+  it("has documentExtractions relations defined", () => {
+    expect(documentExtractionsRelations).toBeDefined();
   });
 });
