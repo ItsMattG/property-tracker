@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { applyInterestRateFactor, applyVacancyFactor } from "../projection";
+import {
+  applyInterestRateFactor,
+  applyVacancyFactor,
+  applyRentChangeFactor,
+  applyExpenseChangeFactor,
+} from "../projection";
 import type { InterestRateFactorConfig, VacancyFactorConfig } from "../types";
 
 describe("Projection Engine", () => {
@@ -91,6 +96,51 @@ describe("Projection Engine", () => {
       const result = applyVacancyFactor(property, config, 0);
       expect(result.adjustedRent).toBe(2000);
       expect(result.isVacant).toBe(false);
+    });
+  });
+
+  describe("applyRentChangeFactor", () => {
+    it("increases rent by percentage", () => {
+      const property = { id: "prop-1", monthlyRent: 2000 };
+      const config = { changePercent: 10 }; // +10%
+
+      const result = applyRentChangeFactor(property, config);
+      expect(result.adjustedRent).toBe(2200);
+    });
+
+    it("decreases rent by percentage", () => {
+      const property = { id: "prop-1", monthlyRent: 2000 };
+      const config = { changePercent: -5 }; // -5%
+
+      const result = applyRentChangeFactor(property, config);
+      expect(result.adjustedRent).toBe(1900);
+    });
+
+    it("only affects specified property", () => {
+      const property = { id: "prop-1", monthlyRent: 2000 };
+      const config = { changePercent: 10, propertyId: "prop-2" };
+
+      const result = applyRentChangeFactor(property, config);
+      expect(result.adjustedRent).toBe(2000); // unchanged
+    });
+  });
+
+  describe("applyExpenseChangeFactor", () => {
+    it("increases expenses by percentage", () => {
+      const expenses = { total: 1000, byCategory: { insurance: 200, repairs: 300 } };
+      const config = { changePercent: 20 };
+
+      const result = applyExpenseChangeFactor(expenses, config);
+      expect(result.adjustedTotal).toBe(600); // only byCategory items: 200*1.2 + 300*1.2 = 600
+    });
+
+    it("only affects specified category", () => {
+      const expenses = { total: 1000, byCategory: { insurance: 200, repairs: 300, other: 500 } };
+      const config = { changePercent: 50, category: "repairs" };
+
+      const result = applyExpenseChangeFactor(expenses, config);
+      // Only repairs (+50%): 300 * 1.5 = 450, others unchanged: 200 + 450 + 500 = 1150
+      expect(result.adjustedTotal).toBe(1150);
     });
   });
 });
