@@ -328,6 +328,7 @@ export const properties = pgTable("properties", {
   entityName: text("entity_name").default("Personal").notNull(),
   status: propertyStatusEnum("status").default("active").notNull(),
   soldAt: date("sold_at"),
+  climateRisk: jsonb("climate_risk").$type<import("@/types/climate-risk").ClimateRisk>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
