@@ -1,23 +1,15 @@
-import { config } from "dotenv";
-
-// Load env before importing db modules
-config({ path: ".env.local" });
+import { execSync } from "child_process";
 
 /**
- * Seeds demo data for E2E tests.
- * Uses dynamic import to ensure env vars are loaded first.
+ * Seeds demo data for E2E tests by calling the seed script.
+ * Uses subprocess to avoid ESM/CJS module issues.
  */
 export async function seedDemoDataForTests(clerkId: string): Promise<void> {
-  const { seed, clean } = await import("../../src/lib/seed");
-
-  // Clean existing data first for consistent state
-  await clean(clerkId);
-
-  // Seed fresh demo data
-  await seed({
-    clerkId,
-    mode: "demo",
-    clean: false, // Already cleaned above
+  // Clean existing data first, then seed fresh demo data
+  execSync(`npx tsx src/scripts/seed.ts demo --clerk-id=${clerkId} --clean`, {
+    cwd: process.cwd(),
+    stdio: "inherit",
+    env: { ...process.env },
   });
 }
 
@@ -25,6 +17,9 @@ export async function seedDemoDataForTests(clerkId: string): Promise<void> {
  * Cleans up seeded data after tests.
  */
 export async function cleanupSeedData(clerkId: string): Promise<void> {
-  const { clean } = await import("../../src/lib/seed");
-  await clean(clerkId);
+  execSync(`npx tsx src/scripts/seed.ts clean --clerk-id=${clerkId} --force`, {
+    cwd: process.cwd(),
+    stdio: "inherit",
+    env: { ...process.env },
+  });
 }
