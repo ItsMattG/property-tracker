@@ -403,6 +403,9 @@ export const properties = pgTable("properties", {
   userId: uuid("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
+  entityId: uuid("entity_id").references(() => entities.id, {
+    onDelete: "set null",
+  }),
   address: text("address").notNull(),
   suburb: text("suburb").notNull(),
   state: stateEnum("state").notNull(),
@@ -875,6 +878,10 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
   user: one(users, {
     fields: [properties.userId],
     references: [users.id],
+  }),
+  entity: one(entities, {
+    fields: [properties.entityId],
+    references: [entities.id],
   }),
   transactions: many(transactions),
   bankAccounts: many(bankAccounts),
