@@ -634,7 +634,7 @@ export const transactionsRelations = relations(transactions, ({ one, many }) => 
   documents: many(documents),
 }));
 
-export const loansRelations = relations(loans, ({ one }) => ({
+export const loansRelations = relations(loans, ({ one, many }) => ({
   user: one(users, {
     fields: [loans.userId],
     references: [users.id],
@@ -647,6 +647,8 @@ export const loansRelations = relations(loans, ({ one }) => ({
     fields: [loans.offsetAccountId],
     references: [bankAccounts.id],
   }),
+  comparisons: many(loanComparisons),
+  refinanceAlert: one(refinanceAlerts),
 }));
 
 export const propertySalesRelations = relations(propertySales, ({ one }) => ({
@@ -1247,6 +1249,24 @@ export const taxSuggestionsRelations = relations(taxSuggestions, ({ one }) => ({
   property: one(properties, {
     fields: [taxSuggestions.propertyId],
     references: [properties.id],
+  }),
+}));
+
+export const loanComparisonsRelations = relations(loanComparisons, ({ one }) => ({
+  user: one(users, {
+    fields: [loanComparisons.userId],
+    references: [users.id],
+  }),
+  loan: one(loans, {
+    fields: [loanComparisons.loanId],
+    references: [loans.id],
+  }),
+}));
+
+export const refinanceAlertsRelations = relations(refinanceAlerts, ({ one }) => ({
+  loan: one(loans, {
+    fields: [refinanceAlerts.loanId],
+    references: [loans.id],
   }),
 }));
 

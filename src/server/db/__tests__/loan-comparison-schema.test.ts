@@ -4,6 +4,8 @@ import {
   loanComparisons,
   refinanceAlerts,
   loanPurposeEnum,
+  loanComparisonsRelations,
+  refinanceAlertsRelations,
 } from "../schema";
 
 describe("loan comparison schema", () => {
@@ -33,5 +35,13 @@ describe("loan comparison schema", () => {
 
   it("exports loanPurposeEnum", () => {
     expect(loanPurposeEnum).toBeDefined();
+  });
+
+  it("exports loanComparisonsRelations", () => {
+    expect(loanComparisonsRelations).toBeDefined();
+  });
+
+  it("exports refinanceAlertsRelations", () => {
+    expect(refinanceAlertsRelations).toBeDefined();
   });
 });
