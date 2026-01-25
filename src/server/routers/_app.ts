@@ -27,6 +27,8 @@ import { loanPackRouter } from "./loanPack";
 import { brokerRouter } from "./broker";
 import { benchmarkingRouter } from "./benchmarking";
 import { entityRouter } from "./entity";
+import { smsfComplianceRouter } from "./smsfCompliance";
+import { trustComplianceRouter } from "./trustCompliance";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -57,6 +59,8 @@ export const appRouter = router({
   broker: brokerRouter,
   benchmarking: benchmarkingRouter,
   entity: entityRouter,
+  smsfCompliance: smsfComplianceRouter,
+  trustCompliance: trustComplianceRouter,
 });
 
 export type AppRouter = typeof appRouter;
