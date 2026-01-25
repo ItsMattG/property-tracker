@@ -1,10 +1,22 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   buildExtractionPrompt,
   parseExtractionResponse,
   ExtractedData,
   EXTRACTION_PROMPT_BASE,
+  getMediaType,
 } from "../document-extraction";
+
+// Mock Supabase
+vi.mock("@supabase/supabase-js", () => ({
+  createClient: vi.fn(() => ({
+    storage: {
+      from: vi.fn(() => ({
+        download: vi.fn(),
+      })),
+    },
+  })),
+}));
 
 describe("document-extraction service", () => {
   describe("buildExtractionPrompt", () => {
@@ -100,6 +112,24 @@ describe("document-extraction service", () => {
       const result = parseExtractionResponse(response);
       expect(result.amount).toBeNull();
       expect(result.vendor).toBeNull();
+    });
+  });
+
+  describe("getMediaType", () => {
+    it("returns correct type for jpeg", () => {
+      expect(getMediaType("image/jpeg")).toBe("image/jpeg");
+    });
+
+    it("returns correct type for png", () => {
+      expect(getMediaType("image/png")).toBe("image/png");
+    });
+
+    it("returns correct type for pdf", () => {
+      expect(getMediaType("application/pdf")).toBe("application/pdf");
+    });
+
+    it("defaults to jpeg for unknown types", () => {
+      expect(getMediaType("image/heic")).toBe("image/jpeg");
     });
   });
 });

@@ -94,6 +94,34 @@ export function buildExtractionPrompt(): string {
   return EXTRACTION_PROMPT_BASE;
 }
 
+type SupportedMediaType = "image/jpeg" | "image/png" | "application/pdf";
+
+export function getMediaType(fileType: string): SupportedMediaType {
+  switch (fileType) {
+    case "image/jpeg":
+      return "image/jpeg";
+    case "image/png":
+      return "image/png";
+    case "application/pdf":
+      return "application/pdf";
+    default:
+      return "image/jpeg";
+  }
+}
+
+export async function getDocumentContent(storagePath: string): Promise<string> {
+  const { data, error } = await getSupabase()
+    .storage.from("documents")
+    .download(storagePath);
+
+  if (error || !data) {
+    throw new Error(`Failed to download document: ${error?.message}`);
+  }
+
+  const buffer = await data.arrayBuffer();
+  return Buffer.from(buffer).toString("base64");
+}
+
 export function parseExtractionResponse(response: string): ExtractedData {
   const defaultResult: ExtractedData = {
     documentType: "unknown",
