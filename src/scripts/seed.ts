@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { seed, clean } from "@/lib/seed";
 import type { SeedMode } from "@/lib/seed";
 
