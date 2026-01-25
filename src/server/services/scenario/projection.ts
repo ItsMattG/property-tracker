@@ -243,3 +243,52 @@ export function projectMonth(
     expensesByProperty,
   };
 }
+
+export interface SummaryMetrics {
+  totalIncome: number;
+  totalExpenses: number;
+  totalNet: number;
+  averageMonthlyIncome: number;
+  averageMonthlyExpenses: number;
+  averageMonthlyNet: number;
+  monthsWithNegativeCashFlow: number;
+  lowestMonthNet: number;
+  highestMonthNet: number;
+}
+
+export interface ProjectionResult {
+  monthlyResults: MonthProjection[];
+  summaryMetrics: SummaryMetrics;
+}
+
+export function runProjection(
+  portfolio: PortfolioState,
+  factors: ScenarioFactorInput[],
+  timeHorizonMonths: number
+): ProjectionResult {
+  const monthlyResults: MonthProjection[] = [];
+
+  for (let month = 0; month < timeHorizonMonths; month++) {
+    monthlyResults.push(projectMonth(portfolio, factors, month));
+  }
+
+  const totalIncome = monthlyResults.reduce((sum, m) => sum + m.totalIncome, 0);
+  const totalExpenses = monthlyResults.reduce((sum, m) => sum + m.totalExpenses, 0);
+  const totalNet = totalIncome - totalExpenses;
+  const monthsWithNegativeCashFlow = monthlyResults.filter((m) => m.netCashFlow < 0).length;
+  const netCashFlows = monthlyResults.map((m) => m.netCashFlow);
+
+  const summaryMetrics: SummaryMetrics = {
+    totalIncome,
+    totalExpenses,
+    totalNet,
+    averageMonthlyIncome: totalIncome / timeHorizonMonths,
+    averageMonthlyExpenses: totalExpenses / timeHorizonMonths,
+    averageMonthlyNet: totalNet / timeHorizonMonths,
+    monthsWithNegativeCashFlow,
+    lowestMonthNet: Math.min(...netCashFlows),
+    highestMonthNet: Math.max(...netCashFlows),
+  };
+
+  return { monthlyResults, summaryMetrics };
+}

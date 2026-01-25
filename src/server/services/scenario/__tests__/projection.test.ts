@@ -5,8 +5,10 @@ import {
   applyRentChangeFactor,
   applyExpenseChangeFactor,
   projectMonth,
+  runProjection,
   type PortfolioState,
   type ScenarioFactorInput,
+  type ProjectionResult,
 } from "../projection";
 import type { InterestRateFactorConfig, VacancyFactorConfig } from "../types";
 
@@ -196,6 +198,44 @@ describe("Projection Engine", () => {
       const result = projectMonth(basePortfolio, factors, 0);
 
       expect(result.totalIncome).toBe(1800); // 2000 * 0.9
+    });
+  });
+
+  describe("runProjection", () => {
+    const basePortfolio: PortfolioState = {
+      properties: [
+        { id: "prop-1", monthlyRent: 2000, monthlyExpenses: 500 },
+      ],
+      loans: [
+        { id: "loan-1", propertyId: "prop-1", currentBalance: 400000, interestRate: 6.0, repaymentAmount: 2500 },
+      ],
+    };
+
+    it("generates projections for specified time horizon", () => {
+      const result = runProjection(basePortfolio, [], 12);
+
+      expect(result.monthlyResults).toHaveLength(12);
+      expect(result.summaryMetrics).toBeDefined();
+    });
+
+    it("calculates summary metrics correctly", () => {
+      const result = runProjection(basePortfolio, [], 12);
+
+      expect(result.summaryMetrics.totalIncome).toBeGreaterThan(0);
+      expect(result.summaryMetrics.totalExpenses).toBeGreaterThan(0);
+      expect(result.summaryMetrics.averageMonthlyNet).toBeDefined();
+    });
+
+    it("identifies months with negative cash flow", () => {
+      // Create scenario where expenses > income
+      const expensivePortfolio: PortfolioState = {
+        properties: [{ id: "prop-1", monthlyRent: 1000, monthlyExpenses: 500 }],
+        loans: [{ id: "loan-1", propertyId: "prop-1", currentBalance: 500000, interestRate: 8.0, repaymentAmount: 3500 }],
+      };
+
+      const result = runProjection(expensivePortfolio, [], 12);
+
+      expect(result.summaryMetrics.monthsWithNegativeCashFlow).toBeGreaterThan(0);
     });
   });
 });
