@@ -3,8 +3,6 @@ import {
   getMargin,
   getEstimatedMarketRate,
   getLatestCashRate,
-  LoanPurpose,
-  RepaymentType
 } from "../rate-data";
 import { db } from "@/server/db";
 
