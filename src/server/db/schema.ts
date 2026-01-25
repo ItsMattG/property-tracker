@@ -1534,6 +1534,27 @@ export const equityMilestones = pgTable(
   ]
 );
 
+export const loanPacks = pgTable(
+  "loan_packs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    token: text("token").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    accessedAt: timestamp("accessed_at", { withTimezone: true }),
+    accessCount: integer("access_count").default(0).notNull(),
+    snapshotData: jsonb("snapshot_data").notNull(),
+  },
+  (table) => [
+    index("loan_packs_user_id_idx").on(table.userId),
+    index("loan_packs_token_idx").on(table.token),
+    index("loan_packs_expires_at_idx").on(table.expiresAt),
+  ]
+);
+
 // Scenario Relations
 export const scenariosRelations = relations(scenarios, ({ one, many }) => ({
   user: one(users, {
@@ -1595,6 +1616,13 @@ export const complianceRecordsRelations = relations(complianceRecords, ({ one })
   document: one(documents, {
     fields: [complianceRecords.documentId],
     references: [documents.id],
+  }),
+}));
+
+export const loanPacksRelations = relations(loanPacks, ({ one }) => ({
+  user: one(users, {
+    fields: [loanPacks.userId],
+    references: [users.id],
   }),
 }));
 
@@ -1751,3 +1779,5 @@ export type ComplianceRecord = typeof complianceRecords.$inferSelect;
 export type NewComplianceRecord = typeof complianceRecords.$inferInsert;
 export type EquityMilestone = typeof equityMilestones.$inferSelect;
 export type NewEquityMilestone = typeof equityMilestones.$inferInsert;
+export type LoanPack = typeof loanPacks.$inferSelect;
+export type NewLoanPack = typeof loanPacks.$inferInsert;
