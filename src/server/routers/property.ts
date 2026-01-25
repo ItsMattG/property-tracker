@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { properties } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { properties, equityMilestones } from "../db/schema";
+import { eq, and, desc } from "drizzle-orm";
 
 const propertySchema = z.object({
   address: z.string().min(1, "Address is required"),
@@ -85,5 +85,20 @@ export const propertyRouter = router({
         );
 
       return { success: true };
+    }),
+
+  getMilestones: protectedProcedure
+    .input(z.object({ propertyId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db
+        .select()
+        .from(equityMilestones)
+        .where(
+          and(
+            eq(equityMilestones.propertyId, input.propertyId),
+            eq(equityMilestones.userId, ctx.portfolio.ownerId)
+          )
+        )
+        .orderBy(desc(equityMilestones.achievedAt));
     }),
 });
