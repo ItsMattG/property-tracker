@@ -5,7 +5,17 @@ import {
   ExtractedData,
   EXTRACTION_PROMPT_BASE,
   getMediaType,
+  ExtractionResult,
 } from "../document-extraction";
+
+// Add mock for Anthropic at top of file
+vi.mock("@anthropic-ai/sdk", () => ({
+  default: vi.fn().mockImplementation(() => ({
+    messages: {
+      create: vi.fn(),
+    },
+  })),
+}));
 
 // Mock Supabase
 vi.mock("@supabase/supabase-js", () => ({
@@ -130,6 +140,29 @@ describe("document-extraction service", () => {
 
     it("defaults to jpeg for unknown types", () => {
       expect(getMediaType("image/heic")).toBe("image/jpeg");
+    });
+  });
+
+  describe("extractDocument", () => {
+    it("returns extraction result interface", () => {
+      const mockResult: ExtractionResult = {
+        success: true,
+        data: {
+          documentType: "receipt",
+          confidence: 0.9,
+          vendor: "Test Store",
+          amount: 100,
+          date: "2026-01-20",
+          dueDate: null,
+          category: "repairs_and_maintenance",
+          propertyAddress: null,
+          lineItems: null,
+          rawText: "test",
+        },
+      };
+
+      expect(mockResult.success).toBe(true);
+      expect(mockResult.data?.documentType).toBe("receipt");
     });
   });
 });

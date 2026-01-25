@@ -21,6 +21,12 @@ export interface ExtractedData {
   error?: string;
 }
 
+export interface ExtractionResult {
+  success: boolean;
+  data: ExtractedData | null;
+  error?: string;
+}
+
 // Lazy initialization
 let anthropicClient: Anthropic | null = null;
 let supabaseClient: SupabaseClient | null = null;
@@ -159,5 +165,82 @@ export function parseExtractionResponse(response: string): ExtractedData {
     };
   } catch {
     return defaultResult;
+  }
+}
+
+export async function extractDocument(
+  storagePath: string,
+  fileType: string
+): Promise<ExtractionResult> {
+  try {
+    const base64Content = await getDocumentContent(storagePath);
+    const mediaType = getMediaType(fileType);
+    const prompt = buildExtractionPrompt();
+
+    const contentBlock =
+      fileType === "application/pdf"
+        ? {
+            type: "document" as const,
+            source: {
+              type: "base64" as const,
+              media_type: mediaType,
+              data: base64Content,
+            },
+          }
+        : {
+            type: "image" as const,
+            source: {
+              type: "base64" as const,
+              media_type: mediaType,
+              data: base64Content,
+            },
+          };
+
+    const message = await getAnthropic().messages.create({
+      model: "claude-3-haiku-20240307",
+      max_tokens: 2048,
+      messages: [
+        {
+          role: "user",
+          content: [
+            contentBlock,
+            {
+              type: "text",
+              text: prompt,
+            },
+          ],
+        },
+      ],
+    });
+
+    const content = message.content[0];
+    if (content.type !== "text") {
+      return {
+        success: false,
+        data: null,
+        error: "Unexpected response type from Claude",
+      };
+    }
+
+    const extractedData = parseExtractionResponse(content.text);
+
+    if (extractedData.error) {
+      return {
+        success: false,
+        data: extractedData,
+        error: extractedData.error,
+      };
+    }
+
+    return {
+      success: true,
+      data: extractedData,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      data: null,
+      error: error instanceof Error ? error.message : "Unknown extraction error",
+    };
   }
 }
