@@ -12,9 +12,10 @@ import { Check, Copy, Loader2 } from "lucide-react";
 interface GenerateLoanPackModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  brokerId?: string;
 }
 
-export function GenerateLoanPackModal({ open, onOpenChange }: GenerateLoanPackModalProps) {
+export function GenerateLoanPackModal({ open, onOpenChange, brokerId }: GenerateLoanPackModalProps) {
   const [expiryDays, setExpiryDays] = useState("7");
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -25,11 +26,15 @@ export function GenerateLoanPackModal({ open, onOpenChange }: GenerateLoanPackMo
     onSuccess: (data) => {
       setGeneratedUrl(data.url);
       utils.loanPack.list.invalidate();
+      utils.broker.list.invalidate();
+      if (brokerId) {
+        utils.broker.get.invalidate({ id: brokerId });
+      }
     },
   });
 
   const handleGenerate = () => {
-    createMutation.mutate({ expiresInDays: parseInt(expiryDays) });
+    createMutation.mutate({ expiresInDays: parseInt(expiryDays), brokerId });
   };
 
   const handleCopy = async () => {
