@@ -252,6 +252,29 @@ export const transactionStatusEnum = pgEnum("transaction_status", [
   "pending_review",
 ]);
 
+export const propertyManagerProviderEnum = pgEnum("property_manager_provider", [
+  "propertyme",
+  "different",
+]);
+
+export const pmConnectionStatusEnum = pgEnum("pm_connection_status", [
+  "active",
+  "expired",
+  "revoked",
+]);
+
+export const pmSyncTypeEnum = pgEnum("pm_sync_type", [
+  "full",
+  "incremental",
+  "manual",
+]);
+
+export const pmSyncStatusEnum = pgEnum("pm_sync_status", [
+  "running",
+  "completed",
+  "failed",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -331,6 +354,8 @@ export const transactions = pgTable(
     suggestionConfidence: decimal("suggestion_confidence", { precision: 5, scale: 2 }),
     status: transactionStatusEnum("status").default("confirmed").notNull(),
     suggestionStatus: suggestionStatusEnum("suggestion_status"),
+    providerTransactionId: text("provider_transaction_id"),
+    provider: text("provider"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -341,6 +366,7 @@ export const transactions = pgTable(
     index("transactions_date_idx").on(table.date),
     index("transactions_category_idx").on(table.category),
     index("transactions_user_date_idx").on(table.userId, table.date),
+    index("transactions_provider_tx_id_idx").on(table.providerTransactionId),
   ]
 );
 
@@ -460,6 +486,53 @@ export const documentExtractions = pgTable(
     index("document_extractions_status_idx").on(table.status),
   ]
 );
+
+export const propertyManagerConnections = pgTable("property_manager_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  provider: propertyManagerProviderEnum("provider").notNull(),
+  providerUserId: text("provider_user_id"),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  scopes: text("scopes").array(),
+  status: pmConnectionStatusEnum("status").default("active").notNull(),
+  lastSyncAt: timestamp("last_sync_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const propertyManagerMappings = pgTable("property_manager_mappings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectionId: uuid("connection_id")
+    .references(() => propertyManagerConnections.id, { onDelete: "cascade" })
+    .notNull(),
+  providerPropertyId: text("provider_property_id").notNull(),
+  providerPropertyAddress: text("provider_property_address"),
+  propertyId: uuid("property_id").references(() => properties.id, {
+    onDelete: "set null",
+  }),
+  autoSync: boolean("auto_sync").default(true).notNull(),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const propertyManagerSyncLogs = pgTable("property_manager_sync_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  connectionId: uuid("connection_id")
+    .references(() => propertyManagerConnections.id, { onDelete: "cascade" })
+    .notNull(),
+  syncType: pmSyncTypeEnum("sync_type").notNull(),
+  status: pmSyncStatusEnum("status").notNull(),
+  itemsSynced: decimal("items_synced", { precision: 10, scale: 0 }).default("0"),
+  transactionsCreated: decimal("transactions_created", { precision: 10, scale: 0 }).default("0"),
+  errors: text("errors"),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
 
 export const recurringTransactions = pgTable(
   "recurring_transactions",
@@ -741,6 +814,42 @@ export const documentExtractionsRelations = relations(documentExtractions, ({ on
     references: [transactions.id],
   }),
 }));
+
+export const propertyManagerConnectionsRelations = relations(
+  propertyManagerConnections,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [propertyManagerConnections.userId],
+      references: [users.id],
+    }),
+    mappings: many(propertyManagerMappings),
+    syncLogs: many(propertyManagerSyncLogs),
+  })
+);
+
+export const propertyManagerMappingsRelations = relations(
+  propertyManagerMappings,
+  ({ one }) => ({
+    connection: one(propertyManagerConnections, {
+      fields: [propertyManagerMappings.connectionId],
+      references: [propertyManagerConnections.id],
+    }),
+    property: one(properties, {
+      fields: [propertyManagerMappings.propertyId],
+      references: [properties.id],
+    }),
+  })
+);
+
+export const propertyManagerSyncLogsRelations = relations(
+  propertyManagerSyncLogs,
+  ({ one }) => ({
+    connection: one(propertyManagerConnections, {
+      fields: [propertyManagerSyncLogs.connectionId],
+      references: [propertyManagerConnections.id],
+    }),
+  })
+);
 
 export const recurringTransactionsRelations = relations(
   recurringTransactions,
@@ -1396,3 +1505,9 @@ export type RefinanceAlert = typeof refinanceAlerts.$inferSelect;
 export type NewRefinanceAlert = typeof refinanceAlerts.$inferInsert;
 export type DocumentExtraction = typeof documentExtractions.$inferSelect;
 export type NewDocumentExtraction = typeof documentExtractions.$inferInsert;
+export type PropertyManagerConnection = typeof propertyManagerConnections.$inferSelect;
+export type NewPropertyManagerConnection = typeof propertyManagerConnections.$inferInsert;
+export type PropertyManagerMapping = typeof propertyManagerMappings.$inferSelect;
+export type NewPropertyManagerMapping = typeof propertyManagerMappings.$inferInsert;
+export type PropertyManagerSyncLog = typeof propertyManagerSyncLogs.$inferSelect;
+export type NewPropertyManagerSyncLog = typeof propertyManagerSyncLogs.$inferInsert;
