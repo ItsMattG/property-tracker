@@ -17,6 +17,7 @@ import { notificationRouter } from "./notification";
 import { teamRouter } from "./team";
 import { categorizationRouter } from "./categorization";
 import { taxOptimizationRouter } from "./taxOptimization";
+import { loanComparisonRouter } from "./loanComparison";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -37,6 +38,7 @@ export const appRouter = router({
   team: teamRouter,
   categorization: categorizationRouter,
   taxOptimization: taxOptimizationRouter,
+  loanComparison: loanComparisonRouter,
 });
 
 export type AppRouter = typeof appRouter;
