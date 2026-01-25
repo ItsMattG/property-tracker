@@ -275,6 +275,20 @@ export const pmSyncStatusEnum = pgEnum("pm_sync_status", [
   "failed",
 ]);
 
+export const scenarioStatusEnum = pgEnum("scenario_status", [
+  "draft",
+  "saved",
+]);
+
+export const factorTypeEnum = pgEnum("factor_type", [
+  "interest_rate",
+  "vacancy",
+  "sell_property",
+  "buy_property",
+  "rent_change",
+  "expense_change",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
