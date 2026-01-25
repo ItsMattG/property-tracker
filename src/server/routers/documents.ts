@@ -1,9 +1,16 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { documents, properties, transactions } from "../db/schema";
+import {
+  documents,
+  properties,
+  transactions,
+  documentExtractions,
+} from "../db/schema";
 import { eq, and, or } from "drizzle-orm";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { extractDocument } from "../services/document-extraction";
+import { matchPropertyByAddress } from "../services/property-matcher";
 
 const ALLOWED_FILE_TYPES = [
   "image/jpeg",
@@ -184,6 +191,106 @@ export const documentsRouter = router({
           description,
         })
         .returning();
+
+      // Trigger extraction for supported file types
+      const extractableTypes = ["image/jpeg", "image/png", "application/pdf"];
+      if (extractableTypes.includes(fileType)) {
+        // Create extraction record
+        const [extraction] = await ctx.db
+          .insert(documentExtractions)
+          .values({
+            documentId: document.id,
+            status: "processing",
+          })
+          .returning();
+
+        // Run extraction asynchronously (don't await)
+        const ownerId = ctx.portfolio.ownerId;
+        const db = ctx.db;
+
+        extractDocument(storagePath, fileType)
+          .then(async (result) => {
+            if (!result.success || !result.data) {
+              await db
+                .update(documentExtractions)
+                .set({
+                  status: "failed",
+                  error: result.error || "Extraction failed",
+                  completedAt: new Date(),
+                })
+                .where(eq(documentExtractions.id, extraction.id));
+              return;
+            }
+
+            // Match property if address found
+            let matchedPropertyId: string | null = null;
+            let propertyMatchConfidence: number | null = null;
+
+            if (result.data.propertyAddress) {
+              const userProperties = await db.query.properties.findMany({
+                where: eq(properties.userId, ownerId),
+              });
+
+              const match = matchPropertyByAddress(
+                result.data.propertyAddress,
+                userProperties
+              );
+
+              if (match.propertyId && match.confidence > 0.5) {
+                matchedPropertyId = match.propertyId;
+                propertyMatchConfidence = match.confidence;
+              }
+            }
+
+            // Create draft transaction if amount found
+            let draftTransactionId: string | null = null;
+
+            if (result.data.amount) {
+              const [draftTx] = await db
+                .insert(transactions)
+                .values({
+                  userId: ownerId,
+                  propertyId: matchedPropertyId,
+                  date: result.data.date || new Date().toISOString().split("T")[0],
+                  description: result.data.vendor || "Extracted from document",
+                  amount: String(result.data.amount * -1), // Expenses are negative
+                  category: (result.data.category as typeof transactions.$inferInsert.category) || "uncategorized",
+                  transactionType: "expense",
+                  status: "pending_review",
+                })
+                .returning();
+
+              draftTransactionId = draftTx.id;
+            }
+
+            // Update extraction record
+            await db
+              .update(documentExtractions)
+              .set({
+                status: "completed",
+                documentType: result.data.documentType,
+                extractedData: JSON.stringify(result.data),
+                confidence: String(result.data.confidence),
+                matchedPropertyId,
+                propertyMatchConfidence: propertyMatchConfidence
+                  ? String(propertyMatchConfidence)
+                  : null,
+                draftTransactionId,
+                completedAt: new Date(),
+              })
+              .where(eq(documentExtractions.id, extraction.id));
+          })
+          .catch(async (error) => {
+            await db
+              .update(documentExtractions)
+              .set({
+                status: "failed",
+                error: error instanceof Error ? error.message : "Unknown error",
+                completedAt: new Date(),
+              })
+              .where(eq(documentExtractions.id, extraction.id));
+          });
+      }
 
       return document;
     }),
