@@ -19,7 +19,7 @@ const providerSchema = z.enum(["propertyme", "different"]);
 export const propertyManagerRouter = router({
   getAuthUrl: protectedProcedure
     .input(z.object({ provider: providerSchema }))
-    .query(({ input }) => {
+    .mutation(({ input }) => {
       if (input.provider !== "propertyme") {
         throw new TRPCError({
           code: "BAD_REQUEST",
