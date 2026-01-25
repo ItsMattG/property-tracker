@@ -6,14 +6,7 @@ import { useAuth } from "../lib/AuthContext";
 import { LoginScreen } from "./LoginScreen";
 import { DashboardScreen } from "./DashboardScreen";
 import { TransactionsScreen } from "./TransactionsScreen";
-
-function CameraScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-gray-50">
-      <Text className="text-lg">Camera</Text>
-    </View>
-  );
-}
+import { CameraScreen } from "./CameraScreen";
 
 function SettingsScreen() {
   return (
