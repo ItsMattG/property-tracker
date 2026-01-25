@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { properties, equityMilestones } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { getClimateRisk } from "../services/climate-risk";
 
 const propertySchema = z.object({
   address: z.string().min(1, "Address is required"),
@@ -41,6 +42,8 @@ export const propertyRouter = router({
   create: writeProcedure
     .input(propertySchema)
     .mutation(async ({ ctx, input }) => {
+      const climateRisk = getClimateRisk(input.postcode);
+
       const [property] = await ctx.db
         .insert(properties)
         .values({
@@ -52,6 +55,7 @@ export const propertyRouter = router({
           purchasePrice: input.purchasePrice,
           purchaseDate: input.purchaseDate,
           entityName: input.entityName || "Personal",
+          climateRisk,
         })
         .returning();
 
@@ -63,12 +67,19 @@ export const propertyRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 
+      // If postcode is being updated, refresh climate risk
+      const updateData: Record<string, unknown> = {
+        ...data,
+        updatedAt: new Date(),
+      };
+
+      if (data.postcode) {
+        updateData.climateRisk = getClimateRisk(data.postcode);
+      }
+
       const [property] = await ctx.db
         .update(properties)
-        .set({
-          ...data,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(and(eq(properties.id, id), eq(properties.userId, ctx.portfolio.ownerId)))
         .returning();
 
@@ -100,5 +111,30 @@ export const propertyRouter = router({
           )
         )
         .orderBy(desc(equityMilestones.achievedAt));
+    }),
+
+  refreshClimateRisk: writeProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const property = await ctx.db.query.properties.findFirst({
+        where: and(
+          eq(properties.id, input.id),
+          eq(properties.userId, ctx.portfolio.ownerId)
+        ),
+      });
+
+      if (!property) {
+        throw new Error("Property not found");
+      }
+
+      const climateRisk = getClimateRisk(property.postcode);
+
+      const [updated] = await ctx.db
+        .update(properties)
+        .set({ climateRisk, updatedAt: new Date() })
+        .where(eq(properties.id, input.id))
+        .returning();
+
+      return updated;
     }),
 });
