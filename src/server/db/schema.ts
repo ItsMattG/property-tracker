@@ -8,6 +8,8 @@ import {
   boolean,
   pgEnum,
   index,
+  jsonb,
+  integer,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -287,6 +289,12 @@ export const factorTypeEnum = pgEnum("factor_type", [
   "buy_property",
   "rent_change",
   "expense_change",
+]);
+
+export const privacyModeEnum = pgEnum("privacy_mode", [
+  "full",
+  "summary",
+  "redacted",
 ]);
 
 // Tables
@@ -1456,6 +1464,19 @@ export const scenarioSnapshots = pgTable("scenario_snapshots", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const portfolioShares = pgTable("portfolio_shares", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  token: text("token").notNull().unique(),
+  title: text("title").notNull(),
+  privacyMode: privacyModeEnum("privacy_mode").notNull().default("full"),
+  snapshotData: jsonb("snapshot_data").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  viewCount: integer("view_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
+});
+
 // Scenario Relations
 export const scenariosRelations = relations(scenarios, ({ one, many }) => ({
   user: one(users, {
@@ -1495,6 +1516,13 @@ export const scenarioSnapshotsRelations = relations(scenarioSnapshots, ({ one })
   scenario: one(scenarios, {
     fields: [scenarioSnapshots.scenarioId],
     references: [scenarios.id],
+  }),
+}));
+
+export const portfolioSharesRelations = relations(portfolioShares, ({ one }) => ({
+  user: one(users, {
+    fields: [portfolioShares.userId],
+    references: [users.id],
   }),
 }));
 
@@ -1645,3 +1673,5 @@ export type ScenarioProjection = typeof scenarioProjections.$inferSelect;
 export type NewScenarioProjection = typeof scenarioProjections.$inferInsert;
 export type ScenarioSnapshot = typeof scenarioSnapshots.$inferSelect;
 export type NewScenarioSnapshot = typeof scenarioSnapshots.$inferInsert;
+export type PortfolioShare = typeof portfolioShares.$inferSelect;
+export type NewPortfolioShare = typeof portfolioShares.$inferInsert;

@@ -21,6 +21,7 @@ import { loanComparisonRouter } from "./loanComparison";
 import { documentExtractionRouter } from "./documentExtraction";
 import { propertyManagerRouter } from "./propertyManager";
 import { scenarioRouter } from "./scenario";
+import { shareRouter } from "./share";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -45,6 +46,7 @@ export const appRouter = router({
   documentExtraction: documentExtractionRouter,
   propertyManager: propertyManagerRouter,
   scenario: scenarioRouter,
+  share: shareRouter,
 });
 
 export type AppRouter = typeof appRouter;
