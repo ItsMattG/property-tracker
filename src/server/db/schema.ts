@@ -352,6 +352,7 @@ export const users = pgTable("users", {
   clerkId: text("clerk_id").notNull().unique(),
   email: text("email").notNull().unique(),
   name: text("name"),
+  mobilePasswordHash: text("mobile_password_hash"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
