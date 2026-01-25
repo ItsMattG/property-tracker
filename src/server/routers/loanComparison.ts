@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { loanComparisons } from "../db/schema";
+import { loanComparisons, loans, refinanceAlerts } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import {
   calculateMonthlySavings,
@@ -141,5 +141,86 @@ export const loanComparisonRouter = router({
         );
 
       return { success: true };
+    }),
+
+  getAlertConfig: protectedProcedure
+    .input(z.object({ loanId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      // Verify loan belongs to user
+      const loan = await ctx.db.query.loans.findFirst({
+        where: and(
+          eq(loans.id, input.loanId),
+          eq(loans.userId, ctx.portfolio.ownerId)
+        ),
+      });
+
+      if (!loan) {
+        throw new Error("Loan not found");
+      }
+
+      const config = await ctx.db.query.refinanceAlerts.findFirst({
+        where: eq(refinanceAlerts.loanId, input.loanId),
+      });
+
+      return config || {
+        loanId: input.loanId,
+        enabled: false,
+        rateGapThreshold: "0.50",
+        notifyOnCashRateChange: true,
+        lastAlertedAt: null,
+      };
+    }),
+
+  updateAlertConfig: writeProcedure
+    .input(
+      z.object({
+        loanId: z.string().uuid(),
+        enabled: z.boolean(),
+        rateGapThreshold: z.string().regex(/^\d+\.?\d*$/),
+        notifyOnCashRateChange: z.boolean(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify loan belongs to user
+      const loan = await ctx.db.query.loans.findFirst({
+        where: and(
+          eq(loans.id, input.loanId),
+          eq(loans.userId, ctx.portfolio.ownerId)
+        ),
+      });
+
+      if (!loan) {
+        throw new Error("Loan not found");
+      }
+
+      const existing = await ctx.db.query.refinanceAlerts.findFirst({
+        where: eq(refinanceAlerts.loanId, input.loanId),
+      });
+
+      if (existing) {
+        const [updated] = await ctx.db
+          .update(refinanceAlerts)
+          .set({
+            enabled: input.enabled,
+            rateGapThreshold: input.rateGapThreshold,
+            notifyOnCashRateChange: input.notifyOnCashRateChange,
+          })
+          .where(eq(refinanceAlerts.loanId, input.loanId))
+          .returning();
+
+        return updated;
+      }
+
+      const [created] = await ctx.db
+        .insert(refinanceAlerts)
+        .values({
+          loanId: input.loanId,
+          enabled: input.enabled,
+          rateGapThreshold: input.rateGapThreshold,
+          notifyOnCashRateChange: input.notifyOnCashRateChange,
+        })
+        .returning();
+
+      return created;
     }),
 });

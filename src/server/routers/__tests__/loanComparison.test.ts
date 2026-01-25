@@ -25,4 +25,12 @@ describe("loanComparison router", () => {
   it("has deleteComparison procedure", () => {
     expect(loanComparisonRouter.deleteComparison).toBeDefined();
   });
+
+  it("has getAlertConfig procedure", () => {
+    expect(loanComparisonRouter.getAlertConfig).toBeDefined();
+  });
+
+  it("has updateAlertConfig procedure", () => {
+    expect(loanComparisonRouter.updateAlertConfig).toBeDefined();
+  });
 });
