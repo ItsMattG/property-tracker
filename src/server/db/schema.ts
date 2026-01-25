@@ -1578,6 +1578,24 @@ export const notificationLogRelations = relations(
   })
 );
 
+// Push tokens for mobile notifications (React Native)
+export const pushTokens = pgTable("push_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  platform: text("platform", { enum: ["ios", "android"] }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const pushTokensRelations = relations(pushTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [pushTokens.userId],
+    references: [users.id],
+  }),
+}));
+
 export const userOnboarding = pgTable("user_onboarding", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
@@ -2231,6 +2249,8 @@ export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type NewPushSubscription = typeof pushSubscriptions.$inferInsert;
 export type NotificationLogEntry = typeof notificationLog.$inferSelect;
 export type NewNotificationLogEntry = typeof notificationLog.$inferInsert;
+export type PushToken = typeof pushTokens.$inferSelect;
+export type NewPushToken = typeof pushTokens.$inferInsert;
 export type PortfolioMember = typeof portfolioMembers.$inferSelect;
 export type NewPortfolioMember = typeof portfolioMembers.$inferInsert;
 export type PortfolioInvite = typeof portfolioInvites.$inferSelect;
