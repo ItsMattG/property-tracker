@@ -23,6 +23,7 @@ import { propertyManagerRouter } from "./propertyManager";
 import { scenarioRouter } from "./scenario";
 import { shareRouter } from "./share";
 import { complianceRouter } from "./compliance";
+import { loanPackRouter } from "./loanPack";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -49,6 +50,7 @@ export const appRouter = router({
   scenario: scenarioRouter,
   share: shareRouter,
   compliance: complianceRouter,
+  loanPack: loanPackRouter,
 });
 
 export type AppRouter = typeof appRouter;
