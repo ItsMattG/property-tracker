@@ -31,6 +31,7 @@ import { entityRouter } from "./entity";
 import { smsfComplianceRouter } from "./smsfCompliance";
 import { trustComplianceRouter } from "./trustCompliance";
 import { mobileAuthRouter } from "./mobileAuth";
+import { userRouter } from "./user";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -65,6 +66,7 @@ export const appRouter = router({
   smsfCompliance: smsfComplianceRouter,
   trustCompliance: trustComplianceRouter,
   mobileAuth: mobileAuthRouter,
+  user: userRouter,
 });
 
 export type AppRouter = typeof appRouter;
