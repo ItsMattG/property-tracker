@@ -21,6 +21,7 @@ import {
   Scale,
   BellRing,
   Share2,
+  ClipboardCheck,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
@@ -35,6 +36,7 @@ const navItems = [
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/reports/forecast", label: "Forecast", icon: TrendingUp },
   { href: "/reports/share", label: "Portfolio Shares", icon: Share2 },
+  { href: "/reports/compliance", label: "Compliance", icon: ClipboardCheck },
   { href: "/banking", label: "Banking", icon: Landmark },
   { href: "/loans", label: "Loans", icon: Wallet },
   { href: "/loans/compare", label: "Compare Loans", icon: Scale },

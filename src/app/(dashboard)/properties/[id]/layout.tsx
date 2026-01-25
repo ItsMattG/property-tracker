@@ -40,6 +40,9 @@ export default function PropertyDetailLayout({
       } else if (pathname.includes("/edit")) {
         items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
         items.push({ label: "Edit" });
+      } else if (pathname.includes("/compliance")) {
+        items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
+        items.push({ label: "Compliance" });
       } else {
         items.push({ label: propertyLabel });
       }
