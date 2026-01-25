@@ -3,6 +3,8 @@ import {
   extractionStatusEnum,
   documentTypeEnum,
   documentExtractions,
+  transactionStatusEnum,
+  transactions,
 } from "../schema";
 
 describe("document extraction schema", () => {
@@ -35,5 +37,17 @@ describe("document extraction schema", () => {
     expect(columns).toContain("matchedPropertyId");
     expect(columns).toContain("draftTransactionId");
     expect(columns).toContain("error");
+  });
+
+  it("has transaction status enum with correct values", () => {
+    expect(transactionStatusEnum.enumValues).toEqual([
+      "confirmed",
+      "pending_review",
+    ]);
+  });
+
+  it("has status column on transactions table", () => {
+    const columns = Object.keys(transactions);
+    expect(columns).toContain("status");
   });
 });

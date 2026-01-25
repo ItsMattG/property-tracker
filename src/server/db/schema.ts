@@ -247,6 +247,11 @@ export const documentTypeEnum = pgEnum("document_type", [
   "unknown",
 ]);
 
+export const transactionStatusEnum = pgEnum("transaction_status", [
+  "confirmed",
+  "pending_review",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -324,6 +329,7 @@ export const transactions = pgTable(
     notes: text("notes"),
     suggestedCategory: categoryEnum("suggested_category"),
     suggestionConfidence: decimal("suggestion_confidence", { precision: 5, scale: 2 }),
+    status: transactionStatusEnum("status").default("confirmed").notNull(),
     suggestionStatus: suggestionStatusEnum("suggestion_status"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
