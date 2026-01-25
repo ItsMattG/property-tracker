@@ -9,6 +9,7 @@ import { PropertyComplianceSection } from "@/components/compliance/PropertyCompl
 import { MilestonesSection } from "@/components/properties/MilestonesSection";
 import { ClimateRiskCard } from "@/components/climate-risk";
 import { BenchmarkCard } from "@/components/benchmarking";
+import { PerformanceCard } from "@/components/performance-benchmarking";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign } from "lucide-react";
 
 const formatCurrency = (value: string | number) => {
@@ -179,6 +180,9 @@ export default function PropertyDetailPage() {
 
       {/* Benchmark Card */}
       <BenchmarkCard propertyId={propertyId} />
+
+      {/* Performance Card */}
+      <PerformanceCard propertyId={propertyId} />
 
       {/* Milestones Section */}
       {milestones && milestones.length > 0 && (
