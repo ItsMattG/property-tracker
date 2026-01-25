@@ -22,5 +22,9 @@ export default withSentryConfig(nextConfig, {
   },
 
   // Tree shake Sentry from client bundles when not needed
-  disableLogger: true,
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+  },
 });

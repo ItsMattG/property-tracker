@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import type { TransactionPattern } from "../types";
+import type { TransactionPattern, TransactionCategory } from "../types";
 import {
   generateRecurringDates,
   generateSporadicDates,
@@ -70,7 +70,7 @@ export interface GeneratedTransaction {
   date: string;
   description: string;
   amount: string;
-  category: string;
+  category: TransactionCategory;
   transactionType: "income" | "expense" | "capital" | "transfer" | "personal";
   isDeductible: boolean;
   isVerified: boolean;

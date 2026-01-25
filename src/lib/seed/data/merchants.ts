@@ -1,10 +1,8 @@
-import type { categoryEnum } from "@/server/db/schema";
-
-type Category = (typeof categoryEnum.enumValues)[number];
+import type { TransactionCategory } from "../types";
 
 export interface MerchantData {
   name: string;
-  category: Category;
+  category: TransactionCategory;
   amountRange: { min: number; max: number };
   frequency: "monthly" | "quarterly" | "annual" | "sporadic";
 }

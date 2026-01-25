@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ type ViewMode = "cards" | "table" | "aggregate";
 type Period = "monthly" | "quarterly" | "annual";
 type SortBy = "cashFlow" | "equity" | "lvr" | "alphabetical";
 
-export default function PortfolioPage() {
+function PortfolioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -192,5 +192,29 @@ export default function PortfolioPage() {
         }}
       />
     </div>
+  );
+}
+
+function PortfolioLoading() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Portfolio</h2>
+        <p className="text-muted-foreground">Overview of your investment properties</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-64 rounded-lg bg-muted animate-pulse" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function PortfolioPage() {
+  return (
+    <Suspense fallback={<PortfolioLoading />}>
+      <PortfolioContent />
+    </Suspense>
   );
 }

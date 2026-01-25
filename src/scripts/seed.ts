@@ -1,12 +1,14 @@
-import "dotenv/config";
-import { seed, clean } from "@/lib/seed";
-import type { SeedMode } from "@/lib/seed";
+import { config } from "dotenv";
 
+// Load .env.local (Next.js convention)
+config({ path: ".env.local" });
+
+// Use dynamic imports to ensure env vars are loaded before db connection
 async function main() {
   const args = process.argv.slice(2);
 
   // Parse arguments
-  const mode = args.find((a) => ["demo", "dev"].includes(a)) as SeedMode | undefined;
+  const mode = args.find((a) => ["demo", "dev"].includes(a)) as "demo" | "dev" | undefined;
   const clerkIdArg = args.find((a) => a.startsWith("--clerk-id="));
   const clerkId = clerkIdArg?.split("=")[1];
   const shouldClean = args.includes("--clean") || args.includes("clean");
@@ -24,6 +26,9 @@ async function main() {
     console.log("  --force    Required for clean operation");
     process.exit(1);
   }
+
+  // Dynamic import after env vars are loaded
+  const { seed, clean } = await import("@/lib/seed");
 
   // Handle clean command
   if (shouldClean && !mode) {
@@ -44,6 +49,8 @@ async function main() {
     console.error("Error: Mode required (demo or dev)");
     process.exit(1);
   }
+
+  console.log(`Starting seed in ${mode} mode for Clerk ID: ${clerkId}`);
 
   try {
     const summary = await seed({

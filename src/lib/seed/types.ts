@@ -1,5 +1,34 @@
 export type SeedMode = "demo" | "dev" | "test";
 
+export type TransactionCategory =
+  | "rental_income"
+  | "other_rental_income"
+  | "advertising"
+  | "body_corporate"
+  | "borrowing_expenses"
+  | "cleaning"
+  | "council_rates"
+  | "gardening"
+  | "insurance"
+  | "interest_on_loans"
+  | "land_tax"
+  | "legal_expenses"
+  | "pest_control"
+  | "property_agent_fees"
+  | "repairs_and_maintenance"
+  | "capital_works_deductions"
+  | "stationery_and_postage"
+  | "travel_expenses"
+  | "water_charges"
+  | "sundry_rental_expenses"
+  | "stamp_duty"
+  | "conveyancing"
+  | "buyers_agent_fees"
+  | "initial_repairs"
+  | "transfer"
+  | "personal"
+  | "uncategorized";
+
 export interface SeedOptions {
   clerkId: string;
   mode: SeedMode;
@@ -51,7 +80,7 @@ export interface LoanSeedConfig {
 
 export interface TransactionPattern {
   merchantName: string;
-  category: string;
+  category: TransactionCategory;
   transactionType: "income" | "expense";
   frequency: "monthly" | "quarterly" | "annual" | "sporadic";
   amountRange: { min: number; max: number };

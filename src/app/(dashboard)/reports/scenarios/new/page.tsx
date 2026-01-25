@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +33,7 @@ interface FactorFormData {
   propertyId?: string;
 }
 
-export default function NewScenarioPage() {
+function NewScenarioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const branchFromId = searchParams.get("branch");
@@ -367,5 +367,22 @@ export default function NewScenarioPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+      <div className="h-64 bg-muted animate-pulse rounded-lg" />
+    </div>
+  );
+}
+
+export default function NewScenarioPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <NewScenarioContent />
+    </Suspense>
   );
 }

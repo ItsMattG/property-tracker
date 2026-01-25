@@ -20,6 +20,7 @@ import {
   type GeneratedComplianceRecord,
 } from "../generators";
 import { addMonths } from "../utils";
+import type { TransactionPattern } from "../types";
 
 export interface DemoData {
   properties: GeneratedProperty[];
@@ -134,7 +135,7 @@ export function generateDemoData(userId: string): DemoData {
       purchasePrice: config.purchasePrice,
       purchaseDate: config.purchaseDate,
       status: config.status,
-      soldAt: config.soldAt,
+      soldAt: "soldAt" in config ? config.soldAt : undefined,
     });
     properties.push(property);
 
@@ -148,12 +149,12 @@ export function generateDemoData(userId: string): DemoData {
     ];
 
     // Build patterns for this property
-    const patterns = [
+    const patterns: TransactionPattern[] = [
       {
         merchantName: `Rental Income - ${config.suburb}`,
         category: "rental_income",
-        transactionType: "income" as const,
-        frequency: "monthly" as const,
+        transactionType: "income",
+        frequency: "monthly",
         amountRange: { min: config.rentAmount, max: config.rentAmount + 100 },
         dayOfMonth: 1,
       },
