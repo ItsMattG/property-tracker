@@ -11,7 +11,9 @@ export type NotificationType =
   | "anomaly_critical"
   | "anomaly_warning"
   | "weekly_digest"
-  | "eofy_suggestions";
+  | "eofy_suggestions"
+  | "refinance_opportunity"
+  | "cash_rate_changed";
 
 export type NotificationChannel = "email" | "push";
 
