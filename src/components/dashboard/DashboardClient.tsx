@@ -9,6 +9,7 @@ import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanne
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { SetupChecklist } from "@/components/onboarding/SetupChecklist";
 import { PushPermissionBanner } from "@/components/notifications/PushPermissionBanner";
+import { ClimateRiskSummary } from "@/components/climate-risk";
 
 interface DashboardStats {
   propertyCount: number;
@@ -36,6 +37,8 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
   const { data: onboarding } = trpc.onboarding.getProgress.useQuery(undefined, {
     staleTime: 5 * 60_000, // Onboarding rarely changes
   });
+
+  const { data: properties } = trpc.property.list.useQuery();
 
   const dismissAlert = trpc.banking.dismissAlert.useMutation({
     onMutate: async (newData) => {
@@ -174,6 +177,10 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
           </Card>
         </Link>
       </div>
+
+      {properties && properties.length > 0 && (
+        <ClimateRiskSummary properties={properties} />
+      )}
     </div>
   );
 }
