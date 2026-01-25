@@ -1001,6 +1001,33 @@ export const anomalyAlerts = pgTable(
   ]
 );
 
+export const suburbBenchmarks = pgTable("suburb_benchmarks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  suburb: text("suburb").notNull(),
+  state: text("state").notNull(),
+  postcode: text("postcode").notNull(),
+  propertyType: text("property_type").notNull(), // 'house', 'unit', 'townhouse'
+  bedrooms: integer("bedrooms"), // null = all bedrooms aggregate
+
+  // Rental metrics
+  medianRent: decimal("median_rent", { precision: 10, scale: 2 }),
+  rentalYield: decimal("rental_yield", { precision: 5, scale: 2 }),
+  vacancyRate: decimal("vacancy_rate", { precision: 5, scale: 2 }),
+  daysOnMarket: integer("days_on_market"),
+
+  // Sales metrics
+  medianPrice: decimal("median_price", { precision: 12, scale: 2 }),
+  priceGrowth1yr: decimal("price_growth_1yr", { precision: 5, scale: 2 }),
+  priceGrowth5yr: decimal("price_growth_5yr", { precision: 5, scale: 2 }),
+
+  // Metadata
+  sampleSize: integer("sample_size"),
+  dataSource: text("data_source"), // 'domain', 'corelogic', 'mock'
+  periodStart: date("period_start"),
+  periodEnd: date("period_end"),
+  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
