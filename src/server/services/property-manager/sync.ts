@@ -1,7 +1,7 @@
 // src/server/services/property-manager/sync.ts
 
 import { eq, and } from "drizzle-orm";
-import type { PropertyManagerProvider, PMRentPayment, PMMaintenanceJob, PMBill } from "./types";
+import type { PropertyManagerProvider } from "./types";
 import { transactions, propertyManagerMappings } from "@/server/db/schema";
 
 type DbClient = {

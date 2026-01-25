@@ -42,6 +42,7 @@ describe("PropertyManagerSyncService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     syncService = new PropertyManagerSyncService(mockProvider, mockDb as any);
   });
 
