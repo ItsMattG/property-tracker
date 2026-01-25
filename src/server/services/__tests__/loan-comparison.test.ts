@@ -3,6 +3,7 @@ import {
   calculateMonthlyPayment,
   calculateMonthlySavings,
   calculateTotalInterestSaved,
+  calculateBreakEvenMonths,
 } from "../loan-comparison";
 
 describe("loan-comparison service", () => {
@@ -61,6 +62,29 @@ describe("loan-comparison service", () => {
     it("returns 0 when rates are equal", () => {
       const saved = calculateTotalInterestSaved(500000, 5.5, 5.5, 360);
       expect(saved).toBe(0);
+    });
+  });
+
+  describe("calculateBreakEvenMonths", () => {
+    it("calculates months to recover switching costs", () => {
+      // $159/month savings, $3000 switching costs = ~19 months
+      const months = calculateBreakEvenMonths(159, 3000);
+      expect(months).toBeCloseTo(19, 0);
+    });
+
+    it("returns Infinity when savings are zero", () => {
+      const months = calculateBreakEvenMonths(0, 3000);
+      expect(months).toBe(Infinity);
+    });
+
+    it("returns Infinity when savings are negative", () => {
+      const months = calculateBreakEvenMonths(-100, 3000);
+      expect(months).toBe(Infinity);
+    });
+
+    it("returns 0 when switching costs are zero", () => {
+      const months = calculateBreakEvenMonths(159, 0);
+      expect(months).toBe(0);
     });
   });
 });

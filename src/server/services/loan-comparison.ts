@@ -43,3 +43,13 @@ export function calculateTotalInterestSaved(
 
   return monthlySavings * remainingMonths;
 }
+
+export function calculateBreakEvenMonths(
+  monthlySavings: number,
+  switchingCosts: number
+): number {
+  if (switchingCosts === 0) return 0;
+  if (monthlySavings <= 0) return Infinity;
+
+  return Math.ceil(switchingCosts / monthlySavings);
+}
