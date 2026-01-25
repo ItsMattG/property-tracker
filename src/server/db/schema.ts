@@ -1404,6 +1404,24 @@ export const anomalyAlertsRelations = relations(anomalyAlerts, ({ one }) => ({
   }),
 }));
 
+export const suburbBenchmarksRelations = relations(suburbBenchmarks, ({ many }) => ({
+  propertyBenchmarks: many(propertyPerformanceBenchmarks),
+}));
+
+export const propertyPerformanceBenchmarksRelations = relations(
+  propertyPerformanceBenchmarks,
+  ({ one }) => ({
+    property: one(properties, {
+      fields: [propertyPerformanceBenchmarks.propertyId],
+      references: [properties.id],
+    }),
+    suburbBenchmark: one(suburbBenchmarks, {
+      fields: [propertyPerformanceBenchmarks.suburbBenchmarkId],
+      references: [suburbBenchmarks.id],
+    }),
+  })
+);
+
 export const forecastScenarios = pgTable(
   "forecast_scenarios",
   {
@@ -2279,3 +2297,8 @@ export type TrustDistribution = typeof trustDistributions.$inferSelect;
 export type NewTrustDistribution = typeof trustDistributions.$inferInsert;
 export type DistributionAllocation = typeof distributionAllocations.$inferSelect;
 export type NewDistributionAllocation = typeof distributionAllocations.$inferInsert;
+// Performance Benchmark Types
+export type SuburbBenchmark = typeof suburbBenchmarks.$inferSelect;
+export type NewSuburbBenchmark = typeof suburbBenchmarks.$inferInsert;
+export type PropertyPerformanceBenchmark = typeof propertyPerformanceBenchmarks.$inferSelect;
+export type NewPropertyPerformanceBenchmark = typeof propertyPerformanceBenchmarks.$inferInsert;
