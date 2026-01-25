@@ -1,0 +1,1 @@
+export { ClimateRiskBadge } from "./ClimateRiskBadge";
