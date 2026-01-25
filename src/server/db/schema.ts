@@ -1386,6 +1386,76 @@ export const refinanceAlerts = pgTable(
   (table) => [index("refinance_alerts_loan_id_idx").on(table.loanId)]
 );
 
+// Scenario Simulator Tables
+export const scenarios = pgTable(
+  "scenarios",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    parentScenarioId: uuid("parent_scenario_id").references((): any => scenarios.id, {
+      onDelete: "set null",
+    }),
+    timeHorizonMonths: decimal("time_horizon_months", { precision: 3, scale: 0 })
+      .default("60")
+      .notNull(),
+    status: scenarioStatusEnum("status").default("draft").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("scenarios_user_id_idx").on(table.userId),
+    index("scenarios_parent_id_idx").on(table.parentScenarioId),
+  ]
+);
+
+export const scenarioFactors = pgTable(
+  "scenario_factors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    scenarioId: uuid("scenario_id")
+      .references(() => scenarios.id, { onDelete: "cascade" })
+      .notNull(),
+    factorType: factorTypeEnum("factor_type").notNull(),
+    config: text("config").notNull(), // JSON string
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "set null",
+    }),
+    startMonth: decimal("start_month", { precision: 3, scale: 0 }).default("0").notNull(),
+    durationMonths: decimal("duration_months", { precision: 3, scale: 0 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("scenario_factors_scenario_id_idx").on(table.scenarioId),
+  ]
+);
+
+export const scenarioProjections = pgTable("scenario_projections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  scenarioId: uuid("scenario_id")
+    .references(() => scenarios.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
+  timeHorizonMonths: decimal("time_horizon_months", { precision: 3, scale: 0 }).notNull(),
+  monthlyResults: text("monthly_results").notNull(), // JSON array
+  summaryMetrics: text("summary_metrics").notNull(), // JSON object
+  isStale: boolean("is_stale").default(false).notNull(),
+});
+
+export const scenarioSnapshots = pgTable("scenario_snapshots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  scenarioId: uuid("scenario_id")
+    .references(() => scenarios.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  snapshotData: text("snapshot_data").notNull(), // JSON object
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const merchantCategoriesRelations = relations(merchantCategories, ({ one }) => ({
   user: one(users, {
     fields: [merchantCategories.userId],

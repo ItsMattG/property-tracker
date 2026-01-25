@@ -2,6 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   scenarioStatusEnum,
   factorTypeEnum,
+  scenarios,
+  scenarioFactors,
+  scenarioProjections,
+  scenarioSnapshots,
 } from "../schema";
 
 describe("Scenario enums", () => {
@@ -16,5 +20,40 @@ describe("Scenario enums", () => {
     expect(factorTypeEnum.enumValues).toContain("buy_property");
     expect(factorTypeEnum.enumValues).toContain("rent_change");
     expect(factorTypeEnum.enumValues).toContain("expense_change");
+  });
+});
+
+describe("Scenario tables", () => {
+  it("defines scenarios table with required columns", () => {
+    expect(scenarios.id).toBeDefined();
+    expect(scenarios.userId).toBeDefined();
+    expect(scenarios.name).toBeDefined();
+    expect(scenarios.parentScenarioId).toBeDefined();
+    expect(scenarios.timeHorizonMonths).toBeDefined();
+    expect(scenarios.status).toBeDefined();
+  });
+
+  it("defines scenarioFactors table with required columns", () => {
+    expect(scenarioFactors.id).toBeDefined();
+    expect(scenarioFactors.scenarioId).toBeDefined();
+    expect(scenarioFactors.factorType).toBeDefined();
+    expect(scenarioFactors.config).toBeDefined();
+    expect(scenarioFactors.propertyId).toBeDefined();
+    expect(scenarioFactors.startMonth).toBeDefined();
+    expect(scenarioFactors.durationMonths).toBeDefined();
+  });
+
+  it("defines scenarioProjections table", () => {
+    expect(scenarioProjections.id).toBeDefined();
+    expect(scenarioProjections.scenarioId).toBeDefined();
+    expect(scenarioProjections.monthlyResults).toBeDefined();
+    expect(scenarioProjections.summaryMetrics).toBeDefined();
+    expect(scenarioProjections.isStale).toBeDefined();
+  });
+
+  it("defines scenarioSnapshots table", () => {
+    expect(scenarioSnapshots.id).toBeDefined();
+    expect(scenarioSnapshots.scenarioId).toBeDefined();
+    expect(scenarioSnapshots.snapshotData).toBeDefined();
   });
 });
