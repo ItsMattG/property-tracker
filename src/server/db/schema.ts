@@ -226,6 +226,11 @@ export const taxSuggestionStatusEnum = pgEnum("tax_suggestion_status", [
   "actioned",
 ]);
 
+export const loanPurposeEnum = pgEnum("loan_purpose", [
+  "owner_occupied",
+  "investor",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -1142,6 +1147,53 @@ export const taxSuggestions = pgTable(
     index("tax_suggestions_status_idx").on(table.status),
     index("tax_suggestions_financial_year_idx").on(table.financialYear),
   ]
+);
+
+// Loan Comparison Tables
+export const rateHistory = pgTable("rate_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  rateDate: date("rate_date").notNull(),
+  cashRate: decimal("cash_rate", { precision: 5, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const loanComparisons = pgTable(
+  "loan_comparisons",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    loanId: uuid("loan_id")
+      .references(() => loans.id, { onDelete: "cascade" })
+      .notNull(),
+    name: text("name").notNull(),
+    newRate: decimal("new_rate", { precision: 5, scale: 3 }).notNull(),
+    newLender: text("new_lender"),
+    switchingCosts: decimal("switching_costs", { precision: 10, scale: 2 }).default("0").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("loan_comparisons_user_id_idx").on(table.userId),
+    index("loan_comparisons_loan_id_idx").on(table.loanId),
+  ]
+);
+
+export const refinanceAlerts = pgTable(
+  "refinance_alerts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    loanId: uuid("loan_id")
+      .references(() => loans.id, { onDelete: "cascade" })
+      .notNull()
+      .unique(),
+    enabled: boolean("enabled").default(true).notNull(),
+    rateGapThreshold: decimal("rate_gap_threshold", { precision: 3, scale: 2 }).default("0.50").notNull(),
+    notifyOnCashRateChange: boolean("notify_on_cash_rate_change").default(true).notNull(),
+    lastAlertedAt: timestamp("last_alerted_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("refinance_alerts_loan_id_idx").on(table.loanId)]
 );
 
 export const merchantCategoriesRelations = relations(merchantCategories, ({ one }) => ({
