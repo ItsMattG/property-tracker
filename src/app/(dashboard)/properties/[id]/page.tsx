@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ValuationCard } from "@/components/valuation";
 import { PropertyComplianceSection } from "@/components/compliance/PropertyComplianceSection";
+import { MilestonesSection } from "@/components/properties/MilestonesSection";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign } from "lucide-react";
 
 const formatCurrency = (value: string | number) => {
@@ -32,6 +33,11 @@ export default function PropertyDetailPage() {
 
   const { data: property, isLoading, error } = trpc.property.get.useQuery(
     { id: propertyId },
+    { enabled: !!propertyId }
+  );
+
+  const { data: milestones } = trpc.property.getMilestones.useQuery(
+    { propertyId },
     { enabled: !!propertyId }
   );
 
@@ -162,6 +168,11 @@ export default function PropertyDetailPage() {
 
       {/* Valuation Card */}
       <ValuationCard propertyId={propertyId} />
+
+      {/* Milestones Section */}
+      {milestones && milestones.length > 0 && (
+        <MilestonesSection milestones={milestones} />
+      )}
 
       {/* Compliance Section */}
       <div className="lg:col-span-2">
