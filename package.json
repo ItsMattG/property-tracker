@@ -19,7 +19,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "seed:demo": "tsx src/scripts/seed.ts demo",
+    "seed:dev": "tsx src/scripts/seed.ts dev",
+    "seed:clean": "tsx src/scripts/seed.ts clean"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
