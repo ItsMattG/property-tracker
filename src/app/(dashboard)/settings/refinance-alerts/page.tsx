@@ -2,12 +2,11 @@
 
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Loader2, Bell, Home } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 interface LoanAlertConfig {
   loanId: string;
@@ -32,26 +31,25 @@ function LoanAlertCard({
     loanId: loan.id,
   });
 
-  const [enabled, setEnabled] = useState(false);
-  const [threshold, setThreshold] = useState(0.5);
-  const [cashRateNotify, setCashRateNotify] = useState(true);
+  // Derive values from config with defaults - no local state needed for initial sync
+  const currentValues = useMemo(() => ({
+    enabled: config?.enabled ?? false,
+    threshold: config ? parseFloat(config.rateGapThreshold) : 0.5,
+    cashRateNotify: config?.notifyOnCashRateChange ?? true,
+  }), [config]);
 
-  useEffect(() => {
-    if (config) {
-      setEnabled(config.enabled);
-      setThreshold(parseFloat(config.rateGapThreshold));
-      setCashRateNotify(config.notifyOnCashRateChange);
-    }
-  }, [config]);
-
-  const handleUpdate = useCallback(() => {
+  const handleFieldUpdate = useCallback((updates: Partial<{
+    enabled: boolean;
+    threshold: number;
+    cashRateNotify: boolean;
+  }>) => {
     onUpdate({
       loanId: loan.id,
-      enabled,
-      rateGapThreshold: threshold.toFixed(2),
-      notifyOnCashRateChange: cashRateNotify,
+      enabled: updates.enabled ?? currentValues.enabled,
+      rateGapThreshold: (updates.threshold ?? currentValues.threshold).toFixed(2),
+      notifyOnCashRateChange: updates.cashRateNotify ?? currentValues.cashRateNotify,
     });
-  }, [loan.id, enabled, threshold, cashRateNotify, onUpdate]);
+  }, [loan.id, currentValues, onUpdate]);
 
   if (isLoading) {
     return (
@@ -77,25 +75,21 @@ function LoanAlertCard({
             </CardDescription>
           </div>
           <Switch
-            checked={enabled}
-            onCheckedChange={(checked) => {
-              setEnabled(checked);
-              setTimeout(handleUpdate, 0);
-            }}
+            checked={currentValues.enabled}
+            onCheckedChange={(checked) => handleFieldUpdate({ enabled: checked })}
           />
         </div>
       </CardHeader>
-      {enabled && (
+      {currentValues.enabled && (
         <CardContent className="space-y-4 pt-0">
           <div className="space-y-2">
             <div className="flex justify-between">
               <Label>Alert when rate gap exceeds</Label>
-              <span className="text-sm font-medium">{threshold.toFixed(2)}%</span>
+              <span className="text-sm font-medium">{currentValues.threshold.toFixed(2)}%</span>
             </div>
             <Slider
-              value={[threshold]}
-              onValueChange={([value]) => setThreshold(value)}
-              onValueCommit={handleUpdate}
+              value={[currentValues.threshold]}
+              onValueCommit={([value]) => handleFieldUpdate({ threshold: value })}
               min={0.25}
               max={1}
               step={0.05}
@@ -112,11 +106,8 @@ function LoanAlertCard({
               </p>
             </div>
             <Switch
-              checked={cashRateNotify}
-              onCheckedChange={(checked) => {
-                setCashRateNotify(checked);
-                setTimeout(handleUpdate, 0);
-              }}
+              checked={currentValues.cashRateNotify}
+              onCheckedChange={(checked) => handleFieldUpdate({ cashRateNotify: checked })}
             />
           </div>
         </CardContent>
