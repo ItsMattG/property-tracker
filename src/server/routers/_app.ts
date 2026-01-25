@@ -11,6 +11,7 @@ import { recurringRouter } from "./recurring";
 import { propertyValueRouter } from "./propertyValue";
 import { portfolioRouter } from "./portfolio";
 import { onboardingRouter } from "./onboarding";
+import { performanceBenchmarkingRouter } from "./performanceBenchmarking";
 import { anomalyRouter } from "./anomaly";
 import { forecastRouter } from "./forecast";
 import { notificationRouter } from "./notification";
@@ -43,6 +44,7 @@ export const appRouter = router({
   propertyValue: propertyValueRouter,
   portfolio: portfolioRouter,
   onboarding: onboardingRouter,
+  performanceBenchmarking: performanceBenchmarkingRouter,
   anomaly: anomalyRouter,
   forecast: forecastRouter,
   notification: notificationRouter,

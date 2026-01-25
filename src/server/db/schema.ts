@@ -1001,6 +1001,60 @@ export const anomalyAlerts = pgTable(
   ]
 );
 
+export const suburbBenchmarks = pgTable("suburb_benchmarks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  suburb: text("suburb").notNull(),
+  state: text("state").notNull(),
+  postcode: text("postcode").notNull(),
+  propertyType: text("property_type").notNull(), // 'house', 'unit', 'townhouse'
+  bedrooms: integer("bedrooms"), // null = all bedrooms aggregate
+
+  // Rental metrics
+  medianRent: decimal("median_rent", { precision: 10, scale: 2 }),
+  rentalYield: decimal("rental_yield", { precision: 5, scale: 2 }),
+  vacancyRate: decimal("vacancy_rate", { precision: 5, scale: 2 }),
+  daysOnMarket: integer("days_on_market"),
+
+  // Sales metrics
+  medianPrice: decimal("median_price", { precision: 12, scale: 2 }),
+  priceGrowth1yr: decimal("price_growth_1yr", { precision: 5, scale: 2 }),
+  priceGrowth5yr: decimal("price_growth_5yr", { precision: 5, scale: 2 }),
+
+  // Metadata
+  sampleSize: integer("sample_size"),
+  dataSource: text("data_source"), // 'domain', 'corelogic', 'mock'
+  periodStart: date("period_start"),
+  periodEnd: date("period_end"),
+  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+});
+
+export const propertyPerformanceBenchmarks = pgTable("property_performance_benchmarks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  propertyId: uuid("property_id")
+    .references(() => properties.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+
+  // Percentile rankings (0-100)
+  yieldPercentile: integer("yield_percentile"),
+  growthPercentile: integer("growth_percentile"),
+  expensePercentile: integer("expense_percentile"),
+  vacancyPercentile: integer("vacancy_percentile"),
+
+  // Overall score
+  performanceScore: integer("performance_score"), // 0-100
+
+  // Comparison context
+  cohortSize: integer("cohort_size"),
+  cohortDescription: text("cohort_description"), // "3-bed houses in Richmond VIC"
+  suburbBenchmarkId: uuid("suburb_benchmark_id").references(() => suburbBenchmarks.id),
+
+  // Insights
+  insights: text("insights"), // JSON string of {type, message, severity}[]
+
+  calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
@@ -1349,6 +1403,24 @@ export const anomalyAlertsRelations = relations(anomalyAlerts, ({ one }) => ({
     references: [expectedTransactions.id],
   }),
 }));
+
+export const suburbBenchmarksRelations = relations(suburbBenchmarks, ({ many }) => ({
+  propertyBenchmarks: many(propertyPerformanceBenchmarks),
+}));
+
+export const propertyPerformanceBenchmarksRelations = relations(
+  propertyPerformanceBenchmarks,
+  ({ one }) => ({
+    property: one(properties, {
+      fields: [propertyPerformanceBenchmarks.propertyId],
+      references: [properties.id],
+    }),
+    suburbBenchmark: one(suburbBenchmarks, {
+      fields: [propertyPerformanceBenchmarks.suburbBenchmarkId],
+      references: [suburbBenchmarks.id],
+    }),
+  })
+);
 
 export const forecastScenarios = pgTable(
   "forecast_scenarios",
@@ -2225,3 +2297,8 @@ export type TrustDistribution = typeof trustDistributions.$inferSelect;
 export type NewTrustDistribution = typeof trustDistributions.$inferInsert;
 export type DistributionAllocation = typeof distributionAllocations.$inferSelect;
 export type NewDistributionAllocation = typeof distributionAllocations.$inferInsert;
+// Performance Benchmark Types
+export type SuburbBenchmark = typeof suburbBenchmarks.$inferSelect;
+export type NewSuburbBenchmark = typeof suburbBenchmarks.$inferInsert;
+export type PropertyPerformanceBenchmark = typeof propertyPerformanceBenchmarks.$inferSelect;
+export type NewPropertyPerformanceBenchmark = typeof propertyPerformanceBenchmarks.$inferInsert;
