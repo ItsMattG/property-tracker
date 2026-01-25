@@ -80,7 +80,7 @@ describe("getLatestCashRate", () => {
   });
 
   it("returns null when no rates exist", async () => {
-    vi.mocked(db.query.rateHistory.findFirst).mockResolvedValue(null);
+    vi.mocked(db.query.rateHistory.findFirst).mockResolvedValue(undefined);
 
     const rate = await getLatestCashRate();
     expect(rate).toBeNull();
@@ -105,7 +105,7 @@ describe("getEstimatedMarketRate", () => {
   });
 
   it("returns null when no cash rate available", async () => {
-    vi.mocked(db.query.rateHistory.findFirst).mockResolvedValue(null);
+    vi.mocked(db.query.rateHistory.findFirst).mockResolvedValue(undefined);
 
     const rate = await getEstimatedMarketRate("owner_occupied", "principal_and_interest", 75);
     expect(rate).toBeNull();
