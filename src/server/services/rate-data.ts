@@ -1,3 +1,7 @@
+import { db } from "@/server/db";
+import { rateHistory } from "@/server/db/schema";
+import { desc } from "drizzle-orm";
+
 export type LoanPurpose = "owner_occupied" | "investor";
 export type RepaymentType = "principal_and_interest" | "interest_only";
 
@@ -30,4 +34,25 @@ export function getMargin(
 ): number {
   const rates = MARGIN_TABLE[purpose][repaymentType];
   return lvr <= LVR_THRESHOLD ? rates.lowLvr : rates.highLvr;
+}
+
+export async function getLatestCashRate(): Promise<number | null> {
+  const latest = await db.query.rateHistory.findFirst({
+    orderBy: [desc(rateHistory.rateDate)],
+  });
+
+  if (!latest) return null;
+  return parseFloat(latest.cashRate);
+}
+
+export async function getEstimatedMarketRate(
+  purpose: LoanPurpose,
+  repaymentType: RepaymentType,
+  lvr: number
+): Promise<number | null> {
+  const cashRate = await getLatestCashRate();
+  if (cashRate === null) return null;
+
+  const margin = getMargin(purpose, repaymentType, lvr);
+  return cashRate + margin;
 }
