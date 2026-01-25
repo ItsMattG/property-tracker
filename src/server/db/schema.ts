@@ -233,6 +233,20 @@ export const loanPurposeEnum = pgEnum("loan_purpose", [
   "investor",
 ]);
 
+export const extractionStatusEnum = pgEnum("extraction_status", [
+  "processing",
+  "completed",
+  "failed",
+]);
+
+export const documentTypeEnum = pgEnum("document_type", [
+  "receipt",
+  "rate_notice",
+  "insurance",
+  "invoice",
+  "unknown",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -410,6 +424,34 @@ export const documents = pgTable(
     index("documents_user_id_idx").on(table.userId),
     index("documents_property_id_idx").on(table.propertyId),
     index("documents_transaction_id_idx").on(table.transactionId),
+  ]
+);
+
+export const documentExtractions = pgTable(
+  "document_extractions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    documentId: uuid("document_id")
+      .references(() => documents.id, { onDelete: "cascade" })
+      .notNull(),
+    status: extractionStatusEnum("status").default("processing").notNull(),
+    documentType: documentTypeEnum("document_type").default("unknown").notNull(),
+    extractedData: text("extracted_data"), // JSON string
+    confidence: decimal("confidence", { precision: 3, scale: 2 }),
+    matchedPropertyId: uuid("matched_property_id").references(() => properties.id, {
+      onDelete: "set null",
+    }),
+    propertyMatchConfidence: decimal("property_match_confidence", { precision: 3, scale: 2 }),
+    draftTransactionId: uuid("draft_transaction_id").references(() => transactions.id, {
+      onDelete: "set null",
+    }),
+    error: text("error"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    completedAt: timestamp("completed_at"),
+  },
+  (table) => [
+    index("document_extractions_document_id_idx").on(table.documentId),
+    index("document_extractions_status_idx").on(table.status),
   ]
 );
 
