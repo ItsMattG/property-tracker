@@ -5,14 +5,7 @@ import { View, Text, ActivityIndicator } from "react-native";
 import { useAuth } from "../lib/AuthContext";
 import { LoginScreen } from "./LoginScreen";
 import { DashboardScreen } from "./DashboardScreen";
-
-function TransactionsScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-gray-50">
-      <Text className="text-lg">Transactions</Text>
-    </View>
-  );
-}
+import { TransactionsScreen } from "./TransactionsScreen";
 
 function CameraScreen() {
   return (
