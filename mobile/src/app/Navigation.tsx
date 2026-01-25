@@ -4,15 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Text, ActivityIndicator } from "react-native";
 import { useAuth } from "../lib/AuthContext";
 import { LoginScreen } from "./LoginScreen";
-
-// Placeholder screens - will be replaced in later tasks
-function DashboardScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-gray-50">
-      <Text className="text-lg">Dashboard</Text>
-    </View>
-  );
-}
+import { DashboardScreen } from "./DashboardScreen";
 
 function TransactionsScreen() {
   return (
