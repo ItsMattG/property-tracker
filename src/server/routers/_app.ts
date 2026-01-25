@@ -18,6 +18,7 @@ import { teamRouter } from "./team";
 import { categorizationRouter } from "./categorization";
 import { taxOptimizationRouter } from "./taxOptimization";
 import { loanComparisonRouter } from "./loanComparison";
+import { documentExtractionRouter } from "./documentExtraction";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -39,6 +40,7 @@ export const appRouter = router({
   categorization: categorizationRouter,
   taxOptimization: taxOptimizationRouter,
   loanComparison: loanComparisonRouter,
+  documentExtraction: documentExtractionRouter,
 });
 
 export type AppRouter = typeof appRouter;

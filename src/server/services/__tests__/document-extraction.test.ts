@@ -134,8 +134,9 @@ describe("document-extraction service", () => {
       expect(getMediaType("image/png")).toBe("image/png");
     });
 
-    it("returns correct type for pdf", () => {
-      expect(getMediaType("application/pdf")).toBe("application/pdf");
+    it("defaults to jpeg for pdf (PDFs handled separately)", () => {
+      // getMediaType is only for image types - PDFs are handled separately in extractDocument
+      expect(getMediaType("application/pdf")).toBe("image/jpeg");
     });
 
     it("defaults to jpeg for unknown types", () => {

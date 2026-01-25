@@ -100,16 +100,14 @@ export function buildExtractionPrompt(): string {
   return EXTRACTION_PROMPT_BASE;
 }
 
-type SupportedMediaType = "image/jpeg" | "image/png" | "application/pdf";
+type SupportedImageMediaType = "image/jpeg" | "image/png";
 
-export function getMediaType(fileType: string): SupportedMediaType {
+export function getMediaType(fileType: string): SupportedImageMediaType {
   switch (fileType) {
     case "image/jpeg":
       return "image/jpeg";
     case "image/png":
       return "image/png";
-    case "application/pdf":
-      return "application/pdf";
     default:
       return "image/jpeg";
   }
@@ -177,41 +175,53 @@ export async function extractDocument(
     const mediaType = getMediaType(fileType);
     const prompt = buildExtractionPrompt();
 
-    const contentBlock =
-      fileType === "application/pdf"
-        ? {
-            type: "document" as const,
-            source: {
-              type: "base64" as const,
-              media_type: mediaType,
-              data: base64Content,
-            },
-          }
-        : {
-            type: "image" as const,
-            source: {
-              type: "base64" as const,
-              media_type: mediaType,
-              data: base64Content,
-            },
-          };
-
-    const message = await getAnthropic().messages.create({
-      model: "claude-3-haiku-20240307",
-      max_tokens: 2048,
-      messages: [
-        {
-          role: "user",
-          content: [
-            contentBlock,
+    const message = fileType === "application/pdf"
+      ? await getAnthropic().messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 2048,
+          messages: [
             {
-              type: "text",
-              text: prompt,
+              role: "user",
+              content: [
+                {
+                  type: "document",
+                  source: {
+                    type: "base64",
+                    media_type: "application/pdf",
+                    data: base64Content,
+                  },
+                },
+                {
+                  type: "text",
+                  text: prompt,
+                },
+              ],
             },
           ],
-        },
-      ],
-    });
+        })
+      : await getAnthropic().messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 2048,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image",
+                  source: {
+                    type: "base64",
+                    media_type: mediaType,
+                    data: base64Content,
+                  },
+                },
+                {
+                  type: "text",
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+        });
 
     const content = message.content[0];
     if (content.type !== "text") {
