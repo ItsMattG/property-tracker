@@ -5,8 +5,16 @@ import {
   scenarios,
   scenarioFactors,
   scenarioProjections,
+  properties,
+  loans,
+  recurringTransactions,
 } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import {
+  runProjection,
+  type PortfolioState,
+  type ScenarioFactorInput,
+} from "../services/scenario";
 
 const factorConfigSchema = z.object({
   factorType: z.enum([
@@ -221,5 +229,109 @@ export const scenarioRouter = router({
         .where(eq(scenarioProjections.scenarioId, factor.scenarioId));
 
       return { success: true };
+    }),
+
+  run: writeProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const scenario = await ctx.db.query.scenarios.findFirst({
+        where: and(
+          eq(scenarios.id, input.id),
+          eq(scenarios.userId, ctx.portfolio.ownerId)
+        ),
+        with: {
+          factors: true,
+        },
+      });
+
+      if (!scenario) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
+      }
+
+      // Get portfolio state
+      const userProperties = await ctx.db.query.properties.findMany({
+        where: eq(properties.userId, ctx.portfolio.ownerId),
+      });
+
+      const userLoans = await ctx.db.query.loans.findMany({
+        where: eq(loans.userId, ctx.portfolio.ownerId),
+      });
+
+      // Get recurring transactions for base income/expenses
+      const recurring = await ctx.db.query.recurringTransactions.findMany({
+        where: and(
+          eq(recurringTransactions.userId, ctx.portfolio.ownerId),
+          eq(recurringTransactions.isActive, true)
+        ),
+      });
+
+      // Build portfolio state
+      const portfolioState: PortfolioState = {
+        properties: userProperties.map((p) => {
+          const propertyRecurring = recurring.filter((r) => r.propertyId === p.id);
+          const monthlyRent = propertyRecurring
+            .filter((r) => r.transactionType === "income")
+            .reduce((sum, r) => sum + Math.abs(Number(r.amount)), 0);
+          const monthlyExpenses = propertyRecurring
+            .filter((r) => r.transactionType === "expense")
+            .reduce((sum, r) => sum + Math.abs(Number(r.amount)), 0);
+
+          return {
+            id: p.id,
+            monthlyRent,
+            monthlyExpenses,
+          };
+        }),
+        loans: userLoans.map((l) => ({
+          id: l.id,
+          propertyId: l.propertyId,
+          currentBalance: Number(l.currentBalance),
+          interestRate: Number(l.interestRate),
+          repaymentAmount: Number(l.repaymentAmount),
+        })),
+      };
+
+      // Convert factors
+      const factorInputs: ScenarioFactorInput[] = scenario.factors.map((f) => ({
+        factorType: f.factorType,
+        config: JSON.parse(f.config),
+        startMonth: Number(f.startMonth),
+        durationMonths: f.durationMonths ? Number(f.durationMonths) : undefined,
+      }));
+
+      // Run projection
+      const result = runProjection(
+        portfolioState,
+        factorInputs,
+        Number(scenario.timeHorizonMonths)
+      );
+
+      // Save or update projection
+      const existingProjection = await ctx.db.query.scenarioProjections.findFirst({
+        where: eq(scenarioProjections.scenarioId, scenario.id),
+      });
+
+      if (existingProjection) {
+        await ctx.db
+          .update(scenarioProjections)
+          .set({
+            calculatedAt: new Date(),
+            timeHorizonMonths: scenario.timeHorizonMonths,
+            monthlyResults: JSON.stringify(result.monthlyResults),
+            summaryMetrics: JSON.stringify(result.summaryMetrics),
+            isStale: false,
+          })
+          .where(eq(scenarioProjections.scenarioId, scenario.id));
+      } else {
+        await ctx.db.insert(scenarioProjections).values({
+          scenarioId: scenario.id,
+          timeHorizonMonths: scenario.timeHorizonMonths,
+          monthlyResults: JSON.stringify(result.monthlyResults),
+          summaryMetrics: JSON.stringify(result.summaryMetrics),
+          isStale: false,
+        });
+      }
+
+      return result;
     }),
 });
