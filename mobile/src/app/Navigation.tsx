@@ -1,20 +1,13 @@
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useAuth } from "../lib/AuthContext";
 import { LoginScreen } from "./LoginScreen";
 import { DashboardScreen } from "./DashboardScreen";
 import { TransactionsScreen } from "./TransactionsScreen";
 import { CameraScreen } from "./CameraScreen";
-
-function SettingsScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-gray-50">
-      <Text className="text-lg">Settings</Text>
-    </View>
-  );
-}
+import { SettingsScreen } from "./SettingsScreen";
 
 const Tab = createBottomTabNavigator();
 
