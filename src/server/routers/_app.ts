@@ -22,6 +22,7 @@ import { documentExtractionRouter } from "./documentExtraction";
 import { propertyManagerRouter } from "./propertyManager";
 import { scenarioRouter } from "./scenario";
 import { shareRouter } from "./share";
+import { complianceRouter } from "./compliance";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -47,6 +48,7 @@ export const appRouter = router({
   propertyManager: propertyManagerRouter,
   scenario: scenarioRouter,
   share: shareRouter,
+  compliance: complianceRouter,
 });
 
 export type AppRouter = typeof appRouter;
