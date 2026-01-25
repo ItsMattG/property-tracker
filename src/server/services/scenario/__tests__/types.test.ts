@@ -32,8 +32,8 @@ describe("Factor types", () => {
         sellingCosts: 25000,
         settlementMonth: 12,
       });
-      const config = parseFactorConfig("sell_property", json);
-      expect(config!.salePrice).toBe(850000);
+      const config = parseFactorConfig("sell_property", json) as SellPropertyFactorConfig;
+      expect(config.salePrice).toBe(850000);
     });
 
     it("returns null for invalid JSON", () => {

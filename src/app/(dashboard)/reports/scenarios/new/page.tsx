@@ -23,8 +23,10 @@ import { ChevronDown, ChevronRight, ArrowLeft, Play } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 
+type FactorType = "interest_rate" | "vacancy" | "rent_change" | "expense_change" | "sell_property" | "buy_property";
+
 interface FactorFormData {
-  factorType: string;
+  factorType: FactorType;
   config: Record<string, unknown>;
   startMonth: number;
   durationMonths?: number;
@@ -63,7 +65,7 @@ export default function NewScenarioPage() {
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const addFactor = (factorType: string, config: Record<string, unknown>) => {
+  const addFactor = (factorType: FactorType, config: Record<string, unknown>) => {
     setFactors((prev) => [
       ...prev,
       { factorType, config, startMonth: 0 },

@@ -25,7 +25,7 @@ const factorConfigSchema = z.object({
     "sell_property",
     "buy_property",
   ]),
-  config: z.record(z.unknown()),
+  config: z.record(z.string(), z.unknown()),
   startMonth: z.number().int().min(0).default(0),
   durationMonths: z.number().int().min(1).optional(),
   propertyId: z.string().uuid().optional(),

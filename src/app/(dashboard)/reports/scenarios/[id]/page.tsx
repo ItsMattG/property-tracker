@@ -211,7 +211,7 @@ export default function ScenarioDetailPage({
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip
-                    formatter={(value: number) => `$${value.toLocaleString()}`}
+                    formatter={(value) => `$${Number(value).toLocaleString()}`}
                   />
                   <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
                   <Line
