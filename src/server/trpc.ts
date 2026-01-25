@@ -5,6 +5,7 @@ import { db } from "./db";
 import { users, portfolioMembers } from "./db/schema";
 import { eq, and } from "drizzle-orm";
 import { type PortfolioRole, getPermissions } from "./services/portfolio-access";
+import { verifyMobileToken } from "./routers/mobileAuth";
 
 export interface PortfolioContext {
   ownerId: string;
@@ -16,7 +17,7 @@ export interface PortfolioContext {
   canUploadDocuments: boolean;
 }
 
-export const createTRPCContext = async () => {
+export const createTRPCContext = async (opts?: { headers?: Headers }) => {
   const { userId: clerkId } = await auth();
   const cookieStore = await cookies();
   const portfolioOwnerId = cookieStore.get("portfolio_owner_id")?.value;
@@ -25,6 +26,7 @@ export const createTRPCContext = async () => {
     db,
     clerkId,
     portfolioOwnerId,
+    headers: opts?.headers,
   };
 };
 
@@ -35,66 +37,96 @@ export const publicProcedure = t.procedure;
 export const createCallerFactory = t.createCallerFactory;
 
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
-  if (!ctx.clerkId) {
-    throw new TRPCError({ code: "UNAUTHORIZED" });
-  }
-
-  const user = await ctx.db.query.users.findFirst({
-    where: eq(users.clerkId, ctx.clerkId),
-  });
-
-  if (!user) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "User not found. Please sign out and sign in again.",
-    });
-  }
-
-  // Resolve portfolio context
-  let portfolio: PortfolioContext;
-
-  if (ctx.portfolioOwnerId && ctx.portfolioOwnerId !== user.id) {
-    // Viewing someone else's portfolio - check membership
-    const membership = await ctx.db.query.portfolioMembers.findFirst({
-      where: and(
-        eq(portfolioMembers.ownerId, ctx.portfolioOwnerId),
-        eq(portfolioMembers.userId, user.id)
-      ),
+  // Try Clerk auth first (web)
+  if (ctx.clerkId) {
+    const user = await ctx.db.query.users.findFirst({
+      where: eq(users.clerkId, ctx.clerkId),
     });
 
-    if (!membership || !membership.joinedAt) {
+    if (!user) {
       throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "You do not have access to this portfolio",
+        code: "UNAUTHORIZED",
+        message: "User not found. Please sign out and sign in again.",
       });
     }
 
-    const perms = getPermissions(membership.role);
-    portfolio = {
-      ownerId: ctx.portfolioOwnerId,
-      role: membership.role,
-      ...perms,
-    };
-  } else {
-    // Viewing own portfolio
-    portfolio = {
-      ownerId: user.id,
-      role: "owner",
-      canWrite: true,
-      canManageMembers: true,
-      canManageBanks: true,
-      canViewAuditLog: true,
-      canUploadDocuments: true,
-    };
+    // Resolve portfolio context
+    let portfolio: PortfolioContext;
+
+    if (ctx.portfolioOwnerId && ctx.portfolioOwnerId !== user.id) {
+      // Viewing someone else's portfolio - check membership
+      const membership = await ctx.db.query.portfolioMembers.findFirst({
+        where: and(
+          eq(portfolioMembers.ownerId, ctx.portfolioOwnerId),
+          eq(portfolioMembers.userId, user.id)
+        ),
+      });
+
+      if (!membership || !membership.joinedAt) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have access to this portfolio",
+        });
+      }
+
+      const perms = getPermissions(membership.role);
+      portfolio = {
+        ownerId: ctx.portfolioOwnerId,
+        role: membership.role,
+        ...perms,
+      };
+    } else {
+      // Viewing own portfolio
+      portfolio = {
+        ownerId: user.id,
+        role: "owner",
+        canWrite: true,
+        canManageMembers: true,
+        canManageBanks: true,
+        canViewAuditLog: true,
+        canUploadDocuments: true,
+      };
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user,
+        portfolio,
+      },
+    });
   }
 
-  return next({
-    ctx: {
-      ...ctx,
-      user,
-      portfolio,
-    },
-  });
+  // Fall back to JWT auth (mobile)
+  const authHeader = ctx.headers?.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
+    try {
+      const payload = verifyMobileToken(token);
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, payload.userId),
+      });
+
+      if (user) {
+        // For mobile, always use user's own portfolio
+        const portfolio: PortfolioContext = {
+          ownerId: user.id,
+          role: "owner",
+          canWrite: true,
+          canManageMembers: true,
+          canManageBanks: true,
+          canViewAuditLog: true,
+          canUploadDocuments: true,
+        };
+
+        return next({ ctx: { ...ctx, user, portfolio } });
+      }
+    } catch {
+      // Invalid JWT - fall through to unauthorized
+    }
+  }
+
+  throw new TRPCError({ code: "UNAUTHORIZED" });
 });
 
 // Procedure that requires write access
