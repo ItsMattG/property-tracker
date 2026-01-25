@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
+import { EntitySwitcher } from "@/components/entities";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -68,6 +69,10 @@ export function Sidebar() {
       </div>
 
       <PortfolioSwitcher />
+
+      <div className="mb-4">
+        <EntitySwitcher />
+      </div>
 
       <nav className="space-y-1">
         {navItems.map((item) => {
