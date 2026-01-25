@@ -12,11 +12,14 @@ After completing each task:
 
 ## Development Workflow
 Always follow this workflow for new features:
-1. **Brainstorm**: Use `superpowers:brainstorming` for design
-2. **Plan**: Use `superpowers:writing-plans` for implementation plan
-3. **Execute**: Use `superpowers:executing-plans` (batch execution - more token efficient than subagent-driven)
+1. **Create feature branch**: `git checkout -b feature/<feature-name>` before any code changes
+2. **Brainstorm**: Use `superpowers:brainstorming` for design
+3. **Plan**: Use `superpowers:writing-plans` for implementation plan
+4. **Execute**: Use `superpowers:executing-plans` (batch execution - more token efficient than subagent-driven)
+5. **Create PR**: Push branch and create PR with `gh pr create`
+6. **Merge PR**: Merge with `gh pr merge`
 
-Always pick the token-efficient execution approach - batch execution without subagent overhead.
+Always create a feature branch first. Never commit directly to main.
 
 ## Notifications
 When waiting for user input/approval, send:
