@@ -3,6 +3,7 @@ import type {
   VacancyFactorConfig,
   RentChangeFactorConfig,
   ExpenseChangeFactorConfig,
+  FactorConfig,
 } from "./types";
 
 export interface LoanForProjection {
@@ -124,5 +125,121 @@ export function applyExpenseChangeFactor(
     originalTotal: expenses.total,
     adjustedTotal,
     adjustedByCategory,
+  };
+}
+
+export interface PropertyState {
+  id: string;
+  monthlyRent: number;
+  monthlyExpenses: number;
+}
+
+export interface LoanState {
+  id: string;
+  propertyId: string;
+  currentBalance: number;
+  interestRate: number;
+  repaymentAmount: number;
+}
+
+export interface PortfolioState {
+  properties: PropertyState[];
+  loans: LoanState[];
+}
+
+export interface ScenarioFactorInput {
+  factorType: string;
+  config: FactorConfig;
+  startMonth: number;
+  durationMonths?: number;
+}
+
+export interface MonthProjection {
+  month: number;
+  totalIncome: number;
+  totalExpenses: number;
+  netCashFlow: number;
+  incomeByProperty: Record<string, number>;
+  expensesByProperty: Record<string, number>;
+}
+
+export function projectMonth(
+  portfolio: PortfolioState,
+  factors: ScenarioFactorInput[],
+  month: number
+): MonthProjection {
+  let totalIncome = 0;
+  let totalExpenses = 0;
+  const incomeByProperty: Record<string, number> = {};
+  const expensesByProperty: Record<string, number> = {};
+
+  // Process each property
+  for (const property of portfolio.properties) {
+    let rent = property.monthlyRent;
+    let expenses = property.monthlyExpenses;
+
+    // Apply rent-affecting factors
+    for (const factor of factors) {
+      if (factor.factorType === "vacancy") {
+        const config = factor.config as VacancyFactorConfig;
+        if (config.propertyId === property.id) {
+          const endMonth = factor.startMonth + config.months;
+          if (month >= factor.startMonth && month < endMonth) {
+            rent = 0;
+          }
+        }
+      }
+
+      if (factor.factorType === "rent_change") {
+        const config = factor.config as RentChangeFactorConfig;
+        if (!config.propertyId || config.propertyId === property.id) {
+          if (month >= factor.startMonth) {
+            rent = rent * (1 + config.changePercent / 100);
+          }
+        }
+      }
+
+      if (factor.factorType === "expense_change") {
+        const config = factor.config as ExpenseChangeFactorConfig;
+        if (month >= factor.startMonth) {
+          expenses = expenses * (1 + config.changePercent / 100);
+        }
+      }
+    }
+
+    incomeByProperty[property.id] = rent;
+    expensesByProperty[property.id] = expenses;
+    totalIncome += rent;
+    totalExpenses += expenses;
+  }
+
+  // Process loans
+  for (const loan of portfolio.loans) {
+    let interestRate = loan.interestRate;
+
+    for (const factor of factors) {
+      if (factor.factorType === "interest_rate" && month >= factor.startMonth) {
+        const config = factor.config as InterestRateFactorConfig;
+        if (config.applyTo === "all" || config.applyTo === loan.propertyId) {
+          interestRate += config.changePercent;
+        }
+      }
+    }
+
+    const monthlyInterest = (loan.currentBalance * interestRate) / 100 / 12;
+    totalExpenses += monthlyInterest;
+
+    if (expensesByProperty[loan.propertyId]) {
+      expensesByProperty[loan.propertyId] += monthlyInterest;
+    }
+  }
+
+  return {
+    month,
+    totalIncome,
+    totalExpenses,
+    netCashFlow: totalIncome - totalExpenses,
+    incomeByProperty,
+    expensesByProperty,
   };
 }

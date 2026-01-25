@@ -4,6 +4,9 @@ import {
   applyVacancyFactor,
   applyRentChangeFactor,
   applyExpenseChangeFactor,
+  projectMonth,
+  type PortfolioState,
+  type ScenarioFactorInput,
 } from "../projection";
 import type { InterestRateFactorConfig, VacancyFactorConfig } from "../types";
 
@@ -141,6 +144,58 @@ describe("Projection Engine", () => {
       const result = applyExpenseChangeFactor(expenses, config);
       // Only repairs (+50%): 300 * 1.5 = 450, others unchanged: 200 + 450 + 500 = 1150
       expect(result.adjustedTotal).toBe(1150);
+    });
+  });
+
+  describe("projectMonth", () => {
+    const basePortfolio: PortfolioState = {
+      properties: [
+        { id: "prop-1", monthlyRent: 2000, monthlyExpenses: 500 },
+      ],
+      loans: [
+        { id: "loan-1", propertyId: "prop-1", currentBalance: 400000, interestRate: 6.0, repaymentAmount: 2500 },
+      ],
+    };
+
+    it("projects base case with no factors", () => {
+      const result = projectMonth(basePortfolio, [], 0);
+
+      expect(result.totalIncome).toBe(2000);
+      expect(result.totalExpenses).toBeGreaterThan(500); // includes interest
+      expect(result.netCashFlow).toBeDefined();
+    });
+
+    it("applies interest rate factor", () => {
+      const factors: ScenarioFactorInput[] = [
+        { factorType: "interest_rate", config: { changePercent: 2.0, applyTo: "all" }, startMonth: 0 },
+      ];
+
+      const result = projectMonth(basePortfolio, factors, 0);
+
+      // Higher interest = higher expenses
+      const baseResult = projectMonth(basePortfolio, [], 0);
+      expect(result.totalExpenses).toBeGreaterThan(baseResult.totalExpenses);
+    });
+
+    it("applies vacancy factor", () => {
+      const factors: ScenarioFactorInput[] = [
+        { factorType: "vacancy", config: { propertyId: "prop-1", months: 3 }, startMonth: 0 },
+      ];
+
+      const result = projectMonth(basePortfolio, factors, 1); // month 1 is within vacancy
+
+      expect(result.totalIncome).toBe(0);
+    });
+
+    it("combines multiple factors", () => {
+      const factors: ScenarioFactorInput[] = [
+        { factorType: "interest_rate", config: { changePercent: 2.0, applyTo: "all" }, startMonth: 0 },
+        { factorType: "rent_change", config: { changePercent: -10 }, startMonth: 0 },
+      ];
+
+      const result = projectMonth(basePortfolio, factors, 0);
+
+      expect(result.totalIncome).toBe(1800); // 2000 * 0.9
     });
   });
 });
