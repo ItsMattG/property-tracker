@@ -1028,6 +1028,33 @@ export const suburbBenchmarks = pgTable("suburb_benchmarks", {
   fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
 });
 
+export const propertyPerformanceBenchmarks = pgTable("property_performance_benchmarks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  propertyId: uuid("property_id")
+    .references(() => properties.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+
+  // Percentile rankings (0-100)
+  yieldPercentile: integer("yield_percentile"),
+  growthPercentile: integer("growth_percentile"),
+  expensePercentile: integer("expense_percentile"),
+  vacancyPercentile: integer("vacancy_percentile"),
+
+  // Overall score
+  performanceScore: integer("performance_score"), // 0-100
+
+  // Comparison context
+  cohortSize: integer("cohort_size"),
+  cohortDescription: text("cohort_description"), // "3-bed houses in Richmond VIC"
+  suburbBenchmarkId: uuid("suburb_benchmark_id").references(() => suburbBenchmarks.id),
+
+  // Insights
+  insights: text("insights"), // JSON string of {type, message, severity}[]
+
+  calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   properties: many(properties),
