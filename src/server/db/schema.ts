@@ -166,6 +166,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "refinance_opportunity",
   "cash_rate_changed",
   "compliance_reminder",
+  "equity_milestone",
 ]);
 
 export const notificationChannelEnum = pgEnum("notification_channel", [
