@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { transformForPrivacy, type PortfolioSnapshot, type PrivacyMode } from "@/server/services/share";
 import { PortfolioReport } from "@/components/share/PortfolioReport";
+import { DownloadPDFButton } from "@/components/share/DownloadPDFButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, differenceInDays } from "date-fns";
@@ -118,6 +119,11 @@ export default async function ShareViewPage({ params }: PageProps) {
                 </Badge>
               )}
               <Badge variant="secondary">{getPrivacyLabel(share.privacyMode)}</Badge>
+              <DownloadPDFButton
+                data={snapshot}
+                privacyMode={share.privacyMode}
+                title={share.title}
+              />
             </div>
           </div>
         </div>
