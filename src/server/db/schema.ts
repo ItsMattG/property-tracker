@@ -1535,6 +1535,24 @@ export const equityMilestones = pgTable(
   ]
 );
 
+export const brokers = pgTable(
+  "brokers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    name: text("name").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    company: text("company"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("brokers_user_id_idx").on(table.userId)]
+);
+
 export const loanPacks = pgTable(
   "loan_packs",
   {
@@ -1542,6 +1560,7 @@ export const loanPacks = pgTable(
     userId: uuid("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
+    brokerId: uuid("broker_id").references(() => brokers.id, { onDelete: "set null" }),
     token: text("token").notNull().unique(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1551,6 +1570,7 @@ export const loanPacks = pgTable(
   },
   (table) => [
     index("loan_packs_user_id_idx").on(table.userId),
+    index("loan_packs_broker_id_idx").on(table.brokerId),
     index("loan_packs_token_idx").on(table.token),
     index("loan_packs_expires_at_idx").on(table.expiresAt),
   ]
@@ -1620,10 +1640,22 @@ export const complianceRecordsRelations = relations(complianceRecords, ({ one })
   }),
 }));
 
+export const brokersRelations = relations(brokers, ({ one, many }) => ({
+  user: one(users, {
+    fields: [brokers.userId],
+    references: [users.id],
+  }),
+  loanPacks: many(loanPacks),
+}));
+
 export const loanPacksRelations = relations(loanPacks, ({ one }) => ({
   user: one(users, {
     fields: [loanPacks.userId],
     references: [users.id],
+  }),
+  broker: one(brokers, {
+    fields: [loanPacks.brokerId],
+    references: [brokers.id],
   }),
 }));
 
@@ -1780,5 +1812,7 @@ export type ComplianceRecord = typeof complianceRecords.$inferSelect;
 export type NewComplianceRecord = typeof complianceRecords.$inferInsert;
 export type EquityMilestone = typeof equityMilestones.$inferSelect;
 export type NewEquityMilestone = typeof equityMilestones.$inferInsert;
+export type Broker = typeof brokers.$inferSelect;
+export type NewBroker = typeof brokers.$inferInsert;
 export type LoanPack = typeof loanPacks.$inferSelect;
 export type NewLoanPack = typeof loanPacks.$inferInsert;
