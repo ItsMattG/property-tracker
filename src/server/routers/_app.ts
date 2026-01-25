@@ -26,6 +26,7 @@ import { complianceRouter } from "./compliance";
 import { loanPackRouter } from "./loanPack";
 import { brokerRouter } from "./broker";
 import { benchmarkingRouter } from "./benchmarking";
+import { entityRouter } from "./entity";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -55,6 +56,7 @@ export const appRouter = router({
   loanPack: loanPackRouter,
   broker: brokerRouter,
   benchmarking: benchmarkingRouter,
+  entity: entityRouter,
 });
 
 export type AppRouter = typeof appRouter;
