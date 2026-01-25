@@ -1456,6 +1456,48 @@ export const scenarioSnapshots = pgTable("scenario_snapshots", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Scenario Relations
+export const scenariosRelations = relations(scenarios, ({ one, many }) => ({
+  user: one(users, {
+    fields: [scenarios.userId],
+    references: [users.id],
+  }),
+  parentScenario: one(scenarios, {
+    fields: [scenarios.parentScenarioId],
+    references: [scenarios.id],
+    relationName: "scenarioBranches",
+  }),
+  childScenarios: many(scenarios, { relationName: "scenarioBranches" }),
+  factors: many(scenarioFactors),
+  projection: one(scenarioProjections),
+  snapshot: one(scenarioSnapshots),
+}));
+
+export const scenarioFactorsRelations = relations(scenarioFactors, ({ one }) => ({
+  scenario: one(scenarios, {
+    fields: [scenarioFactors.scenarioId],
+    references: [scenarios.id],
+  }),
+  property: one(properties, {
+    fields: [scenarioFactors.propertyId],
+    references: [properties.id],
+  }),
+}));
+
+export const scenarioProjectionsRelations = relations(scenarioProjections, ({ one }) => ({
+  scenario: one(scenarios, {
+    fields: [scenarioProjections.scenarioId],
+    references: [scenarios.id],
+  }),
+}));
+
+export const scenarioSnapshotsRelations = relations(scenarioSnapshots, ({ one }) => ({
+  scenario: one(scenarios, {
+    fields: [scenarioSnapshots.scenarioId],
+    references: [scenarios.id],
+  }),
+}));
+
 export const merchantCategoriesRelations = relations(merchantCategories, ({ one }) => ({
   user: one(users, {
     fields: [merchantCategories.userId],
@@ -1595,3 +1637,11 @@ export type PropertyManagerMapping = typeof propertyManagerMappings.$inferSelect
 export type NewPropertyManagerMapping = typeof propertyManagerMappings.$inferInsert;
 export type PropertyManagerSyncLog = typeof propertyManagerSyncLogs.$inferSelect;
 export type NewPropertyManagerSyncLog = typeof propertyManagerSyncLogs.$inferInsert;
+export type Scenario = typeof scenarios.$inferSelect;
+export type NewScenario = typeof scenarios.$inferInsert;
+export type ScenarioFactor = typeof scenarioFactors.$inferSelect;
+export type NewScenarioFactor = typeof scenarioFactors.$inferInsert;
+export type ScenarioProjection = typeof scenarioProjections.$inferSelect;
+export type NewScenarioProjection = typeof scenarioProjections.$inferInsert;
+export type ScenarioSnapshot = typeof scenarioSnapshots.$inferSelect;
+export type NewScenarioSnapshot = typeof scenarioSnapshots.$inferInsert;

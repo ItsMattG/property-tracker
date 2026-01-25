@@ -6,6 +6,12 @@ import {
   scenarioFactors,
   scenarioProjections,
   scenarioSnapshots,
+  scenariosRelations,
+  scenarioFactorsRelations,
+  type Scenario,
+  type NewScenario,
+  type ScenarioFactor,
+  type NewScenarioFactor,
 } from "../schema";
 
 describe("Scenario enums", () => {
@@ -55,5 +61,20 @@ describe("Scenario tables", () => {
     expect(scenarioSnapshots.id).toBeDefined();
     expect(scenarioSnapshots.scenarioId).toBeDefined();
     expect(scenarioSnapshots.snapshotData).toBeDefined();
+  });
+});
+
+describe("Scenario relations and types", () => {
+  it("exports scenariosRelations", () => {
+    expect(scenariosRelations).toBeDefined();
+  });
+
+  it("exports scenarioFactorsRelations", () => {
+    expect(scenarioFactorsRelations).toBeDefined();
+  });
+
+  it("exports Scenario types", () => {
+    const scenario: Partial<Scenario> = { name: "test" };
+    expect(scenario.name).toBe("test");
   });
 });
