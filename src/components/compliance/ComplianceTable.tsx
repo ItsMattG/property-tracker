@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ComplianceStatusBadge } from "./ComplianceStatusBadge";
+import { ComplianceStatusBadge, type ComplianceStatus } from "./ComplianceStatusBadge";
 import { ExternalLink } from "lucide-react";
 
 interface ComplianceItem {
@@ -19,7 +19,7 @@ interface ComplianceItem {
   propertyAddress: string;
   requirementName: string;
   nextDueAt: string | null;
-  status: string;
+  status: ComplianceStatus;
 }
 
 interface ComplianceTableProps {
@@ -67,7 +67,7 @@ export function ComplianceTable({ items, showProperty = true }: ComplianceTableP
                 : "Never recorded"}
             </TableCell>
             <TableCell>
-              <ComplianceStatusBadge status={item.status as any} />
+              <ComplianceStatusBadge status={item.status} />
             </TableCell>
             <TableCell className="text-right">
               <Button variant="ghost" size="sm" asChild>

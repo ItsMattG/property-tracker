@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type ComplianceStatus = "compliant" | "upcoming" | "due_soon" | "overdue";
+export type ComplianceStatus = "compliant" | "upcoming" | "due_soon" | "overdue";
 
 const statusConfig: Record<ComplianceStatus, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
   compliant: { label: "Compliant", variant: "default" },
