@@ -1,6 +1,26 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
+export interface LineItem {
+  description: string;
+  quantity: number;
+  amount: number;
+}
+
+export interface ExtractedData {
+  documentType: "receipt" | "rate_notice" | "insurance" | "invoice" | "unknown";
+  confidence: number;
+  vendor: string | null;
+  amount: number | null;
+  date: string | null;
+  dueDate: string | null;
+  category: string | null;
+  propertyAddress: string | null;
+  lineItems: LineItem[] | null;
+  rawText: string | null;
+  error?: string;
+}
+
 // Lazy initialization
 let anthropicClient: Anthropic | null = null;
 let supabaseClient: SupabaseClient | null = null;
@@ -72,4 +92,44 @@ Rules:
 
 export function buildExtractionPrompt(): string {
   return EXTRACTION_PROMPT_BASE;
+}
+
+export function parseExtractionResponse(response: string): ExtractedData {
+  const defaultResult: ExtractedData = {
+    documentType: "unknown",
+    confidence: 0,
+    vendor: null,
+    amount: null,
+    date: null,
+    dueDate: null,
+    category: null,
+    propertyAddress: null,
+    lineItems: null,
+    rawText: null,
+    error: "Failed to parse extraction response",
+  };
+
+  try {
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return defaultResult;
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    return {
+      documentType: parsed.documentType || "unknown",
+      confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0,
+      vendor: parsed.vendor || null,
+      amount: typeof parsed.amount === "number" ? parsed.amount : null,
+      date: parsed.date || null,
+      dueDate: parsed.dueDate || null,
+      category: parsed.category || null,
+      propertyAddress: parsed.propertyAddress || null,
+      lineItems: Array.isArray(parsed.lineItems) ? parsed.lineItems : null,
+      rawText: parsed.rawText || null,
+    };
+  } catch {
+    return defaultResult;
+  }
 }

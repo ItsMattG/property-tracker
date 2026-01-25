@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { buildExtractionPrompt, EXTRACTION_PROMPT_BASE } from "../document-extraction";
+import {
+  buildExtractionPrompt,
+  parseExtractionResponse,
+  ExtractedData,
+  EXTRACTION_PROMPT_BASE,
+} from "../document-extraction";
 
 describe("document-extraction service", () => {
   describe("buildExtractionPrompt", () => {
@@ -48,6 +53,53 @@ describe("document-extraction service", () => {
 
     it("instructs to return only valid JSON", () => {
       expect(EXTRACTION_PROMPT_BASE).toContain("Return ONLY valid JSON");
+    });
+  });
+
+  describe("parseExtractionResponse", () => {
+    it("parses valid JSON response", () => {
+      const response = `{
+        "documentType": "receipt",
+        "confidence": 0.95,
+        "vendor": "Bunnings Warehouse",
+        "amount": 245.50,
+        "date": "2026-01-20",
+        "dueDate": null,
+        "category": "repairs_and_maintenance",
+        "propertyAddress": null,
+        "lineItems": null,
+        "rawText": "BUNNINGS WAREHOUSE..."
+      }`;
+
+      const result = parseExtractionResponse(response);
+      expect(result.documentType).toBe("receipt");
+      expect(result.vendor).toBe("Bunnings Warehouse");
+      expect(result.amount).toBe(245.50);
+      expect(result.confidence).toBe(0.95);
+    });
+
+    it("extracts JSON from text with surrounding content", () => {
+      const response = `Here is the extracted data:
+      {"documentType": "invoice", "confidence": 0.8, "vendor": "ABC Plumbing", "amount": 350, "date": "2026-01-15", "dueDate": "2026-02-15", "category": "repairs_and_maintenance", "propertyAddress": null, "lineItems": [{"description": "Labour", "quantity": 2, "amount": 200}], "rawText": "..."}
+      That's the result.`;
+
+      const result = parseExtractionResponse(response);
+      expect(result.documentType).toBe("invoice");
+      expect(result.lineItems).toHaveLength(1);
+    });
+
+    it("returns unknown type on parse failure", () => {
+      const result = parseExtractionResponse("This is not JSON");
+      expect(result.documentType).toBe("unknown");
+      expect(result.confidence).toBe(0);
+      expect(result.error).toBe("Failed to parse extraction response");
+    });
+
+    it("validates required fields", () => {
+      const response = `{"documentType": "receipt"}`;
+      const result = parseExtractionResponse(response);
+      expect(result.amount).toBeNull();
+      expect(result.vendor).toBeNull();
     });
   });
 });
