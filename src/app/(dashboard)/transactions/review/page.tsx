@@ -5,7 +5,8 @@ import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BatchSuggestionCard } from "@/components/categorization/BatchSuggestionCard";
-import { Sparkles, RefreshCw } from "lucide-react";
+import { ExtractionReviewCard } from "@/components/documents/ExtractionReviewCard";
+import { Sparkles, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -64,10 +65,38 @@ export default function ReviewPage() {
     },
   });
 
+  // Document extraction queries and mutations
+  const { data: pendingExtractions, refetch: refetchExtractions } =
+    trpc.documentExtraction.listPendingReviews.useQuery();
+
+  const confirmExtractionMutation =
+    trpc.documentExtraction.confirmTransaction.useMutation({
+      onSuccess: () => {
+        toast.success("Transaction confirmed");
+        refetchExtractions();
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    });
+
+  const discardExtractionMutation =
+    trpc.documentExtraction.discardExtraction.useMutation({
+      onSuccess: () => {
+        toast.success("Extraction discarded");
+        refetchExtractions();
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    });
+
   const isProcessing =
     acceptMutation.isPending ||
     rejectMutation.isPending ||
-    batchAcceptMutation.isPending;
+    batchAcceptMutation.isPending ||
+    confirmExtractionMutation.isPending ||
+    discardExtractionMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -108,11 +137,38 @@ export default function ReviewPage() {
         </TabsList>
       </Tabs>
 
+      {/* Document Extractions Review */}
+      {pendingExtractions && pendingExtractions.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Document Extractions ({pendingExtractions.length})
+          </h2>
+          {pendingExtractions.map((extraction) => (
+            <ExtractionReviewCard
+              key={extraction.id}
+              extraction={extraction}
+              onConfirm={(updates) =>
+                confirmExtractionMutation.mutate({
+                  extractionId: extraction.id,
+                  ...updates,
+                })
+              }
+              onDiscard={() =>
+                discardExtractionMutation.mutate({ extractionId: extraction.id })
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Categorization Suggestions */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
           Loading suggestions...
         </div>
-      ) : data?.groupedByMerchant.length === 0 ? (
+      ) : data?.groupedByMerchant.length === 0 &&
+        (!pendingExtractions || pendingExtractions.length === 0) ? (
         <div className="text-center py-12">
           <Sparkles className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">All caught up!</h3>
@@ -120,8 +176,12 @@ export default function ReviewPage() {
             No transactions pending review.
           </p>
         </div>
-      ) : (
+      ) : data?.groupedByMerchant.length === 0 ? null : (
         <div className="space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            Category Suggestions ({data?.total ?? 0})
+          </h2>
           {data?.groupedByMerchant.map((group) => (
             <BatchSuggestionCard
               key={group.merchantKey}
