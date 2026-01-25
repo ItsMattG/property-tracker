@@ -15,3 +15,31 @@ export function calculateMonthlyPayment(
 
   return principal * (monthlyRate * factor) / (factor - 1);
 }
+
+export function calculateMonthlySavings(
+  principal: number,
+  currentRatePercent: number,
+  newRatePercent: number,
+  remainingMonths: number
+): number {
+  const currentPayment = calculateMonthlyPayment(principal, currentRatePercent, remainingMonths);
+  const newPayment = calculateMonthlyPayment(principal, newRatePercent, remainingMonths);
+
+  return currentPayment - newPayment;
+}
+
+export function calculateTotalInterestSaved(
+  principal: number,
+  currentRatePercent: number,
+  newRatePercent: number,
+  remainingMonths: number
+): number {
+  const monthlySavings = calculateMonthlySavings(
+    principal,
+    currentRatePercent,
+    newRatePercent,
+    remainingMonths
+  );
+
+  return monthlySavings * remainingMonths;
+}
