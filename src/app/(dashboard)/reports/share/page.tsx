@@ -26,19 +26,6 @@ import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { CreateShareModal } from "@/components/share/CreateShareModal";
 
-type Share = {
-  id: string;
-  title: string;
-  privacyMode: string;
-  token: string;
-  url: string;
-  expiresAt: Date;
-  viewCount: number;
-  createdAt: Date;
-  lastViewedAt: Date | null;
-  isExpired: boolean;
-};
-
 function isExpired(expiresAt: Date | string): boolean {
   return new Date() > new Date(expiresAt);
 }
