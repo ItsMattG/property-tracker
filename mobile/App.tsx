@@ -1,12 +1,23 @@
 import "./global.css";
+import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { Text, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { TRPCProvider } from "./src/lib/providers";
+import { AuthProvider } from "./src/lib/AuthContext";
+import { Navigation } from "./src/app/Navigation";
 
 export default function App() {
   return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-lg">PropertyTracker Mobile App</Text>
-      <StatusBar style="auto" />
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <TRPCProvider>
+          <AuthProvider>
+            <Navigation />
+            <StatusBar style="auto" />
+          </AuthProvider>
+        </TRPCProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
