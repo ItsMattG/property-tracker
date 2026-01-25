@@ -14,9 +14,9 @@ After completing each task:
 Always follow this workflow for new features:
 1. **Brainstorm**: Use `superpowers:brainstorming` for design
 2. **Plan**: Use `superpowers:writing-plans` for implementation plan
-3. **Execute**: Use `superpowers:executing-plans` or `superpowers:subagent-driven-development` to implement
+3. **Execute**: Use `superpowers:executing-plans` (batch execution - more token efficient than subagent-driven)
 
-Remember to maintain token efficiency throughout plan execution.
+Always pick the token-efficient execution approach - batch execution without subagent overhead.
 
 ## Notifications
 When waiting for user input/approval, send:
