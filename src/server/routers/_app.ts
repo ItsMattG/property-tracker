@@ -25,6 +25,7 @@ import { shareRouter } from "./share";
 import { complianceRouter } from "./compliance";
 import { loanPackRouter } from "./loanPack";
 import { brokerRouter } from "./broker";
+import { benchmarkingRouter } from "./benchmarking";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -53,6 +54,7 @@ export const appRouter = router({
   compliance: complianceRouter,
   loanPack: loanPackRouter,
   broker: brokerRouter,
+  benchmarking: benchmarkingRouter,
 });
 
 export type AppRouter = typeof appRouter;
