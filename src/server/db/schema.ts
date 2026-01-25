@@ -1477,6 +1477,33 @@ export const portfolioShares = pgTable("portfolio_shares", {
   lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
 });
 
+export const complianceRecords = pgTable(
+  "compliance_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    requirementId: text("requirement_id").notNull(),
+    completedAt: date("completed_at").notNull(),
+    nextDueAt: date("next_due_at").notNull(),
+    notes: text("notes"),
+    documentId: uuid("document_id").references(() => documents.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("compliance_records_property_id_idx").on(table.propertyId),
+    index("compliance_records_user_id_idx").on(table.userId),
+    index("compliance_records_next_due_idx").on(table.nextDueAt),
+  ]
+);
+
 // Scenario Relations
 export const scenariosRelations = relations(scenarios, ({ one, many }) => ({
   user: one(users, {
@@ -1523,6 +1550,21 @@ export const portfolioSharesRelations = relations(portfolioShares, ({ one }) => 
   user: one(users, {
     fields: [portfolioShares.userId],
     references: [users.id],
+  }),
+}));
+
+export const complianceRecordsRelations = relations(complianceRecords, ({ one }) => ({
+  property: one(properties, {
+    fields: [complianceRecords.propertyId],
+    references: [properties.id],
+  }),
+  user: one(users, {
+    fields: [complianceRecords.userId],
+    references: [users.id],
+  }),
+  document: one(documents, {
+    fields: [complianceRecords.documentId],
+    references: [documents.id],
   }),
 }));
 
@@ -1675,3 +1717,5 @@ export type ScenarioSnapshot = typeof scenarioSnapshots.$inferSelect;
 export type NewScenarioSnapshot = typeof scenarioSnapshots.$inferInsert;
 export type PortfolioShare = typeof portfolioShares.$inferSelect;
 export type NewPortfolioShare = typeof portfolioShares.$inferInsert;
+export type ComplianceRecord = typeof complianceRecords.$inferSelect;
+export type NewComplianceRecord = typeof complianceRecords.$inferInsert;
