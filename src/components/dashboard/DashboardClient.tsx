@@ -10,6 +10,7 @@ import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { SetupChecklist } from "@/components/onboarding/SetupChecklist";
 import { PushPermissionBanner } from "@/components/notifications/PushPermissionBanner";
 import { ClimateRiskSummary } from "@/components/climate-risk";
+import { SavingsWidget } from "@/components/benchmarking";
 
 interface DashboardStats {
   propertyCount: number;
@@ -181,6 +182,8 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
       {properties && properties.length > 0 && (
         <ClimateRiskSummary properties={properties} />
       )}
+
+      <SavingsWidget />
     </div>
   );
 }
