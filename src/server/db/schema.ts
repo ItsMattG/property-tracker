@@ -2011,6 +2011,30 @@ export const equityMilestones = pgTable(
   ]
 );
 
+export const milestonePreferences = pgTable("milestone_preferences", {
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull()
+    .primaryKey(),
+  lvrThresholds: jsonb("lvr_thresholds").$type<number[]>().default([80, 60, 40, 20]).notNull(),
+  equityThresholds: jsonb("equity_thresholds").$type<number[]>().default([100000, 250000, 500000, 1000000]).notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const propertyMilestoneOverrides = pgTable("property_milestone_overrides", {
+  propertyId: uuid("property_id")
+    .references(() => properties.id, { onDelete: "cascade" })
+    .notNull()
+    .primaryKey(),
+  lvrThresholds: jsonb("lvr_thresholds").$type<number[] | null>(),
+  equityThresholds: jsonb("equity_thresholds").$type<number[] | null>(),
+  enabled: boolean("enabled"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const brokers = pgTable(
   "brokers",
   {
@@ -2113,6 +2137,20 @@ export const complianceRecordsRelations = relations(complianceRecords, ({ one })
   document: one(documents, {
     fields: [complianceRecords.documentId],
     references: [documents.id],
+  }),
+}));
+
+export const milestonePreferencesRelations = relations(milestonePreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [milestonePreferences.userId],
+    references: [users.id],
+  }),
+}));
+
+export const propertyMilestoneOverridesRelations = relations(propertyMilestoneOverrides, ({ one }) => ({
+  property: one(properties, {
+    fields: [propertyMilestoneOverrides.propertyId],
+    references: [properties.id],
   }),
 }));
 
@@ -2325,3 +2363,8 @@ export type SuburbBenchmark = typeof suburbBenchmarks.$inferSelect;
 export type NewSuburbBenchmark = typeof suburbBenchmarks.$inferInsert;
 export type PropertyPerformanceBenchmark = typeof propertyPerformanceBenchmarks.$inferSelect;
 export type NewPropertyPerformanceBenchmark = typeof propertyPerformanceBenchmarks.$inferInsert;
+// Milestone Preferences Types
+export type MilestonePreferences = typeof milestonePreferences.$inferSelect;
+export type NewMilestonePreferences = typeof milestonePreferences.$inferInsert;
+export type PropertyMilestoneOverride = typeof propertyMilestoneOverrides.$inferSelect;
+export type NewPropertyMilestoneOverride = typeof propertyMilestoneOverrides.$inferInsert;
