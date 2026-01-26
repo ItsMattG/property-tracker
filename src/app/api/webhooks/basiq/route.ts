@@ -4,6 +4,8 @@ import { bankAccounts } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { createHmac, timingSafeEqual } from "crypto";
 
+export const runtime = "nodejs";
+
 const WEBHOOK_SECRET = process.env.BASIQ_WEBHOOK_SECRET;
 
 // Basiq webhook event types

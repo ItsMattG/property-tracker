@@ -15,6 +15,8 @@ import { format, addDays } from "date-fns";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 
+export const runtime = "nodejs";
+
 export async function GET(request: Request) {
   if (!verifyCronRequest(request.headers)) {
     return unauthorizedResponse();

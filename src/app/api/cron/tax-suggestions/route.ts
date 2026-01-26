@@ -12,6 +12,8 @@ import { eofySuggestionsTemplate, eofySuggestionsSubject } from "@/lib/email/tem
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 
+export const runtime = "nodejs";
+
 export async function GET(request: Request) {
   if (!verifyCronRequest(request.headers)) {
     return unauthorizedResponse();

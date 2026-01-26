@@ -11,6 +11,8 @@ import {
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 
+export const runtime = "nodejs";
+
 const RBA_API_URL = "https://api.rba.gov.au/statistics/tables/f1/data.json";
 
 export async function GET(request: Request) {
