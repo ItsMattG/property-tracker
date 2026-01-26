@@ -420,6 +420,12 @@ export const bugReportSeverityEnum = pgEnum("bug_report_severity", [
   "critical",
 ]);
 
+export const changelogCategoryEnum = pgEnum("changelog_category", [
+  "feature",
+  "improvement",
+  "fix",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -1311,6 +1317,23 @@ export const bugReports = pgTable(
     index("bug_reports_severity_idx").on(table.severity),
   ]
 );
+
+// Changelog entries (synced from markdown files)
+export const changelogEntries = pgTable("changelog_entries", {
+  id: text("id").primaryKey(), // slug from filename
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  content: text("content").notNull(),
+  category: changelogCategoryEnum("category").notNull(),
+  publishedAt: date("published_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Track when users last viewed changelog
+export const userChangelogViews = pgTable("user_changelog_views", {
+  userId: text("user_id").primaryKey(),
+  lastViewedAt: timestamp("last_viewed_at").notNull(),
+});
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -2712,3 +2735,8 @@ export type FeatureComment = typeof featureComments.$inferSelect;
 export type NewFeatureComment = typeof featureComments.$inferInsert;
 export type BugReport = typeof bugReports.$inferSelect;
 export type NewBugReport = typeof bugReports.$inferInsert;
+// Changelog Types
+export type ChangelogEntry = typeof changelogEntries.$inferSelect;
+export type NewChangelogEntry = typeof changelogEntries.$inferInsert;
+export type UserChangelogView = typeof userChangelogViews.$inferSelect;
+export type NewUserChangelogView = typeof userChangelogViews.$inferInsert;
