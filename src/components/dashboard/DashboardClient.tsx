@@ -11,6 +11,7 @@ import { SetupChecklist } from "@/components/onboarding/SetupChecklist";
 import { PushPermissionBanner } from "@/components/notifications/PushPermissionBanner";
 import { ClimateRiskSummary } from "@/components/climate-risk";
 import { SavingsWidget } from "@/components/benchmarking";
+import { TaxPositionCard } from "@/components/tax-position/TaxPositionCard";
 
 interface DashboardStats {
   propertyCount: number;
@@ -104,7 +105,7 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
         <SetupChecklist progress={onboarding.progress} />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Link href="/properties">
           <Card className="hover:border-primary transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -177,6 +178,8 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
             </CardContent>
           </Card>
         </Link>
+
+        <TaxPositionCard />
       </div>
 
       {properties && properties.length > 0 && (

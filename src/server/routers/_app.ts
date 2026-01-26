@@ -33,6 +33,7 @@ import { trustComplianceRouter } from "./trustCompliance";
 import { mobileAuthRouter } from "./mobileAuth";
 import { userRouter } from "./user";
 import { milestonePreferencesRouter } from "./milestonePreferences";
+import { taxPositionRouter } from "./taxPosition";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -69,6 +70,7 @@ export const appRouter = router({
   mobileAuth: mobileAuthRouter,
   user: userRouter,
   milestonePreferences: milestonePreferencesRouter,
+  taxPosition: taxPositionRouter,
 });
 
 export type AppRouter = typeof appRouter;
