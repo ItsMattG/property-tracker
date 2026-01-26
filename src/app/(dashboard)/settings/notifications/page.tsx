@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bell, Mail, Smartphone, Check, X } from "lucide-react";
+import { Bell, Mail, Smartphone, Check, X, TrendingUp, Target } from "lucide-react";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { formatDistanceToNow } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 export default function NotificationSettingsPage() {
   const utils = trpc.useUtils();
@@ -22,12 +23,41 @@ export default function NotificationSettingsPage() {
     },
   });
 
+  const { data: milestonePrefs } = trpc.milestonePreferences.getGlobal.useQuery();
+  const updateMilestoneMutation = trpc.milestonePreferences.updateGlobal.useMutation({
+    onSuccess: () => {
+      utils.milestonePreferences.getGlobal.invalidate();
+    },
+  });
+
   const handleToggle = (key: string, value: boolean) => {
     updateMutation.mutate({ [key]: value });
   };
 
   const handleQuietHoursChange = (field: "quietHoursStart" | "quietHoursEnd", value: string) => {
     updateMutation.mutate({ [field]: value });
+  };
+
+  const toggleLvrThreshold = (threshold: number) => {
+    if (!milestonePrefs) return;
+    const current = milestonePrefs.lvrThresholds as number[];
+    const newThresholds = current.includes(threshold)
+      ? current.filter((t) => t !== threshold)
+      : [...current, threshold].sort((a, b) => b - a);
+    updateMilestoneMutation.mutate({ lvrThresholds: newThresholds });
+  };
+
+  const toggleEquityThreshold = (threshold: number) => {
+    if (!milestonePrefs) return;
+    const current = milestonePrefs.equityThresholds as number[];
+    const newThresholds = current.includes(threshold)
+      ? current.filter((t) => t !== threshold)
+      : [...current, threshold].sort((a, b) => a - b);
+    updateMilestoneMutation.mutate({ equityThresholds: newThresholds });
+  };
+
+  const formatEquityThreshold = (value: number) => {
+    return value >= 1000000 ? `$${value / 1000000}M` : `$${value / 1000}k`;
   };
 
   if (isLoading || !preferences) {
@@ -173,6 +203,83 @@ export default function NotificationSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Equity Milestones */}
+      {milestonePrefs && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Equity Milestones
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Enable milestone notifications</Label>
+                <p className="text-sm text-muted-foreground">
+                  Get notified when properties hit equity milestones
+                </p>
+              </div>
+              <Button
+                variant={milestonePrefs.enabled ? "outline" : "default"}
+                size="sm"
+                onClick={() => updateMilestoneMutation.mutate({ enabled: !milestonePrefs.enabled })}
+              >
+                {milestonePrefs.enabled ? "Disable" : "Enable"}
+              </Button>
+            </div>
+
+            {milestonePrefs.enabled && (
+              <>
+                <div>
+                  <Label className="flex items-center gap-2 mb-3">
+                    <Target className="h-4 w-4" />
+                    LVR Thresholds
+                  </Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Notify when LVR drops below these levels
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[80, 60, 40, 20].map((threshold) => (
+                      <Badge
+                        key={threshold}
+                        variant={(milestonePrefs.lvrThresholds as number[]).includes(threshold) ? "default" : "outline"}
+                        className="cursor-pointer"
+                        onClick={() => toggleLvrThreshold(threshold)}
+                      >
+                        {threshold}%
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="flex items-center gap-2 mb-3">
+                    <Target className="h-4 w-4" />
+                    Equity Thresholds
+                  </Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Notify when equity rises above these amounts
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[100000, 250000, 500000, 1000000].map((threshold) => (
+                      <Badge
+                        key={threshold}
+                        variant={(milestonePrefs.equityThresholds as number[]).includes(threshold) ? "default" : "outline"}
+                        className="cursor-pointer"
+                        onClick={() => toggleEquityThreshold(threshold)}
+                      >
+                        {formatEquityThreshold(threshold)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* History */}
       {history && history.length > 0 && (
