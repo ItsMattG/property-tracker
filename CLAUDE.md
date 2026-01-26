@@ -1,9 +1,11 @@
 # Claude Code Rules
 
-## Project Status (as of 2026-01-26)
+## Project Status (as of 2026-01-27)
 The v0.2 roadmap and post-extraction roadmap are **complete**. See `docs/plans/2026-01-25-post-extraction-roadmap.md` for full status.
 
-**Completed features:**
+**V0.3 Roadmap:** See `docs/plans/2026-01-27-v03-roadmap-design.md`
+
+**Completed features (v0.1-v0.2):**
 - Property Manager Integrations (PropertyMe OAuth)
 - React Native Mobile App with Detox E2E tests
 - Scenario Simulator (what-if modeling)
@@ -19,7 +21,16 @@ The v0.2 roadmap and post-extraction roadmap are **complete**. See `docs/plans/2
 - Vector DB Similar Properties
 - Axiom Observability (structured logging, metrics)
 
-**All roadmap items complete.** 🎉
+**V0.3 Roadmap (Growth & Engagement):**
+- Phase 1: User Feedback System (public feature board, private bug reports)
+- Phase 2: Changelog & What's New
+- Phase 3: Landing Page Overhaul (social proof, pricing, screenshots, FAQ)
+- Phase 4: Blog & SEO
+- Phase 5: Gmail/Outlook Email Integration (full)
+- Phase 6: Task Management (global task list)
+- Phase 7: Competitive Parity (AVM integration, guided onboarding, AI chat, shares/crypto)
+- Phase 8: TaxTank Features (forecasted tax, MyTax export, referrals)
+- Phase 9: Property Accountant Features (email forwarding, audit checks, YoY comparison)
 
 ## Token Efficiency
 Always pick the token-efficient approach when implementing. Minimize unnecessary exploration and verbose output.
