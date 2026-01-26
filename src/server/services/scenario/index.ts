@@ -5,6 +5,8 @@ export {
   applyVacancyFactor,
   applyRentChangeFactor,
   applyExpenseChangeFactor,
+  calculateCGT,
+  applySellPropertyFactor,
   type PortfolioState,
   type PropertyState,
   type LoanState,
@@ -12,6 +14,9 @@ export {
   type MonthProjection,
   type ProjectionResult,
   type SummaryMetrics,
+  type PropertyForSale,
+  type CGTResult,
+  type SellPropertyResult,
 } from "./projection";
 
 export {
