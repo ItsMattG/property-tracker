@@ -6,6 +6,8 @@ import { users, portfolioMembers } from "./db/schema";
 import { eq, and } from "drizzle-orm";
 import { type PortfolioRole, getPermissions } from "./services/portfolio-access";
 import { verifyMobileToken } from "./lib/mobile-jwt";
+import { axiomMetrics, flushAxiom } from "@/lib/axiom";
+import { logger, setLogContext, clearLogContext } from "@/lib/logger";
 
 export interface PortfolioContext {
   ownerId: string;
@@ -20,6 +22,9 @@ export interface PortfolioContext {
 export const createTRPCContext = async (opts?: { headers?: Headers }) => {
   let clerkId: string | null = null;
   let portfolioOwnerId: string | undefined;
+
+  // Extract request ID from headers for correlation
+  const requestId = opts?.headers?.get("x-request-id") || undefined;
 
   // Try Clerk auth - this will fail for routes excluded from clerkMiddleware
   // (like mobile auth routes), which is expected
@@ -39,16 +44,65 @@ export const createTRPCContext = async (opts?: { headers?: Headers }) => {
     clerkId,
     portfolioOwnerId,
     headers: opts?.headers,
+    requestId,
   };
 };
 
 const t = initTRPC.context<typeof createTRPCContext>().create();
 
+// Observability middleware - tracks timing and logs for all procedures
+const observabilityMiddleware = t.middleware(async ({ ctx, next, path, type }) => {
+  const start = Date.now();
+
+  // Set log context for this request
+  setLogContext({ requestId: ctx.requestId });
+
+  try {
+    const result = await next({ ctx });
+    const duration = Date.now() - start;
+
+    // Track successful request
+    axiomMetrics.timing("api.request.duration", duration, {
+      path,
+      type,
+      status: "success",
+    });
+    axiomMetrics.increment("api.request.count", { path, type, status: "success" });
+
+    logger.debug("tRPC request completed", { path, type, duration });
+
+    return result;
+  } catch (error) {
+    const duration = Date.now() - start;
+
+    // Track failed request
+    axiomMetrics.timing("api.request.duration", duration, {
+      path,
+      type,
+      status: "error",
+    });
+    axiomMetrics.increment("api.request.count", { path, type, status: "error" });
+    axiomMetrics.increment("api.error.count", {
+      path,
+      type,
+      errorType: error instanceof TRPCError ? error.code : "UNKNOWN",
+    });
+
+    logger.warn("tRPC request failed", { path, type, duration, error: String(error) });
+
+    throw error;
+  } finally {
+    clearLogContext();
+    // Flush Axiom at end of request
+    await flushAxiom();
+  }
+});
+
 export const router = t.router;
-export const publicProcedure = t.procedure;
+export const publicProcedure = t.procedure.use(observabilityMiddleware);
 export const createCallerFactory = t.createCallerFactory;
 
-export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
+export const protectedProcedure = t.procedure.use(observabilityMiddleware).use(async ({ ctx, next }) => {
   // Try Clerk auth first (web)
   if (ctx.clerkId) {
     let user = await ctx.db.query.users.findFirst({
@@ -58,11 +112,11 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
     // Auto-create user if they exist in Clerk but not in our database
     // This handles cases where the webhook didn't fire (e.g., local development)
     if (!user) {
-      console.log("[trpc] User not found in DB, attempting auto-create for clerkId:", ctx.clerkId);
+      logger.info("User not found in DB, attempting auto-create", { clerkId: ctx.clerkId });
       try {
         const clerk = await clerkClient();
         const clerkUser = await clerk.users.getUser(ctx.clerkId);
-        console.log("[trpc] Got Clerk user:", clerkUser.emailAddresses.map(e => e.emailAddress));
+        logger.debug("Got Clerk user", { emails: clerkUser.emailAddresses.map(e => e.emailAddress) });
         const primaryEmail = clerkUser.emailAddresses.find(
           (e) => e.id === clerkUser.primaryEmailAddressId
         );
@@ -82,11 +136,16 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
             .returning();
 
           user = newUser;
-          console.log("[trpc] Auto-created user:", primaryEmail.emailAddress);
+          logger.info("Auto-created user", { email: primaryEmail.emailAddress });
         }
       } catch (error) {
-        console.error("[trpc] Failed to auto-create user:", error);
+        logger.error("Failed to auto-create user", error);
       }
+    }
+
+    // Add userId to log context once we have the user
+    if (user) {
+      setLogContext({ requestId: ctx.requestId, userId: user.id });
     }
 
     if (!user) {
@@ -154,6 +213,9 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
       });
 
       if (user) {
+        // Add userId to log context for mobile auth
+        setLogContext({ requestId: ctx.requestId, userId: user.id });
+
         // For mobile, always use user's own portfolio
         const portfolio: PortfolioContext = {
           ownerId: user.id,

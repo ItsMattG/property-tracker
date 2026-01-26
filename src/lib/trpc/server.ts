@@ -13,5 +13,6 @@ export async function getServerTRPC() {
     clerkId: userId,
     portfolioOwnerId: undefined,
     headers: undefined,
+    requestId: undefined,
   });
 }
