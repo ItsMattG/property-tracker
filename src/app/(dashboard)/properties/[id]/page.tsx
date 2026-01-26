@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ValuationCard } from "@/components/valuation";
 import { PropertyComplianceSection } from "@/components/compliance/PropertyComplianceSection";
-import { MilestonesSection } from "@/components/properties/MilestonesSection";
+import { MilestonesCard } from "@/components/properties/MilestonesCard";
 import { ClimateRiskCard } from "@/components/climate-risk";
 import { BenchmarkCard } from "@/components/benchmarking";
 import { PerformanceCard } from "@/components/performance-benchmarking";
@@ -36,11 +36,6 @@ export default function PropertyDetailPage() {
 
   const { data: property, isLoading, error } = trpc.property.get.useQuery(
     { id: propertyId },
-    { enabled: !!propertyId }
-  );
-
-  const { data: milestones } = trpc.property.getMilestones.useQuery(
-    { propertyId },
     { enabled: !!propertyId }
   );
 
@@ -184,10 +179,8 @@ export default function PropertyDetailPage() {
       {/* Performance Card */}
       <PerformanceCard propertyId={propertyId} />
 
-      {/* Milestones Section */}
-      {milestones && milestones.length > 0 && (
-        <MilestonesSection milestones={milestones} />
-      )}
+      {/* Milestones Card */}
+      <MilestonesCard propertyId={propertyId} />
 
       {/* Compliance Section */}
       <div className="lg:col-span-2">
