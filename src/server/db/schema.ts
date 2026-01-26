@@ -1337,6 +1337,36 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
   sales: many(propertySales),
   documents: many(documents),
   propertyValues: many(propertyValues),
+  propertyVector: one(propertyVectors),
+}));
+
+export const externalListingsRelations = relations(externalListings, ({ one }) => ({
+  user: one(users, {
+    fields: [externalListings.userId],
+    references: [users.id],
+  }),
+}));
+
+export const propertyVectorsRelations = relations(propertyVectors, ({ one }) => ({
+  user: one(users, {
+    fields: [propertyVectors.userId],
+    references: [users.id],
+  }),
+  property: one(properties, {
+    fields: [propertyVectors.propertyId],
+    references: [properties.id],
+  }),
+  externalListing: one(externalListings, {
+    fields: [propertyVectors.externalListingId],
+    references: [externalListings.id],
+  }),
+}));
+
+export const sharingPreferencesRelations = relations(sharingPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [sharingPreferences.userId],
+    references: [users.id],
+  }),
 }));
 
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({
