@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {

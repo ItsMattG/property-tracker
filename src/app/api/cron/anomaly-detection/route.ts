@@ -11,6 +11,8 @@ import { detectMissedRent } from "@/server/services/anomaly";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   if (!verifyCronRequest(request.headers)) {
     return unauthorizedResponse();
