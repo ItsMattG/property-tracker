@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,40 +12,60 @@ interface SyncButtonProps {
   className?: string;
 }
 
+// Calculate initial rate limit state
+function getInitialRateLimitState(
+  lastManualSyncAt: Date | string | null,
+  rateLimitMinutes: number
+): { status: "ready" | "rate-limited"; remainingTime: number } {
+  if (!lastManualSyncAt) {
+    return { status: "ready", remainingTime: 0 };
+  }
+  const now = Date.now();
+  const syncTime = new Date(lastManualSyncAt).getTime();
+  const diffMs = now - syncTime;
+  const limitMs = rateLimitMinutes * 60 * 1000;
+  if (diffMs >= limitMs) {
+    return { status: "ready", remainingTime: 0 };
+  }
+  return { status: "rate-limited", remainingTime: Math.ceil((limitMs - diffMs) / 1000) };
+}
+
 export function SyncButton({
   onSync,
   lastManualSyncAt,
   rateLimitMinutes = 15,
   className,
 }: SyncButtonProps) {
-  const [status, setStatus] = useState<"ready" | "syncing" | "success" | "rate-limited">("ready");
-  const [remainingTime, setRemainingTime] = useState<number>(0);
+  // Calculate initial state to avoid setState in effect
+  const initialState = useMemo(
+    () => getInitialRateLimitState(lastManualSyncAt, rateLimitMinutes),
+    [lastManualSyncAt, rateLimitMinutes]
+  );
 
+  const [status, setStatus] = useState<"ready" | "syncing" | "success" | "rate-limited">(initialState.status);
+  const [remainingTime, setRemainingTime] = useState<number>(initialState.remainingTime);
+
+  // Update state when props change (reset to initial)
   useEffect(() => {
-    if (!lastManualSyncAt) {
-      setStatus("ready");
+    const state = getInitialRateLimitState(lastManualSyncAt, rateLimitMinutes);
+    setStatus(state.status);
+    setRemainingTime(state.remainingTime);
+  }, [lastManualSyncAt, rateLimitMinutes]);
+
+  // Run interval for countdown
+  useEffect(() => {
+    if (!lastManualSyncAt || status === "syncing" || status === "success") {
       return;
     }
 
-    const checkRateLimit = () => {
-      const now = Date.now();
-      const syncTime = new Date(lastManualSyncAt).getTime();
-      const diffMs = now - syncTime;
-      const limitMs = rateLimitMinutes * 60 * 1000;
+    const interval = setInterval(() => {
+      const state = getInitialRateLimitState(lastManualSyncAt, rateLimitMinutes);
+      setStatus(state.status);
+      setRemainingTime(state.remainingTime);
+    }, 1000);
 
-      if (diffMs >= limitMs) {
-        setStatus("ready");
-        setRemainingTime(0);
-      } else {
-        setStatus("rate-limited");
-        setRemainingTime(Math.ceil((limitMs - diffMs) / 1000));
-      }
-    };
-
-    checkRateLimit();
-    const interval = setInterval(checkRateLimit, 1000);
     return () => clearInterval(interval);
-  }, [lastManualSyncAt, rateLimitMinutes]);
+  }, [lastManualSyncAt, rateLimitMinutes, status]);
 
   const handleClick = async () => {
     if (status !== "ready") return;

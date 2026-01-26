@@ -147,8 +147,14 @@ export default function TransactionsPage() {
   };
 
   // Reset to page 1 when filters change
-  const handleFiltersChange = (newFilters: typeof filters) => {
-    setFilters(newFilters);
+  const handleFiltersChange = (newFilters: {
+    propertyId?: string;
+    category?: string;
+    startDate?: string;
+    endDate?: string;
+    isVerified?: boolean;
+  }) => {
+    setFilters(newFilters as TransactionFilterInput);
     setPage(1);
   };
 
