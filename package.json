@@ -22,7 +22,8 @@
     "db:studio": "drizzle-kit studio",
     "seed:demo": "npx tsx src/scripts/seed.ts demo",
     "seed:dev": "npx tsx src/scripts/seed.ts dev",
-    "seed:clean": "npx tsx src/scripts/seed.ts clean"
+    "seed:clean": "npx tsx src/scripts/seed.ts clean",
+    "changelog:sync": "npx tsx scripts/sync-changelog.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
@@ -56,6 +57,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.1",
+    "gray-matter": "^4.0.3",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.0.0",
     "lucide-react": "^0.563.0",

@@ -36,6 +36,7 @@ import { milestonePreferencesRouter } from "./milestonePreferences";
 import { taxPositionRouter } from "./taxPosition";
 import { similarPropertiesRouter } from "./similarProperties";
 import { feedbackRouter } from "./feedback";
+import { changelogRouter } from "./changelog";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -75,6 +76,7 @@ export const appRouter = router({
   taxPosition: taxPositionRouter,
   similarProperties: similarPropertiesRouter,
   feedback: feedbackRouter,
+  changelog: changelogRouter,
 });
 
 export type AppRouter = typeof appRouter;
