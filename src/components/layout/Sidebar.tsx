@@ -25,6 +25,7 @@ import {
   Briefcase,
   ShieldCheck,
   Smartphone,
+  Calculator,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
@@ -38,6 +39,7 @@ const navItems = [
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/transactions/review", label: "Review", icon: Sparkles, showBadge: true },
   { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/reports/tax-position", label: "Tax Position", icon: Calculator },
   { href: "/reports/forecast", label: "Forecast", icon: TrendingUp },
   { href: "/reports/share", label: "Portfolio Shares", icon: Share2 },
   { href: "/reports/compliance", label: "Compliance", icon: ClipboardCheck },
