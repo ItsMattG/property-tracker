@@ -41,6 +41,7 @@ function NewScenarioContent() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [timeHorizon, setTimeHorizon] = useState(60);
+  const [marginalTaxRate, setMarginalTaxRate] = useState(0.37);
   const [factors, setFactors] = useState<FactorFormData[]>([]);
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
@@ -86,6 +87,7 @@ function NewScenarioContent() {
       name,
       description: description || undefined,
       timeHorizonMonths: timeHorizon,
+      marginalTaxRate,
       parentScenarioId: branchFromId || undefined,
       factors: factors.length > 0 ? factors : undefined,
     });
@@ -151,6 +153,27 @@ function NewScenarioContent() {
                 <SelectItem value="120">10 years (120 months)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="taxRate">Marginal Tax Rate (for CGT)</Label>
+            <Select
+              value={String(marginalTaxRate)}
+              onValueChange={(v) => setMarginalTaxRate(Number(v))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">0% (Tax-free threshold)</SelectItem>
+                <SelectItem value="0.19">19% ($18,201 - $45,000)</SelectItem>
+                <SelectItem value="0.325">32.5% ($45,001 - $120,000)</SelectItem>
+                <SelectItem value="0.37">37% ($120,001 - $180,000)</SelectItem>
+                <SelectItem value="0.45">45% ($180,001+)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Used to calculate CGT payable on property sales
+            </p>
           </div>
         </CardContent>
       </Card>
