@@ -4,6 +4,9 @@
 const BASIQ_API_URL = process.env.BASIQ_SERVER_URL || "https://au-api.basiq.io";
 const BASIQ_API_KEY = process.env.BASIQ_API_KEY;
 
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+
 interface BasiqToken {
   access_token: string;
   token_type: string;
@@ -52,6 +55,14 @@ interface BasiqTransaction {
   transactionDate: string;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableError(status: number): boolean {
+  return status === 429 || (status >= 500 && status < 600);
+}
+
 class BasiqService {
   private accessToken: string | null = null;
   private tokenExpiry: Date | null = null;
@@ -97,22 +108,49 @@ class BasiqService {
   ): Promise<T> {
     const token = await this.getAccessToken();
 
-    const response = await fetch(`${BASIQ_API_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "basiq-version": "3.0",
-        ...options.headers,
-      },
-    });
+    let lastError: Error | null = null;
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Basiq API error: ${response.statusText} - ${error}`);
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const response = await fetch(`${BASIQ_API_URL}${endpoint}`, {
+          ...options,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "basiq-version": "3.0",
+            ...options.headers,
+          },
+        });
+
+        if (!response.ok) {
+          if (isRetryableError(response.status) && attempt < MAX_RETRIES - 1) {
+            const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
+            await sleep(delay);
+            continue;
+          }
+
+          const error = await response.text();
+          throw new Error(`Basiq API error: ${response.statusText} - ${error}`);
+        }
+
+        return response.json();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Only retry on network errors, not on our thrown errors
+        if (
+          lastError.message.startsWith("Basiq API error:") ||
+          attempt >= MAX_RETRIES - 1
+        ) {
+          throw lastError;
+        }
+
+        const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt);
+        await sleep(delay);
+      }
     }
 
-    return response.json();
+    throw lastError || new Error("Request failed after max retries");
   }
 
   async createUser(email: string): Promise<BasiqUser> {

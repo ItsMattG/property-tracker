@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCSV } from "../csv-import";
+import { parseCSV, sanitizeField } from "../csv-import";
 
 describe("parseCSV", () => {
   it("parses standard CSV with Date, Description, Amount columns", () => {
@@ -69,5 +69,37 @@ describe("parseCSV", () => {
     const result = parseCSV(csv);
 
     expect(result).toHaveLength(1);
+  });
+
+  it("should sanitize description fields for formula injection", () => {
+    const csv = `Date,Description,Amount
+15/01/2026,=SUM(A1:A10),100.00`;
+
+    const rows = parseCSV(csv);
+    expect(rows[0].description).toBe("'=SUM(A1:A10)");
+  });
+});
+
+describe("sanitizeField", () => {
+  it("should escape formula injection characters", () => {
+    expect(sanitizeField("=SUM(A1:A10)")).toBe("'=SUM(A1:A10)");
+    expect(sanitizeField("+1234567890")).toBe("'+1234567890");
+    expect(sanitizeField("-1234567890")).toBe("'-1234567890");
+    expect(sanitizeField("@SUM(A1)")).toBe("'@SUM(A1)");
+  });
+
+  it("should not modify safe strings", () => {
+    expect(sanitizeField("Normal description")).toBe("Normal description");
+    expect(sanitizeField("Payment to John")).toBe("Payment to John");
+    expect(sanitizeField("Rent from tenant")).toBe("Rent from tenant");
+  });
+
+  it("should truncate overly long fields", () => {
+    const longString = "a".repeat(1000);
+    expect(sanitizeField(longString).length).toBe(500);
+  });
+
+  it("should handle empty strings", () => {
+    expect(sanitizeField("")).toBe("");
   });
 });

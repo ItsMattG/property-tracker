@@ -1,7 +1,7 @@
 # Post-Extraction Roadmap
 
 **Date:** 2026-01-25
-**Status:** ✅ COMPLETE (except Vector DB)
+**Status:** ✅ COMPLETE
 **Updated:** 2026-01-26 (all features implemented)
 
 ## Strategic Positioning
@@ -62,7 +62,7 @@ Features implemented:
 
 ---
 
-## Post-V0.2 Feature Priority ✅ ALL COMPLETE (except Vector DB)
+## Post-V0.2 Feature Priority ✅ ALL COMPLETE
 
 ### Tier 1: High Priority ✅
 
@@ -177,15 +177,14 @@ Features implemented:
 - ✅ Depreciation tracking
 - ✅ Deduction summaries
 
-#### 11. Vector DB Similar Property Alerts ⏸️
-**Status:** Not started (deferred)
+#### 11. Vector DB Similar Property Alerts ✅
+**Status:** Complete
 **Source:** Gemini v2
-**Reason:** Requires new infrastructure (Pinecone/Milvus), low priority
 
-Features planned:
-- "Similar Property" alerts based on portfolio performance
-- ML-powered property recommendations
-- Suburb performance comparisons
+Features implemented:
+- ✅ "Similar Property" alerts based on portfolio performance
+- ✅ ML-powered property recommendations
+- ✅ Suburb performance comparisons
 
 ---
 
@@ -205,7 +204,7 @@ Features planned:
 | **3.8** | Financial Leak Benchmarking | Medium | ✅ Complete | #13 |
 | **3.9** | Property Performance Benchmarking | Medium | ✅ Complete | #16 |
 | **3.10** | Tax Position Calculator | Medium | ✅ Complete | #23 |
-| **3.11** | Vector DB Similar Properties | High | ⏸️ Deferred | - |
+| **3.11** | Vector DB Similar Properties | High | ✅ Complete | - |
 
 ---
 

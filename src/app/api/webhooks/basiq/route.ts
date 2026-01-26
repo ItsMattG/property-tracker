@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { bankAccounts, transactions } from "@/server/db/schema";
+import { bankAccounts } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
+import { createHmac, timingSafeEqual } from "crypto";
+
+const WEBHOOK_SECRET = process.env.BASIQ_WEBHOOK_SECRET;
 
 // Basiq webhook event types
 type BasiqWebhookEvent = {
@@ -14,43 +17,72 @@ type BasiqWebhookEvent = {
   };
 };
 
+function verifyWebhookSignature(
+  payload: string,
+  signature: string | null
+): boolean {
+  if (!WEBHOOK_SECRET || !signature) {
+    return false;
+  }
+
+  const expectedSignature = createHmac("sha256", WEBHOOK_SECRET)
+    .update(payload)
+    .digest("hex");
+
+  try {
+    return timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const event: BasiqWebhookEvent = await request.json();
+    const payload = await request.text();
+    const signature = request.headers.get("x-basiq-signature");
 
-    console.log("Received Basiq webhook:", event.type);
+    // Verify signature in production or when secret is configured
+    if (process.env.NODE_ENV === "production" || WEBHOOK_SECRET) {
+      if (!verifyWebhookSignature(payload, signature)) {
+        return NextResponse.json(
+          { error: "Invalid signature" },
+          { status: 401 }
+        );
+      }
+    }
+
+    const event: BasiqWebhookEvent = JSON.parse(payload);
 
     switch (event.type) {
       case "connection.created":
       case "connection.updated":
-        // Handle connection status updates
         if (event.data.connectionId) {
-          await handleConnectionUpdate(event.data.connectionId, event.data.status);
+          await handleConnectionUpdate(
+            event.data.connectionId,
+            event.data.status
+          );
         }
         break;
 
       case "transactions.created":
       case "transactions.updated":
-        // Handle new transactions
         if (event.data.accountId) {
           await handleTransactionSync(event.data.accountId);
         }
         break;
 
       case "connection.deleted":
-        // Handle disconnection
         if (event.data.connectionId) {
           await handleConnectionDeleted(event.data.connectionId);
         }
         break;
-
-      default:
-        console.log("Unhandled webhook event type:", event.type);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Basiq webhook error:", error);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }
@@ -59,49 +91,23 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleConnectionUpdate(connectionId: string, status?: string) {
-  // Update connection status in our database
   const isConnected = status === "active" || status === "connected";
-
   await db
     .update(bankAccounts)
-    .set({
-      isConnected,
-      lastSyncedAt: new Date(),
-    })
+    .set({ isConnected, lastSyncedAt: new Date() })
     .where(eq(bankAccounts.basiqConnectionId, connectionId));
 }
 
 async function handleTransactionSync(accountId: string) {
-  // In a full implementation, this would:
-  // 1. Fetch new transactions from Basiq API
-  // 2. Map them to our schema
-  // 3. Insert into database with auto-categorization
-
-  // For now, just update the last synced timestamp
   await db
     .update(bankAccounts)
-    .set({
-      lastSyncedAt: new Date(),
-    })
+    .set({ lastSyncedAt: new Date() })
     .where(eq(bankAccounts.basiqAccountId, accountId));
 }
 
 async function handleConnectionDeleted(connectionId: string) {
-  // Mark connection as disconnected
   await db
     .update(bankAccounts)
-    .set({
-      isConnected: false,
-    })
+    .set({ isConnected: false })
     .where(eq(bankAccounts.basiqConnectionId, connectionId));
-}
-
-// Verify webhook authenticity (in production)
-function verifyWebhookSignature(
-  payload: string,
-  signature: string | null
-): boolean {
-  // TODO: Implement signature verification using Basiq's webhook secret
-  // For now, accept all requests in development
-  return true;
 }

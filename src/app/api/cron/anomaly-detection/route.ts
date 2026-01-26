@@ -8,14 +8,12 @@ import {
 } from "@/server/db/schema";
 import { eq, and, lt } from "drizzle-orm";
 import { detectMissedRent } from "@/server/services/anomaly";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   try {
@@ -93,7 +91,7 @@ export async function POST(request: NextRequest) {
       alertsCreated,
     });
   } catch (error) {
-    console.error("Anomaly detection cron error:", error);
+    logger.error("Anomaly detection cron error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+const MAX_FIELD_LENGTH = 500;
+const FORMULA_CHARS = ["=", "+", "-", "@"];
+
 export const csvRowSchema = z.object({
   date: z.string(),
   description: z.string(),
@@ -8,6 +11,27 @@ export const csvRowSchema = z.object({
 });
 
 export type CSVRow = z.infer<typeof csvRowSchema>;
+
+/**
+ * Sanitize a field to prevent CSV injection attacks
+ */
+export function sanitizeField(value: string): string {
+  if (!value) return value;
+
+  let sanitized = value;
+
+  // Truncate overly long fields
+  if (sanitized.length > MAX_FIELD_LENGTH) {
+    sanitized = sanitized.slice(0, MAX_FIELD_LENGTH);
+  }
+
+  // Escape formula injection characters by prefixing with single quote
+  if (FORMULA_CHARS.some((char) => sanitized.startsWith(char))) {
+    sanitized = "'" + sanitized;
+  }
+
+  return sanitized;
+}
 
 export function parseCSV(csvContent: string): CSVRow[] {
   const lines = csvContent.trim().split("\n");
@@ -61,7 +85,8 @@ export function parseCSV(csvContent: string): CSVRow[] {
     values.push(current.trim());
 
     const date = values[dateIdx]?.replace(/"/g, "");
-    const description = values[descIdx]?.replace(/"/g, "");
+    const rawDescription = values[descIdx]?.replace(/"/g, "");
+    const description = sanitizeField(rawDescription || "");
 
     let amount: string;
     if (amountIdx !== -1) {

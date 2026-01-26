@@ -9,12 +9,12 @@ import {
 } from "@/server/services/tax-optimization";
 import { sendEmailNotification } from "@/server/services/notification";
 import { eofySuggestionsTemplate, eofySuggestionsSubject } from "@/lib/email/templates/eofy-suggestions";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   // Only run during EOFY season (May-June)
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
           notified++;
         }
       } catch (error) {
-        console.error(`Failed to process user ${user.userId}:`, error);
+        logger.error("Failed to process user", error, { userId: user.userId });
       }
     }
 
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
       notified,
     });
   } catch (error) {
-    console.error("Tax suggestions cron error:", error);
+    logger.error("Tax suggestions cron error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

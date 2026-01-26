@@ -16,12 +16,12 @@ import {
   refinanceOpportunityTemplate,
   refinanceOpportunitySubject,
 } from "@/lib/email/templates/refinance-opportunity";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   try {
@@ -135,7 +135,7 @@ export async function GET(request: Request) {
       alerted,
     });
   } catch (error) {
-    console.error("Refinance scan error:", error);
+    logger.error("Refinance scan error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

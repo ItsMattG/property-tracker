@@ -12,12 +12,12 @@ import { eq, inArray } from "drizzle-orm";
 import { sendPushNotification, sendEmailNotification, isQuietHours } from "@/server/services/notification";
 import { getRequirementById } from "@/lib/compliance-requirements";
 import { format, addDays } from "date-fns";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   try {
@@ -148,10 +148,7 @@ export async function GET(request: Request) {
           }
         }
       } catch (error) {
-        console.error(
-          `Failed to send compliance reminder for user ${user.id}:`,
-          error
-        );
+        logger.error("Failed to send compliance reminder", error, { userId: user.id });
         failedCount++;
       }
     }
@@ -165,7 +162,7 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Compliance reminders cron error:", error);
+    logger.error("Compliance reminders cron error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

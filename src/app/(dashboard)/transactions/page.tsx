@@ -10,6 +10,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { ArrowLeftRight, List, Calendar } from "lucide-react";
+import type { Category, TransactionFilterInput } from "@/types/category";
 
 type ViewMode = "transactions" | "reconciliation";
 
@@ -18,13 +19,7 @@ const PAGE_SIZE = 50;
 export default function TransactionsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("transactions");
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState<{
-    propertyId?: string;
-    category?: string;
-    startDate?: string;
-    endDate?: string;
-    isVerified?: boolean;
-  }>({});
+  const [filters, setFilters] = useState<TransactionFilterInput>({});
 
   const offset = (page - 1) * PAGE_SIZE;
 
@@ -36,7 +31,7 @@ export default function TransactionsPage() {
     isLoading,
   } = trpc.transaction.list.useQuery({
     propertyId: filters.propertyId,
-    category: filters.category as any,
+    category: filters.category,
     startDate: filters.startDate,
     endDate: filters.endDate,
     isVerified: filters.isVerified,
@@ -53,7 +48,7 @@ export default function TransactionsPage() {
       await utils.transaction.list.cancel();
       const queryKey = {
         propertyId: filters.propertyId,
-        category: filters.category as any,
+        category: filters.category,
         startDate: filters.startDate,
         endDate: filters.endDate,
         isVerified: filters.isVerified,
@@ -93,7 +88,7 @@ export default function TransactionsPage() {
       await utils.transaction.list.cancel();
       const queryKey = {
         propertyId: filters.propertyId,
-        category: filters.category as any,
+        category: filters.category,
         startDate: filters.startDate,
         endDate: filters.endDate,
         isVerified: filters.isVerified,
@@ -131,7 +126,7 @@ export default function TransactionsPage() {
   ) => {
     updateCategory.mutate({
       id,
-      category: category as any,
+      category: category as Category,
       propertyId,
     });
   };
@@ -139,7 +134,7 @@ export default function TransactionsPage() {
   const handleBulkCategoryChange = async (ids: string[], category: string) => {
     await bulkUpdateCategory.mutateAsync({
       ids,
-      category: category as any,
+      category: category as Category,
     });
   };
 

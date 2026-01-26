@@ -6,9 +6,10 @@ import { CalendarIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -74,6 +75,9 @@ export function RecordCompletionModal({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Record Completion</DialogTitle>
+          <DialogDescription>
+            Record when this compliance requirement was completed.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">

@@ -16,11 +16,12 @@ import { eq, desc, sql } from "drizzle-orm";
 import { sendPushNotification, sendEmailNotification, isQuietHours } from "@/server/services/notification";
 import { getMilestoneMessage } from "@/lib/equity-milestones";
 import { resolveThresholds } from "@/server/services/milestone-preferences";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   try {
@@ -196,7 +197,7 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Equity milestones cron error:", error);
+    logger.error("Equity milestones cron error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

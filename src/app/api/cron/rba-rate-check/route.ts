@@ -8,21 +8,21 @@ import {
   cashRateChangedTemplate,
   cashRateChangedSubject,
 } from "@/lib/email/templates/cash-rate-changed";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 const RBA_API_URL = "https://api.rba.gov.au/statistics/tables/f1/data.json";
 
 export async function GET(request: Request) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   try {
     // Fetch current RBA cash rate
     const response = await fetch(RBA_API_URL);
     if (!response.ok) {
-      console.error("RBA API error:", response.status);
+      logger.error("RBA API error", null, { status: response.status });
       return NextResponse.json({ error: "RBA API unavailable" }, { status: 503 });
     }
 
@@ -93,7 +93,7 @@ export async function GET(request: Request) {
       notified,
     });
   } catch (error) {
-    console.error("RBA rate check error:", error);
+    logger.error("RBA rate check error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
