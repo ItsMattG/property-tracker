@@ -3,6 +3,8 @@ import { transactions, properties } from "@/server/db/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { getCategoryLabel, getCategoryInfo } from "@/lib/categories";
 import { format } from "date-fns";
+import { axiomMetrics } from "@/lib/axiom";
+import { logger } from "@/lib/logger";
 
 interface ExportOptions {
   userId: string;
@@ -26,6 +28,9 @@ interface TransactionRow {
 }
 
 export async function generateTransactionsCSV(options: ExportOptions): Promise<string> {
+  const startTime = Date.now();
+  logger.info("Generating transactions CSV", { userId: options.userId, propertyId: options.propertyId });
+
   const conditions = [eq(transactions.userId, options.userId)];
 
   if (options.propertyId) {
@@ -91,10 +96,19 @@ export async function generateTransactionsCSV(options: ExportOptions): Promise<s
     .map((row) => row.map((cell) => `"${cell}"`).join(","))
     .join("\n");
 
+  // Track export metrics
+  const duration = Date.now() - startTime;
+  axiomMetrics.timing("export.duration", duration, { type: "transactions_csv" });
+  axiomMetrics.increment("export.generated", { type: "transactions_csv" });
+  logger.info("Transactions CSV generated", { rowCount: rows.length, duration });
+
   return csvContent;
 }
 
 export async function generateAnnualSummaryCSV(options: ExportOptions): Promise<string> {
+  const startTime = Date.now();
+  logger.info("Generating annual summary CSV", { userId: options.userId });
+
   const conditions = [eq(transactions.userId, options.userId)];
 
   if (options.startDate) {
@@ -159,6 +173,12 @@ export async function generateAnnualSummaryCSV(options: ExportOptions): Promise<
   const csvContent = [headers, ...rows]
     .map((row) => row.map((cell) => `"${cell}"`).join(","))
     .join("\n");
+
+  // Track export metrics
+  const duration = Date.now() - startTime;
+  axiomMetrics.timing("export.duration", duration, { type: "annual_summary_csv" });
+  axiomMetrics.increment("export.generated", { type: "annual_summary_csv" });
+  logger.info("Annual summary CSV generated", { rowCount: rows.length, duration });
 
   return csvContent;
 }

@@ -15,6 +15,8 @@ import {
   getKnownMerchants,
 } from "../services/anomaly";
 import { metrics } from "@/lib/metrics";
+import { axiomMetrics } from "@/lib/axiom";
+import { logger } from "@/lib/logger";
 
 export const bankingRouter = router({
   listAccounts: protectedProcedure.query(async ({ ctx }) => {
@@ -84,6 +86,9 @@ export const bankingRouter = router({
           lastSyncStatus: "pending",
         })
         .where(eq(bankAccounts.id, input.accountId));
+
+      const syncStartTime = Date.now();
+      logger.info("Bank sync started", { accountId: input.accountId, institution: account.institution });
 
       try {
         // Refresh connection via Basiq
@@ -236,7 +241,19 @@ export const bankingRouter = router({
           );
 
         // Track successful sync for monitoring
+        const syncDuration = Date.now() - syncStartTime;
         metrics.bankSyncSuccess(input.accountId, transactionsAdded);
+        axiomMetrics.timing("bank_sync.duration", syncDuration, {
+          accountId: input.accountId,
+          institution: account.institution,
+          status: "success",
+        });
+        axiomMetrics.increment("bank_sync.transactions", { accountId: input.accountId }, transactionsAdded);
+        logger.info("Bank sync completed", {
+          accountId: input.accountId,
+          transactionsAdded,
+          duration: syncDuration,
+        });
 
         return { success: true, transactionsAdded };
       } catch (error) {
@@ -274,7 +291,21 @@ export const bankingRouter = router({
         }
 
         // Track failed sync for monitoring
+        const syncDuration = Date.now() - syncStartTime;
         metrics.bankSyncFailed(input.accountId, errorMessage);
+        axiomMetrics.timing("bank_sync.duration", syncDuration, {
+          accountId: input.accountId,
+          institution: account.institution,
+          status: "failed",
+          errorType: alertType,
+        });
+        axiomMetrics.increment("bank_sync.failed", { accountId: input.accountId, errorType: alertType });
+        logger.warn("Bank sync failed", {
+          accountId: input.accountId,
+          error: errorMessage,
+          alertType,
+          duration: syncDuration,
+        });
 
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
