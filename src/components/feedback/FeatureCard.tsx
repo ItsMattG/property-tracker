@@ -16,7 +16,7 @@ type FeatureCardProps = {
   status: string;
   voteCount: number;
   userName: string | null;
-  createdAt: Date;
+  createdAt: string;
   hasVoted: boolean;
 };
 

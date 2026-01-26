@@ -45,11 +45,11 @@ type BugReport = {
   description: string;
   stepsToReproduce: string | null;
   severity: string;
-  browserInfo: Record<string, string> | null;
+  browserInfo: unknown;
   currentPage: string | null;
   status: string;
   adminNotes: string | null;
-  createdAt: Date;
+  createdAt: string;
   userName: string | null;
   userEmail: string | null;
 };
