@@ -7,6 +7,7 @@ export {
   applyExpenseChangeFactor,
   calculateCGT,
   applySellPropertyFactor,
+  applyBuyPropertyFactor,
   type PortfolioState,
   type PropertyState,
   type LoanState,
@@ -17,6 +18,7 @@ export {
   type PropertyForSale,
   type CGTResult,
   type SellPropertyResult,
+  type BuyPropertyResult,
 } from "./projection";
 
 export {

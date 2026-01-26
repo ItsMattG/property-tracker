@@ -6,6 +6,7 @@ import {
   applyExpenseChangeFactor,
   calculateCGT,
   applySellPropertyFactor,
+  applyBuyPropertyFactor,
   projectMonth,
   runProjection,
   type PortfolioState,
@@ -13,7 +14,7 @@ import {
   type ProjectionResult,
   type PropertyForSale,
 } from "../projection";
-import type { InterestRateFactorConfig, VacancyFactorConfig, SellPropertyFactorConfig } from "../types";
+import type { InterestRateFactorConfig, VacancyFactorConfig, SellPropertyFactorConfig, BuyPropertyFactorConfig } from "../types";
 
 describe("Projection Engine", () => {
   describe("applyInterestRateFactor", () => {
@@ -402,6 +403,118 @@ describe("Projection Engine", () => {
       // After month 6: no rental income (property sold)
       expect(result.monthlyResults[6].totalIncome).toBe(0);
       expect(result.monthlyResults[11].totalIncome).toBe(0);
+    });
+  });
+
+  describe("applyBuyPropertyFactor", () => {
+    it("adds new property and loan to portfolio", () => {
+      const portfolio: PortfolioState = {
+        properties: [{ id: "prop-1", monthlyRent: 2000, monthlyExpenses: 500 }],
+        loans: [],
+      };
+      const config: BuyPropertyFactorConfig = {
+        purchasePrice: 600000,
+        deposit: 120000,
+        loanAmount: 480000,
+        interestRate: 6.5,
+        expectedRent: 2500,
+        expectedExpenses: 600,
+        purchaseMonth: 3,
+      };
+
+      const result = applyBuyPropertyFactor(portfolio, config);
+
+      expect(result.adjustedPortfolio.properties).toHaveLength(2);
+      expect(result.adjustedPortfolio.loans).toHaveLength(1);
+      expect(result.newProperty.monthlyRent).toBe(2500);
+      expect(result.newProperty.monthlyExpenses).toBe(600);
+      expect(result.newLoan.currentBalance).toBe(480000);
+      expect(result.newLoan.interestRate).toBe(6.5);
+    });
+
+    it("generates unique IDs for new property and loan", () => {
+      const portfolio: PortfolioState = {
+        properties: [],
+        loans: [],
+      };
+      const config: BuyPropertyFactorConfig = {
+        purchasePrice: 500000,
+        deposit: 100000,
+        loanAmount: 400000,
+        interestRate: 6.0,
+        expectedRent: 2000,
+        expectedExpenses: 500,
+        purchaseMonth: 0,
+      };
+
+      const result = applyBuyPropertyFactor(portfolio, config);
+
+      expect(result.newProperty.id).toBeDefined();
+      expect(result.newProperty.id.length).toBeGreaterThan(0);
+      expect(result.newLoan.propertyId).toBe(result.newProperty.id);
+    });
+  });
+
+  describe("runProjection with buy_property", () => {
+    it("adds property income after purchase month", () => {
+      const portfolio: PortfolioState = {
+        properties: [],
+        loans: [],
+      };
+      const factors: ScenarioFactorInput[] = [
+        {
+          factorType: "buy_property",
+          config: {
+            purchasePrice: 500000,
+            deposit: 100000,
+            loanAmount: 400000,
+            interestRate: 6.0,
+            expectedRent: 2000,
+            expectedExpenses: 500,
+            purchaseMonth: 3,
+          },
+          startMonth: 0,
+        },
+      ];
+
+      const result = runProjection(portfolio, factors, 12);
+
+      // Before month 3: no income
+      expect(result.monthlyResults[0].totalIncome).toBe(0);
+      expect(result.monthlyResults[2].totalIncome).toBe(0);
+      // After month 3: rental income from new property
+      expect(result.monthlyResults[3].totalIncome).toBe(2000);
+      expect(result.monthlyResults[11].totalIncome).toBe(2000);
+    });
+
+    it("adds loan expenses after purchase month", () => {
+      const portfolio: PortfolioState = {
+        properties: [],
+        loans: [],
+      };
+      const factors: ScenarioFactorInput[] = [
+        {
+          factorType: "buy_property",
+          config: {
+            purchasePrice: 500000,
+            deposit: 100000,
+            loanAmount: 400000,
+            interestRate: 6.0,
+            expectedRent: 2000,
+            expectedExpenses: 500,
+            purchaseMonth: 3,
+          },
+          startMonth: 0,
+        },
+      ];
+
+      const result = runProjection(portfolio, factors, 12);
+
+      // Before month 3: no expenses
+      expect(result.monthlyResults[0].totalExpenses).toBe(0);
+      // After month 3: expenses include property expenses + interest
+      // Monthly interest: 400000 * 6.0% / 12 = 2000
+      expect(result.monthlyResults[3].totalExpenses).toBe(500 + 2000); // expenses + interest
     });
   });
 });

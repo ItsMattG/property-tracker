@@ -4,6 +4,7 @@ import type {
   RentChangeFactorConfig,
   ExpenseChangeFactorConfig,
   SellPropertyFactorConfig,
+  BuyPropertyFactorConfig,
   FactorConfig,
 } from "./types";
 
@@ -235,6 +236,52 @@ export function applySellPropertyFactor(
   };
 }
 
+// Buy Property Factor
+export interface BuyPropertyResult {
+  adjustedPortfolio: PortfolioState;
+  newProperty: PropertyState;
+  newLoan: LoanState;
+  depositRequired: number;
+}
+
+export function applyBuyPropertyFactor(
+  portfolio: PortfolioState,
+  config: BuyPropertyFactorConfig
+): BuyPropertyResult {
+  // Generate unique IDs for new property and loan
+  const newPropertyId = `new-prop-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const newLoanId = `new-loan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+  // Create new property
+  const newProperty: PropertyState = {
+    id: newPropertyId,
+    monthlyRent: config.expectedRent,
+    monthlyExpenses: config.expectedExpenses,
+  };
+
+  // Create new loan
+  const newLoan: LoanState = {
+    id: newLoanId,
+    propertyId: newPropertyId,
+    currentBalance: config.loanAmount,
+    interestRate: config.interestRate,
+    repaymentAmount: 0, // Not used in projection, interest-only for simplicity
+  };
+
+  // Add to portfolio
+  const adjustedPortfolio: PortfolioState = {
+    properties: [...portfolio.properties, newProperty],
+    loans: [...portfolio.loans, newLoan],
+  };
+
+  return {
+    adjustedPortfolio,
+    newProperty,
+    newLoan,
+    depositRequired: config.deposit,
+  };
+}
+
 export interface LoanState {
   id: string;
   propertyId: string;
@@ -388,6 +435,15 @@ export function runProjection(
             factor.marginalTaxRate
           );
           currentPortfolio = sellResult.adjustedPortfolio;
+        }
+      }
+
+      // Check for buy_property factors that purchase this month
+      if (factor.factorType === "buy_property") {
+        const config = factor.config as BuyPropertyFactorConfig;
+        if (config.purchaseMonth === month) {
+          const buyResult = applyBuyPropertyFactor(currentPortfolio, config);
+          currentPortfolio = buyResult.adjustedPortfolio;
         }
       }
     }

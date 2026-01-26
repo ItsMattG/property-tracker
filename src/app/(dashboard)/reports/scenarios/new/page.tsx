@@ -423,6 +423,123 @@ function NewScenarioContent() {
             </CollapsibleContent>
           </Collapsible>
 
+          {/* Buy Property Section */}
+          <Collapsible open={openSections.buy_property}>
+            <CollapsibleTrigger
+              className="flex items-center justify-between w-full p-3 hover:bg-muted rounded-lg"
+              onClick={() => toggleSection("buy_property")}
+            >
+              <span className="font-medium">Buy Property</span>
+              {openSections.buy_property ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="p-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Purchase Price ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 600000"
+                    id="buy-price"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Deposit ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 120000"
+                    id="buy-deposit"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Loan Amount ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 480000"
+                    id="buy-loan"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Interest Rate (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="e.g., 6.5"
+                    id="buy-rate"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Expected Rent ($/mo)</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 2500"
+                    id="buy-rent"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Expected Expenses ($/mo)</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 600"
+                    id="buy-expenses"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Purchase Month</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="120"
+                    placeholder="e.g., 6"
+                    id="buy-month"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const priceInput = document.getElementById("buy-price") as HTMLInputElement;
+                      const depositInput = document.getElementById("buy-deposit") as HTMLInputElement;
+                      const loanInput = document.getElementById("buy-loan") as HTMLInputElement;
+                      const rateInput = document.getElementById("buy-rate") as HTMLInputElement;
+                      const rentInput = document.getElementById("buy-rent") as HTMLInputElement;
+                      const expensesInput = document.getElementById("buy-expenses") as HTMLInputElement;
+                      const monthInput = document.getElementById("buy-month") as HTMLInputElement;
+
+                      if (priceInput?.value && loanInput?.value && monthInput?.value) {
+                        addFactor("buy_property", {
+                          purchasePrice: Number(priceInput.value),
+                          deposit: Number(depositInput?.value || 0),
+                          loanAmount: Number(loanInput.value),
+                          interestRate: Number(rateInput?.value || 6.0),
+                          expectedRent: Number(rentInput?.value || 0),
+                          expectedExpenses: Number(expensesInput?.value || 0),
+                          purchaseMonth: Number(monthInput.value),
+                        });
+                        priceInput.value = "";
+                        depositInput.value = "";
+                        loanInput.value = "";
+                        rateInput.value = "";
+                        rentInput.value = "";
+                        expensesInput.value = "";
+                        monthInput.value = "";
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
           {/* Configured Factors Summary */}
           {factors.length > 0 && (
             <div className="mt-4 p-3 bg-muted rounded-lg">
