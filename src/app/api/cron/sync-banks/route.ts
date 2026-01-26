@@ -9,12 +9,11 @@ export async function GET(request: Request) {
     return unauthorizedResponse();
   }
 
-  // TODO: Implement bank sync logic
-  // This will be implemented when we build recurring transactions
-
+  // Bank sync is handled via Basiq webhooks, not polling
+  // This cron endpoint is kept for future use if we need scheduled syncs
   return NextResponse.json({
     success: true,
-    message: "Bank sync cron executed",
+    message: "Bank sync handled via webhooks - no action needed",
     timestamp: new Date().toISOString(),
   });
 }
