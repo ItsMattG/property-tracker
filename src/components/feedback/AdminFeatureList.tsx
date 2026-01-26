@@ -39,7 +39,7 @@ type FeatureRequest = {
   category: string;
   status: string;
   voteCount: number;
-  createdAt: Date;
+  createdAt: string;
   userName: string | null;
 };
 

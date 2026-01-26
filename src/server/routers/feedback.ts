@@ -198,7 +198,7 @@ export const feedbackRouter = router({
         description: z.string().min(10).max(2000),
         stepsToReproduce: z.string().max(2000).optional(),
         severity: z.enum(["low", "medium", "high", "critical"]),
-        browserInfo: z.record(z.string()).optional(),
+        browserInfo: z.record(z.string(), z.string()).optional(),
         currentPage: z.string().max(500).optional(),
       })
     )
@@ -238,6 +238,13 @@ export const feedbackRouter = router({
       if (input.status) conditions.push(eq(bugReports.status, input.status));
       if (input.severity) conditions.push(eq(bugReports.severity, input.severity));
 
+      const whereClause =
+        conditions.length === 0
+          ? undefined
+          : conditions.length === 1
+            ? conditions[0]
+            : and(conditions[0], conditions[1]);
+
       const bugs = await ctx.db
         .select({
           id: bugReports.id,
@@ -254,7 +261,7 @@ export const feedbackRouter = router({
         })
         .from(bugReports)
         .leftJoin(users, eq(bugReports.userId, users.id))
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .where(whereClause)
         .orderBy(desc(bugReports.createdAt))
         .limit(input.limit)
         .offset(input.offset);

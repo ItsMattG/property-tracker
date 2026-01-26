@@ -45,11 +45,11 @@ type BugReport = {
   description: string;
   stepsToReproduce: string | null;
   severity: string;
-  browserInfo: Record<string, string> | null;
+  browserInfo: unknown;
   currentPage: string | null;
   status: string;
   adminNotes: string | null;
-  createdAt: Date;
+  createdAt: string;
   userName: string | null;
   userEmail: string | null;
 };
@@ -226,11 +226,11 @@ export function BugReportList() {
                 </div>
               </div>
 
-              {selectedBug.browserInfo && (
+              {selectedBug.browserInfo != null && (
                 <div>
                   <h4 className="font-medium mb-1">Browser Info</h4>
                   <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                    {JSON.stringify(selectedBug.browserInfo, null, 2)}
+                    {JSON.stringify(selectedBug.browserInfo as Record<string, unknown>, null, 2)}
                   </pre>
                 </div>
               )}
