@@ -12,6 +12,7 @@ import { PushPermissionBanner } from "@/components/notifications/PushPermissionB
 import { ClimateRiskSummary } from "@/components/climate-risk";
 import { SavingsWidget } from "@/components/benchmarking";
 import { TaxPositionCard } from "@/components/tax-position/TaxPositionCard";
+import { TopPerformerMatchesWidget } from "@/components/similar-properties";
 
 interface DashboardStats {
   propertyCount: number;
@@ -187,6 +188,8 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
       )}
 
       <SavingsWidget />
+
+      <TopPerformerMatchesWidget />
     </div>
   );
 }

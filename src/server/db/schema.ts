@@ -10,8 +10,26 @@ import {
   index,
   jsonb,
   integer,
+  customType,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+
+// Custom type for pgvector
+const vector = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return "vector(5)";
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(",")}]`;
+  },
+  fromDriver(value: string): number[] {
+    // Parse "[0.1,0.2,0.3,0.4,0.5]" format
+    return value
+      .slice(1, -1)
+      .split(",")
+      .map((v) => parseFloat(v));
+  },
+});
 
 // Enums
 export const stateEnum = pgEnum("state", [
@@ -352,6 +370,25 @@ export const familyStatusEnum = pgEnum("family_status", [
   "family",
 ]);
 
+export const shareLevelEnum = pgEnum("share_level", [
+  "none",
+  "anonymous",
+  "pseudonymous",
+  "controlled",
+]);
+
+export const listingSourceTypeEnum = pgEnum("listing_source_type", [
+  "url",
+  "text",
+  "manual",
+]);
+
+export const propertyTypeEnum = pgEnum("property_type", [
+  "house",
+  "townhouse",
+  "unit",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -599,6 +636,73 @@ export const properties = pgTable("properties", {
   status: propertyStatusEnum("status").default("active").notNull(),
   soldAt: date("sold_at"),
   climateRisk: jsonb("climate_risk").$type<import("@/types/climate-risk").ClimateRisk>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const externalListings = pgTable(
+  "external_listings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    sourceType: listingSourceTypeEnum("source_type").notNull(),
+    sourceUrl: text("source_url"),
+    rawInput: text("raw_input"),
+    extractedData: jsonb("extracted_data").notNull(),
+    suburb: text("suburb").notNull(),
+    state: stateEnum("state").notNull(),
+    postcode: text("postcode").notNull(),
+    propertyType: propertyTypeEnum("property_type").default("house").notNull(),
+    price: decimal("price", { precision: 12, scale: 2 }),
+    estimatedYield: decimal("estimated_yield", { precision: 5, scale: 2 }),
+    estimatedGrowth: decimal("estimated_growth", { precision: 5, scale: 2 }),
+    isEstimated: boolean("is_estimated").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("external_listings_user_id_idx").on(table.userId)]
+);
+
+export const propertyVectors = pgTable(
+  "property_vectors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "cascade",
+    }),
+    externalListingId: uuid("external_listing_id").references(
+      () => externalListings.id,
+      { onDelete: "cascade" }
+    ),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    vector: vector("vector").notNull(),
+    isShared: boolean("is_shared").default(false).notNull(),
+    shareLevel: shareLevelEnum("share_level").default("none").notNull(),
+    sharedAttributes: jsonb("shared_attributes").$type<string[]>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("property_vectors_user_id_idx").on(table.userId),
+    index("property_vectors_property_id_idx").on(table.propertyId),
+    index("property_vectors_is_shared_idx").on(table.isShared),
+  ]
+);
+
+export const sharingPreferences = pgTable("sharing_preferences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  defaultShareLevel: shareLevelEnum("default_share_level").default("none").notNull(),
+  defaultSharedAttributes: jsonb("default_shared_attributes")
+    .$type<string[]>()
+    .default(["suburb", "state", "propertyType", "priceBracket", "yield"])
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1233,6 +1337,36 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
   sales: many(propertySales),
   documents: many(documents),
   propertyValues: many(propertyValues),
+  propertyVector: one(propertyVectors),
+}));
+
+export const externalListingsRelations = relations(externalListings, ({ one }) => ({
+  user: one(users, {
+    fields: [externalListings.userId],
+    references: [users.id],
+  }),
+}));
+
+export const propertyVectorsRelations = relations(propertyVectors, ({ one }) => ({
+  user: one(users, {
+    fields: [propertyVectors.userId],
+    references: [users.id],
+  }),
+  property: one(properties, {
+    fields: [propertyVectors.propertyId],
+    references: [properties.id],
+  }),
+  externalListing: one(externalListings, {
+    fields: [propertyVectors.externalListingId],
+    references: [externalListings.id],
+  }),
+}));
+
+export const sharingPreferencesRelations = relations(sharingPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [sharingPreferences.userId],
+    references: [users.id],
+  }),
 }));
 
 export const bankAccountsRelations = relations(bankAccounts, ({ one, many }) => ({

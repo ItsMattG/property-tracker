@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Smartphone,
   Calculator,
+  Compass,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
@@ -33,6 +34,7 @@ import { EntitySwitcher } from "@/components/entities";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/discover", label: "Discover", icon: Compass },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/portfolio", label: "Portfolio", icon: PieChart },
   { href: "/properties", label: "Properties", icon: Building2 },

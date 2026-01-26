@@ -10,6 +10,7 @@ import { MilestonesCard } from "@/components/properties/MilestonesCard";
 import { ClimateRiskCard } from "@/components/climate-risk";
 import { BenchmarkCard } from "@/components/benchmarking";
 import { PerformanceCard } from "@/components/performance-benchmarking";
+import { SimilarPropertiesSection } from "@/components/similar-properties";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign } from "lucide-react";
 
 const formatCurrency = (value: string | number) => {
@@ -181,6 +182,11 @@ export default function PropertyDetailPage() {
 
       {/* Milestones Card */}
       <MilestonesCard propertyId={propertyId} />
+
+      {/* Similar Properties Section */}
+      <div className="lg:col-span-2">
+        <SimilarPropertiesSection propertyId={propertyId} />
+      </div>
 
       {/* Compliance Section */}
       <div className="lg:col-span-2">
