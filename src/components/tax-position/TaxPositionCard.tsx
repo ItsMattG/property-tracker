@@ -77,8 +77,8 @@ export function TaxPositionCard() {
     );
   }
 
-  // Complete state
-  const isRefund = summary.isRefund ?? true;
+  // Complete state - use type narrowing for optional fields
+  const isRefund = "isRefund" in summary ? summary.isRefund : true;
   const amount = summary.refundOrOwing ?? 0;
   const propertySavings = summary.propertySavings ?? 0;
 

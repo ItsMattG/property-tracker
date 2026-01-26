@@ -21,17 +21,17 @@ function PortfolioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const viewMode = (searchParams.get("view") as ViewMode) || "cards";
-  const period = (searchParams.get("period") as Period) || "monthly";
-  const sortBy = (searchParams.get("sortBy") as SortBy) || "alphabetical";
-  const stateFilter = searchParams.get("state") || undefined;
-  const statusFilter = searchParams.get("status") || undefined;
+  const viewMode = (searchParams?.get("view") as ViewMode) || "cards";
+  const period = (searchParams?.get("period") as Period) || "monthly";
+  const sortBy = (searchParams?.get("sortBy") as SortBy) || "alphabetical";
+  const stateFilter = searchParams?.get("state") || undefined;
+  const statusFilter = searchParams?.get("status") || undefined;
 
   const [valueDialogOpen, setValueDialogOpen] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
 
   const updateParams = (updates: Record<string, string | undefined>) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || "");
     Object.entries(updates).forEach(([key, value]) => {
       if (value === undefined) {
         params.delete(key);

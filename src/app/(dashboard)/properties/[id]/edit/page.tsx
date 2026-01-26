@@ -8,7 +8,7 @@ import { toast } from "sonner";
 export default function EditPropertyPage() {
   const params = useParams();
   const router = useRouter();
-  const propertyId = params.id as string;
+  const propertyId = params?.id as string;
 
   const { data: property, isLoading } = trpc.property.get.useQuery({ id: propertyId });
   const updateProperty = trpc.property.update.useMutation({

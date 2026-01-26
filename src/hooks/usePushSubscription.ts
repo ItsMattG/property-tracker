@@ -14,36 +14,36 @@ export function usePushSubscription() {
   const unregisterMutation = trpc.notification.unregisterPushSubscription.useMutation();
 
   useEffect(() => {
-    checkSubscriptionStatus();
-  }, []);
+    const checkSubscriptionStatus = async () => {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        setStatus("unsupported");
+        return;
+      }
 
-  const checkSubscriptionStatus = async () => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setStatus("unsupported");
-      return;
-    }
+      const permission = Notification.permission;
 
-    const permission = Notification.permission;
+      if (permission === "denied") {
+        setStatus("denied");
+        return;
+      }
 
-    if (permission === "denied") {
-      setStatus("denied");
-      return;
-    }
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
 
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-
-      if (subscription) {
-        setStatus("subscribed");
-      } else {
+        if (subscription) {
+          setStatus("subscribed");
+        } else {
+          setStatus("prompt");
+        }
+      } catch (err) {
+        console.error("Error checking subscription:", err);
         setStatus("prompt");
       }
-    } catch (err) {
-      console.error("Error checking subscription:", err);
-      setStatus("prompt");
-    }
-  };
+    };
+
+    checkSubscriptionStatus();
+  }, []);
 
   const subscribe = useCallback(async () => {
     if (!vapidKey) {

@@ -24,6 +24,16 @@ import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { CreateShareModal } from "@/components/share/CreateShareModal";
 
+// Moved outside component to avoid impure function calls during render
+function isExpired(expiresAt: Date): boolean {
+  return new Date(expiresAt) < new Date();
+}
+
+function isExpiringSoon(expiresAt: Date): boolean {
+  const daysUntil = (new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  return daysUntil <= 3 && daysUntil > 0;
+}
+
 export default function ManageSharesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const utils = trpc.useUtils();
@@ -43,12 +53,6 @@ export default function ManageSharesPage() {
   const copyLink = (url: string) => {
     navigator.clipboard.writeText(url);
     toast.success("Link copied to clipboard");
-  };
-
-  const isExpired = (expiresAt: Date) => new Date(expiresAt) < new Date();
-  const isExpiringSoon = (expiresAt: Date) => {
-    const daysUntil = (new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-    return daysUntil <= 3 && daysUntil > 0;
   };
 
   if (isLoading) {

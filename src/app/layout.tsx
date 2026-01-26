@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   description: "Track your investment properties, automate bank feeds, and generate tax reports.",
 };
 
+// Skip static generation - app uses Clerk auth
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{

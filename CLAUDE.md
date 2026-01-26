@@ -17,6 +17,7 @@ The v0.2 roadmap and post-extraction roadmap are **complete**. See `docs/plans/2
 - Property Performance Benchmarking
 - Tax Position Calculator
 - Vector DB Similar Properties
+- Axiom Observability (structured logging, metrics)
 
 **All roadmap items complete.** 🎉
 

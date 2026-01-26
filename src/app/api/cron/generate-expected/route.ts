@@ -50,10 +50,10 @@ export async function GET(request: Request) {
     });
 
     // Group by template ID for O(1) lookup
-    const existingByTemplate = new Map<string, Date[]>();
+    const existingByTemplate = new Map<string, string[]>();
     for (const exp of allExisting) {
       const dates = existingByTemplate.get(exp.recurringTransactionId) || [];
-      dates.push(new Date(exp.expectedDate));
+      dates.push(exp.expectedDate);
       existingByTemplate.set(exp.recurringTransactionId, dates);
     }
 
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
       recurringTransactionId: string;
       userId: string;
       propertyId: string;
-      expectedDate: Date;
+      expectedDate: string;
       expectedAmount: string;
     }> = [];
 

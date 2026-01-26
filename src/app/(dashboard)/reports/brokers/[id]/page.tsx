@@ -38,7 +38,7 @@ import { GenerateLoanPackModal } from "@/components/loanPack/GenerateLoanPackMod
 export default function BrokerDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const brokerId = params.id as string;
+  const brokerId = params?.id as string;
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

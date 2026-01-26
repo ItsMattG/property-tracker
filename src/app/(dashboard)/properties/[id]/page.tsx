@@ -33,7 +33,7 @@ const formatDate = (dateString: string) => {
 
 export default function PropertyDetailPage() {
   const params = useParams();
-  const propertyId = params.id as string;
+  const propertyId = params?.id as string;
 
   const { data: property, isLoading, error } = trpc.property.get.useQuery(
     { id: propertyId },

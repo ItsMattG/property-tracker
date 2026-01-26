@@ -27,7 +27,7 @@ import { Plus, User } from "lucide-react";
 
 export default function MembersPage() {
   const params = useParams();
-  const entityId = params.id as string;
+  const entityId = params?.id as string;
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
