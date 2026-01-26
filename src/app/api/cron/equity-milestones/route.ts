@@ -9,10 +9,13 @@ import {
   notificationLog,
   pushSubscriptions,
   equityMilestones,
+  milestonePreferences,
+  propertyMilestoneOverrides,
 } from "@/server/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { sendPushNotification, sendEmailNotification, isQuietHours } from "@/server/services/notification";
-import { LVR_MILESTONES, EQUITY_MILESTONES, getMilestoneMessage } from "@/lib/equity-milestones";
+import { getMilestoneMessage } from "@/lib/equity-milestones";
+import { resolveThresholds } from "@/server/services/milestone-preferences";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -69,15 +72,42 @@ export async function GET(request: Request) {
           .map((m) => Number(m.milestoneValue))
       );
 
+      // Get user's global milestone preferences
+      const globalPrefs = await db.query.milestonePreferences.findFirst({
+        where: eq(milestonePreferences.userId, user.id),
+      });
+
+      // Get property-specific override
+      const propertyOverride = await db.query.propertyMilestoneOverrides.findFirst({
+        where: eq(propertyMilestoneOverrides.propertyId, property.id),
+      });
+
+      // Resolve thresholds
+      const config = resolveThresholds(
+        globalPrefs ? {
+          lvrThresholds: globalPrefs.lvrThresholds as number[],
+          equityThresholds: globalPrefs.equityThresholds as number[],
+          enabled: globalPrefs.enabled,
+        } : null,
+        propertyOverride ? {
+          lvrThresholds: propertyOverride.lvrThresholds as number[] | null,
+          equityThresholds: propertyOverride.equityThresholds as number[] | null,
+          enabled: propertyOverride.enabled,
+        } : null
+      );
+
+      // Skip if milestones disabled for this property
+      if (!config.enabled) continue;
+
       const milestonesToRecord: Array<{ type: "lvr" | "equity_amount"; value: number }> = [];
 
-      for (const threshold of LVR_MILESTONES) {
+      for (const threshold of config.lvrThresholds) {
         if (lvr <= threshold && !existingLvrMilestones.has(threshold)) {
           milestonesToRecord.push({ type: "lvr", value: threshold });
         }
       }
 
-      for (const threshold of EQUITY_MILESTONES) {
+      for (const threshold of config.equityThresholds) {
         if (equity >= threshold && !existingEquityMilestones.has(threshold)) {
           milestonesToRecord.push({ type: "equity_amount", value: threshold });
         }
