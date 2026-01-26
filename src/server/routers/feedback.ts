@@ -198,7 +198,7 @@ export const feedbackRouter = router({
         description: z.string().min(10).max(2000),
         stepsToReproduce: z.string().max(2000).optional(),
         severity: z.enum(["low", "medium", "high", "critical"]),
-        browserInfo: z.record(z.string()).optional(),
+        browserInfo: z.record(z.string(), z.string()).optional(),
         currentPage: z.string().max(500).optional(),
       })
     )
