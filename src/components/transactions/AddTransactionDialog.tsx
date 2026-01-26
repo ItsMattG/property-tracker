@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -107,6 +108,9 @@ export function AddTransactionDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Add Manual Transaction</DialogTitle>
+          <DialogDescription>
+            Manually add a transaction to your portfolio.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc/client";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -83,6 +84,9 @@ export function ScenarioModal({ open, onClose, onSuccess, scenarios }: ScenarioM
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Manage Scenarios</DialogTitle>
+          <DialogDescription>
+            Create and manage forecast scenarios with different assumptions.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
