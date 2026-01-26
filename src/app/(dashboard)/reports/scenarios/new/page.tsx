@@ -332,6 +332,97 @@ function NewScenarioContent() {
             </CollapsibleContent>
           </Collapsible>
 
+          {/* Sell Property Section */}
+          <Collapsible open={openSections.sell_property}>
+            <CollapsibleTrigger
+              className="flex items-center justify-between w-full p-3 hover:bg-muted rounded-lg"
+              onClick={() => toggleSection("sell_property")}
+            >
+              <span className="font-medium">Sell Property</span>
+              {openSections.sell_property ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="p-3 space-y-3">
+              <div className="space-y-2">
+                <Label>Property to Sell</Label>
+                <Select>
+                  <SelectTrigger id="sell-property-id">
+                    <SelectValue placeholder="Select property" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {properties?.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.address}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Sale Price ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 850000"
+                    id="sell-price"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Selling Costs ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 25000"
+                    id="sell-costs"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Settlement Month</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="120"
+                    placeholder="e.g., 12"
+                    id="sell-month"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const propSelect = document.getElementById("sell-property-id") as HTMLSelectElement;
+                      const priceInput = document.getElementById("sell-price") as HTMLInputElement;
+                      const costsInput = document.getElementById("sell-costs") as HTMLInputElement;
+                      const monthInput = document.getElementById("sell-month") as HTMLInputElement;
+
+                      const propertyId = propSelect?.querySelector("[data-state=checked]")?.getAttribute("data-value") ||
+                        (propSelect as unknown as { value?: string })?.value;
+
+                      if (propertyId && priceInput?.value && monthInput?.value) {
+                        addFactor("sell_property", {
+                          propertyId,
+                          salePrice: Number(priceInput.value),
+                          sellingCosts: Number(costsInput?.value || 0),
+                          settlementMonth: Number(monthInput.value),
+                        });
+                        priceInput.value = "";
+                        costsInput.value = "";
+                        monthInput.value = "";
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  CGT will be calculated automatically based on purchase price and holding period
+                </p>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
           {/* Configured Factors Summary */}
           {factors.length > 0 && (
             <div className="mt-4 p-3 bg-muted rounded-lg">
