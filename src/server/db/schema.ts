@@ -622,6 +622,30 @@ export const properties = pgTable("properties", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const externalListings = pgTable(
+  "external_listings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    sourceType: listingSourceTypeEnum("source_type").notNull(),
+    sourceUrl: text("source_url"),
+    rawInput: text("raw_input"),
+    extractedData: jsonb("extracted_data").notNull(),
+    suburb: text("suburb").notNull(),
+    state: stateEnum("state").notNull(),
+    postcode: text("postcode").notNull(),
+    propertyType: propertyTypeEnum("property_type").default("house").notNull(),
+    price: decimal("price", { precision: 12, scale: 2 }),
+    estimatedYield: decimal("estimated_yield", { precision: 5, scale: 2 }),
+    estimatedGrowth: decimal("estimated_growth", { precision: 5, scale: 2 }),
+    isEstimated: boolean("is_estimated").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("external_listings_user_id_idx").on(table.userId)]
+);
+
 export const bankAccounts = pgTable("bank_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
