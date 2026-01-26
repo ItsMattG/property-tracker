@@ -346,6 +346,12 @@ export const smsfComplianceStatusEnum = pgEnum("smsf_compliance_status", [
   "breach",
 ]);
 
+export const familyStatusEnum = pgEnum("family_status", [
+  "single",
+  "couple",
+  "family",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -1055,6 +1061,39 @@ export const propertyPerformanceBenchmarks = pgTable("property_performance_bench
 
   calculatedAt: timestamp("calculated_at").defaultNow().notNull(),
 });
+
+export const taxProfiles = pgTable(
+  "tax_profiles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    financialYear: integer("financial_year").notNull(),
+
+    // Income
+    grossSalary: decimal("gross_salary", { precision: 12, scale: 2 }),
+    paygWithheld: decimal("payg_withheld", { precision: 12, scale: 2 }),
+    otherDeductions: decimal("other_deductions", { precision: 12, scale: 2 }).default("0"),
+
+    // HECS/HELP
+    hasHecsDebt: boolean("has_hecs_debt").default(false).notNull(),
+
+    // Medicare Levy Surcharge
+    hasPrivateHealth: boolean("has_private_health").default(false).notNull(),
+    familyStatus: familyStatusEnum("family_status").default("single").notNull(),
+    dependentChildren: integer("dependent_children").default(0).notNull(),
+    partnerIncome: decimal("partner_income", { precision: 12, scale: 2 }),
+
+    // Metadata
+    isComplete: boolean("is_complete").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("tax_profiles_user_year_idx").on(table.userId, table.financialYear),
+  ]
+);
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -2245,6 +2284,13 @@ export const refinanceAlertsRelations = relations(refinanceAlerts, ({ one }) => 
   }),
 }));
 
+export const taxProfilesRelations = relations(taxProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [taxProfiles.userId],
+    references: [users.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -2368,3 +2414,6 @@ export type MilestonePreferences = typeof milestonePreferences.$inferSelect;
 export type NewMilestonePreferences = typeof milestonePreferences.$inferInsert;
 export type PropertyMilestoneOverride = typeof propertyMilestoneOverrides.$inferSelect;
 export type NewPropertyMilestoneOverride = typeof propertyMilestoneOverrides.$inferInsert;
+// Tax Profiles Types
+export type TaxProfile = typeof taxProfiles.$inferSelect;
+export type NewTaxProfile = typeof taxProfiles.$inferInsert;
