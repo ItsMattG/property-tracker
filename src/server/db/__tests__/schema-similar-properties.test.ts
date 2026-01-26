@@ -1,6 +1,6 @@
 // src/server/db/__tests__/schema-similar-properties.test.ts
 import { describe, it, expect } from "vitest";
-import { shareLevelEnum, listingSourceTypeEnum, propertyTypeEnum, externalListings, propertyVectors } from "../schema";
+import { shareLevelEnum, listingSourceTypeEnum, propertyTypeEnum, externalListings, propertyVectors, sharingPreferences } from "../schema";
 
 describe("Similar Properties Schema", () => {
   describe("shareLevelEnum", () => {
@@ -57,6 +57,16 @@ describe("Similar Properties Schema", () => {
       expect(columns).toContain("vector");
       expect(columns).toContain("isShared");
       expect(columns).toContain("shareLevel");
+    });
+  });
+
+  describe("sharingPreferences table", () => {
+    it("has required columns", () => {
+      const columns = Object.keys(sharingPreferences);
+      expect(columns).toContain("id");
+      expect(columns).toContain("userId");
+      expect(columns).toContain("defaultShareLevel");
+      expect(columns).toContain("defaultSharedAttributes");
     });
   });
 });

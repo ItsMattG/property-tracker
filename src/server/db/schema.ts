@@ -692,6 +692,21 @@ export const propertyVectors = pgTable(
   ]
 );
 
+export const sharingPreferences = pgTable("sharing_preferences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+  defaultShareLevel: shareLevelEnum("default_share_level").default("none").notNull(),
+  defaultSharedAttributes: jsonb("default_shared_attributes")
+    .$type<string[]>()
+    .default(["suburb", "state", "propertyType", "priceBracket", "yield"])
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const bankAccounts = pgTable("bank_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
