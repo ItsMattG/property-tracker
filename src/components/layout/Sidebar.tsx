@@ -27,10 +27,13 @@ import {
   Smartphone,
   Calculator,
   Compass,
+  MessageSquarePlus,
+  Bug,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
 import { EntitySwitcher } from "@/components/entities";
+import { FeedbackButton } from "@/components/feedback";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -58,6 +61,8 @@ const settingsItems = [
   { href: "/settings/mobile", label: "Mobile App", icon: Smartphone },
   { href: "/settings/team", label: "Team", icon: Users },
   { href: "/settings/audit-log", label: "Audit Log", icon: History },
+  { href: "/settings/feature-requests", label: "Feature Requests", icon: MessageSquarePlus },
+  { href: "/settings/bug-reports", label: "Bug Reports", icon: Bug },
 ];
 
 export function Sidebar() {
@@ -125,7 +130,11 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-8 pt-4 border-t border-border">
+      <div className="mt-4 px-1">
+        <FeedbackButton />
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-border">
         <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           <Settings className="w-4 h-4" />
           Settings

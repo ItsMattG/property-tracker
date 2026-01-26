@@ -8,8 +8,10 @@ import {
   boolean,
   pgEnum,
   index,
+  uniqueIndex,
   jsonb,
   integer,
+  varchar,
   customType,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
@@ -387,6 +389,35 @@ export const propertyTypeEnum = pgEnum("property_type", [
   "house",
   "townhouse",
   "unit",
+]);
+
+export const featureRequestStatusEnum = pgEnum("feature_request_status", [
+  "open",
+  "planned",
+  "in_progress",
+  "shipped",
+  "rejected",
+]);
+
+export const featureRequestCategoryEnum = pgEnum("feature_request_category", [
+  "feature",
+  "improvement",
+  "integration",
+  "other",
+]);
+
+export const bugReportStatusEnum = pgEnum("bug_report_status", [
+  "new",
+  "investigating",
+  "fixed",
+  "wont_fix",
+]);
+
+export const bugReportSeverityEnum = pgEnum("bug_report_severity", [
+  "low",
+  "medium",
+  "high",
+  "critical",
 ]);
 
 // Tables
@@ -1196,6 +1227,88 @@ export const taxProfiles = pgTable(
   },
   (table) => [
     index("tax_profiles_user_year_idx").on(table.userId, table.financialYear),
+  ]
+);
+
+// Feedback System Tables
+export const featureRequests = pgTable(
+  "feature_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    description: text("description").notNull(),
+    category: featureRequestCategoryEnum("category").notNull(),
+    status: featureRequestStatusEnum("status").default("open").notNull(),
+    voteCount: integer("vote_count").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("feature_requests_user_id_idx").on(table.userId),
+    index("feature_requests_status_idx").on(table.status),
+    index("feature_requests_vote_count_idx").on(table.voteCount),
+  ]
+);
+
+export const featureVotes = pgTable(
+  "feature_votes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    featureId: uuid("feature_id")
+      .references(() => featureRequests.id, { onDelete: "cascade" })
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("feature_votes_user_feature_idx").on(table.userId, table.featureId),
+  ]
+);
+
+export const featureComments = pgTable(
+  "feature_comments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    featureId: uuid("feature_id")
+      .references(() => featureRequests.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("feature_comments_feature_id_idx").on(table.featureId),
+  ]
+);
+
+export const bugReports = pgTable(
+  "bug_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    description: text("description").notNull(),
+    stepsToReproduce: text("steps_to_reproduce"),
+    severity: bugReportSeverityEnum("severity").notNull(),
+    browserInfo: jsonb("browser_info"),
+    currentPage: varchar("current_page", { length: 500 }),
+    status: bugReportStatusEnum("status").default("new").notNull(),
+    adminNotes: text("admin_notes"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("bug_reports_user_id_idx").on(table.userId),
+    index("bug_reports_status_idx").on(table.status),
+    index("bug_reports_severity_idx").on(table.severity),
   ]
 );
 
@@ -2425,6 +2538,45 @@ export const taxProfilesRelations = relations(taxProfiles, ({ one }) => ({
   }),
 }));
 
+// Feedback System Relations
+export const featureRequestsRelations = relations(featureRequests, ({ one, many }) => ({
+  user: one(users, {
+    fields: [featureRequests.userId],
+    references: [users.id],
+  }),
+  votes: many(featureVotes),
+  comments: many(featureComments),
+}));
+
+export const featureVotesRelations = relations(featureVotes, ({ one }) => ({
+  user: one(users, {
+    fields: [featureVotes.userId],
+    references: [users.id],
+  }),
+  feature: one(featureRequests, {
+    fields: [featureVotes.featureId],
+    references: [featureRequests.id],
+  }),
+}));
+
+export const featureCommentsRelations = relations(featureComments, ({ one }) => ({
+  user: one(users, {
+    fields: [featureComments.userId],
+    references: [users.id],
+  }),
+  feature: one(featureRequests, {
+    fields: [featureComments.featureId],
+    references: [featureRequests.id],
+  }),
+}));
+
+export const bugReportsRelations = relations(bugReports, ({ one }) => ({
+  user: one(users, {
+    fields: [bugReports.userId],
+    references: [users.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -2551,3 +2703,12 @@ export type NewPropertyMilestoneOverride = typeof propertyMilestoneOverrides.$in
 // Tax Profiles Types
 export type TaxProfile = typeof taxProfiles.$inferSelect;
 export type NewTaxProfile = typeof taxProfiles.$inferInsert;
+// Feedback System Types
+export type FeatureRequest = typeof featureRequests.$inferSelect;
+export type NewFeatureRequest = typeof featureRequests.$inferInsert;
+export type FeatureVote = typeof featureVotes.$inferSelect;
+export type NewFeatureVote = typeof featureVotes.$inferInsert;
+export type FeatureComment = typeof featureComments.$inferSelect;
+export type NewFeatureComment = typeof featureComments.$inferInsert;
+export type BugReport = typeof bugReports.$inferSelect;
+export type NewBugReport = typeof bugReports.$inferInsert;
