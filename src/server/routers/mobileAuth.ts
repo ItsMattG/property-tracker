@@ -3,20 +3,12 @@ import { TRPCError } from "@trpc/server";
 import { router, publicProcedure } from "../trpc";
 import { users, pushTokens } from "../db/schema";
 import { eq, and } from "drizzle-orm";
-import { sign, verify } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-
-const JWT_SECRET = process.env.JWT_SECRET || "development-secret-change-me";
-const JWT_EXPIRES_IN = "30d";
-
-export interface MobileJwtPayload {
-  userId: string;
-  email: string;
-}
-
-export function verifyMobileToken(token: string): MobileJwtPayload {
-  return verify(token, JWT_SECRET) as MobileJwtPayload;
-}
+import {
+  verifyMobileToken,
+  signMobileToken,
+  type MobileJwtPayload,
+} from "../lib/mobile-jwt";
 
 export const mobileAuthRouter = router({
   // Login with email/password
@@ -29,8 +21,12 @@ export const mobileAuthRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.db.query.users.findFirst({
-        where: eq(users.email, input.email),
+        where: eq(users.email, input.email.toLowerCase().trim()),
       });
+
+      console.log("[mobileAuth] Login attempt:", input.email.toLowerCase().trim());
+      console.log("[mobileAuth] User found:", !!user);
+      console.log("[mobileAuth] Has password:", !!user?.mobilePasswordHash);
 
       if (!user || !user.mobilePasswordHash) {
         throw new TRPCError({
@@ -51,11 +47,7 @@ export const mobileAuthRouter = router({
         });
       }
 
-      const token = sign(
-        { userId: user.id, email: user.email } as MobileJwtPayload,
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-      );
+      const token = signMobileToken({ userId: user.id, email: user.email });
 
       return {
         token,

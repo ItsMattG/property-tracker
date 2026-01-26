@@ -16,8 +16,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loginMutation = trpc.mobileAuth.login.useMutation();
-
   useEffect(() => {
     checkAuth();
   }, []);
@@ -36,10 +34,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(email: string, password: string) {
-    const result = await loginMutation.mutateAsync({ email, password });
-    await setToken(result.token);
-    await setUser(result.user);
-    setUserState(result.user);
+    console.log("Attempting login for:", email);
+
+    try {
+      const result = await trpc.mobileAuth.login.mutate({ email, password });
+      console.log("Login successful, got token");
+
+      await setToken(result.token);
+      await setUser(result.user);
+      setUserState(result.user);
+    } catch (error: unknown) {
+      console.error("Login error:", error);
+
+      // Extract error message from tRPC error
+      if (error && typeof error === "object" && "message" in error) {
+        throw new Error((error as { message: string }).message);
+      }
+      throw new Error("Login failed. Check your connection and try again.");
+    }
   }
 
   async function logout() {

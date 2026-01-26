@@ -1,11 +1,11 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { db } from "./db";
 import { users, portfolioMembers } from "./db/schema";
 import { eq, and } from "drizzle-orm";
 import { type PortfolioRole, getPermissions } from "./services/portfolio-access";
-import { verifyMobileToken } from "./routers/mobileAuth";
+import { verifyMobileToken } from "./lib/mobile-jwt";
 
 export interface PortfolioContext {
   ownerId: string;
@@ -18,9 +18,21 @@ export interface PortfolioContext {
 }
 
 export const createTRPCContext = async (opts?: { headers?: Headers }) => {
-  const { userId: clerkId } = await auth();
-  const cookieStore = await cookies();
-  const portfolioOwnerId = cookieStore.get("portfolio_owner_id")?.value;
+  let clerkId: string | null = null;
+  let portfolioOwnerId: string | undefined;
+
+  // Try Clerk auth - this will fail for routes excluded from clerkMiddleware
+  // (like mobile auth routes), which is expected
+  try {
+    const authResult = await auth();
+    clerkId = authResult.userId;
+    const cookieStore = await cookies();
+    portfolioOwnerId = cookieStore.get("portfolio_owner_id")?.value;
+  } catch {
+    // Clerk middleware didn't run - expected for mobile auth routes
+    // These routes use JWT auth handled in protectedProcedure instead
+    clerkId = null;
+  }
 
   return {
     db,
@@ -39,9 +51,43 @@ export const createCallerFactory = t.createCallerFactory;
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   // Try Clerk auth first (web)
   if (ctx.clerkId) {
-    const user = await ctx.db.query.users.findFirst({
+    let user = await ctx.db.query.users.findFirst({
       where: eq(users.clerkId, ctx.clerkId),
     });
+
+    // Auto-create user if they exist in Clerk but not in our database
+    // This handles cases where the webhook didn't fire (e.g., local development)
+    if (!user) {
+      console.log("[trpc] User not found in DB, attempting auto-create for clerkId:", ctx.clerkId);
+      try {
+        const clerk = await clerkClient();
+        const clerkUser = await clerk.users.getUser(ctx.clerkId);
+        console.log("[trpc] Got Clerk user:", clerkUser.emailAddresses.map(e => e.emailAddress));
+        const primaryEmail = clerkUser.emailAddresses.find(
+          (e) => e.id === clerkUser.primaryEmailAddressId
+        );
+
+        if (primaryEmail) {
+          const name = [clerkUser.firstName, clerkUser.lastName]
+            .filter(Boolean)
+            .join(" ") || null;
+
+          const [newUser] = await ctx.db
+            .insert(users)
+            .values({
+              clerkId: ctx.clerkId,
+              email: primaryEmail.emailAddress.toLowerCase(),
+              name,
+            })
+            .returning();
+
+          user = newUser;
+          console.log("[trpc] Auto-created user:", primaryEmail.emailAddress);
+        }
+      } catch (error) {
+        console.error("[trpc] Failed to auto-create user:", error);
+      }
+    }
 
     if (!user) {
       throw new TRPCError({
