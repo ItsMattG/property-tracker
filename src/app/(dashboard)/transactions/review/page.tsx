@@ -1,5 +1,8 @@
 "use client";
 
+// Skip static generation - page requires auth
+export const dynamic = "force-dynamic";
+
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";

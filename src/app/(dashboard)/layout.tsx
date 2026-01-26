@@ -1,6 +1,9 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 
+// All dashboard pages require auth - skip static generation
+export const dynamic = "force-dynamic";
+
 export default function DashboardLayout({
   children,
 }: {
