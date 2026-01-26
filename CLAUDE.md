@@ -1,5 +1,24 @@
 # Claude Code Rules
 
+## Project Status (as of 2026-01-26)
+The v0.2 roadmap and post-extraction roadmap are **complete**. See `docs/plans/2026-01-25-post-extraction-roadmap.md` for full status.
+
+**Completed features:**
+- Property Manager Integrations (PropertyMe OAuth)
+- React Native Mobile App with Detox E2E tests
+- Scenario Simulator (what-if modeling)
+- Portfolio Share
+- Compliance Calendar
+- Equity Milestone Notifications
+- Broker Portal
+- Climate/Flood Risk
+- Trust/SMSF Entity Support (Phase 1 & 2)
+- Financial Leak Benchmarking
+- Property Performance Benchmarking
+- Tax Position Calculator
+
+**Deferred:** Vector DB Similar Properties (requires Pinecone/Milvus infrastructure)
+
 ## Token Efficiency
 Always pick the token-efficient approach when implementing. Minimize unnecessary exploration and verbose output.
 
