@@ -12,12 +12,11 @@ import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { sendEmailNotification } from "@/server/services/notification";
 import { weeklyDigestTemplate, weeklyDigestSubject } from "@/lib/email/templates/weekly-digest";
 import { subDays, format, startOfDay, endOfDay } from "date-fns";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 
 export async function GET(request: Request) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   try {

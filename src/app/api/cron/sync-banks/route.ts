@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  // Verify cron secret to prevent unauthorized access
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   // TODO: Implement bank sync logic

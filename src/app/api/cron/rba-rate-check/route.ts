@@ -8,14 +8,13 @@ import {
   cashRateChangedTemplate,
   cashRateChangedSubject,
 } from "@/lib/email/templates/cash-rate-changed";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 
 const RBA_API_URL = "https://api.rba.gov.au/statistics/tables/f1/data.json";
 
 export async function GET(request: Request) {
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   try {
