@@ -36,7 +36,7 @@ interface FactorFormData {
 function NewScenarioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const branchFromId = searchParams.get("branch");
+  const branchFromId = searchParams?.get("branch");
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");

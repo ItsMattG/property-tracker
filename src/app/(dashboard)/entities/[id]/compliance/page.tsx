@@ -33,7 +33,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function EntityCompliancePage() {
   const params = useParams();
-  const entityId = params.id as string;
+  const entityId = params?.id as string;
 
   const { data: entity, isLoading: entityLoading } = trpc.entity.get.useQuery({ entityId });
   const { data: smsfDashboard, isLoading: smsfLoading } = trpc.smsfCompliance.getDashboard.useQuery(

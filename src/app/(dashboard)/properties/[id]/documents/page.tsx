@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc/client";
 export default function PropertyDocumentsPage() {
   const params = useParams();
   const router = useRouter();
-  const propertyId = params.id as string;
+  const propertyId = params?.id as string;
 
   const { data: property, isLoading } = trpc.property.get.useQuery({ id: propertyId });
 

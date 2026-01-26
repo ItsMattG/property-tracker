@@ -12,7 +12,7 @@ export default function PropertyDetailLayout({
 }) {
   const params = useParams();
   const pathname = usePathname();
-  const propertyId = params.id as string;
+  const propertyId = params?.id as string;
 
   const { data: property } = trpc.property.get.useQuery(
     { id: propertyId },
@@ -28,19 +28,19 @@ export default function PropertyDetailLayout({
       const propertyLabel = `${property.address}, ${property.suburb}`;
 
       // Check for sub-routes
-      if (pathname.includes("/capital")) {
+      if (pathname?.includes("/capital")) {
         items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
         items.push({ label: "Capital Gains" });
-      } else if (pathname.includes("/recurring")) {
+      } else if (pathname?.includes("/recurring")) {
         items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
         items.push({ label: "Recurring" });
-      } else if (pathname.includes("/documents")) {
+      } else if (pathname?.includes("/documents")) {
         items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
         items.push({ label: "Documents" });
-      } else if (pathname.includes("/edit")) {
+      } else if (pathname?.includes("/edit")) {
         items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
         items.push({ label: "Edit" });
-      } else if (pathname.includes("/compliance")) {
+      } else if (pathname?.includes("/compliance")) {
         items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
         items.push({ label: "Compliance" });
       } else {

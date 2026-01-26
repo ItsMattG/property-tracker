@@ -13,7 +13,7 @@ import { toast } from "sonner";
 export function AcceptInviteContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get("token");
+  const token = searchParams?.get("token");
   const { isSignedIn, isLoaded } = useAuth();
 
   const [mutationStatus, setMutationStatus] = useState<"idle" | "success" | "error">("idle");

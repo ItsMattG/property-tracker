@@ -26,7 +26,7 @@ export function PropertySelector({
 
   const handlePropertySelect = (propertyId: string) => {
     // Get current sub-route (e.g., /properties/[id]/capital -> /capital)
-    const pathParts = pathname.split("/");
+    const pathParts = (pathname ?? "").split("/");
     const subRoute = pathParts.slice(3).join("/"); // Get everything after /properties/[id]
     const newPath = subRoute
       ? `/properties/${propertyId}/${subRoute}`

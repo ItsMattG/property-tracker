@@ -12,7 +12,7 @@ import Link from "next/link";
 
 export default function LoanComparePage() {
   const params = useParams();
-  const loanId = params.id as string;
+  const loanId = params?.id as string;
 
   const [newRate, setNewRate] = useState("");
   const [switchingCosts, setSwitchingCosts] = useState("3000");

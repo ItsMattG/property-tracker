@@ -211,7 +211,7 @@ function RequirementCard({
 
 export default function PropertyCompliancePage() {
   const params = useParams();
-  const propertyId = params.id as string;
+  const propertyId = params?.id as string;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRequirement, setSelectedRequirement] = useState<{
