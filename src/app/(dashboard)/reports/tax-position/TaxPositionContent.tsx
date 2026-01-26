@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,29 +52,15 @@ interface FormState {
 }
 
 export function TaxPositionContent() {
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [yearOverride, setYearOverride] = useState<number | null>(null);
   const [showWizard, setShowWizard] = useState(false);
-  const [formState, setFormState] = useState<FormState>({
-    grossSalary: "",
-    paygWithheld: "",
-    rentalOverride: null,
-    otherDeductions: "0",
-    hasHecsDebt: false,
-    hasPrivateHealth: true,
-    familyStatus: "single",
-    dependentChildren: "0",
-    partnerIncome: "",
-  });
+  const [formEdits, setFormEdits] = useState<Partial<FormState> | null>(null);
 
   const { data: supportedYears } = trpc.taxPosition.getSupportedYears.useQuery();
   const { data: currentYear } = trpc.taxPosition.getCurrentYear.useQuery();
 
-  // Set initial year
-  useEffect(() => {
-    if (currentYear && !selectedYear) {
-      setSelectedYear(currentYear);
-    }
-  }, [currentYear, selectedYear]);
+  // Use override if set, otherwise use current year
+  const selectedYear = yearOverride ?? currentYear ?? null;
 
   const { data: profile, refetch: refetchProfile } =
     trpc.taxPosition.getProfile.useQuery(
@@ -87,29 +73,45 @@ export function TaxPositionContent() {
     { enabled: !!selectedYear }
   );
 
-  // Initialize form from profile
-  useEffect(() => {
-    if (profile) {
-      setFormState({
-        grossSalary: profile.grossSalary ?? "",
-        paygWithheld: profile.paygWithheld ?? "",
-        rentalOverride: null,
-        otherDeductions: profile.otherDeductions ?? "0",
-        hasHecsDebt: profile.hasHecsDebt,
-        hasPrivateHealth: profile.hasPrivateHealth,
-        familyStatus: profile.familyStatus as FamilyStatus,
-        dependentChildren: String(profile.dependentChildren),
-        partnerIncome: profile.partnerIncome ?? "",
-      });
-    }
-  }, [profile]);
+  // Derive form state from profile, with local edits overlaid
+  const formState: FormState = useMemo(() => {
+    const base: FormState = profile ? {
+      grossSalary: profile.grossSalary ?? "",
+      paygWithheld: profile.paygWithheld ?? "",
+      rentalOverride: null,
+      otherDeductions: profile.otherDeductions ?? "0",
+      hasHecsDebt: profile.hasHecsDebt,
+      hasPrivateHealth: profile.hasPrivateHealth,
+      familyStatus: profile.familyStatus as FamilyStatus,
+      dependentChildren: String(profile.dependentChildren),
+      partnerIncome: profile.partnerIncome ?? "",
+    } : {
+      grossSalary: "",
+      paygWithheld: "",
+      rentalOverride: null,
+      otherDeductions: "0",
+      hasHecsDebt: false,
+      hasPrivateHealth: true,
+      familyStatus: "single" as FamilyStatus,
+      dependentChildren: "0",
+      partnerIncome: "",
+    };
+    return formEdits ? { ...base, ...formEdits } : base;
+  }, [profile, formEdits]);
 
-  // Show wizard if no complete profile
-  useEffect(() => {
-    if (profile === null && selectedYear) {
-      setShowWizard(true);
+  const setFormState = (newState: FormState | ((prev: FormState) => FormState)) => {
+    if (typeof newState === "function") {
+      setFormEdits(() => {
+        const updated = newState(formState);
+        return updated;
+      });
+    } else {
+      setFormEdits(newState);
     }
-  }, [profile, selectedYear]);
+  };
+
+  // Determine if wizard should show (no profile for this year)
+  const shouldShowWizard = profile === null && selectedYear !== null && !showWizard;
 
   const saveProfile = trpc.taxPosition.saveProfile.useMutation({
     onSuccess: () => {
@@ -154,19 +156,7 @@ export function TaxPositionContent() {
   );
 
   // Check for unsaved changes
-  const hasChanges = useMemo(() => {
-    if (!profile) return false;
-    return (
-      formState.grossSalary !== (profile.grossSalary ?? "") ||
-      formState.paygWithheld !== (profile.paygWithheld ?? "") ||
-      formState.otherDeductions !== (profile.otherDeductions ?? "0") ||
-      formState.hasHecsDebt !== profile.hasHecsDebt ||
-      formState.hasPrivateHealth !== profile.hasPrivateHealth ||
-      formState.familyStatus !== profile.familyStatus ||
-      formState.dependentChildren !== String(profile.dependentChildren) ||
-      formState.partnerIncome !== (profile.partnerIncome ?? "")
-    );
-  }, [formState, profile]);
+  const hasChanges = formEdits !== null && profile !== null;
 
   const handleSave = () => {
     if (!selectedYear) return;
@@ -185,19 +175,7 @@ export function TaxPositionContent() {
   };
 
   const handleReset = () => {
-    if (profile) {
-      setFormState({
-        grossSalary: profile.grossSalary ?? "",
-        paygWithheld: profile.paygWithheld ?? "",
-        rentalOverride: null,
-        otherDeductions: profile.otherDeductions ?? "0",
-        hasHecsDebt: profile.hasHecsDebt,
-        hasPrivateHealth: profile.hasPrivateHealth,
-        familyStatus: profile.familyStatus as FamilyStatus,
-        dependentChildren: String(profile.dependentChildren),
-        partnerIncome: profile.partnerIncome ?? "",
-      });
-    }
+    setFormEdits(null);
   };
 
   const handleWizardComplete = () => {
@@ -213,7 +191,8 @@ export function TaxPositionContent() {
     );
   }
 
-  if (showWizard) {
+  // Show wizard when there's no profile for this year
+  if (showWizard || shouldShowWizard) {
     return (
       <SetupWizard
         financialYear={selectedYear}
@@ -224,7 +203,6 @@ export function TaxPositionContent() {
     );
   }
 
-  const fyLabel = `FY ${selectedYear - 1}-${String(selectedYear).slice(-2)}`;
   const showFamilyFields =
     formState.familyStatus === "couple" || formState.familyStatus === "family";
 
@@ -240,7 +218,10 @@ export function TaxPositionContent() {
         </div>
         <Select
           value={String(selectedYear)}
-          onValueChange={(v) => setSelectedYear(Number(v))}
+          onValueChange={(v) => {
+            setYearOverride(Number(v));
+            setFormEdits(null); // Reset edits when changing year
+          }}
         >
           <SelectTrigger className="w-[140px]">
             <SelectValue />
