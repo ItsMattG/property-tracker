@@ -1893,6 +1893,8 @@ export const scenarios = pgTable(
     timeHorizonMonths: decimal("time_horizon_months", { precision: 3, scale: 0 })
       .default("60")
       .notNull(),
+    marginalTaxRate: decimal("marginal_tax_rate", { precision: 4, scale: 2 })
+      .default("0.37"), // Default 37% bracket
     status: scenarioStatusEnum("status").default("draft").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),

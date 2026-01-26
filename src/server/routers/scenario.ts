@@ -72,6 +72,7 @@ export const scenarioRouter = router({
         name: z.string().min(1).max(100),
         description: z.string().max(500).optional(),
         timeHorizonMonths: z.number().int().min(1).max(120).default(60),
+        marginalTaxRate: z.number().min(0).max(1).default(0.37),
         parentScenarioId: z.string().uuid().optional(),
         factors: z.array(factorConfigSchema).optional(),
       })
@@ -84,6 +85,7 @@ export const scenarioRouter = router({
           name: input.name,
           description: input.description,
           timeHorizonMonths: String(input.timeHorizonMonths),
+          marginalTaxRate: String(input.marginalTaxRate),
           parentScenarioId: input.parentScenarioId,
           status: "draft",
         })
