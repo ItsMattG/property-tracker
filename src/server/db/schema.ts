@@ -352,6 +352,25 @@ export const familyStatusEnum = pgEnum("family_status", [
   "family",
 ]);
 
+export const shareLevelEnum = pgEnum("share_level", [
+  "none",
+  "anonymous",
+  "pseudonymous",
+  "controlled",
+]);
+
+export const listingSourceTypeEnum = pgEnum("listing_source_type", [
+  "url",
+  "text",
+  "manual",
+]);
+
+export const propertyTypeEnum = pgEnum("property_type", [
+  "house",
+  "townhouse",
+  "unit",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
