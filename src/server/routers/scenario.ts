@@ -72,6 +72,7 @@ export const scenarioRouter = router({
         name: z.string().min(1).max(100),
         description: z.string().max(500).optional(),
         timeHorizonMonths: z.number().int().min(1).max(120).default(60),
+        marginalTaxRate: z.number().min(0).max(1).default(0.37),
         parentScenarioId: z.string().uuid().optional(),
         factors: z.array(factorConfigSchema).optional(),
       })
@@ -84,6 +85,7 @@ export const scenarioRouter = router({
           name: input.name,
           description: input.description,
           timeHorizonMonths: String(input.timeHorizonMonths),
+          marginalTaxRate: String(input.marginalTaxRate),
           parentScenarioId: input.parentScenarioId,
           status: "draft",
         })
@@ -112,6 +114,7 @@ export const scenarioRouter = router({
         name: z.string().min(1).max(100).optional(),
         description: z.string().max(500).optional(),
         timeHorizonMonths: z.number().int().min(1).max(120).optional(),
+        marginalTaxRate: z.number().min(0).max(1).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -130,6 +133,7 @@ export const scenarioRouter = router({
       if (input.name) updates.name = input.name;
       if (input.description !== undefined) updates.description = input.description;
       if (input.timeHorizonMonths) updates.timeHorizonMonths = String(input.timeHorizonMonths);
+      if (input.marginalTaxRate !== undefined) updates.marginalTaxRate = String(input.marginalTaxRate);
 
       const [updated] = await ctx.db
         .update(scenarios)
@@ -291,13 +295,36 @@ export const scenarioRouter = router({
         })),
       };
 
-      // Convert factors
-      const factorInputs: ScenarioFactorInput[] = scenario.factors.map((f) => ({
-        factorType: f.factorType,
-        config: JSON.parse(f.config),
-        startMonth: Number(f.startMonth),
-        durationMonths: f.durationMonths ? Number(f.durationMonths) : undefined,
-      }));
+      // Convert factors with property data for sell_property
+      const marginalTaxRate = Number(scenario.marginalTaxRate || 0.37);
+      const factorInputs: ScenarioFactorInput[] = scenario.factors.map((f) => {
+        const base = {
+          factorType: f.factorType,
+          config: JSON.parse(f.config),
+          startMonth: Number(f.startMonth),
+          durationMonths: f.durationMonths ? Number(f.durationMonths) : undefined,
+        };
+
+        // For sell_property, attach property data for CGT calculation
+        if (f.factorType === "sell_property" && f.propertyId) {
+          const property = userProperties.find((p) => p.id === f.propertyId);
+          if (property) {
+            return {
+              ...base,
+              propertyData: {
+                id: property.id,
+                purchasePrice: Number(property.purchasePrice),
+                improvements: 0, // Could be enhanced with depreciation schedule
+                depreciationClaimed: 0, // Could be enhanced with depreciation schedule
+                purchaseDate: new Date(property.purchaseDate),
+              },
+              marginalTaxRate,
+            };
+          }
+        }
+
+        return base;
+      });
 
       // Run projection
       const result = runProjection(

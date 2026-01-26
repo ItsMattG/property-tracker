@@ -3,6 +3,8 @@ import type {
   VacancyFactorConfig,
   RentChangeFactorConfig,
   ExpenseChangeFactorConfig,
+  SellPropertyFactorConfig,
+  BuyPropertyFactorConfig,
   FactorConfig,
 } from "./types";
 
@@ -134,6 +136,152 @@ export interface PropertyState {
   monthlyExpenses: number;
 }
 
+// CGT Calculation Types
+export interface PropertyForSale {
+  id: string;
+  purchasePrice: number;
+  improvements: number;
+  depreciationClaimed: number;
+  purchaseDate: Date;
+}
+
+export interface CGTResult {
+  costBase: number;
+  grossGain: number;
+  taxableGain: number;
+  cgtPayable: number;
+  discountApplied: boolean;
+  capitalLoss: number;
+}
+
+export function calculateCGT(
+  property: PropertyForSale,
+  salePrice: number,
+  sellingCosts: number,
+  marginalTaxRate: number
+): CGTResult {
+  // Cost base = purchase price + improvements - depreciation claimed
+  const costBase = property.purchasePrice + property.improvements - property.depreciationClaimed;
+
+  // Gross gain = sale price - selling costs - cost base
+  const grossGain = salePrice - sellingCosts - costBase;
+
+  // Check if held > 12 months for 50% CGT discount
+  const purchaseDate = new Date(property.purchaseDate);
+  const now = new Date();
+  const monthsHeld = (now.getFullYear() - purchaseDate.getFullYear()) * 12 +
+    (now.getMonth() - purchaseDate.getMonth());
+  const discountApplied = monthsHeld >= 12 && grossGain > 0;
+
+  // Capital loss (no tax, but track for offsetting future gains)
+  const capitalLoss = grossGain < 0 ? Math.abs(grossGain) : 0;
+
+  // Taxable gain (apply 50% discount if eligible)
+  const taxableGain = grossGain > 0
+    ? (discountApplied ? grossGain * 0.5 : grossGain)
+    : 0;
+
+  // CGT payable
+  const cgtPayable = taxableGain * marginalTaxRate;
+
+  return {
+    costBase,
+    grossGain,
+    taxableGain,
+    cgtPayable,
+    discountApplied,
+    capitalLoss,
+  };
+}
+
+export interface SellPropertyResult {
+  adjustedPortfolio: PortfolioState;
+  cgtResult: CGTResult;
+  netProceeds: number;
+  loanPayoff: number;
+}
+
+export function applySellPropertyFactor(
+  portfolio: PortfolioState,
+  config: SellPropertyFactorConfig,
+  propertyData: PropertyForSale,
+  marginalTaxRate: number
+): SellPropertyResult {
+  // Calculate CGT
+  const cgtResult = calculateCGT(
+    propertyData,
+    config.salePrice,
+    config.sellingCosts,
+    marginalTaxRate
+  );
+
+  // Find loan for property (if any)
+  const propertyLoan = portfolio.loans.find((l) => l.propertyId === config.propertyId);
+  const loanPayoff = propertyLoan?.currentBalance || 0;
+
+  // Net proceeds = sale price - selling costs - loan payoff - CGT
+  const netProceeds = config.salePrice - config.sellingCosts - loanPayoff - cgtResult.cgtPayable;
+
+  // Remove property and associated loan from portfolio
+  const adjustedPortfolio: PortfolioState = {
+    properties: portfolio.properties.filter((p) => p.id !== config.propertyId),
+    loans: portfolio.loans.filter((l) => l.propertyId !== config.propertyId),
+  };
+
+  return {
+    adjustedPortfolio,
+    cgtResult,
+    netProceeds,
+    loanPayoff,
+  };
+}
+
+// Buy Property Factor
+export interface BuyPropertyResult {
+  adjustedPortfolio: PortfolioState;
+  newProperty: PropertyState;
+  newLoan: LoanState;
+  depositRequired: number;
+}
+
+export function applyBuyPropertyFactor(
+  portfolio: PortfolioState,
+  config: BuyPropertyFactorConfig
+): BuyPropertyResult {
+  // Generate unique IDs for new property and loan
+  const newPropertyId = `new-prop-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const newLoanId = `new-loan-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+  // Create new property
+  const newProperty: PropertyState = {
+    id: newPropertyId,
+    monthlyRent: config.expectedRent,
+    monthlyExpenses: config.expectedExpenses,
+  };
+
+  // Create new loan
+  const newLoan: LoanState = {
+    id: newLoanId,
+    propertyId: newPropertyId,
+    currentBalance: config.loanAmount,
+    interestRate: config.interestRate,
+    repaymentAmount: 0, // Not used in projection, interest-only for simplicity
+  };
+
+  // Add to portfolio
+  const adjustedPortfolio: PortfolioState = {
+    properties: [...portfolio.properties, newProperty],
+    loans: [...portfolio.loans, newLoan],
+  };
+
+  return {
+    adjustedPortfolio,
+    newProperty,
+    newLoan,
+    depositRequired: config.deposit,
+  };
+}
+
 export interface LoanState {
   id: string;
   propertyId: string;
@@ -152,6 +300,9 @@ export interface ScenarioFactorInput {
   config: FactorConfig;
   startMonth: number;
   durationMonths?: number;
+  // For sell_property factor
+  propertyData?: PropertyForSale;
+  marginalTaxRate?: number;
 }
 
 export interface MonthProjection {
@@ -268,8 +419,36 @@ export function runProjection(
 ): ProjectionResult {
   const monthlyResults: MonthProjection[] = [];
 
+  // Track portfolio state that can change mid-projection (e.g., property sold)
+  let currentPortfolio = { ...portfolio, properties: [...portfolio.properties], loans: [...portfolio.loans] };
+
   for (let month = 0; month < timeHorizonMonths; month++) {
-    monthlyResults.push(projectMonth(portfolio, factors, month));
+    // Check for sell_property factors that settle this month
+    for (const factor of factors) {
+      if (factor.factorType === "sell_property") {
+        const config = factor.config as SellPropertyFactorConfig;
+        if (config.settlementMonth === month && factor.propertyData && factor.marginalTaxRate !== undefined) {
+          const sellResult = applySellPropertyFactor(
+            currentPortfolio,
+            config,
+            factor.propertyData,
+            factor.marginalTaxRate
+          );
+          currentPortfolio = sellResult.adjustedPortfolio;
+        }
+      }
+
+      // Check for buy_property factors that purchase this month
+      if (factor.factorType === "buy_property") {
+        const config = factor.config as BuyPropertyFactorConfig;
+        if (config.purchaseMonth === month) {
+          const buyResult = applyBuyPropertyFactor(currentPortfolio, config);
+          currentPortfolio = buyResult.adjustedPortfolio;
+        }
+      }
+    }
+
+    monthlyResults.push(projectMonth(currentPortfolio, factors, month));
   }
 
   const totalIncome = monthlyResults.reduce((sum, m) => sum + m.totalIncome, 0);
