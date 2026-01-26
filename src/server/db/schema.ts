@@ -10,8 +10,26 @@ import {
   index,
   jsonb,
   integer,
+  customType,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+
+// Custom type for pgvector
+const vector = customType<{ data: number[]; driverData: string }>({
+  dataType() {
+    return "vector(5)";
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(",")}]`;
+  },
+  fromDriver(value: string): number[] {
+    // Parse "[0.1,0.2,0.3,0.4,0.5]" format
+    return value
+      .slice(1, -1)
+      .split(",")
+      .map((v) => parseFloat(v));
+  },
+});
 
 // Enums
 export const stateEnum = pgEnum("state", [
@@ -644,6 +662,34 @@ export const externalListings = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [index("external_listings_user_id_idx").on(table.userId)]
+);
+
+export const propertyVectors = pgTable(
+  "property_vectors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "cascade",
+    }),
+    externalListingId: uuid("external_listing_id").references(
+      () => externalListings.id,
+      { onDelete: "cascade" }
+    ),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    vector: vector("vector").notNull(),
+    isShared: boolean("is_shared").default(false).notNull(),
+    shareLevel: shareLevelEnum("share_level").default("none").notNull(),
+    sharedAttributes: jsonb("shared_attributes").$type<string[]>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("property_vectors_user_id_idx").on(table.userId),
+    index("property_vectors_property_id_idx").on(table.propertyId),
+    index("property_vectors_is_shared_idx").on(table.isShared),
+  ]
 );
 
 export const bankAccounts = pgTable("bank_accounts", {

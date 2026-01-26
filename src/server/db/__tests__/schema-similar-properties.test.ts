@@ -1,6 +1,6 @@
 // src/server/db/__tests__/schema-similar-properties.test.ts
 import { describe, it, expect } from "vitest";
-import { shareLevelEnum, listingSourceTypeEnum, propertyTypeEnum, externalListings } from "../schema";
+import { shareLevelEnum, listingSourceTypeEnum, propertyTypeEnum, externalListings, propertyVectors } from "../schema";
 
 describe("Similar Properties Schema", () => {
   describe("shareLevelEnum", () => {
@@ -44,6 +44,19 @@ describe("Similar Properties Schema", () => {
       expect(columns).toContain("suburb");
       expect(columns).toContain("state");
       expect(columns).toContain("postcode");
+    });
+  });
+
+  describe("propertyVectors table", () => {
+    it("has required columns", () => {
+      const columns = Object.keys(propertyVectors);
+      expect(columns).toContain("id");
+      expect(columns).toContain("propertyId");
+      expect(columns).toContain("externalListingId");
+      expect(columns).toContain("userId");
+      expect(columns).toContain("vector");
+      expect(columns).toContain("isShared");
+      expect(columns).toContain("shareLevel");
     });
   });
 });
