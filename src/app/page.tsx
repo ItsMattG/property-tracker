@@ -151,6 +151,9 @@ export default function HomePage() {
             </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <Link href="/changelog" className="hover:text-foreground">
+              Changelog
+            </Link>
             <Link href="/privacy" className="hover:text-foreground">
               Privacy Policy
             </Link>
