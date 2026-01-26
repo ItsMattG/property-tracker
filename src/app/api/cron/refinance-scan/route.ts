@@ -17,6 +17,7 @@ import {
   refinanceOpportunitySubject,
 } from "@/lib/email/templates/refinance-opportunity";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   if (!verifyCronRequest(request.headers)) {
@@ -134,7 +135,7 @@ export async function GET(request: Request) {
       alerted,
     });
   } catch (error) {
-    console.error("Refinance scan error:", error);
+    logger.error("Refinance scan error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

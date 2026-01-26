@@ -17,6 +17,7 @@ import { sendPushNotification, sendEmailNotification, isQuietHours } from "@/ser
 import { getMilestoneMessage } from "@/lib/equity-milestones";
 import { resolveThresholds } from "@/server/services/milestone-preferences";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   if (!verifyCronRequest(request.headers)) {
@@ -196,7 +197,7 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Equity milestones cron error:", error);
+    logger.error("Equity milestones cron error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

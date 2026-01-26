@@ -10,6 +10,7 @@ import {
 import { sendEmailNotification } from "@/server/services/notification";
 import { eofySuggestionsTemplate, eofySuggestionsSubject } from "@/lib/email/templates/eofy-suggestions";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   if (!verifyCronRequest(request.headers)) {
@@ -56,7 +57,7 @@ export async function GET(request: Request) {
           notified++;
         }
       } catch (error) {
-        console.error(`Failed to process user ${user.userId}:`, error);
+        logger.error("Failed to process user", error, { userId: user.userId });
       }
     }
 
@@ -66,7 +67,7 @@ export async function GET(request: Request) {
       notified,
     });
   } catch (error) {
-    console.error("Tax suggestions cron error:", error);
+    logger.error("Tax suggestions cron error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
