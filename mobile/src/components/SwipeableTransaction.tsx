@@ -13,12 +13,13 @@ interface Transaction {
 }
 
 interface Props {
+  testID?: string;
   transaction: Transaction;
   onAccept: () => void;
   onReject: () => void;
 }
 
-export function SwipeableTransaction({ transaction, onAccept, onReject }: Props) {
+export function SwipeableTransaction({ testID, transaction, onAccept, onReject }: Props) {
   function renderLeftActions(
     _progress: Animated.AnimatedInterpolation<number>,
     dragX: Animated.AnimatedInterpolation<number>
@@ -62,6 +63,7 @@ export function SwipeableTransaction({ transaction, onAccept, onReject }: Props)
 
   return (
     <Swipeable
+      testID={testID}
       renderLeftActions={renderLeftActions}
       renderRightActions={renderRightActions}
       onSwipeableOpen={(direction) => {
@@ -69,24 +71,24 @@ export function SwipeableTransaction({ transaction, onAccept, onReject }: Props)
         if (direction === "right") onReject();
       }}
     >
-      <View className="bg-white p-4 border-b border-gray-100">
+      <View testID={testID ? `${testID}-content` : undefined} className="bg-white p-4 border-b border-gray-100">
         <View className="flex-row justify-between items-start">
           <View className="flex-1 mr-4">
-            <Text className="font-medium" numberOfLines={1}>
+            <Text testID={testID ? `${testID}-description` : undefined} className="font-medium" numberOfLines={1}>
               {transaction.description}
             </Text>
-            <Text className="text-gray-500 text-sm mt-1">
+            <Text testID={testID ? `${testID}-date` : undefined} className="text-gray-500 text-sm mt-1">
               {transaction.date}
             </Text>
             {transaction.suggestedCategory && (
               <View className="flex-row items-center mt-2">
-                <View className="bg-blue-100 rounded-full px-2 py-0.5">
+                <View testID={testID ? `${testID}-category` : undefined} className="bg-blue-100 rounded-full px-2 py-0.5">
                   <Text className="text-blue-700 text-xs">
                     {transaction.suggestedCategory.replace(/_/g, " ")}
                   </Text>
                 </View>
                 {transaction.suggestionConfidence && (
-                  <Text className="text-gray-400 text-xs ml-2">
+                  <Text testID={testID ? `${testID}-confidence` : undefined} className="text-gray-400 text-xs ml-2">
                     {Math.round(parseFloat(transaction.suggestionConfidence))}%
                   </Text>
                 )}
@@ -94,6 +96,7 @@ export function SwipeableTransaction({ transaction, onAccept, onReject }: Props)
             )}
           </View>
           <Text
+            testID={testID ? `${testID}-amount` : undefined}
             className={`font-semibold ${
               isIncome ? "text-green-600" : "text-gray-900"
             }`}
