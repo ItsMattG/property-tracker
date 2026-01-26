@@ -16,8 +16,9 @@ The v0.2 roadmap and post-extraction roadmap are **complete**. See `docs/plans/2
 - Financial Leak Benchmarking
 - Property Performance Benchmarking
 - Tax Position Calculator
+- Vector DB Similar Properties
 
-**Deferred:** Vector DB Similar Properties (requires Pinecone/Milvus infrastructure)
+**All roadmap items complete.** 🎉
 
 ## Token Efficiency
 Always pick the token-efficient approach when implementing. Minimize unnecessary exploration and verbose output.
