@@ -66,6 +66,7 @@ export function AddListingModal({ open, onOpenChange, onSuccess }: AddListingMod
   };
 
   const handleExtract = () => {
+    if (tab === "manual") return;
     const content = tab === "url" ? urlInput : textInput;
     extractMutation.mutate({ content, sourceType: tab });
   };

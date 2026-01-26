@@ -150,7 +150,7 @@ export const similarPropertiesRouter = router({
         LIMIT ${input.limit}
       `);
 
-      return (results.rows as Array<Record<string, unknown>>).map((row) => {
+      return (results as unknown as Array<Record<string, unknown>>).map((row) => {
         const isPortfolio = row.property_id && row.user_id === ctx.portfolio.ownerId;
         const isExternal = !!row.external_listing_id;
 
