@@ -6,7 +6,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "e2e:build": "detox build --configuration ios.sim.debug",
+    "e2e:build:release": "detox build --configuration ios.sim.release",
+    "e2e:test": "detox test --configuration ios.sim.debug",
+    "e2e:test:release": "detox test --configuration ios.sim.release --headless"
   },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.10.1",
