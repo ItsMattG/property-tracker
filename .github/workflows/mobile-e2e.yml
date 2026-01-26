@@ -1,0 +1,70 @@
+name: Mobile E2E Tests
+
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/**']
+  pull_request:
+    branches: [main]
+    paths: ['mobile/**']
+
+jobs:
+  detox-ios:
+    runs-on: macos-14
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+
+      - name: Install applesimutils
+        run: |
+          brew tap wix/brew
+          brew install applesimutils
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install mobile dependencies
+        run: cd mobile && npm ci
+
+      - name: Install Detox CLI
+        run: npm install -g detox-cli
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: mobile/ios/Pods
+          key: pods-${{ hashFiles('mobile/ios/Podfile.lock') }}
+
+      - name: Install CocoaPods
+        run: cd mobile/ios && pod install
+
+      - name: Build Detox (Release)
+        run: cd mobile && npm run e2e:build:release
+
+      - name: Start backend server
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:3000
+        env:
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+
+      - name: Run Detox tests
+        run: cd mobile && npm run e2e:test:release
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detox-artifacts
+          path: mobile/e2e/artifacts/

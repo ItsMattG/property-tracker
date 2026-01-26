@@ -41,6 +41,7 @@ export function LoginScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-white"
+      testID="login-screen"
     >
       <View className="flex-1 justify-center px-6">
         <Text className="text-3xl font-bold text-center mb-2">
@@ -54,6 +55,7 @@ export function LoginScreen() {
           <View>
             <Text className="text-sm font-medium text-gray-700 mb-1">Email</Text>
             <TextInput
+              testID="email-input"
               className="border border-gray-300 rounded-lg px-4 py-3 text-base"
               placeholder="you@example.com"
               value={email}
@@ -69,6 +71,7 @@ export function LoginScreen() {
               Password
             </Text>
             <TextInput
+              testID="password-input"
               className="border border-gray-300 rounded-lg px-4 py-3 text-base"
               placeholder="Mobile password"
               value={password}
@@ -79,10 +82,11 @@ export function LoginScreen() {
           </View>
 
           {error ? (
-            <Text className="text-red-500 text-sm">{error}</Text>
+            <Text testID="error-message" className="text-red-500 text-sm">{error}</Text>
           ) : null}
 
           <TouchableOpacity
+            testID="login-button"
             className={`rounded-lg py-4 ${
               isLoading ? "bg-blue-400" : "bg-blue-600"
             }`}
@@ -90,7 +94,7 @@ export function LoginScreen() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <ActivityIndicator color="white" />
+              <ActivityIndicator testID="login-loading" color="white" />
             ) : (
               <Text className="text-white text-center font-semibold text-base">
                 Sign In

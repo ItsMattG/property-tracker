@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,59 +9,80 @@ import {
 import { trpc } from "../lib/trpc";
 import { SwipeableTransaction } from "../components/SwipeableTransaction";
 
+interface Transaction {
+  id: string;
+  description: string;
+  amount: string;
+  date: string;
+  suggestedCategory: string | null;
+  suggestionConfidence: string | null;
+}
+
 export function TransactionsScreen() {
-  const utils = trpc.useUtils();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const {
-    data,
-    isLoading,
-    refetch,
-    isRefetching,
-  } = trpc.categorization.getPendingReview.useQuery({
-    confidenceFilter: "all",
-    limit: 50,
-    offset: 0,
-  });
+  const fetchData = useCallback(async () => {
+    try {
+      const data = await trpc.categorization.getPendingReview.query({
+        confidenceFilter: "all",
+        limit: 50,
+        offset: 0,
+      });
+      setTransactions(data.transactions);
+    } catch (error) {
+      console.error("Failed to fetch transactions:", error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
 
-  const acceptMutation = trpc.categorization.acceptSuggestion.useMutation({
-    onSuccess: () => {
-      utils.categorization.getPendingReview.invalidate();
-      utils.stats.dashboard.invalidate();
-    },
-  });
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  const rejectMutation = trpc.categorization.rejectSuggestion.useMutation({
-    onSuccess: () => {
-      utils.categorization.getPendingReview.invalidate();
-      utils.stats.dashboard.invalidate();
-    },
-  });
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    fetchData();
+  }, [fetchData]);
 
-  function handleAccept(transactionId: string) {
-    acceptMutation.mutate({ transactionId });
+  async function handleAccept(transactionId: string) {
+    try {
+      await trpc.categorization.acceptSuggestion.mutate({ transactionId });
+      // Remove from local state for instant feedback
+      setTransactions((prev) => prev.filter((t) => t.id !== transactionId));
+    } catch (error) {
+      console.error("Failed to accept:", error);
+    }
   }
 
-  function handleReject(transactionId: string) {
-    rejectMutation.mutate({
-      transactionId,
-      newCategory: "personal",
-    });
+  async function handleReject(transactionId: string) {
+    try {
+      await trpc.categorization.rejectSuggestion.mutate({
+        transactionId,
+        newCategory: "personal",
+      });
+      // Remove from local state for instant feedback
+      setTransactions((prev) => prev.filter((t) => t.id !== transactionId));
+    } catch (error) {
+      console.error("Failed to reject:", error);
+    }
   }
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View testID="transactions-loading" className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" color="#2563eb" />
       </View>
     );
   }
 
-  const transactions = data?.transactions ?? [];
-
   return (
-    <View className="flex-1 bg-gray-50">
+    <View testID="transactions-screen" className="flex-1 bg-gray-50">
       {transactions.length === 0 ? (
-        <View className="flex-1 items-center justify-center p-4">
+        <View testID="transactions-empty" className="flex-1 items-center justify-center p-4">
           <Text className="text-gray-500 text-center text-lg">
             All caught up!
           </Text>
@@ -77,17 +98,19 @@ export function TransactionsScreen() {
             </Text>
           </View>
           <FlatList
+            testID="transactions-list"
             data={transactions}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <SwipeableTransaction
+                testID={`transaction-card-${index}`}
                 transaction={item}
                 onAccept={() => handleAccept(item.id)}
                 onReject={() => handleReject(item.id)}
               />
             )}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+              <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
             }
           />
         </>

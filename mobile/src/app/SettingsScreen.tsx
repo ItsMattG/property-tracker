@@ -1,12 +1,27 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Switch, Alert } from "react-native";
 import { useAuth } from "../lib/AuthContext";
 import { trpc } from "../lib/trpc";
 
+interface Preferences {
+  pushEnabled: boolean;
+}
+
 export function SettingsScreen() {
   const { user, logout } = useAuth();
-  const { data: preferences } = trpc.notification.getPreferences.useQuery();
-  const updatePreferences = trpc.notification.updatePreferences.useMutation();
+  const [preferences, setPreferences] = useState<Preferences | null>(null);
+
+  useEffect(() => {
+    async function fetchPreferences() {
+      try {
+        const data = await trpc.notification.getPreferences.query();
+        setPreferences(data);
+      } catch (error) {
+        console.error("Failed to fetch preferences:", error);
+      }
+    }
+    fetchPreferences();
+  }, []);
 
   function handleLogout() {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -15,25 +30,30 @@ export function SettingsScreen() {
     ]);
   }
 
-  function togglePush(value: boolean) {
-    updatePreferences.mutate({ pushEnabled: value });
+  async function togglePush(value: boolean) {
+    try {
+      await trpc.notification.updatePreferences.mutate({ pushEnabled: value });
+      setPreferences((prev) => (prev ? { ...prev, pushEnabled: value } : null));
+    } catch (error) {
+      console.error("Failed to update preferences:", error);
+    }
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View testID="settings-screen" className="flex-1 bg-gray-50">
       {/* Account Section */}
       <View className="mt-6">
         <Text className="px-4 pb-2 text-sm font-medium text-gray-500 uppercase">
           Account
         </Text>
         <View className="bg-white">
-          <View className="p-4 border-b border-gray-100">
+          <View testID="user-email-container" className="p-4 border-b border-gray-100">
             <Text className="text-sm text-gray-500">Email</Text>
-            <Text className="font-medium">{user?.email}</Text>
+            <Text testID="user-email" className="font-medium">{user?.email}</Text>
           </View>
-          <View className="p-4">
+          <View testID="user-name-container" className="p-4">
             <Text className="text-sm text-gray-500">Name</Text>
-            <Text className="font-medium">{user?.name || "Not set"}</Text>
+            <Text testID="user-name" className="font-medium">{user?.name || "Not set"}</Text>
           </View>
         </View>
       </View>
@@ -52,6 +72,7 @@ export function SettingsScreen() {
               </Text>
             </View>
             <Switch
+              testID="notifications-toggle"
               value={preferences?.pushEnabled ?? true}
               onValueChange={togglePush}
               trackColor={{ true: "#2563eb" }}
@@ -63,6 +84,7 @@ export function SettingsScreen() {
       {/* Sign Out */}
       <View className="mt-6">
         <TouchableOpacity
+          testID="sign-out-button"
           className="bg-white p-4"
           onPress={handleLogout}
         >
@@ -73,7 +95,7 @@ export function SettingsScreen() {
       </View>
 
       {/* Version */}
-      <Text className="text-center text-gray-400 text-sm mt-8">
+      <Text testID="app-version" className="text-center text-gray-400 text-sm mt-8">
         PropertyTracker Mobile v1.0.0
       </Text>
     </View>

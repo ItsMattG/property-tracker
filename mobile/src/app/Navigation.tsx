@@ -25,6 +25,7 @@ function MainTabs() {
         component={DashboardScreen}
         options={{
           tabBarLabel: "Dashboard",
+          tabBarButtonTestID: "tab-dashboard",
         }}
       />
       <Tab.Screen
@@ -32,6 +33,7 @@ function MainTabs() {
         component={TransactionsScreen}
         options={{
           tabBarLabel: "Review",
+          tabBarButtonTestID: "tab-transactions",
         }}
       />
       <Tab.Screen
@@ -39,6 +41,7 @@ function MainTabs() {
         component={CameraScreen}
         options={{
           tabBarLabel: "Capture",
+          tabBarButtonTestID: "tab-camera",
         }}
       />
       <Tab.Screen
@@ -46,6 +49,7 @@ function MainTabs() {
         component={SettingsScreen}
         options={{
           tabBarLabel: "Settings",
+          tabBarButtonTestID: "tab-settings",
         }}
       />
     </Tab.Navigator>
