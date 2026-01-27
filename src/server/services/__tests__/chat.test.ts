@@ -1,4 +1,30 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// Mock the database module
+vi.mock("@/server/db", () => ({
+  db: {
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "conv-1", userId: "user-1", title: "Test" }]),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+    query: {
+      chatConversations: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    },
+  },
+}));
+
 import {
   createConversation,
   getConversation,
@@ -9,34 +35,42 @@ import {
 } from "../chat";
 
 describe("Chat service", () => {
-  it("exports createConversation", () => {
-    expect(createConversation).toBeDefined();
-    expect(typeof createConversation).toBe("function");
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("exports getConversation", () => {
-    expect(getConversation).toBeDefined();
-    expect(typeof getConversation).toBe("function");
+  describe("createConversation", () => {
+    it("creates and returns a conversation", async () => {
+      const result = await createConversation("user-1", "Test title");
+      expect(result).toEqual({ id: "conv-1", userId: "user-1", title: "Test" });
+    });
   });
 
-  it("exports listConversations", () => {
-    expect(listConversations).toBeDefined();
-    expect(typeof listConversations).toBe("function");
+  describe("getConversation", () => {
+    it("returns null when conversation not found", async () => {
+      const result = await getConversation("conv-1", "user-1");
+      expect(result).toBeNull();
+    });
   });
 
-  it("exports addMessage", () => {
-    expect(addMessage).toBeDefined();
-    expect(typeof addMessage).toBe("function");
+  describe("listConversations", () => {
+    it("returns empty array when no conversations", async () => {
+      const result = await listConversations("user-1");
+      expect(result).toEqual([]);
+    });
   });
 
-  it("exports deleteConversation", () => {
-    expect(deleteConversation).toBeDefined();
-    expect(typeof deleteConversation).toBe("function");
+  describe("addMessage", () => {
+    it("inserts a message and updates conversation timestamp", async () => {
+      const result = await addMessage("conv-1", "user", "Hello");
+      expect(result).toBeDefined();
+    });
   });
 
-  it("exports generateTitle", () => {
-    expect(generateTitle).toBeDefined();
-    expect(typeof generateTitle).toBe("function");
+  describe("deleteConversation", () => {
+    it("deletes a conversation", async () => {
+      await expect(deleteConversation("conv-1", "user-1")).resolves.toBeUndefined();
+    });
   });
 
   describe("generateTitle", () => {
