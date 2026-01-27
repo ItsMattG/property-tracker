@@ -147,6 +147,7 @@ export default function NotificationSettingsPage() {
               { key: "syncFailed", label: "Bank sync failed", description: "When bank connection needs attention" },
               { key: "anomalyDetected", label: "Anomalies detected", description: "Unusual transactions or missed rent" },
               { key: "weeklyDigest", label: "Weekly digest", description: "Sunday morning portfolio summary" },
+              { key: "taskReminders", label: "Task reminders", description: "Get notified when tasks are approaching their due date" },
             ].map((item) => (
               <div key={item.key} className="flex items-center justify-between py-2">
                 <div>

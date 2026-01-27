@@ -41,6 +41,7 @@ describe("notification service", () => {
       anomalyDetected: true,
       weeklyDigest: true,
       complianceReminders: true,
+      taskReminders: true,
     };
 
     it("returns true when preference is enabled", () => {

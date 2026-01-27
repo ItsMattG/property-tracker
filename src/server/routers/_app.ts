@@ -39,6 +39,7 @@ import { feedbackRouter } from "./feedback";
 import { changelogRouter } from "./changelog";
 import { blogRouter } from "./blog";
 import { emailRouter } from "./email";
+import { taskRouter } from "./task";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -81,6 +82,7 @@ export const appRouter = router({
   changelog: changelogRouter,
   blog: blogRouter,
   email: emailRouter,
+  task: taskRouter,
 });
 
 export type AppRouter = typeof appRouter;

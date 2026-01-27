@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ValuationCard } from "@/components/valuation";
 import { PropertyComplianceSection } from "@/components/compliance/PropertyComplianceSection";
+import { PropertyTasksSection } from "@/components/tasks/PropertyTasksSection";
 import { MilestonesCard } from "@/components/properties/MilestonesCard";
 import { ClimateRiskCard } from "@/components/climate-risk";
 import { BenchmarkCard } from "@/components/benchmarking";
@@ -205,6 +206,11 @@ export default function PropertyDetailPage() {
       {/* Compliance Section */}
       <div className="lg:col-span-2">
         <PropertyComplianceSection propertyId={propertyId} />
+      </div>
+
+      {/* Tasks Section */}
+      <div className="lg:col-span-2">
+        <PropertyTasksSection propertyId={propertyId} />
       </div>
     </div>
   );

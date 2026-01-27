@@ -189,6 +189,9 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "cash_rate_changed",
   "compliance_reminder",
   "equity_milestone",
+  "task_reminder",
+  "task_assigned",
+  "task_completed",
 ]);
 
 export const notificationChannelEnum = pgEnum("notification_channel", [
@@ -446,6 +449,19 @@ export const invoiceMatchStatusEnum = pgEnum("invoice_match_status", [
   "pending",
   "accepted",
   "rejected",
+]);
+
+export const taskStatusEnum = pgEnum("task_status", [
+  "todo",
+  "in_progress",
+  "done",
+]);
+
+export const taskPriorityEnum = pgEnum("task_priority", [
+  "urgent",
+  "high",
+  "normal",
+  "low",
 ]);
 
 // Tables
@@ -1921,6 +1937,7 @@ export const notificationPreferences = pgTable("notification_preferences", {
   anomalyDetected: boolean("anomaly_detected").default(true).notNull(),
   weeklyDigest: boolean("weekly_digest").default(true).notNull(),
   complianceReminders: boolean("compliance_reminders").default(true).notNull(),
+  taskReminders: boolean("task_reminders").default(true).notNull(),
   quietHoursStart: text("quiet_hours_start").default("21:00").notNull(),
   quietHoursEnd: text("quiet_hours_end").default("08:00").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -2709,6 +2726,60 @@ export const bugReportsRelations = relations(bugReports, ({ one }) => ({
   }),
 }));
 
+// Tasks
+export const tasks = pgTable(
+  "tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    assigneeId: uuid("assignee_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "cascade",
+    }),
+    entityId: uuid("entity_id").references(() => entities.id, {
+      onDelete: "cascade",
+    }),
+    title: text("title").notNull(),
+    description: text("description"),
+    status: taskStatusEnum("status").default("todo").notNull(),
+    priority: taskPriorityEnum("priority").default("normal").notNull(),
+    dueDate: date("due_date"),
+    reminderOffset: integer("reminder_offset"),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("tasks_user_id_idx").on(table.userId),
+    index("tasks_assignee_id_idx").on(table.assigneeId),
+    index("tasks_property_id_idx").on(table.propertyId),
+    index("tasks_entity_id_idx").on(table.entityId),
+    index("tasks_due_date_idx").on(table.dueDate),
+    index("tasks_status_idx").on(table.status),
+  ]
+);
+
+export const tasksRelations = relations(tasks, ({ one }) => ({
+  user: one(users, { fields: [tasks.userId], references: [users.id] }),
+  assignee: one(users, {
+    fields: [tasks.assigneeId],
+    references: [users.id],
+    relationName: "taskAssignee",
+  }),
+  property: one(properties, {
+    fields: [tasks.propertyId],
+    references: [properties.id],
+  }),
+  entity: one(entities, {
+    fields: [tasks.entityId],
+    references: [entities.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -2861,3 +2932,6 @@ export type PropertyEmailInvoiceMatch = typeof propertyEmailInvoiceMatches.$infe
 export type NewPropertyEmailInvoiceMatch = typeof propertyEmailInvoiceMatches.$inferInsert;
 export type PropertyEmailSender = typeof propertyEmailSenders.$inferSelect;
 export type NewPropertyEmailSender = typeof propertyEmailSenders.$inferInsert;
+// Task Types
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
