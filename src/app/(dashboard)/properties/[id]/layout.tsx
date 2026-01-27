@@ -43,6 +43,9 @@ export default function PropertyDetailLayout({
       } else if (pathname?.includes("/compliance")) {
         items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
         items.push({ label: "Compliance" });
+      } else if (pathname?.includes("/emails")) {
+        items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
+        items.push({ label: "Emails" });
       } else {
         items.push({ label: propertyLabel });
       }
