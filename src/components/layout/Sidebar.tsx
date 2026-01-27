@@ -51,6 +51,7 @@ const navItems = [
   { href: "/reports/share", label: "Portfolio Shares", icon: Share2 },
   { href: "/reports/compliance", label: "Compliance", icon: ClipboardCheck },
   { href: "/reports/brokers", label: "Broker Portal", icon: Briefcase },
+  { href: "/reports/mytax", label: "MyTax Export", icon: FileDown },
   { href: "/banking", label: "Banking", icon: Landmark },
   { href: "/loans", label: "Loans", icon: Wallet },
   { href: "/loans/compare", label: "Compare Loans", icon: Scale },
