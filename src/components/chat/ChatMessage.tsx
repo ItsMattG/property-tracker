@@ -1,14 +1,22 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { Message } from "ai";
+import type { UIMessage } from "ai";
 
 interface ChatMessageProps {
-  message: Message;
+  message: UIMessage;
 }
 
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
+
+  // Extract text content from parts
+  const textContent = message.parts
+    ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("") || "";
+
+  if (!textContent) return null;
 
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
@@ -21,7 +29,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         )}
       >
         <div className="whitespace-pre-wrap break-words prose prose-sm dark:prose-invert max-w-none">
-          {message.content}
+          {textContent}
         </div>
       </div>
     </div>

@@ -1,6 +1,8 @@
 "use client";
 
-import { useChat } from "ai/react";
+import { useState, useRef, useCallback } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { usePathname } from "next/navigation";
 import {
   Sheet,
@@ -18,27 +20,41 @@ import { ChatInput } from "./ChatInput";
 export function ChatPanel() {
   const { isOpen, close, conversationId, setConversationId } = useChatPanel();
   const pathname = usePathname();
+  const [input, setInput] = useState("");
+  const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
+
+  // Create transport lazily (stable reference)
+  const getTransport = useCallback(() => {
+    if (!transportRef.current) {
+      transportRef.current = new DefaultChatTransport({
+        api: "/api/chat",
+        body: () => ({
+          conversationId,
+          currentRoute: pathname,
+        }),
+      });
+    }
+    return transportRef.current;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     messages,
-    input,
-    setInput,
-    handleSubmit,
-    isLoading,
     setMessages,
+    sendMessage,
+    status,
   } = useChat({
-    api: "/api/chat",
-    body: {
-      conversationId,
-      currentRoute: pathname,
-    },
-    onResponse: (response) => {
-      const newConvId = response.headers.get("x-conversation-id");
-      if (newConvId && !conversationId) {
-        setConversationId(newConvId);
-      }
-    },
+    transport: getTransport(),
   });
+
+  const isLoading = status === "streaming" || status === "submitted";
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+    const text = input;
+    setInput("");
+    sendMessage({ text });
+  };
 
   const handleNewChat = () => {
     setMessages([]);

@@ -2,11 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { ChatMessage } from "./ChatMessage";
-import type { Message } from "ai";
+import type { UIMessage } from "ai";
 import { Loader2 } from "lucide-react";
 
 interface ChatMessageListProps {
-  messages: Message[];
+  messages: UIMessage[];
   isLoading: boolean;
 }
 

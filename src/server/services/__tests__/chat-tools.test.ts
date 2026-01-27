@@ -24,7 +24,7 @@ describe("Chat tools", () => {
     const tools = getChatTools("fake-user-id");
     for (const [, toolDef] of Object.entries(tools)) {
       expect(toolDef).toHaveProperty("description");
-      expect(toolDef).toHaveProperty("parameters");
+      expect(toolDef).toHaveProperty("inputSchema");
       expect(toolDef).toHaveProperty("execute");
       expect(typeof (toolDef as { execute: unknown }).execute).toBe("function");
     }

@@ -1,5 +1,11 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { streamText } from "ai";
+import {
+  streamText,
+  stepCountIs,
+  createUIMessageStreamResponse,
+  convertToModelMessages,
+  type UIMessage,
+} from "ai";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/server/db";
 import { users, properties } from "@/server/db/schema";
@@ -65,21 +71,39 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { messages, conversationId, currentRoute = "/dashboard" } = body;
+  const {
+    messages,
+    conversationId,
+    currentRoute = "/dashboard",
+  } = body as {
+    messages: UIMessage[];
+    conversationId?: string;
+    currentRoute?: string;
+  };
 
   // Get or create conversation
   let convId = conversationId;
   if (!convId) {
-    const firstUserMsg = messages.find((m: { role: string }) => m.role === "user");
-    const title = firstUserMsg ? generateTitle(firstUserMsg.content) : null;
+    const firstUserMsg = messages.find((m) => m.role === "user");
+    const firstContent = firstUserMsg?.parts
+      ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+      .map((p) => p.text)
+      .join("") || "";
+    const title = firstContent ? generateTitle(firstContent) : null;
     const conversation = await createConversation(user.id, title || undefined);
     convId = conversation.id;
   }
 
   // Save the latest user message
-  const lastUserMessage = [...messages].reverse().find((m: { role: string }) => m.role === "user");
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
   if (lastUserMessage) {
-    await addMessage(convId, "user", lastUserMessage.content);
+    const textContent = lastUserMessage.parts
+      ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+      .map((p) => p.text)
+      .join("") || "";
+    if (textContent) {
+      await addMessage(convId, "user", textContent);
+    }
   }
 
   // Count properties for system prompt
@@ -91,24 +115,25 @@ export async function POST(req: Request) {
 
   const tools = getChatTools(user.id);
 
-  const result = streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
-    system: buildSystemPrompt(
-      user.name || user.email,
-      propertyCount,
-      currentRoute
-    ),
-    messages,
-    tools,
-    maxSteps: 5,
-    onFinish: async ({ text }) => {
-      if (text) {
-        await addMessage(convId, "assistant", text);
-      }
-    },
-  });
+  const savedConvId = convId;
 
-  return result.toDataStreamResponse({
-    headers: { "x-conversation-id": convId },
+  return createUIMessageStreamResponse({
+    headers: { "x-conversation-id": savedConvId },
+    stream: streamText({
+      model: anthropic("claude-sonnet-4-20250514"),
+      system: buildSystemPrompt(
+        user.name || user.email,
+        propertyCount,
+        currentRoute
+      ),
+      messages: await convertToModelMessages(messages),
+      tools,
+      stopWhen: stepCountIs(5),
+      onFinish: async ({ text }) => {
+        if (text) {
+          await addMessage(savedConvId, "assistant", text);
+        }
+      },
+    }).toUIMessageStream(),
   });
 }

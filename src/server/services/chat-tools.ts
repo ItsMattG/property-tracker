@@ -21,7 +21,7 @@ export function getChatTools(userId: string) {
     getPortfolioSummary: tool({
       description:
         "Get a summary of the user's property portfolio including property count, total value, total loans, equity, and income/expense totals for the current financial year.",
-      parameters: z.object({}),
+      inputSchema: z.object({}),
       execute: async () => {
         const userProperties = await db.query.properties.findMany({
           where: eq(properties.userId, userId),
@@ -110,7 +110,7 @@ export function getChatTools(userId: string) {
     listProperties: tool({
       description:
         "List all properties in the portfolio with address, purchase price, and status.",
-      parameters: z.object({}),
+      inputSchema: z.object({}),
       execute: async () => {
         const props = await db.query.properties.findMany({
           where: eq(properties.userId, userId),
@@ -130,7 +130,7 @@ export function getChatTools(userId: string) {
     getPropertyDetails: tool({
       description:
         "Get detailed information about a specific property including financials, loans, and latest valuation. Use listProperties first to get the property ID.",
-      parameters: z.object({
+      inputSchema: z.object({
         propertyId: z.string().uuid().describe("The property ID to look up"),
       }),
       execute: async ({ propertyId }) => {
@@ -183,7 +183,7 @@ export function getChatTools(userId: string) {
     getTransactions: tool({
       description:
         "Search transactions with optional filters. Returns up to 20 results. Use for questions about income, expenses, specific categories, or date ranges.",
-      parameters: z.object({
+      inputSchema: z.object({
         propertyId: z.string().uuid().optional().describe("Filter by property ID"),
         category: z.string().optional().describe("Filter by category (e.g. rental_income, insurance, council_rates, water_rates, repairs_maintenance)"),
         startDate: z.string().optional().describe("Filter from date (YYYY-MM-DD)"),
@@ -224,7 +224,7 @@ export function getChatTools(userId: string) {
     getComplianceStatus: tool({
       description:
         "Get compliance status across the portfolio — overdue items, upcoming due dates, and overall compliance health.",
-      parameters: z.object({
+      inputSchema: z.object({
         propertyId: z.string().uuid().optional().describe("Filter by property ID, or omit for portfolio-wide"),
       }),
       execute: async ({ propertyId }) => {
@@ -278,7 +278,7 @@ export function getChatTools(userId: string) {
 
     getTasks: tool({
       description: "Get the user's tasks, optionally filtered by status or property.",
-      parameters: z.object({
+      inputSchema: z.object({
         status: z
           .enum(["todo", "in_progress", "done"])
           .optional()
@@ -317,7 +317,7 @@ export function getChatTools(userId: string) {
 
     getLoans: tool({
       description: "Get loan details across the portfolio or for a specific property.",
-      parameters: z.object({
+      inputSchema: z.object({
         propertyId: z.string().uuid().optional().describe("Filter by property"),
       }),
       execute: async ({ propertyId }) => {
