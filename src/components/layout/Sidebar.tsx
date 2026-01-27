@@ -29,6 +29,7 @@ import {
   Compass,
   MessageSquarePlus,
   Bug,
+  Mail,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
@@ -53,6 +54,7 @@ const navItems = [
   { href: "/loans", label: "Loans", icon: Wallet },
   { href: "/loans/compare", label: "Compare Loans", icon: Scale },
   { href: "/export", label: "Export", icon: FileDown },
+  { href: "/emails", label: "Emails", icon: Mail },
 ];
 
 const settingsItems = [
