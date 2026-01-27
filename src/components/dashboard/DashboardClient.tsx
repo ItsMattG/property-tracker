@@ -13,6 +13,7 @@ import { ClimateRiskSummary } from "@/components/climate-risk";
 import { SavingsWidget } from "@/components/benchmarking";
 import { TaxPositionCard } from "@/components/tax-position/TaxPositionCard";
 import { TopPerformerMatchesWidget } from "@/components/similar-properties";
+import { useTour } from "@/hooks/useTour";
 
 interface DashboardStats {
   propertyCount: number;
@@ -77,6 +78,12 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
 
   const showWizard = onboarding?.showWizard && !wizardClosed;
   const showChecklist = onboarding?.showChecklist;
+
+  // Auto-start dashboard tour after wizard is dismissed
+  useTour({
+    tourId: "dashboard",
+    autoStart: !showWizard,
+  });
 
   return (
     <div className="space-y-6">

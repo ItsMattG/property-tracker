@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { ArrowLeftRight, List, Calendar } from "lucide-react";
 import type { Category, TransactionFilterInput } from "@/types/category";
+import { useTour } from "@/hooks/useTour";
 
 type ViewMode = "transactions" | "reconciliation";
 
@@ -20,6 +21,7 @@ export default function TransactionsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("transactions");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<TransactionFilterInput>({});
+  useTour({ tourId: "transactions" });
 
   const offset = (page - 1) * PAGE_SIZE;
 

@@ -6,9 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, Landmark, Shield, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTour } from "@/hooks/useTour";
 
 export default function BankingConnectPage() {
   const [isConnecting, setIsConnecting] = useState(false);
+  useTour({ tourId: "banking" });
 
   const handleConnect = async () => {
     setIsConnecting(true);
