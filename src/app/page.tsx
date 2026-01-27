@@ -21,16 +21,21 @@ import { FaqSection } from "@/components/landing/FaqSection";
 export const revalidate = 3600; // Revalidate every hour
 
 export default async function HomePage() {
-  // Fetch live stats for social proof
-  const [userCountResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(users);
-  const [propertyCountResult] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(properties);
-
-  const userCount = userCountResult?.count ?? 0;
-  const propertyCount = propertyCountResult?.count ?? 0;
+  // Fetch live stats for social proof (gracefully handle missing DB during build)
+  let userCount = 0;
+  let propertyCount = 0;
+  try {
+    const [userCountResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users);
+    const [propertyCountResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(properties);
+    userCount = userCountResult?.count ?? 0;
+    propertyCount = propertyCountResult?.count ?? 0;
+  } catch {
+    // DB unavailable during build — use fallback zeros
+  }
 
   return (
     <div className="min-h-screen bg-background">
