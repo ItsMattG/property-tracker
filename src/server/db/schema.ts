@@ -14,6 +14,7 @@ import {
   varchar,
   customType,
   serial,
+  real,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -435,6 +436,18 @@ export const blogCategoryEnum = pgEnum("blog_category", [
   "advanced",
 ]);
 
+export const emailStatusEnum = pgEnum("email_status", [
+  "quarantined",
+  "approved",
+  "rejected",
+]);
+
+export const invoiceMatchStatusEnum = pgEnum("invoice_match_status", [
+  "pending",
+  "accepted",
+  "rejected",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -682,6 +695,7 @@ export const properties = pgTable("properties", {
   status: propertyStatusEnum("status").default("active").notNull(),
   soldAt: date("sold_at"),
   climateRisk: jsonb("climate_risk").$type<import("@/types/climate-risk").ClimateRisk>(),
+  forwardingAddress: text("forwarding_address").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -983,6 +997,76 @@ export const propertyManagerSyncLogs = pgTable("property_manager_sync_logs", {
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
 });
+
+export const propertyEmails = pgTable("property_emails", {
+  id: serial("id").primaryKey(),
+  propertyId: uuid("property_id")
+    .references(() => properties.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  fromAddress: text("from_address").notNull(),
+  fromName: text("from_name"),
+  subject: text("subject").notNull(),
+  bodyText: text("body_text"),
+  bodyHtml: text("body_html"),
+  messageId: text("message_id").unique(),
+  inReplyTo: text("in_reply_to"),
+  threadId: text("thread_id"),
+  status: emailStatusEnum("status").default("approved").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  receivedAt: timestamp("received_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const propertyEmailAttachments = pgTable("property_email_attachments", {
+  id: serial("id").primaryKey(),
+  emailId: integer("email_id")
+    .references(() => propertyEmails.id, { onDelete: "cascade" })
+    .notNull(),
+  filename: text("filename").notNull(),
+  contentType: text("content_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  storagePath: text("storage_path").notNull(),
+  documentId: uuid("document_id").references(() => documents.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const propertyEmailInvoiceMatches = pgTable("property_email_invoice_matches", {
+  id: serial("id").primaryKey(),
+  emailId: integer("email_id")
+    .references(() => propertyEmails.id, { onDelete: "cascade" })
+    .notNull(),
+  transactionId: uuid("transaction_id")
+    .references(() => transactions.id, { onDelete: "cascade" })
+    .notNull(),
+  confidence: real("confidence").notNull(),
+  amountDetected: decimal("amount_detected", { precision: 12, scale: 2 }).notNull(),
+  status: invoiceMatchStatusEnum("status").default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const propertyEmailSenders = pgTable(
+  "property_email_senders",
+  {
+    id: serial("id").primaryKey(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+    emailPattern: text("email_pattern").notNull(),
+    label: text("label"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("property_email_senders_property_pattern_idx").on(
+      table.propertyId,
+      table.emailPattern
+    ),
+  ]
+);
 
 export const recurringTransactions = pgTable(
   "recurring_transactions",
@@ -2766,3 +2850,12 @@ export type NewUserChangelogView = typeof userChangelogViews.$inferInsert;
 // Blog Types
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type NewBlogPost = typeof blogPosts.$inferInsert;
+// Email Types
+export type PropertyEmail = typeof propertyEmails.$inferSelect;
+export type NewPropertyEmail = typeof propertyEmails.$inferInsert;
+export type PropertyEmailAttachment = typeof propertyEmailAttachments.$inferSelect;
+export type NewPropertyEmailAttachment = typeof propertyEmailAttachments.$inferInsert;
+export type PropertyEmailInvoiceMatch = typeof propertyEmailInvoiceMatches.$inferSelect;
+export type NewPropertyEmailInvoiceMatch = typeof propertyEmailInvoiceMatches.$inferInsert;
+export type PropertyEmailSender = typeof propertyEmailSenders.$inferSelect;
+export type NewPropertyEmailSender = typeof propertyEmailSenders.$inferInsert;
