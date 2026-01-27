@@ -17,7 +17,7 @@ import {
   generateTitle,
 } from "@/server/services/chat";
 
-function buildSystemPrompt(userName: string, propertyCount: number, currentRoute: string) {
+export function buildSystemPrompt(userName: string, propertyCount: number, currentRoute: string) {
   const now = new Date();
   const fyYear = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
 
