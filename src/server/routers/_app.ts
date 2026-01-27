@@ -37,6 +37,7 @@ import { taxPositionRouter } from "./taxPosition";
 import { similarPropertiesRouter } from "./similarProperties";
 import { feedbackRouter } from "./feedback";
 import { changelogRouter } from "./changelog";
+import { blogRouter } from "./blog";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -77,6 +78,7 @@ export const appRouter = router({
   similarProperties: similarPropertiesRouter,
   feedback: feedbackRouter,
   changelog: changelogRouter,
+  blog: blogRouter,
 });
 
 export type AppRouter = typeof appRouter;
