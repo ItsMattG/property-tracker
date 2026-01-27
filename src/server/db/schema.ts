@@ -1464,6 +1464,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   bankAccounts: many(bankAccounts),
   transactions: many(transactions),
   entities: many(entities),
+  chatConversations: many(chatConversations),
 }));
 
 export const entitiesRelations = relations(entities, ({ one, many }) => ({
@@ -2763,6 +2764,46 @@ export const tasks = pgTable(
   ]
 );
 
+// Chat AI Assistant
+export const chatMessageRoleEnum = pgEnum("chat_message_role", [
+  "user",
+  "assistant",
+]);
+
+export const chatConversations = pgTable(
+  "chat_conversations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    title: text("title"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("chat_conversations_user_id_idx").on(table.userId),
+  ]
+);
+
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    conversationId: uuid("conversation_id")
+      .references(() => chatConversations.id, { onDelete: "cascade" })
+      .notNull(),
+    role: chatMessageRoleEnum("role").notNull(),
+    content: text("content").notNull(),
+    toolCalls: jsonb("tool_calls"),
+    toolResults: jsonb("tool_results"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("chat_messages_conversation_id_idx").on(table.conversationId),
+  ]
+);
+
 export const tasksRelations = relations(tasks, ({ one }) => ({
   user: one(users, { fields: [tasks.userId], references: [users.id] }),
   assignee: one(users, {
@@ -2777,6 +2818,21 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   entity: one(entities, {
     fields: [tasks.entityId],
     references: [entities.id],
+  }),
+}));
+
+export const chatConversationsRelations = relations(chatConversations, ({ one, many }) => ({
+  user: one(users, {
+    fields: [chatConversations.userId],
+    references: [users.id],
+  }),
+  messages: many(chatMessages),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  conversation: one(chatConversations, {
+    fields: [chatMessages.conversationId],
+    references: [chatConversations.id],
   }),
 }));
 
