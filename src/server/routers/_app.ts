@@ -41,6 +41,7 @@ import { blogRouter } from "./blog";
 import { emailRouter } from "./email";
 import { taskRouter } from "./task";
 import { chatRouter } from "./chat";
+import { mytaxRouter } from "./mytax";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -85,6 +86,7 @@ export const appRouter = router({
   email: emailRouter,
   task: taskRouter,
   chat: chatRouter,
+  mytax: mytaxRouter,
 });
 
 export type AppRouter = typeof appRouter;
