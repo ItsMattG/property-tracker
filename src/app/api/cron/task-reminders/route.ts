@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   try {
     const today = new Date();
     let sentCount = 0;
-    let skippedCount = 0;
+    const skippedCount = 0;
 
     // Get all tasks with due dates and reminder offsets that aren't done
     const tasksWithReminders = await db
