@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const dynamic = "force-dynamic";
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://propertytracker.com.au";
+
 const categoryStyles: Record<string, string> = {
   fundamentals:
     "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -96,6 +98,25 @@ export default async function BlogPage() {
   return (
     <main className="py-12 px-4">
       <div className="container mx-auto max-w-4xl">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Blog",
+              name: "PropertyTracker Blog",
+              description:
+                "Property investment insights for Australian investors",
+              url: `${BASE_URL}/blog`,
+              publisher: {
+                "@type": "Organization",
+                name: "PropertyTracker",
+                url: BASE_URL,
+              },
+            }),
+          }}
+        />
+
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Blog</h1>
           <p className="text-xl text-muted-foreground">
