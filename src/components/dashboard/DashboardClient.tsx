@@ -6,7 +6,7 @@ import { Building2, ArrowLeftRight, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import Link from "next/link";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
-import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { EnhancedWizard } from "@/components/onboarding/EnhancedWizard";
 import { SetupChecklist } from "@/components/onboarding/SetupChecklist";
 import { PushPermissionBanner } from "@/components/notifications/PushPermissionBanner";
 import { ClimateRiskSummary } from "@/components/climate-risk";
@@ -81,7 +81,7 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
   return (
     <div className="space-y-6">
       {showWizard && (
-        <OnboardingWizard onClose={() => setWizardClosed(true)} />
+        <EnhancedWizard onClose={() => setWizardClosed(true)} />
       )}
 
       {alerts && alerts.length > 0 && (
