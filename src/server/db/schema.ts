@@ -13,8 +13,9 @@ import {
   integer,
   varchar,
   customType,
+  serial,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // Custom type for pgvector
 const vector = customType<{ data: number[]; driverData: string }>({
@@ -424,6 +425,14 @@ export const changelogCategoryEnum = pgEnum("changelog_category", [
   "feature",
   "improvement",
   "fix",
+]);
+
+export const blogCategoryEnum = pgEnum("blog_category", [
+  "fundamentals",
+  "strategy",
+  "finance",
+  "tax",
+  "advanced",
 ]);
 
 // Tables
@@ -1333,6 +1342,20 @@ export const changelogEntries = pgTable("changelog_entries", {
 export const userChangelogViews = pgTable("user_changelog_views", {
   userId: text("user_id").primaryKey(),
   lastViewedAt: timestamp("last_viewed_at").notNull(),
+});
+
+// Blog posts (synced from markdown files)
+export const blogPosts = pgTable("blog_posts", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").unique().notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  content: text("content").notNull(),
+  category: blogCategoryEnum("category").notNull(),
+  tags: text("tags").array().notNull().default(sql`'{}'`),
+  author: text("author").notNull(),
+  publishedAt: date("published_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Relations
@@ -2740,3 +2763,6 @@ export type ChangelogEntry = typeof changelogEntries.$inferSelect;
 export type NewChangelogEntry = typeof changelogEntries.$inferInsert;
 export type UserChangelogView = typeof userChangelogViews.$inferSelect;
 export type NewUserChangelogView = typeof userChangelogViews.$inferInsert;
+// Blog Types
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type NewBlogPost = typeof blogPosts.$inferInsert;
