@@ -38,6 +38,7 @@ import { similarPropertiesRouter } from "./similarProperties";
 import { feedbackRouter } from "./feedback";
 import { changelogRouter } from "./changelog";
 import { blogRouter } from "./blog";
+import { emailRouter } from "./email";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -79,6 +80,7 @@ export const appRouter = router({
   feedback: feedbackRouter,
   changelog: changelogRouter,
   blog: blogRouter,
+  email: emailRouter,
 });
 
 export type AppRouter = typeof appRouter;
