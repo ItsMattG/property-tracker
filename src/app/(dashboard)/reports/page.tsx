@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, PieChart, Download, TrendingUp, Calculator } from "lucide-react";
+import { FileText, PieChart, Download, TrendingUp, Calculator, ClipboardList } from "lucide-react";
 
 const reportTypes = [
   {
@@ -34,6 +34,12 @@ const reportTypes = [
     description: "12-month projections with scenario modeling",
     icon: TrendingUp,
     href: "/reports/forecast",
+  },
+  {
+    title: "MyTax Export",
+    description: "ATO MyTax-aligned rental property report with interactive checklist",
+    icon: ClipboardList,
+    href: "/reports/mytax",
   },
 ];
 
