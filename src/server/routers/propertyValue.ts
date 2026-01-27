@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { propertyValues, properties } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
-import { getValuationProvider } from "../services/valuation";
+import { propertyValues, properties, loans } from "../db/schema";
+import { eq, and, desc, asc, sql } from "drizzle-orm";
+import { getValuationProvider, MockValuationProvider } from "../services/valuation";
 
 export const propertyValueRouter = router({
   list: protectedProcedure
@@ -97,7 +97,13 @@ export const propertyValueRouter = router({
       // Get valuation from provider
       const provider = getValuationProvider();
       const fullAddress = `${property.address}, ${property.suburb} ${property.state} ${property.postcode}`;
-      const result = await provider.getValuation(fullAddress, "house");
+      const result = await provider.getValuation({
+        propertyId: property.id,
+        purchasePrice: Number(property.purchasePrice),
+        purchaseDate: property.purchaseDate,
+        address: fullAddress,
+        propertyType: "house",
+      });
 
       if (!result) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to get valuation from provider" });
@@ -191,5 +197,172 @@ export const propertyValueRouter = router({
         .where(eq(propertyValues.id, input.id));
 
       return { success: true };
+    }),
+
+  getValuationHistory: protectedProcedure
+    .input(z.object({ propertyId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const property = await ctx.db.query.properties.findFirst({
+        where: and(
+          eq(properties.id, input.propertyId),
+          eq(properties.userId, ctx.portfolio.ownerId)
+        ),
+      });
+
+      if (!property) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
+      }
+
+      return ctx.db.query.propertyValues.findMany({
+        where: eq(propertyValues.propertyId, input.propertyId),
+        orderBy: [asc(propertyValues.valueDate)],
+      });
+    }),
+
+  getCapitalGrowthStats: protectedProcedure
+    .input(z.object({ propertyId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const property = await ctx.db.query.properties.findFirst({
+        where: and(
+          eq(properties.id, input.propertyId),
+          eq(properties.userId, ctx.portfolio.ownerId)
+        ),
+      });
+
+      if (!property) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
+      }
+
+      const latestValuation = await ctx.db.query.propertyValues.findFirst({
+        where: eq(propertyValues.propertyId, input.propertyId),
+        orderBy: [desc(propertyValues.valueDate)],
+      });
+
+      const previousValuation = await ctx.db.query.propertyValues.findFirst({
+        where: eq(propertyValues.propertyId, input.propertyId),
+        orderBy: [desc(propertyValues.valueDate)],
+        offset: 1,
+      });
+
+      if (!latestValuation) {
+        return null;
+      }
+
+      const currentValue = Number(latestValuation.estimatedValue);
+      const purchasePrice = Number(property.purchasePrice);
+      const totalGain = currentValue - purchasePrice;
+      const totalGainPercent = purchasePrice > 0 ? (totalGain / purchasePrice) * 100 : 0;
+
+      // Annualized growth rate
+      const purchaseDate = new Date(property.purchaseDate);
+      const now = new Date();
+      const yearsHeld = (now.getTime() - purchaseDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+      const annualizedGrowth = yearsHeld > 0
+        ? (Math.pow(currentValue / purchasePrice, 1 / yearsHeld) - 1) * 100
+        : 0;
+
+      // Month-over-month change
+      const previousValue = previousValuation ? Number(previousValuation.estimatedValue) : null;
+      const monthlyChange = previousValue ? currentValue - previousValue : null;
+      const monthlyChangePercent = previousValue && previousValue > 0
+        ? ((currentValue - previousValue) / previousValue) * 100
+        : null;
+
+      // Equity and LVR (if loan data exists)
+      const loanResult = await ctx.db
+        .select({ total: sql<string>`COALESCE(SUM(current_balance), 0)` })
+        .from(loans)
+        .where(eq(loans.propertyId, input.propertyId));
+
+      const totalLoanBalance = Number(loanResult[0]?.total || 0);
+      const equity = currentValue - totalLoanBalance;
+      const lvr = currentValue > 0 ? (totalLoanBalance / currentValue) * 100 : 0;
+      const hasLoans = totalLoanBalance > 0;
+
+      return {
+        currentValue,
+        purchasePrice,
+        totalGain,
+        totalGainPercent: Math.round(totalGainPercent * 100) / 100,
+        annualizedGrowth: Math.round(annualizedGrowth * 100) / 100,
+        monthlyChange,
+        monthlyChangePercent: monthlyChangePercent !== null
+          ? Math.round(monthlyChangePercent * 100) / 100
+          : null,
+        equity,
+        lvr: Math.round(lvr * 100) / 100,
+        hasLoans,
+        lastUpdated: latestValuation.valueDate,
+        source: latestValuation.source,
+        confidenceLow: latestValuation.confidenceLow ? Number(latestValuation.confidenceLow) : null,
+        confidenceHigh: latestValuation.confidenceHigh ? Number(latestValuation.confidenceHigh) : null,
+      };
+    }),
+
+  triggerBackfill: writeProcedure
+    .input(z.object({ propertyId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const property = await ctx.db.query.properties.findFirst({
+        where: and(
+          eq(properties.id, input.propertyId),
+          eq(properties.userId, ctx.portfolio.ownerId)
+        ),
+      });
+
+      if (!property) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
+      }
+
+      // Check if valuations already exist
+      const existingCount = await ctx.db.query.propertyValues.findMany({
+        where: eq(propertyValues.propertyId, input.propertyId),
+        columns: { id: true },
+      });
+
+      if (existingCount.length > 2) {
+        return { backfilled: 0, message: "History already exists" };
+      }
+
+      const provider = getValuationProvider();
+      if (!("generateHistory" in provider)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Provider does not support backfill" });
+      }
+
+      const fullAddress = `${property.address}, ${property.suburb} ${property.state} ${property.postcode}`;
+      const history = await (provider as MockValuationProvider).generateHistory({
+        propertyId: property.id,
+        purchasePrice: Number(property.purchasePrice),
+        purchaseDate: property.purchaseDate,
+        address: fullAddress,
+        propertyType: "house",
+      });
+
+      // Get existing value dates to avoid duplicates
+      const existingDates = new Set(existingCount.length > 0
+        ? (await ctx.db.query.propertyValues.findMany({
+            where: eq(propertyValues.propertyId, input.propertyId),
+            columns: { valueDate: true },
+          })).map(v => v.valueDate)
+        : []
+      );
+
+      const toInsert = history.filter(h => !existingDates.has(h.valueDate));
+
+      if (toInsert.length > 0) {
+        await ctx.db.insert(propertyValues).values(
+          toInsert.map(h => ({
+            propertyId: input.propertyId,
+            userId: ctx.portfolio.ownerId,
+            estimatedValue: h.estimatedValue.toString(),
+            confidenceLow: h.confidenceLow.toString(),
+            confidenceHigh: h.confidenceHigh.toString(),
+            valueDate: h.valueDate,
+            source: "mock" as const,
+            apiResponseId: `mock-backfill-${h.valueDate}`,
+          }))
+        );
+      }
+
+      return { backfilled: toInsert.length };
     }),
 });
