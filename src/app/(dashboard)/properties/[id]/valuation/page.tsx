@@ -60,7 +60,6 @@ export default function PropertyValuationPage() {
     );
   }
 
-  const hasHistory = history && history.length > 0;
   const showBackfill = !historyLoading && (!history || history.length <= 2);
 
   return (

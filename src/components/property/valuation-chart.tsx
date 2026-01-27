@@ -112,16 +112,6 @@ export function ValuationChart({ history, purchasePrice, isLoading }: ValuationC
                 domain={["auto", "auto"]}
               />
               <Tooltip
-                formatter={(value: number, name: string) => {
-                  if (name === "Confidence Range") return "";
-                  return [formatCurrency(value), name];
-                }}
-                labelFormatter={(label) => label}
-                contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
-                }}
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const data = payload[0]?.payload;
