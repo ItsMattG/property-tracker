@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { blogPosts } from "@/server/db/schema";
+import { blogPosts, type BlogPost } from "@/server/db/schema";
 import { desc, lte } from "drizzle-orm";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -38,12 +38,17 @@ function estimateReadingTime(content: string): string {
 export default async function BlogPage() {
   const now = new Date().toISOString().split("T")[0];
 
-  // Fetch all published posts
-  const allPosts = await db
-    .select()
-    .from(blogPosts)
-    .where(lte(blogPosts.publishedAt, now))
-    .orderBy(desc(blogPosts.publishedAt));
+  // Fetch all published posts (gracefully handle missing DB during build)
+  let allPosts: BlogPost[] = [];
+  try {
+    allPosts = await db
+      .select()
+      .from(blogPosts)
+      .where(lte(blogPosts.publishedAt, now))
+      .orderBy(desc(blogPosts.publishedAt));
+  } catch {
+    // DB unavailable during build
+  }
 
   const fundamentalsPosts = allPosts.filter(
     (p) => p.category === "fundamentals"

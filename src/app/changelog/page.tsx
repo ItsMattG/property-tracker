@@ -9,11 +9,16 @@ export const dynamic = "force-dynamic";
 async function getEntries(category?: "feature" | "improvement" | "fix") {
   const conditions = category ? eq(changelogEntries.category, category) : undefined;
 
-  return db
-    .select()
-    .from(changelogEntries)
-    .where(conditions)
-    .orderBy(desc(changelogEntries.publishedAt));
+  try {
+    return await db
+      .select()
+      .from(changelogEntries)
+      .where(conditions)
+      .orderBy(desc(changelogEntries.publishedAt));
+  } catch {
+    // DB unavailable during build
+    return [];
+  }
 }
 
 export default async function ChangelogPage() {
