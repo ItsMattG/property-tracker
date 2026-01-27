@@ -3,11 +3,12 @@ import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const metadata = {
-  title: "Changelog - PropertyTracker",
-  description: "See what's new in PropertyTracker. Latest features, improvements, and fixes.",
+  title: "Blog - PropertyTracker",
+  description:
+    "Property investment insights for Australian investors. Learn about LVR, gearing, rental yields, and portfolio strategy.",
 };
 
-export default function ChangelogLayout({
+export default function BlogLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -26,6 +27,9 @@ export default function ChangelogLayout({
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
               <Link href="/blog">Blog</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/changelog">Changelog</Link>
             </Button>
             <Button variant="ghost" asChild>
               <Link href="/sign-in">Sign In</Link>
@@ -51,6 +55,9 @@ export default function ChangelogLayout({
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link href="/blog" className="hover:text-foreground">
               Blog
+            </Link>
+            <Link href="/changelog" className="hover:text-foreground">
+              Changelog
             </Link>
             <Link href="/privacy" className="hover:text-foreground">
               Privacy Policy

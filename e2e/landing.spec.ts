@@ -94,6 +94,7 @@ test.describe("Landing Page", () => {
   test("should display footer with links", async ({ page }) => {
     await page.goto("/");
 
+    await expect(page.getByRole("link", { name: /blog/i }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /privacy policy/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /terms of service/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /changelog/i })).toBeVisible();
