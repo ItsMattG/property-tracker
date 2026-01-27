@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, User } from "lucide-react";
+import { EntityTasksSection } from "@/components/tasks/EntityTasksSection";
 
 export default function MembersPage() {
   const params = useParams();
@@ -186,6 +187,8 @@ export default function MembersPage() {
           ))}
         </div>
       )}
+
+      <EntityTasksSection entityId={entityId} />
     </div>
   );
 }
