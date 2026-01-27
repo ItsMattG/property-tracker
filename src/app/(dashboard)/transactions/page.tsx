@@ -208,11 +208,13 @@ export default function TransactionsPage() {
 
       {viewMode === "transactions" ? (
         <>
-          <TransactionFilters
-            properties={properties ?? []}
-            filters={filters}
-            onFiltersChange={handleFiltersChange}
-          />
+          <div data-tour="filters">
+            <TransactionFilters
+              properties={properties ?? []}
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+            />
+          </div>
 
           {transactions && transactions.transactions.length > 0 ? (
         <>

@@ -17,7 +17,7 @@ export function Header() {
         <div>
           <h1 className="text-lg font-semibold">Dashboard</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4" data-tour="quick-actions">
           <HelpButton />
           <AlertBadge />
           <WhatsNewButton onClick={() => setDrawerOpen(true)} />

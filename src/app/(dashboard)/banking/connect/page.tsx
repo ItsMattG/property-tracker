@@ -69,7 +69,7 @@ export default function BankingConnectPage() {
             </div>
           </div>
 
-          <div className="border-t pt-6">
+          <div className="border-t pt-6" data-tour="linked-accounts">
             <h4 className="font-medium mb-3">Supported banks</h4>
             <p className="text-sm text-muted-foreground mb-4">
               All major Australian banks are supported, including:
@@ -97,6 +97,7 @@ export default function BankingConnectPage() {
           </div>
 
           <Button
+            data-tour="basiq-connect"
             onClick={handleConnect}
             className="w-full"
             size="lg"
@@ -105,7 +106,7 @@ export default function BankingConnectPage() {
             {isConnecting ? "Connecting..." : "Connect Bank Account"}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-xs text-center text-muted-foreground" data-tour="sender-allowlist">
             By connecting your account, you agree to our{" "}
             <Link href="/terms" className="underline">
               Terms of Service

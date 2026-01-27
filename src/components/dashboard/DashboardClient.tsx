@@ -103,10 +103,12 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
       <PushPermissionBanner />
 
       {showChecklist && onboarding?.progress && (
-        <SetupChecklist progress={onboarding.progress} />
+        <div data-tour="setup-checklist">
+          <SetupChecklist progress={onboarding.progress} />
+        </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div data-tour="portfolio-summary" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Link href="/properties">
           <Card className="hover:border-primary transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
