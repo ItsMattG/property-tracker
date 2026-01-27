@@ -7,9 +7,11 @@ import { trpc } from "@/lib/trpc/client";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useTour } from "@/hooks/useTour";
 
 export default function NewPropertyPage() {
   const router = useRouter();
+  useTour({ tourId: "add-property" });
   const createProperty = trpc.property.create.useMutation({
     onSuccess: () => {
       router.push("/properties");

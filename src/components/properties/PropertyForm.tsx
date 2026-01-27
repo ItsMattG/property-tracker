@@ -67,7 +67,7 @@ export function PropertyForm({
           control={form.control}
           name="address"
           render={({ field }) => (
-            <FormItem>
+            <FormItem data-tour="address-field">
               <FormLabel>Street Address</FormLabel>
               <FormControl>
                 <Input placeholder="123 Main Street" {...field} />
@@ -137,7 +137,7 @@ export function PropertyForm({
             control={form.control}
             name="entityName"
             render={({ field }) => (
-              <FormItem>
+              <FormItem data-tour="property-type">
                 <FormLabel>Entity</FormLabel>
                 <FormControl>
                   <Input placeholder="Personal" {...field} />
@@ -148,7 +148,7 @@ export function PropertyForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4" data-tour="purchase-details">
           <FormField
             control={form.control}
             name="purchasePrice"

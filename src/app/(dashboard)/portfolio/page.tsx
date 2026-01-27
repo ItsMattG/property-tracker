@@ -12,6 +12,7 @@ import { ComparisonTable } from "@/components/portfolio/ComparisonTable";
 import { AggregatedView } from "@/components/portfolio/AggregatedView";
 import { trpc } from "@/lib/trpc/client";
 import { Plus, Building2 } from "lucide-react";
+import { useTour } from "@/hooks/useTour";
 
 type ViewMode = "cards" | "table" | "aggregate";
 type Period = "monthly" | "quarterly" | "annual";
@@ -20,6 +21,7 @@ type SortBy = "cashFlow" | "equity" | "lvr" | "alphabetical";
 function PortfolioContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  useTour({ tourId: "portfolio" });
 
   const viewMode = (searchParams?.get("view") as ViewMode) || "cards";
   const period = (searchParams?.get("period") as Period) || "monthly";
@@ -115,11 +117,13 @@ function PortfolioContent() {
 
       {/* Add equity summary card */}
       {summary && (
-        <PortfolioEquityCard
-          totalValue={summary.totalValue}
-          totalLoans={summary.totalDebt}
-          propertyCount={metrics?.length ?? 0}
-        />
+        <div data-tour="portfolio-summary">
+          <PortfolioEquityCard
+            totalValue={summary.totalValue}
+            totalLoans={summary.totalDebt}
+            propertyCount={metrics?.length ?? 0}
+          />
+        </div>
       )}
 
       <PortfolioToolbar
@@ -138,7 +142,7 @@ function PortfolioContent() {
       {viewMode === "cards" && (
         <>
           {metrics && metrics.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-tour="property-cards">
               {metrics.map((property) => (
                 <PortfolioCard
                   key={property.propertyId}

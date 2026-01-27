@@ -2022,6 +2022,8 @@ export const userOnboarding = pgTable("user_onboarding", {
   wizardDismissedAt: timestamp("wizard_dismissed_at"),
   checklistDismissedAt: timestamp("checklist_dismissed_at"),
   completedSteps: text("completed_steps").array().default([]).notNull(),
+  completedTours: text("completed_tours").array().default([]).notNull(),
+  toursDisabled: boolean("tours_disabled").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

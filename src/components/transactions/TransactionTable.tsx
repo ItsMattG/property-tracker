@@ -103,9 +103,9 @@ export function TransactionTable({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-tour="transaction-list">
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-4 p-4 bg-primary/10 rounded-lg">
+        <div className="flex items-center gap-4 p-4 bg-primary/10 rounded-lg" data-tour="bulk-actions">
           <span className="text-sm font-medium">
             {selectedIds.size} selected
           </span>
@@ -135,7 +135,7 @@ export function TransactionTable({
               <TableHead>Date</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Amount</TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead data-tour="category-dropdown">Category</TableHead>
               <TableHead>Property</TableHead>
               <TableHead className="w-20">Verified</TableHead>
               <TableHead className="w-12"></TableHead>

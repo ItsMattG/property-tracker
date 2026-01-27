@@ -103,7 +103,7 @@ export function Sidebar() {
         )}
       </div>
 
-      <nav className="space-y-1">
+      <nav className="space-y-1" data-tour="sidebar-nav">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;

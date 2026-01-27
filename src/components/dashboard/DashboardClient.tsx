@@ -6,13 +6,14 @@ import { Building2, ArrowLeftRight, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import Link from "next/link";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
-import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { EnhancedWizard } from "@/components/onboarding/EnhancedWizard";
 import { SetupChecklist } from "@/components/onboarding/SetupChecklist";
 import { PushPermissionBanner } from "@/components/notifications/PushPermissionBanner";
 import { ClimateRiskSummary } from "@/components/climate-risk";
 import { SavingsWidget } from "@/components/benchmarking";
 import { TaxPositionCard } from "@/components/tax-position/TaxPositionCard";
 import { TopPerformerMatchesWidget } from "@/components/similar-properties";
+import { useTour } from "@/hooks/useTour";
 
 interface DashboardStats {
   propertyCount: number;
@@ -78,10 +79,16 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
   const showWizard = onboarding?.showWizard && !wizardClosed;
   const showChecklist = onboarding?.showChecklist;
 
+  // Auto-start dashboard tour after wizard is dismissed
+  useTour({
+    tourId: "dashboard",
+    autoStart: !showWizard,
+  });
+
   return (
     <div className="space-y-6">
       {showWizard && (
-        <OnboardingWizard onClose={() => setWizardClosed(true)} />
+        <EnhancedWizard onClose={() => setWizardClosed(true)} />
       )}
 
       {alerts && alerts.length > 0 && (
@@ -103,10 +110,12 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
       <PushPermissionBanner />
 
       {showChecklist && onboarding?.progress && (
-        <SetupChecklist progress={onboarding.progress} />
+        <div data-tour="setup-checklist">
+          <SetupChecklist progress={onboarding.progress} />
+        </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div data-tour="portfolio-summary" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Link href="/properties">
           <Card className="hover:border-primary transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between pb-2">

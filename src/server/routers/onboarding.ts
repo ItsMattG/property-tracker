@@ -77,6 +77,8 @@ export const onboardingRouter = router({
       showWizard: !onboarding.wizardDismissedAt && counts.propertyCount === 0,
       showChecklist:
         !onboarding.checklistDismissedAt && progress.completed < progress.total,
+      completedTours: onboarding.completedTours || [],
+      toursDisabled: onboarding.toursDisabled ?? false,
     };
   }),
 
@@ -131,4 +133,43 @@ export const onboardingRouter = router({
 
       return updated;
     }),
+
+  completeTour: writeProcedure
+    .input(z.object({ tourId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const onboarding = await ctx.db.query.userOnboarding.findFirst({
+        where: eq(userOnboarding.userId, ctx.portfolio.ownerId),
+      });
+
+      if (!onboarding) return null;
+
+      const currentTours = onboarding.completedTours || [];
+      if (currentTours.includes(input.tourId)) {
+        return onboarding;
+      }
+
+      const [updated] = await ctx.db
+        .update(userOnboarding)
+        .set({
+          completedTours: [...currentTours, input.tourId],
+          updatedAt: new Date(),
+        })
+        .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
+        .returning();
+
+      return updated;
+    }),
+
+  disableTours: writeProcedure.mutation(async ({ ctx }) => {
+    const [updated] = await ctx.db
+      .update(userOnboarding)
+      .set({
+        toursDisabled: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
+      .returning();
+
+    return updated;
+  }),
 });
