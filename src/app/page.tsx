@@ -45,6 +45,9 @@ export default async function HomePage() {
           </Link>
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
+              <Link href="/blog">Blog</Link>
+            </Button>
+            <Button variant="ghost" asChild>
               <Link href="/sign-in">Sign In</Link>
             </Button>
             <Button asChild>
@@ -389,6 +392,9 @@ export default async function HomePage() {
             </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <Link href="/blog" className="hover:text-foreground">
+              Blog
+            </Link>
             <Link href="/changelog" className="hover:text-foreground">
               Changelog
             </Link>
