@@ -5,15 +5,20 @@ export interface ValuationResult {
   source: string;
 }
 
+export interface ValuationInput {
+  propertyId: string;
+  purchasePrice: number;
+  purchaseDate: string; // ISO date string e.g. "2020-01-15"
+  address: string;
+  propertyType: string;
+}
+
 export interface ValuationProvider {
-  getValuation(
-    address: string,
-    propertyType: string
-  ): Promise<ValuationResult | null>;
+  getValuation(input: ValuationInput, targetDate?: Date): Promise<ValuationResult | null>;
   getName(): string;
 }
 
-// Simple hash function for deterministic values
+// Deterministic hash for reproducible noise
 function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -24,20 +29,10 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
-// Detect capital city from address
-function isCapitalCity(address: string): boolean {
-  const capitalCities = [
-    "sydney",
-    "melbourne",
-    "brisbane",
-    "perth",
-    "adelaide",
-    "hobart",
-    "darwin",
-    "canberra",
-  ];
-  const lowerAddress = address.toLowerCase();
-  return capitalCities.some((city) => lowerAddress.includes(city));
+// Returns a deterministic noise value in range [-0.002, +0.002] for a given property+month
+function monthlyNoise(propertyId: string, monthIndex: number): number {
+  const hash = hashString(`${propertyId}-month-${monthIndex}`);
+  return ((hash % 401) - 200) / 100000; // range: -0.002 to +0.002
 }
 
 export class MockValuationProvider implements ValuationProvider {
@@ -46,32 +41,58 @@ export class MockValuationProvider implements ValuationProvider {
   }
 
   async getValuation(
-    address: string,
-    propertyType: string
+    input: ValuationInput,
+    targetDate?: Date
   ): Promise<ValuationResult | null> {
-    // Simulate occasional failures
-    if (address.includes("FAIL")) {
-      return null;
+    const { propertyId, purchasePrice, purchaseDate } = input;
+
+    if (purchasePrice <= 0) return null;
+
+    const start = new Date(purchaseDate);
+    const end = targetDate ?? new Date();
+    const monthsElapsed = (end.getFullYear() - start.getFullYear()) * 12
+      + (end.getMonth() - start.getMonth());
+
+    if (monthsElapsed < 0) return null;
+
+    const annualGrowthRate = 0.06;
+    const monthlyBase = annualGrowthRate / 12;
+
+    // Compound monthly with deterministic noise
+    let value = purchasePrice;
+    for (let i = 1; i <= monthsElapsed; i++) {
+      const noise = monthlyNoise(propertyId, i);
+      value *= (1 + monthlyBase + noise);
     }
 
-    // Base value depends on location
-    const baseValue = isCapitalCity(address) ? 900000 : 450000;
+    const estimatedValue = Math.round(value);
+    const confidenceLow = Math.round(value * 0.92);
+    const confidenceHigh = Math.round(value * 1.08);
 
-    // Use hash for deterministic variation (±20%)
-    const hash = hashString(address + propertyType);
-    const variation = (hash % 40) - 20; // -20 to +19
-    const estimatedValue = Math.round(baseValue * (1 + variation / 100));
+    return { estimatedValue, confidenceLow, confidenceHigh, source: "mock" };
+  }
 
-    // Confidence range ±7.5%
-    const confidenceLow = Math.round(estimatedValue * 0.925);
-    const confidenceHigh = Math.round(estimatedValue * 1.075);
+  // Generate monthly valuations from purchase date to today
+  async generateHistory(
+    input: ValuationInput
+  ): Promise<Array<ValuationResult & { valueDate: string }>> {
+    const { purchaseDate } = input;
+    const start = new Date(purchaseDate);
+    const now = new Date();
+    const results: Array<ValuationResult & { valueDate: string }> = [];
 
-    return {
-      estimatedValue,
-      confidenceLow,
-      confidenceHigh,
-      source: "mock",
-    };
+    // Start from purchase month
+    const current = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (current <= now) {
+      const result = await this.getValuation(input, current);
+      if (result) {
+        const valueDate = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-01`;
+        results.push({ ...result, valueDate });
+      }
+      current.setMonth(current.getMonth() + 1);
+    }
+
+    return results;
   }
 }
 
