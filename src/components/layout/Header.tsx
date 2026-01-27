@@ -6,6 +6,7 @@ import { QuickAddButton } from "./QuickAddButton";
 import { AlertBadge } from "@/components/alerts/AlertBadge";
 import { WhatsNewButton } from "@/components/changelog/WhatsNewButton";
 import { WhatsNewDrawer } from "@/components/changelog/WhatsNewDrawer";
+import { HelpButton } from "@/components/onboarding/HelpButton";
 
 export function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -17,6 +18,7 @@ export function Header() {
           <h1 className="text-lg font-semibold">Dashboard</h1>
         </div>
         <div className="flex items-center gap-4">
+          <HelpButton />
           <AlertBadge />
           <WhatsNewButton onClick={() => setDrawerOpen(true)} />
           <QuickAddButton />
