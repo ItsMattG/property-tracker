@@ -15,6 +15,7 @@ import { TaxPositionCard } from "@/components/tax-position/TaxPositionCard";
 import { TopPerformerMatchesWidget } from "@/components/similar-properties";
 import { useTour } from "@/hooks/useTour";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
+import { RentalYieldCard } from "@/components/rental-yield";
 
 interface DashboardStats {
   propertyCount: number;
@@ -199,6 +200,8 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
       )}
 
       <SavingsWidget />
+
+      <RentalYieldCard />
 
       <TopPerformerMatchesWidget />
     </div>
