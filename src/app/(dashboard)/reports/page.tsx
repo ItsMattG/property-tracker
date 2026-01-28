@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, PieChart, Download, TrendingUp, Calculator, ClipboardList } from "lucide-react";
+import { FileText, PieChart, Download, TrendingUp, Calculator, ClipboardList, BarChart3 } from "lucide-react";
 
 const reportTypes = [
   {
@@ -40,6 +40,12 @@ const reportTypes = [
     description: "ATO MyTax-aligned rental property report with interactive checklist",
     icon: ClipboardList,
     href: "/reports/mytax",
+  },
+  {
+    title: "Year-over-Year",
+    description: "Compare key expenses across financial years to spot anomalies and trends",
+    icon: BarChart3,
+    href: "/reports/yoy-comparison",
   },
 ];
 
