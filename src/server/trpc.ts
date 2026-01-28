@@ -102,7 +102,25 @@ export const router = t.router;
 export const publicProcedure = t.procedure.use(observabilityMiddleware);
 export const createCallerFactory = t.createCallerFactory;
 
-export const protectedProcedure = t.procedure.use(observabilityMiddleware).use(async ({ ctx, next }) => {
+// Rate limiting middleware
+import { apiRateLimiter } from "./middleware/rate-limit";
+
+const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
+  const userId =
+    ctx.clerkId ?? ctx.headers?.get("x-forwarded-for") ?? "anonymous";
+  const result = apiRateLimiter.check(userId);
+
+  if (!result.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many requests. Please try again later.",
+    });
+  }
+
+  return next({ ctx });
+});
+
+export const protectedProcedure = t.procedure.use(observabilityMiddleware).use(rateLimitMiddleware).use(async ({ ctx, next }) => {
   // Try Clerk auth first (web)
   if (ctx.clerkId) {
     let user = await ctx.db.query.users.findFirst({
