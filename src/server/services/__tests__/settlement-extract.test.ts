@@ -98,5 +98,58 @@ describe("settlement-extract", () => {
       expect(result.adjustments).toBeNull();
       expect(result.settlementDate).toBeNull();
     });
+
+    it("handles zero values correctly", () => {
+      const response = JSON.stringify({
+        purchasePrice: 0,
+        stampDuty: 0,
+        confidence: 0.5,
+      });
+
+      const result = parseSettlementResponse(response);
+      expect(result.purchasePrice).toBe(0);
+      expect(result.stampDuty).toBe(0);
+    });
+
+    it("handles string values where numbers expected", () => {
+      const response = JSON.stringify({
+        purchasePrice: "750000",
+        stampDuty: "not a number",
+        confidence: 0.5,
+      });
+
+      const result = parseSettlementResponse(response);
+      expect(result.purchasePrice).toBeNull();
+      expect(result.stampDuty).toBeNull();
+    });
+
+    it("handles very large numbers", () => {
+      const response = JSON.stringify({
+        purchasePrice: 15000000,
+        stampDuty: 825000,
+        legalFees: 5000,
+        confidence: 0.95,
+      });
+
+      const result = parseSettlementResponse(response);
+      expect(result.purchasePrice).toBe(15000000);
+      expect(result.stampDuty).toBe(825000);
+    });
+
+    it("handles adjustments with mixed types", () => {
+      const response = JSON.stringify({
+        purchasePrice: 600000,
+        adjustments: [
+          { description: "Council rates", amount: -500, type: "credit" },
+          { description: "Strata levies", amount: 200, type: "debit" },
+        ],
+        confidence: 0.88,
+      });
+
+      const result = parseSettlementResponse(response);
+      expect(result.adjustments).toHaveLength(2);
+      expect(result.adjustments![0].amount).toBe(-500);
+      expect(result.adjustments![1].type).toBe("debit");
+    });
   });
 });
