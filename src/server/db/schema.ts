@@ -464,6 +464,28 @@ export const taskPriorityEnum = pgEnum("task_priority", [
   "low",
 ]);
 
+export const ticketCategoryEnum = pgEnum("ticket_category", [
+  "bug",
+  "question",
+  "feature_request",
+  "account_issue",
+]);
+
+export const ticketStatusEnum = pgEnum("ticket_status", [
+  "open",
+  "in_progress",
+  "waiting_on_customer",
+  "resolved",
+  "closed",
+]);
+
+export const ticketUrgencyEnum = pgEnum("ticket_urgency", [
+  "low",
+  "medium",
+  "high",
+  "critical",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -2836,6 +2858,64 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   }),
 }));
 
+// --- Support Tickets ---
+
+export const supportTickets = pgTable(
+  "support_tickets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    ticketNumber: serial("ticket_number").notNull(),
+    category: ticketCategoryEnum("category").notNull(),
+    subject: varchar("subject", { length: 200 }).notNull(),
+    description: text("description").notNull(),
+    urgency: ticketUrgencyEnum("urgency").notNull(),
+    status: ticketStatusEnum("status").default("open").notNull(),
+    browserInfo: jsonb("browser_info"),
+    currentPage: varchar("current_page", { length: 500 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("support_tickets_user_id_idx").on(table.userId),
+    index("support_tickets_status_idx").on(table.status),
+    index("support_tickets_urgency_idx").on(table.urgency),
+    index("support_tickets_category_idx").on(table.category),
+  ]
+);
+
+export const ticketNotes = pgTable(
+  "ticket_notes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ticketId: uuid("ticket_id")
+      .references(() => supportTickets.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    content: text("content").notNull(),
+    isInternal: boolean("is_internal").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("ticket_notes_ticket_id_idx").on(table.ticketId),
+  ]
+);
+
+export const supportTicketsRelations = relations(supportTickets, ({ many }) => ({
+  notes: many(ticketNotes),
+}));
+
+export const ticketNotesRelations = relations(ticketNotes, ({ one }) => ({
+  ticket: one(supportTickets, {
+    fields: [ticketNotes.ticketId],
+    references: [supportTickets.id],
+  }),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -2991,3 +3071,8 @@ export type NewPropertyEmailSender = typeof propertyEmailSenders.$inferInsert;
 // Task Types
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
+// Support Ticket Types
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type NewSupportTicket = typeof supportTickets.$inferInsert;
+export type TicketNote = typeof ticketNotes.$inferSelect;
+export type NewTicketNote = typeof ticketNotes.$inferInsert;
