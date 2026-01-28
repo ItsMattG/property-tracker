@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { db } from "./db";
-import { users, portfolioMembers } from "./db/schema";
+import { users, portfolioMembers, subscriptions } from "./db/schema";
 import { eq, and } from "drizzle-orm";
 import { type PortfolioRole, getPermissions } from "./services/portfolio-access";
 import { verifyMobileToken } from "./lib/mobile-jwt";
@@ -269,3 +269,34 @@ export const bankProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   }
   return next({ ctx });
 });
+
+// Plan-gated procedures for subscription-based feature access
+import { getPlanFromSubscription, isPlanSufficient, type Plan } from "./services/subscription";
+
+function createPlanGatedProcedure(requiredPlan: Plan) {
+  return protectedProcedure.use(async ({ ctx, next }) => {
+    const sub = await ctx.db.query.subscriptions.findFirst({
+      where: eq(subscriptions.userId, ctx.portfolio.ownerId),
+    });
+
+    const currentPlan = getPlanFromSubscription(
+      sub
+        ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd }
+        : null
+    );
+
+    if (!isPlanSufficient(currentPlan, requiredPlan)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: `This feature requires the ${requiredPlan} plan. Please upgrade at /settings/billing.`,
+      });
+    }
+
+    return next({
+      ctx: { ...ctx, plan: currentPlan },
+    });
+  });
+}
+
+export const proProcedure = createPlanGatedProcedure("pro");
+export const teamProcedure = createPlanGatedProcedure("team");
