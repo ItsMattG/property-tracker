@@ -47,6 +47,7 @@ import { yoyComparisonRouter } from "./yoyComparison";
 import { auditChecksRouter } from "./auditChecks";
 import { supportTicketsRouter } from "./supportTickets";
 import { referralRouter } from "./referral";
+import { billingRouter } from "./billing";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -97,6 +98,7 @@ export const appRouter = router({
   auditChecks: auditChecksRouter,
   supportTickets: supportTicketsRouter,
   referral: referralRouter,
+  billing: billingRouter,
 });
 
 export type AppRouter = typeof appRouter;
