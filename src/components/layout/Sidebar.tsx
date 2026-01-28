@@ -31,6 +31,7 @@ import {
   Bug,
   Mail,
   CheckSquare,
+  Ticket,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
@@ -68,6 +69,8 @@ const settingsItems = [
   { href: "/settings/audit-log", label: "Audit Log", icon: History },
   { href: "/settings/feature-requests", label: "Feature Requests", icon: MessageSquarePlus },
   { href: "/settings/bug-reports", label: "Bug Reports", icon: Bug },
+  { href: "/settings/support", label: "Support", icon: Ticket },
+  { href: "/settings/support-admin", label: "Support Admin", icon: Ticket },
 ];
 
 export function Sidebar() {
