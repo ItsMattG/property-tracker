@@ -3164,3 +3164,23 @@ export const subscriptions = pgTable("subscriptions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// ─── Monitoring ───────────────────────────────────────────────
+
+export const cronHeartbeats = pgTable("cron_heartbeats", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cronName: text("cron_name").notNull().unique(),
+  lastRunAt: timestamp("last_run_at").notNull(),
+  status: text("status").notNull(), // "success" | "failure"
+  durationMs: integer("duration_ms").notNull(),
+  metadata: jsonb("metadata"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const monitorState = pgTable("monitor_state", {
+  id: text("id").primaryKey(), // "uptime"
+  lastStatus: text("last_status").notNull(), // "healthy" | "unhealthy"
+  lastCheckedAt: timestamp("last_checked_at").notNull(),
+  failingSince: timestamp("failing_since"),
+  consecutiveFailures: integer("consecutive_failures").default(0).notNull(),
+});
