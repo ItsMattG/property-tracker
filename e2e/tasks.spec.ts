@@ -1,17 +1,19 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/auth";
 
 test.describe("Task Management", () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to tasks page (assumes auth is handled by test setup)
+  test.describe.configure({ mode: "serial" });
+
+  test.beforeEach(async ({ authenticatedPage: page }) => {
+    // Navigate to tasks page
     await page.goto("/tasks");
   });
 
-  test("shows empty state when no tasks exist", async ({ page }) => {
+  test("shows empty state when no tasks exist", async ({ authenticatedPage: page }) => {
     await expect(page.getByText("No tasks yet")).toBeVisible();
     await expect(page.getByText("New Task")).toBeVisible();
   });
 
-  test("creates a new task", async ({ page }) => {
+  test("creates a new task", async ({ authenticatedPage: page }) => {
     await page.getByRole("button", { name: /new task/i }).click();
 
     // Fill in task form
@@ -30,7 +32,7 @@ test.describe("Task Management", () => {
     await expect(page.getByText("Task created")).toBeVisible();
   });
 
-  test("edits an existing task", async ({ page }) => {
+  test("edits an existing task", async ({ authenticatedPage: page }) => {
     // Click on a task row to open edit
     await page.getByText("Fix leaky tap").click();
 
@@ -44,7 +46,7 @@ test.describe("Task Management", () => {
     await expect(page.getByText("Fix leaky tap urgently")).toBeVisible();
   });
 
-  test("toggles between list and kanban views", async ({ page }) => {
+  test("toggles between list and kanban views", async ({ authenticatedPage: page }) => {
     // Default should be list view
     await expect(page.getByRole("table")).toBeVisible();
 
@@ -57,7 +59,7 @@ test.describe("Task Management", () => {
     await expect(page.getByText("Done")).toBeVisible();
   });
 
-  test("filters tasks by status", async ({ page }) => {
+  test("filters tasks by status", async ({ authenticatedPage: page }) => {
     // Open status filter
     await page.getByRole("combobox").first().click();
     await page.getByRole("option", { name: "To Do" }).click();
@@ -66,7 +68,7 @@ test.describe("Task Management", () => {
     // (Specific assertions depend on test data)
   });
 
-  test("deletes a task", async ({ page }) => {
+  test("deletes a task", async ({ authenticatedPage: page }) => {
     await page.getByText("Fix leaky tap urgently").click();
     await page.getByRole("button", { name: /delete/i }).click();
 

@@ -6,7 +6,7 @@ test.describe("Landing Page", () => {
 
     await expect(page.getByRole("heading", { name: /your spreadsheet/i })).toBeVisible();
     await expect(page.getByText(/automated/i)).toBeVisible();
-    await expect(page.getByRole("link", { name: /start free trial/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /start free trial/i }).first()).toBeVisible();
   });
 
   test("should display navigation with sign in and get started", async ({ page }) => {
@@ -20,16 +20,16 @@ test.describe("Landing Page", () => {
   test("should display feature cards", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByText(/australian bank feeds/i)).toBeVisible();
-    await expect(page.getByText(/ato tax categories/i)).toBeVisible();
-    await expect(page.getByText(/bank-grade security/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /australian bank feeds/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /ato tax categories/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /bank-grade security/i })).toBeVisible();
   });
 
   test("should display social proof bar", async ({ page }) => {
     await page.goto("/");
 
     await expect(page.getByText(/properties tracked/i)).toBeVisible();
-    await expect(page.getByText(/investors/i)).toBeVisible();
+    await expect(page.getByText(/investors/i).first()).toBeVisible();
     await expect(page.getByText(/bank-grade encryption/i)).toBeVisible();
     await expect(page.getByText(/australian owned/i)).toBeVisible();
   });
@@ -80,7 +80,7 @@ test.describe("Landing Page", () => {
   test("should navigate to sign up when clicking Get Started", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("link", { name: /start free trial/i }).click();
+    await page.getByRole("link", { name: /start free trial/i }).first().click();
     await expect(page).toHaveURL(/sign-up/);
   });
 

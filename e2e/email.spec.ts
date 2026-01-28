@@ -1,7 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/auth";
 
 test.describe("Email Inbox", () => {
-  test("global inbox page loads", async ({ page }) => {
+  test("global inbox page loads", async ({ authenticatedPage: page }) => {
     await page.goto("/emails");
 
     await expect(page.getByRole("heading", { name: /emails/i })).toBeVisible();
@@ -10,7 +10,7 @@ test.describe("Email Inbox", () => {
     ).toBeVisible();
   });
 
-  test("global inbox shows empty state", async ({ page }) => {
+  test("global inbox shows empty state", async ({ authenticatedPage: page }) => {
     await page.goto("/emails");
 
     await expect(page.getByText(/no emails yet/i)).toBeVisible();
@@ -19,7 +19,7 @@ test.describe("Email Inbox", () => {
     ).toBeVisible();
   });
 
-  test("global inbox has property and status filters", async ({ page }) => {
+  test("global inbox has property and status filters", async ({ authenticatedPage: page }) => {
     await page.goto("/emails");
 
     await expect(page.getByText(/all properties/i)).toBeVisible();
@@ -27,7 +27,7 @@ test.describe("Email Inbox", () => {
   });
 
   test("property email tab loads and shows forwarding address", async ({
-    page,
+    authenticatedPage: page,
   }) => {
     // Navigate to a property — find first property link
     await page.goto("/properties");
@@ -45,7 +45,7 @@ test.describe("Email Inbox", () => {
     }
   });
 
-  test("sidebar shows emails link", async ({ page }) => {
+  test("sidebar shows emails link", async ({ authenticatedPage: page }) => {
     await page.goto("/dashboard");
 
     await expect(
