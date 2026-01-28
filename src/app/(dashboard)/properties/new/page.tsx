@@ -13,8 +13,8 @@ export default function NewPropertyPage() {
   const router = useRouter();
   useTour({ tourId: "add-property" });
   const createProperty = trpc.property.create.useMutation({
-    onSuccess: () => {
-      router.push("/properties");
+    onSuccess: (property) => {
+      router.push(`/properties/${property.id}/settlement`);
     },
   });
 
