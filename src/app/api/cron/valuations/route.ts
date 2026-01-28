@@ -4,6 +4,7 @@ import { properties, propertyValues } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
+import { recordHeartbeat } from "@/lib/monitoring";
 import { getValuationProvider, MockValuationProvider } from "@/server/services/valuation";
 
 export const runtime = "nodejs";
@@ -12,6 +13,8 @@ export async function GET(request: Request) {
   if (!verifyCronRequest(request.headers)) {
     return unauthorizedResponse();
   }
+
+  const startTime = Date.now();
 
   try {
     const provider = getValuationProvider();
@@ -102,6 +105,12 @@ export async function GET(request: Request) {
       errors: errors.length,
     });
 
+    await recordHeartbeat("valuations", {
+      status: errors.length > 0 ? "failure" : "success",
+      durationMs: Date.now() - startTime,
+      metadata: { propertiesProcessed, valuationsCreated, backfilled, errorCount: errors.length },
+    });
+
     return NextResponse.json({
       success: true,
       propertiesProcessed,
@@ -111,6 +120,12 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    await recordHeartbeat("valuations", {
+      status: "failure",
+      durationMs: Date.now() - startTime,
+      metadata: { error: error instanceof Error ? error.message : "Unknown error" },
+    });
+
     logger.error("Valuation cron error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
