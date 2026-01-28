@@ -12,8 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
-import { Mail, MailOpen, ShieldAlert, Check, X } from "lucide-react";
-import { useState } from "react";
+import { Mail, MailOpen, ShieldAlert, Check, X, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useMemo } from "react";
 
 export default function GlobalInboxPage() {
   const [propertyFilter, setPropertyFilter] = useState<string>("all");
@@ -39,6 +39,69 @@ export default function GlobalInboxPage() {
   const propertyMap = new Map(
     (propertiesList ?? []).map((p) => [p.id, `${p.address}, ${p.suburb}`])
   );
+
+  // Group emails by thread
+  const threadGroups = useMemo(() => {
+    if (!data?.emails) return [];
+
+    const groups = new Map<string, typeof data.emails>();
+    const ungrouped: typeof data.emails = [];
+
+    for (const email of data.emails) {
+      if (email.threadId) {
+        const existing = groups.get(email.threadId) || [];
+        existing.push(email);
+        groups.set(email.threadId, existing);
+      } else {
+        ungrouped.push(email);
+      }
+    }
+
+    type EmailWithThread = (typeof data.emails)[0] & {
+      threadCount?: number;
+      isThreadChild?: boolean;
+    };
+
+    const result: EmailWithThread[] = [];
+
+    for (const [, emails] of groups) {
+      const sorted = emails.sort(
+        (a, b) =>
+          new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
+      );
+      result.push({ ...sorted[0], threadCount: sorted.length });
+      for (let i = 1; i < sorted.length; i++) {
+        result.push({ ...sorted[i], isThreadChild: true });
+      }
+    }
+
+    for (const email of ungrouped) {
+      result.push(email);
+    }
+
+    result.sort(
+      (a, b) =>
+        new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
+    );
+
+    return result;
+  }, [data?.emails]);
+
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(
+    new Set()
+  );
+
+  const toggleThread = (threadId: string) => {
+    setExpandedThreads((prev) => {
+      const next = new Set(prev);
+      if (next.has(threadId)) {
+        next.delete(threadId);
+      } else {
+        next.add(threadId);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -92,7 +155,13 @@ export default function GlobalInboxPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {data.emails.map((email) => (
+          {threadGroups
+            .filter(
+              (email) =>
+                !email.isThreadChild ||
+                (email.threadId && expandedThreads.has(email.threadId))
+            )
+            .map((email) => (
             <Card
               key={email.id}
               className={`cursor-pointer hover:bg-accent/50 transition-colors ${
@@ -109,6 +178,27 @@ export default function GlobalInboxPage() {
                       }
                     }}
                   >
+                    {email.threadCount && email.threadCount > 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (email.threadId) toggleThread(email.threadId);
+                        }}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground shrink-0"
+                      >
+                        {email.threadId && expandedThreads.has(email.threadId) ? (
+                          <ChevronDown className="w-3 h-3" />
+                        ) : (
+                          <ChevronRight className="w-3 h-3" />
+                        )}
+                        <span className="bg-secondary text-secondary-foreground rounded-full px-1.5 py-0.5 text-xs">
+                          {email.threadCount}
+                        </span>
+                      </button>
+                    )}
+                    {email.isThreadChild && (
+                      <div className="w-4 border-l-2 border-muted-foreground/30 ml-1 shrink-0" />
+                    )}
                     {email.isRead ? (
                       <MailOpen className="w-4 h-4 text-muted-foreground shrink-0" />
                     ) : (

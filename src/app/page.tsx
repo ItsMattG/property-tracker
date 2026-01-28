@@ -39,6 +39,30 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "PropertyTracker",
+            applicationCategory: "FinanceApplication",
+            operatingSystem: "Web",
+            url: "https://www.propertytracker.com.au",
+            description: "Track your investment properties, automate bank feeds, and generate tax reports.",
+            offers: [
+              { "@type": "Offer", price: "0", priceCurrency: "AUD", name: "Free" },
+              { "@type": "Offer", price: "14", priceCurrency: "AUD", name: "Pro" },
+              { "@type": "Offer", price: "29", priceCurrency: "AUD", name: "Team" },
+            ],
+            publisher: {
+              "@type": "Organization",
+              name: "PropertyTracker",
+              url: "https://www.propertytracker.com.au",
+            },
+          }),
+        }}
+      />
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

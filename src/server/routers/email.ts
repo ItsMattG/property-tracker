@@ -415,4 +415,58 @@ export const emailRouter = router({
         .set({ status: "rejected" })
         .where(eq(propertyEmailInvoiceMatches.id, input.id));
     }),
+
+  // Download attachment (generates signed URL)
+  downloadAttachment: protectedProcedure
+    .input(z.object({ attachmentId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const [attachment] = await ctx.db
+        .select({
+          id: propertyEmailAttachments.id,
+          storagePath: propertyEmailAttachments.storagePath,
+          filename: propertyEmailAttachments.filename,
+          contentType: propertyEmailAttachments.contentType,
+          emailId: propertyEmailAttachments.emailId,
+        })
+        .from(propertyEmailAttachments)
+        .where(eq(propertyEmailAttachments.id, input.attachmentId));
+
+      if (!attachment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Attachment not found",
+        });
+      }
+
+      const [email] = await ctx.db
+        .select({ userId: propertyEmails.userId })
+        .from(propertyEmails)
+        .where(eq(propertyEmails.id, attachment.emailId));
+
+      if (email?.userId !== ctx.portfolio.ownerId) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Attachment not found",
+        });
+      }
+
+      const { getSupabaseAdmin } = await import("@/lib/supabase/server");
+      const supabase = getSupabaseAdmin();
+      const { data, error } = await supabase.storage
+        .from("email-attachments")
+        .createSignedUrl(attachment.storagePath, 3600);
+
+      if (error || !data?.signedUrl) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to generate download URL",
+        });
+      }
+
+      return {
+        url: data.signedUrl,
+        filename: attachment.filename,
+        contentType: attachment.contentType,
+      };
+    }),
 });
