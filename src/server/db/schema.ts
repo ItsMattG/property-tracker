@@ -209,6 +209,7 @@ export const portfolioMemberRoleEnum = pgEnum("portfolio_member_role", [
   "owner",
   "partner",
   "accountant",
+  "advisor",
 ]);
 
 export const inviteStatusEnum = pgEnum("invite_status", [
@@ -346,6 +347,7 @@ export const entityMemberRoleEnum = pgEnum("entity_member_role", [
   "admin",
   "member",
   "accountant",
+  "advisor",
 ]);
 
 export const smsfMemberPhaseEnum = pgEnum("smsf_member_phase", [

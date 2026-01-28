@@ -78,7 +78,7 @@ export const teamRouter = router({
     .input(
       z.object({
         email: z.string().email(),
-        role: z.enum(["partner", "accountant"]),
+        role: z.enum(["partner", "accountant", "advisor"]),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -201,7 +201,7 @@ export const teamRouter = router({
     .input(
       z.object({
         memberId: z.string().uuid(),
-        role: z.enum(["partner", "accountant"]),
+        role: z.enum(["partner", "accountant", "advisor"]),
       })
     )
     .mutation(async ({ ctx, input }) => {
