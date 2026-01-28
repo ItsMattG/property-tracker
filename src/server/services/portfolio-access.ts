@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 
-export type PortfolioRole = "owner" | "partner" | "accountant";
+export type PortfolioRole = "owner" | "partner" | "accountant" | "advisor";
 
 export interface PortfolioPermissions {
   canWrite: boolean;
@@ -36,6 +36,14 @@ export function getPermissions(role: PortfolioRole): PortfolioPermissions {
         canViewAuditLog: false,
         canUploadDocuments: true,
       };
+    case "advisor":
+      return {
+        canWrite: false,
+        canManageMembers: false,
+        canManageBanks: false,
+        canViewAuditLog: true,
+        canUploadDocuments: false,
+      };
   }
 }
 
@@ -52,7 +60,7 @@ export function canManageBanks(role: PortfolioRole): boolean {
 }
 
 export function canViewAuditLog(role: PortfolioRole): boolean {
-  return role === "owner" || role === "partner";
+  return role === "owner" || role === "partner" || role === "advisor";
 }
 
 export function generateInviteToken(): string {
