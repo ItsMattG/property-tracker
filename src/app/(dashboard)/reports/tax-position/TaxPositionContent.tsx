@@ -279,9 +279,7 @@ export function TaxPositionContent() {
       {/* Forecast Summary */}
       {forecast?.taxPosition.forecast && forecast.monthsElapsed < 12 && calculation && (
         <ForecastSummary
-          actualRefund={calculation.refundOrOwing}
           forecastRefund={forecast.taxPosition.forecast.refundOrOwing}
-          actualIsRefund={calculation.isRefund}
           forecastIsRefund={forecast.taxPosition.forecast.isRefund}
           monthsElapsed={forecast.monthsElapsed}
           confidence={forecast.confidence}

@@ -181,10 +181,12 @@ export async function buildTaxForecast(
 
     for (const cat of allRelevantCategories) {
       const currentMonths = groupTransactionsByMonth(
-        currentTxns as any, prop.id, cat.value
+        currentTxns as Array<{ date: string; amount: string; category: string; transactionType: string; propertyId: string | null }>,
+        prop.id, cat.value
       );
       const priorMonths = groupTransactionsByMonth(
-        priorTxns as any, prop.id, cat.value
+        priorTxns as Array<{ date: string; amount: string; category: string; transactionType: string; propertyId: string | null }>,
+        prop.id, cat.value
       );
 
       const { actual, forecast } = computeCategoryForecast(

@@ -16,18 +16,14 @@ function formatCurrency(amount: number): string {
 type Confidence = "high" | "medium" | "low";
 
 interface ForecastSummaryProps {
-  actualRefund: number;
   forecastRefund: number;
-  actualIsRefund: boolean;
   forecastIsRefund: boolean;
   monthsElapsed: number;
   confidence: Confidence;
 }
 
 export function ForecastSummary({
-  actualRefund,
   forecastRefund,
-  actualIsRefund,
   forecastIsRefund,
   monthsElapsed,
   confidence,
