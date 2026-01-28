@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { TRPCProvider } from "@/lib/trpc/Provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
+import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -61,7 +62,9 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <TRPCProvider>{children}</TRPCProvider>
+          <TRPCProvider>
+            <PostHogProvider>{children}</PostHogProvider>
+          </TRPCProvider>
           <Toaster richColors position="top-right" />
           <Analytics />
         </body>

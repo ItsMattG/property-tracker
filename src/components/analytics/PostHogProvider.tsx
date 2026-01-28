@@ -1,0 +1,36 @@
+"use client";
+
+import { useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { initPostHog, posthog } from "@/lib/posthog";
+import { useUser } from "@clerk/nextjs";
+
+export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { user } = useUser();
+
+  useEffect(() => {
+    initPostHog();
+  }, []);
+
+  // Track page views on route change
+  useEffect(() => {
+    if (!pathname) return;
+    posthog.capture("$pageview", {
+      $current_url: window.location.href,
+    });
+  }, [pathname, searchParams]);
+
+  // Identify user
+  useEffect(() => {
+    if (user?.id) {
+      posthog.identify(user.id, {
+        email: user.primaryEmailAddress?.emailAddress,
+        name: user.fullName,
+      });
+    }
+  }, [user]);
+
+  return <>{children}</>;
+}
