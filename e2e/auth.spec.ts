@@ -4,27 +4,27 @@ test.describe("Authentication", () => {
   test.describe("Unauthenticated Users", () => {
     test("should redirect /dashboard to sign-in", async ({ page }) => {
       await page.goto("/dashboard");
-      await expect(page).toHaveURL(/sign-in/);
+      await expect(page).toHaveURL(/sign-in/, { timeout: 15000 });
     });
 
     test("should redirect /properties to sign-in", async ({ page }) => {
       await page.goto("/properties");
-      await expect(page).toHaveURL(/sign-in/);
+      await expect(page).toHaveURL(/sign-in/, { timeout: 15000 });
     });
 
     test("should redirect /transactions to sign-in", async ({ page }) => {
       await page.goto("/transactions");
-      await expect(page).toHaveURL(/sign-in/);
+      await expect(page).toHaveURL(/sign-in/, { timeout: 15000 });
     });
 
     test("should redirect /banking to sign-in", async ({ page }) => {
       await page.goto("/banking");
-      await expect(page).toHaveURL(/sign-in/);
+      await expect(page).toHaveURL(/sign-in/, { timeout: 15000 });
     });
 
     test("should redirect /export to sign-in", async ({ page }) => {
       await page.goto("/export");
-      await expect(page).toHaveURL(/sign-in/);
+      await expect(page).toHaveURL(/sign-in/, { timeout: 15000 });
     });
   });
 

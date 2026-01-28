@@ -30,13 +30,14 @@ test.describe("Changelog", () => {
   test("category filters work", async ({ page }) => {
     await page.goto("/changelog");
 
-    // Click Features tab
-    await page.getByRole("tab", { name: "Features" }).click();
+    // Wait for tabs to be rendered
+    const featuresTab = page.getByRole("tab", { name: "Features" });
+    await expect(featuresTab).toBeVisible({ timeout: 10000 });
 
-    // Verify we're on the features tab
-    await expect(page.getByRole("tab", { name: "Features" })).toHaveAttribute(
-      "data-state",
-      "active"
-    );
+    // Click Features tab
+    await featuresTab.click();
+
+    // Verify the tab becomes active
+    await expect(featuresTab).toHaveAttribute("data-state", "active");
   });
 });
