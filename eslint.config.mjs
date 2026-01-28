@@ -14,6 +14,10 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Mobile app has its own build/lint pipeline
     "mobile/**",
+    // Git worktrees contain their own .next/build artifacts
+    ".worktrees/**",
+    // Test coverage output
+    "coverage/**",
   ]),
   // Custom rule overrides - downgrade some rules to warnings for incremental fixing
   {
@@ -26,6 +30,8 @@ const eslintConfig = defineConfig([
       "react-hooks/rules-of-hooks": "warn",
       "react-hooks/incompatible-library": "warn",
       "react-hooks/set-state-in-effect": "warn",
+      // React Compiler memoization preservation - warn only
+      "react-hooks/preserve-manual-memoization": "warn",
     },
   },
   // Disable React rules in E2E test files (Playwright uses `use` which conflicts)
