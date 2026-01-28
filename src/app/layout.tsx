@@ -18,7 +18,33 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "PropertyTracker - Australian Property Investment Tracking",
-  description: "Track your investment properties, automate bank feeds, and generate tax reports.",
+  description:
+    "Track your investment properties, automate bank feeds, and generate tax reports. Built for Australian property investors.",
+  metadataBase: new URL("https://www.propertytracker.com.au"),
+  openGraph: {
+    title: "PropertyTracker - Australian Property Investment Tracking",
+    description:
+      "Track your investment properties, automate bank feeds, and generate tax reports. Built for Australian property investors.",
+    siteName: "PropertyTracker",
+    type: "website",
+    locale: "en_AU",
+    url: "https://www.propertytracker.com.au",
+    images: [
+      {
+        url: "/og-image.svg",
+        width: 1200,
+        height: 630,
+        alt: "PropertyTracker - Australian Property Investment Tracking",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PropertyTracker - Australian Property Investment Tracking",
+    description:
+      "Track your investment properties, automate bank feeds, and generate tax reports.",
+    images: ["/og-image.svg"],
+  },
 };
 
 // Skip static generation - app uses Clerk auth
