@@ -75,7 +75,7 @@ export async function generateMetadata({
       authors: [post.author],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: post.title,
       description: post.summary,
     },

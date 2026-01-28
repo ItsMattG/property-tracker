@@ -10,9 +10,55 @@ import { Badge } from "@/components/ui/badge";
 import { format, differenceInDays } from "date-fns";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import type { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ token: string }>;
+}
+
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.propertytracker.com.au";
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { token } = await params;
+
+  const [share] = await db
+    .select()
+    .from(portfolioShares)
+    .where(eq(portfolioShares.token, token))
+    .limit(1);
+
+  if (!share || new Date() > new Date(share.expiresAt)) {
+    return {
+      title: "Portfolio — PropertyTracker",
+      description: "Track your investment properties with PropertyTracker.",
+    };
+  }
+
+  const ogImageUrl = `${BASE_URL}/api/og/share/${token}`;
+
+  return {
+    title: `${share.title} — PropertyTracker`,
+    description: "Portfolio snapshot shared via PropertyTracker.",
+    openGraph: {
+      title: `${share.title} — PropertyTracker`,
+      description: "Portfolio snapshot shared via PropertyTracker.",
+      type: "website",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: share.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${share.title} — PropertyTracker`,
+      description: "Portfolio snapshot shared via PropertyTracker.",
+      images: [ogImageUrl],
+    },
+  };
 }
 
 function getPrivacyLabel(privacyMode: string): string {
