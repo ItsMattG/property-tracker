@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { properties, equityMilestones } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { properties, equityMilestones, referrals, referralCredits } from "../db/schema";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { getClimateRisk } from "../services/climate-risk";
 
 const propertySchema = z.object({
@@ -58,6 +58,54 @@ export const propertyRouter = router({
           climateRisk,
         })
         .returning();
+
+      // Check if this is the user's first property (for referral qualification)
+      try {
+        const [propertyCount] = await ctx.db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(properties)
+          .where(eq(properties.userId, ctx.portfolio.ownerId));
+
+        if (propertyCount?.count === 1) {
+          // First property — qualify any pending referral
+          const [referral] = await ctx.db
+            .select()
+            .from(referrals)
+            .where(
+              and(
+                eq(referrals.refereeUserId, ctx.portfolio.ownerId),
+                eq(referrals.status, "pending")
+              )
+            );
+
+          if (referral) {
+            const expiresAt = new Date();
+            expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+            await ctx.db
+              .update(referrals)
+              .set({ status: "qualified", qualifiedAt: new Date() })
+              .where(eq(referrals.id, referral.id));
+
+            await ctx.db.insert(referralCredits).values([
+              {
+                userId: referral.referrerUserId,
+                referralId: referral.id,
+                monthsFree: 1,
+                expiresAt,
+              },
+              {
+                userId: referral.refereeUserId,
+                referralId: referral.id,
+                monthsFree: 1,
+                expiresAt,
+              },
+            ]);
+          }
+        }
+      } catch {
+        // Non-critical — don't fail property creation
+      }
 
       return property;
     }),
