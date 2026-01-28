@@ -1,36 +1,31 @@
 # Claude Code Rules
 
-## Project Status (as of 2026-01-27)
-The v0.2 roadmap and post-extraction roadmap are **complete**. See `docs/plans/2026-01-25-post-extraction-roadmap.md` for full status.
+## Project Status (as of 2026-01-28)
+V0.1, v0.2, and v0.3 roadmaps are **complete**. V0.4 is **in progress** (9/15 done).
 
-**V0.3 Roadmap:** See `docs/plans/2026-01-27-v03-roadmap-design.md`
+**V0.4 Roadmap:** See `docs/plans/2026-01-28-v04-roadmap-design.md` for full progress tracker.
 
-**Completed features (v0.1-v0.2):**
-- Property Manager Integrations (PropertyMe OAuth)
-- React Native Mobile App with Detox E2E tests
-- Scenario Simulator (what-if modeling)
-- Portfolio Share
-- Compliance Calendar
-- Equity Milestone Notifications
-- Broker Portal
-- Climate/Flood Risk
-- Trust/SMSF Entity Support (Phase 1 & 2)
-- Financial Leak Benchmarking
-- Property Performance Benchmarking
-- Tax Position Calculator
-- Vector DB Similar Properties
-- Axiom Observability (structured logging, metrics)
+**V0.4 completed (PRs #48-#52):**
+- Stripe Billing Integration (subscriptions, webhooks, plan-gated middleware, billing page)
+- Blog Content Pipeline (5 SEO articles)
+- PostHog Analytics (provider, page tracking, user identification)
+- Conversion Prompts (UpgradePrompt component)
+- Rental Yield Calculator (dashboard widget, gross/net yield)
+- Security Hardening (rate limiting middleware, security headers)
+- Settlement Statement Capture (AI extraction, post-creation flow, CGT cost base)
+- Depreciation Schedules & Sitemap/Robots.txt (pre-existed)
 
-**V0.3 Roadmap (Growth & Engagement):**
-- Phase 1: User Feedback System (public feature board, private bug reports)
-- Phase 2: Changelog & What's New
-- Phase 3: Landing Page Overhaul (social proof, pricing, screenshots, FAQ)
-- Phase 4: Blog & SEO
-- Phase 5: Gmail/Outlook Email Integration (full)
-- Phase 6: Task Management (global task list)
-- Phase 7: Competitive Parity (AVM integration, guided onboarding, AI chat, shares/crypto)
-- Phase 8: TaxTank Features (forecasted tax, MyTax export, referrals)
-- Phase 9: Property Accountant Features (email forwarding, audit checks, YoY comparison)
+**V0.4 remaining (6 items):**
+- 4.2 CI/CD Pipeline (GitHub Actions) — recommended next
+- 2.3 Dynamic OG Images (@vercel/og)
+- 4.3 Monitoring & Alerting (Checkly uptime, cron health)
+- 4.5 Database Backup Verification
+- 3.1 PropTrack AVM (blocked on API key)
+- 4.1 Gmail/Outlook Integration (highest complexity)
+
+**Earlier roadmaps (all complete):**
+- v0.1-v0.2: PropertyMe, Mobile App, Scenarios, Portfolio Share, Compliance, Milestones, Broker Portal, Climate Risk, Trust/SMSF, Benchmarking, Tax Position, Similar Properties, Axiom
+- v0.3: Feedback System, Changelog, Landing Page, Blog/SEO, Email Integration, Task Management, Onboarding, AI Chat, TaxTank Features, Audit Checks, YoY Comparison, Support Tickets, Advisor System, Referral Program
 
 ## Token Efficiency
 Always pick the token-efficient approach when implementing. Minimize unnecessary exploration and verbose output.
