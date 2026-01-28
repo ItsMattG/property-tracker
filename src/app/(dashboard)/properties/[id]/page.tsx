@@ -12,7 +12,7 @@ import { ClimateRiskCard } from "@/components/climate-risk";
 import { BenchmarkCard } from "@/components/benchmarking";
 import { PerformanceCard } from "@/components/performance-benchmarking";
 import { SimilarPropertiesSection } from "@/components/similar-properties";
-import { Building2, MapPin, Calendar, Briefcase, DollarSign, BarChart3 } from "lucide-react";
+import { Building2, MapPin, Calendar, Briefcase, DollarSign, BarChart3, FileText } from "lucide-react";
 import Link from "next/link";
 
 const formatCurrency = (value: string | number) => {
@@ -170,15 +170,22 @@ export default function PropertyDetailPage() {
       {/* Valuation Card */}
       <ValuationCard propertyId={propertyId} />
 
-      {/* Valuation Link */}
+      {/* Quick Links */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 space-y-3">
           <Link
             href={`/properties/${propertyId}/valuation`}
             className="flex items-center gap-2 text-primary hover:underline"
           >
             <BarChart3 className="h-4 w-4" />
             View Full Valuation History & Growth Stats
+          </Link>
+          <Link
+            href={`/properties/${propertyId}/settlement`}
+            className="flex items-center gap-2 text-primary hover:underline"
+          >
+            <FileText className="h-4 w-4" />
+            Upload Settlement Statement for CGT Cost Base
           </Link>
         </CardContent>
       </Card>
