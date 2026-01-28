@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
-import { Calculator, Home, ArrowRight, Loader2 } from "lucide-react";
+import { Calculator, Home, ArrowRight, Loader2, TrendingUp } from "lucide-react";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-AU", {
@@ -19,6 +19,11 @@ function formatCurrency(amount: number): string {
 
 export function TaxPositionCard() {
   const { data: summary, isLoading } = trpc.taxPosition.getSummary.useQuery({});
+  const { data: currentYear } = trpc.taxPosition.getCurrentYear.useQuery();
+  const { data: forecast } = trpc.taxForecast.getForecast.useQuery(
+    { financialYear: currentYear! },
+    { enabled: !!currentYear }
+  );
 
   if (isLoading) {
     return (
@@ -106,6 +111,13 @@ export function TaxPositionCard() {
                 <Home className="h-3 w-3" />
                 Properties {isRefund ? "saved" : "reduced by"} you{" "}
                 {formatCurrency(propertySavings)}
+              </p>
+            )}
+            {forecast?.taxPosition.forecast && forecast.monthsElapsed < 12 && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                Projected: {formatCurrency(Math.abs(forecast.taxPosition.forecast.refundOrOwing))}{" "}
+                {forecast.taxPosition.forecast.isRefund ? "refund" : "owing"} full year
               </p>
             )}
             <p className="text-xs text-primary flex items-center gap-1 pt-1">
