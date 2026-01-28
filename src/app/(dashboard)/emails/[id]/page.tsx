@@ -16,7 +16,7 @@ import {
   FileText,
 } from "lucide-react";
 import DOMPurify from "isomorphic-dompurify";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function EmailDetailPage() {
   const params = useParams();
@@ -40,6 +40,20 @@ export default function EmailDetailPage() {
   const rejectMatch = trpc.email.rejectMatch.useMutation({
     onSuccess: () => refetch(),
   });
+  const utils = trpc.useUtils();
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  const handleDownload = useCallback(async (attachmentId: number) => {
+    try {
+      setDownloadingId(attachmentId);
+      const result = await utils.email.downloadAttachment.fetch({ attachmentId });
+      window.open(result.url, "_blank");
+    } catch {
+      // Silently handle — user sees no download
+    } finally {
+      setDownloadingId(null);
+    }
+  }, [utils]);
 
   // Mark as read on view
   useEffect(() => {
@@ -160,7 +174,12 @@ export default function EmailDetailPage() {
                       ({(att.sizeBytes / 1024).toFixed(0)} KB)
                     </span>
                   </div>
-                  <Button variant="ghost" size="sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={downloadingId === att.id}
+                    onClick={() => handleDownload(att.id)}
+                  >
                     <Download className="w-4 h-4" />
                   </Button>
                 </div>
