@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, PieChart, Download, TrendingUp, Calculator, ClipboardList, BarChart3 } from "lucide-react";
+import { FileText, PieChart, Download, TrendingUp, Calculator, ClipboardList, BarChart3, ShieldCheck } from "lucide-react";
 
 const reportTypes = [
   {
@@ -46,6 +46,12 @@ const reportTypes = [
     description: "Compare key expenses across financial years to spot anomalies and trends",
     icon: BarChart3,
     href: "/reports/yoy-comparison",
+  },
+  {
+    title: "Audit Checks",
+    description: "Automated tax readiness and data quality checks with per-property audit scores",
+    icon: ShieldCheck,
+    href: "/reports/audit-checks",
   },
 ];
 
