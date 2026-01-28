@@ -3078,3 +3078,58 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 export type NewSupportTicket = typeof supportTickets.$inferInsert;
 export type TicketNote = typeof ticketNotes.$inferSelect;
 export type NewTicketNote = typeof ticketNotes.$inferInsert;
+
+// Referral system
+export const referralStatusEnum = pgEnum("referral_status", [
+  "pending",
+  "qualified",
+  "rewarded",
+  "expired",
+]);
+
+export const referralCodes = pgTable("referral_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  code: text("code").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const referrals = pgTable(
+  "referrals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    referrerUserId: uuid("referrer_user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    refereeUserId: uuid("referee_user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    referralCodeId: uuid("referral_code_id")
+      .references(() => referralCodes.id, { onDelete: "cascade" })
+      .notNull(),
+    status: referralStatusEnum("status").default("pending").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    qualifiedAt: timestamp("qualified_at"),
+    rewardedAt: timestamp("rewarded_at"),
+  },
+  (table) => [
+    index("referrals_referrer_idx").on(table.referrerUserId),
+    index("referrals_referee_idx").on(table.refereeUserId),
+  ]
+);
+
+export const referralCredits = pgTable("referral_credits", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  referralId: uuid("referral_id")
+    .references(() => referrals.id, { onDelete: "cascade" })
+    .notNull(),
+  monthsFree: integer("months_free").notNull().default(1),
+  appliedAt: timestamp("applied_at"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

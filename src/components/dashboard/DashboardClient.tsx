@@ -14,6 +14,7 @@ import { SavingsWidget } from "@/components/benchmarking";
 import { TaxPositionCard } from "@/components/tax-position/TaxPositionCard";
 import { TopPerformerMatchesWidget } from "@/components/similar-properties";
 import { useTour } from "@/hooks/useTour";
+import { useReferralTracking } from "@/hooks/useReferralTracking";
 
 interface DashboardStats {
   propertyCount: number;
@@ -28,6 +29,7 @@ interface DashboardClientProps {
 export function DashboardClient({ initialStats }: DashboardClientProps) {
   const [wizardClosed, setWizardClosed] = useState(false);
   const utils = trpc.useUtils();
+  useReferralTracking();
 
   const { data: stats, isLoading } = trpc.stats.dashboard.useQuery(undefined, {
     initialData: initialStats ?? undefined,
