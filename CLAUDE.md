@@ -30,21 +30,50 @@ V0.1, v0.2, and v0.3 roadmaps are **complete**. V0.4 is **in progress** (9/15 do
 ## Token Efficiency
 Always pick the token-efficient approach when implementing. Minimize unnecessary exploration and verbose output.
 
+## Task Management (Beads)
+Use Beads (`bd`) for persistent task tracking across sessions:
+
+**Finding work:**
+- `bd ready` — show tasks with no blockers
+- `bd show <id>` — view full task details
+
+**During work:**
+- `bd update <id> -m "progress note"` — track progress
+- `bd block <id> -m "reason"` — mark if blocked
+
+**Completing work:**
+- `bd done <id>` — mark task complete
+
+**Creating tasks:**
+- `bd create "Task title" -p 1` — create with priority (0=urgent, 3=low)
+- `bd dep add <child> <parent>` — set dependencies
+
+**Context hygiene:**
+- `/clear` when context exceeds 40%
+- Re-read task with `bd show <id>` after clearing
+- Beads persists state across session boundaries
+
 ## Task Completion Workflow
 After completing each task:
-1. Create a PR for it
-2. Merge the PR
-3. Run `/compact`
-4. Begin the next task
+1. Mark complete in Beads: `bd done <id>`
+2. Create a PR for it
+3. Merge the PR
+4. Run `/compact`
+5. Begin the next task (check `bd ready`)
 
 ## Development Workflow
 Always follow this workflow for new features:
-1. **Create feature branch**: `git checkout -b feature/<feature-name>` before any code changes
-2. **Brainstorm**: Use `superpowers:brainstorming` for design
-3. **Plan**: Use `superpowers:writing-plans` for implementation plan
-4. **Execute**: Use `superpowers:executing-plans` (batch execution - more token efficient than subagent-driven)
-5. **Create PR**: Push branch and create PR with `gh pr create`
-6. **Merge PR**: Merge with `gh pr merge`
+1. **Pick task**: `bd ready` to find next task, `bd show <id>` for details
+2. **Create feature branch**: `git checkout -b feature/<feature-name>` before any code changes
+3. **Brainstorm**: Use `superpowers:brainstorming` for design
+4. **Plan**: Use `superpowers:writing-plans` for implementation plan
+5. **Execute**: Use `superpowers:executing-plans` (batch execution - more token efficient than subagent-driven)
+6. **Verify**: Use `superpowers:verification-before-completion` — run tests, lint, build before claiming done
+7. **Create PR**: Push branch and create PR with `gh pr create`
+8. **Wait for CI**: Run `gh pr checks --watch` to wait for GitHub Actions and Vercel preview deploy to pass
+9. **Merge PR**: Only after CI passes, merge with `gh pr merge`
+10. **Wait for deploy**: Check Vercel production deployment succeeded (via GitHub checks on main or Vercel dashboard)
+11. **Complete task**: `bd done <id>`, then `/clear` for fresh context
 
 Always create a feature branch first. Never commit directly to main.
 
