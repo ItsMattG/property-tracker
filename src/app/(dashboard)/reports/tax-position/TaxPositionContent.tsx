@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc/client";
 import { SetupWizard } from "@/components/tax-position/SetupWizard";
+import { ForecastSummary } from "@/components/tax-position/ForecastSummary";
+import { ForecastAnnotation } from "@/components/tax-position/ForecastAnnotation";
 import {
   Home,
   AlertCircle,
@@ -69,6 +71,11 @@ export function TaxPositionContent() {
     );
 
   const { data: rentalResult } = trpc.taxPosition.getRentalResult.useQuery(
+    { financialYear: selectedYear! },
+    { enabled: !!selectedYear }
+  );
+
+  const { data: forecast } = trpc.taxForecast.getForecast.useQuery(
     { financialYear: selectedYear! },
     { enabled: !!selectedYear }
   );
@@ -269,6 +276,18 @@ export function TaxPositionContent() {
         </Card>
       )}
 
+      {/* Forecast Summary */}
+      {forecast?.taxPosition.forecast && forecast.monthsElapsed < 12 && calculation && (
+        <ForecastSummary
+          actualRefund={calculation.refundOrOwing}
+          forecastRefund={forecast.taxPosition.forecast.refundOrOwing}
+          actualIsRefund={calculation.isRefund}
+          forecastIsRefund={forecast.taxPosition.forecast.isRefund}
+          monthsElapsed={forecast.monthsElapsed}
+          confidence={forecast.confidence}
+        />
+      )}
+
       {/* Income & Deductions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Income Section */}
@@ -376,6 +395,14 @@ export function TaxPositionContent() {
               <p className="text-xs text-muted-foreground">
                 Based on {rentalResult?.transactionCount ?? 0} transactions
               </p>
+              {forecast && (
+                <div className="text-xs text-muted-foreground">
+                  <ForecastAnnotation
+                    actual={Math.abs(rentalResult?.netResult ?? 0)}
+                    forecast={Math.abs(forecast.netRentalResult.forecast)}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -450,6 +477,12 @@ export function TaxPositionContent() {
                 <span>Total tax liability</span>
                 <span>{formatCurrency(calculation.totalTaxLiability)}</span>
               </div>
+              {forecast?.taxPosition.forecast && forecast.monthsElapsed < 12 && (
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Projected full year</span>
+                  <span>{formatCurrency(forecast.taxPosition.forecast.totalTaxLiability)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Less: PAYG already paid</span>
                 <span className="text-green-600">
@@ -468,6 +501,17 @@ export function TaxPositionContent() {
                   {formatCurrency(Math.abs(calculation.refundOrOwing))}
                 </span>
               </div>
+              {forecast?.taxPosition.forecast && forecast.monthsElapsed < 12 && (
+                <div className="flex justify-between text-xs text-muted-foreground pt-1">
+                  <span>Projected full year</span>
+                  <span className={
+                    forecast.taxPosition.forecast.isRefund ? "text-green-600" : "text-amber-600"
+                  }>
+                    {formatCurrency(Math.abs(forecast.taxPosition.forecast.refundOrOwing))}
+                    {" "}{forecast.taxPosition.forecast.isRefund ? "refund" : "owing"}
+                  </span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
