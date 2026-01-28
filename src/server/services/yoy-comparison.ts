@@ -18,7 +18,7 @@ export const KEY_EXPENSES = [
 const KEY_EXPENSE_SET = new Set<string>(KEY_EXPENSES);
 
 // Key expenses sort by their ATO reference order (D2, D5, D7, D9, D13, D17)
-const KEY_EXPENSE_ORDER = new Map(
+const KEY_EXPENSE_ORDER = new Map<string, string>(
   KEY_EXPENSES.map((k) => [k, categoryMap.get(k)?.atoReference ?? ""])
 );
 

@@ -17,7 +17,6 @@ import {
 import { trpc } from "@/lib/trpc/client";
 import { YoYComparisonTable } from "./YoYComparisonTable";
 import { ChevronDown, Loader2, BarChart3 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export function YoYComparisonContent() {
   const { data: availableYears } = trpc.reports.getAvailableYears.useQuery();
