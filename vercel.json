@@ -27,6 +27,14 @@
     {
       "path": "/api/cron/valuations",
       "schedule": "0 2 1 * *"
+    },
+    {
+      "path": "/api/cron/uptime-check",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/health-monitor",
+      "schedule": "0 7 * * *"
     }
   ]
 }
