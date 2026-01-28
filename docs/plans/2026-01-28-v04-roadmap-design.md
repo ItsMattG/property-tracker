@@ -11,7 +11,7 @@
 | 1.1 | Stripe Billing | **Done** | #48 | Subscriptions, webhooks, billing page, plan-gated middleware |
 | 2.1 | Sitemap & Robots.txt | **Done** | Pre-existed | `src/app/sitemap.ts`, `src/app/robots.ts` |
 | 2.2 | Blog Content Pipeline | **Done** | #50 | 5 SEO articles in `/content/blog/` |
-| 2.3 | Dynamic OG Images | **TODO** | — | `@vercel/og` for property share pages |
+| 2.3 | Dynamic OG Images | **Done** | #54 | Portfolio share OG images, blog twitter card upgrade |
 | 2.4 | PostHog Analytics | **Done** | #50 | PostHogProvider, page tracking, user identification |
 | 2.5 | Conversion Prompts | **Done** | #50 | UpgradePrompt component at plan gates |
 | 3.1 | PropTrack AVM | **TODO** | — | Needs real API key; `ValuationProvider` interface exists |
@@ -19,20 +19,18 @@
 | 3.3 | Settlement Capture | **Done** | #52 | AI extraction, post-creation upload flow, CGT cost base |
 | 3.4 | Rental Yield Calculator | **Done** | #49 | Dashboard widget, gross/net yield |
 | 4.1 | Gmail/Outlook Integration | **TODO** | — | OAuth, inbox scanning, property matching |
-| 4.2 | CI/CD Pipeline | **TODO** | — | GitHub Actions: lint → typecheck → test → build |
+| 4.2 | CI/CD Pipeline | **Done** | #53 | Pipeline pre-existed; fixed ESLint ignores for worktrees/coverage |
 | 4.3 | Monitoring & Alerting | **TODO** | — | Sentry already configured; need Checkly uptime, cron health |
 | 4.4 | Security Hardening | **Done** | #51 | Rate limiting, security headers |
 | 4.5 | Database Backups | **TODO** | — | Verify Supabase backups, test restore, document DR |
 
-**Completed: 9/15 | Remaining: 6**
+**Completed: 11/15 | Remaining: 4**
 
 ### Recommended next items:
-1. **4.2 CI/CD Pipeline** — foundational infra, improves every future PR
-2. **2.3 Dynamic OG Images** — quick win, low complexity
-3. **4.3 Monitoring & Alerting** — Sentry exists, add uptime + cron health
-4. **4.5 Database Backups** — verification task, low complexity
-5. **3.1 PropTrack AVM** — blocked on API key
-6. **4.1 Gmail/Outlook** — highest complexity remaining
+1. **4.3 Monitoring & Alerting** — Sentry exists, add uptime + cron health
+2. **4.5 Database Backups** — verification task, low complexity
+3. **3.1 PropTrack AVM** — blocked on API key
+4. **4.1 Gmail/Outlook** — highest complexity remaining
 
 ---
 
