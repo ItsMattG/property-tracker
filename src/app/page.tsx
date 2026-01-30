@@ -1,8 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
-  Building2,
   ArrowRight,
+  Building2,
   Shield,
   Landmark,
   FileSpreadsheet,
@@ -194,11 +195,15 @@ export default async function HomePage() {
           <div className="space-y-16">
             {/* Panel 1: Dashboard */}
             <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="flex-1 rounded-xl border bg-muted aspect-video flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Dashboard Screenshot</p>
-                </div>
+              <div className="flex-1 rounded-xl border overflow-hidden shadow-lg">
+                <Image
+                  src="/images/screenshots/dashboard.png"
+                  alt="PropertyTracker dashboard showing portfolio overview with properties, transactions, potential savings, and rental yield metrics"
+                  width={1280}
+                  height={800}
+                  className="w-full h-auto"
+                  priority
+                />
               </div>
               <div className="flex-1">
                 <span className="text-sm font-medium text-primary">Dashboard</span>
@@ -215,11 +220,14 @@ export default async function HomePage() {
 
             {/* Panel 2: Tax Reports (reversed) */}
             <div className="flex flex-col md:flex-row-reverse items-center gap-8">
-              <div className="flex-1 rounded-xl border bg-muted aspect-video flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <FileSpreadsheet className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Tax Reports Screenshot</p>
-                </div>
+              <div className="flex-1 rounded-xl border overflow-hidden shadow-lg">
+                <Image
+                  src="/images/screenshots/tax-reports.png"
+                  alt="PropertyTracker reports page showing tax report options including ATO-compliant reports, capital gains tax, cash flow forecast, and audit checks"
+                  width={1280}
+                  height={800}
+                  className="w-full h-auto"
+                />
               </div>
               <div className="flex-1">
                 <span className="text-sm font-medium text-primary">Reports</span>
@@ -236,11 +244,14 @@ export default async function HomePage() {
 
             {/* Panel 3: Bank Feeds */}
             <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="flex-1 rounded-xl border bg-muted aspect-video flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <Landmark className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Bank Feeds Screenshot</p>
-                </div>
+              <div className="flex-1 rounded-xl border overflow-hidden shadow-lg">
+                <Image
+                  src="/images/screenshots/banking.png"
+                  alt="PropertyTracker banking page showing connected bank accounts with Commonwealth Bank transaction and offset accounts"
+                  width={1280}
+                  height={800}
+                  className="w-full h-auto"
+                />
               </div>
               <div className="flex-1">
                 <span className="text-sm font-medium text-primary">Banking</span>
