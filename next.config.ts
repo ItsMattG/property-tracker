@@ -1,5 +1,10 @@
 import { withSentryConfig } from "@sentry/nextjs";
+import bundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const nextConfig: NextConfig = {
   async headers() {
@@ -29,26 +34,28 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  // Sentry webpack plugin options
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
+export default withBundleAnalyzer(
+  withSentryConfig(nextConfig, {
+    // Sentry webpack plugin options
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
 
-  // Only upload source maps in CI
-  silent: !process.env.CI,
+    // Only upload source maps in CI
+    silent: !process.env.CI,
 
-  // Upload source maps for better stack traces
-  widenClientFileUpload: true,
+    // Upload source maps for better stack traces
+    widenClientFileUpload: true,
 
-  // Hide source maps from client bundles
-  sourcemaps: {
-    deleteSourcemapsAfterUpload: true,
-  },
+    // Hide source maps from client bundles
+    sourcemaps: {
+      deleteSourcemapsAfterUpload: true,
+    },
 
-  // Tree shake Sentry from client bundles when not needed
-  bundleSizeOptimizations: {
-    excludeDebugStatements: true,
-    excludeReplayIframe: true,
-    excludeReplayShadowDom: true,
-  },
-});
+    // Tree shake Sentry from client bundles when not needed
+    bundleSizeOptimizations: {
+      excludeDebugStatements: true,
+      excludeReplayIframe: true,
+      excludeReplayShadowDom: true,
+    },
+  })
+);
