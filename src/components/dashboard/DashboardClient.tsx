@@ -16,6 +16,8 @@ import { TopPerformerMatchesWidget } from "@/components/similar-properties";
 import { useTour } from "@/hooks/useTour";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 import { RentalYieldCard } from "@/components/rental-yield";
+import { ErrorState } from "@/components/ui/error-state";
+import { getErrorMessage } from "@/lib/errors";
 
 // Server-side data structure from dashboard.getInitialData
 // Note: Dates are Date objects on server but get serialized to strings when passed to client
@@ -49,7 +51,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
   }, [utils]);
 
   // Stats only contains numbers, so initialData works directly
-  const { data: stats, isLoading } = trpc.stats.dashboard.useQuery(undefined, {
+  const { data: stats, isLoading, isError, error, refetch } = trpc.stats.dashboard.useQuery(undefined, {
     initialData: initialData?.stats,
     staleTime: 60_000,
   });
@@ -139,6 +141,9 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
       )}
 
+      {isError ? (
+        <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
+      ) : (
       <div data-tour="portfolio-summary" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Link href="/properties">
           <Card className="hover:border-primary transition-colors cursor-pointer">
@@ -215,6 +220,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
 
         <TaxPositionCard />
       </div>
+      )}
 
       {properties && properties.length > 0 && (
         <ClimateRiskSummary properties={properties} />

@@ -12,6 +12,8 @@ import { trpc } from "@/lib/trpc/client";
 import { ArrowLeftRight, List, Calendar } from "lucide-react";
 import type { Category, TransactionFilterInput } from "@/types/category";
 import { useTour } from "@/hooks/useTour";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 
 type ViewMode = "transactions" | "reconciliation";
 
@@ -71,10 +73,14 @@ export default function TransactionsPage() {
 
       return { previous, queryKey };
     },
-    onError: (_err, _newData, context) => {
+    onSuccess: () => {
+      toast.success("Category updated");
+    },
+    onError: (error, _newData, context) => {
       if (context?.previous) {
         utils.transaction.list.setData(context.queryKey, context.previous);
       }
+      toast.error(getErrorMessage(error));
     },
     onSettled: () => {
       utils.transaction.list.invalidate();
@@ -82,7 +88,13 @@ export default function TransactionsPage() {
   });
 
   const bulkUpdateCategory = trpc.transaction.bulkUpdateCategory.useMutation({
-    onSuccess: () => utils.transaction.list.invalidate(),
+    onSuccess: (result) => {
+      toast.success(`Updated ${result.count} transactions`);
+      utils.transaction.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
   });
 
   const toggleVerified = trpc.transaction.toggleVerified.useMutation({
@@ -111,10 +123,11 @@ export default function TransactionsPage() {
 
       return { previous, queryKey };
     },
-    onError: (_err, _newData, context) => {
+    onError: (error, _newData, context) => {
       if (context?.previous) {
         utils.transaction.list.setData(context.queryKey, context.previous);
       }
+      toast.error(getErrorMessage(error));
     },
     onSettled: () => {
       utils.transaction.list.invalidate();

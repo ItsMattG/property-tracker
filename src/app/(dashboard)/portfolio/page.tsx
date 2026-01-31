@@ -178,21 +178,15 @@ function PortfolioContent() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Building2 className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold">No properties yet</h3>
-              <p className="text-muted-foreground max-w-sm mt-2">
-                Add your first investment property to start tracking your portfolio.
-              </p>
-              <Button asChild className="mt-4">
-                <Link href="/properties/new">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Property
-                </Link>
-              </Button>
-            </div>
+            <EmptyState
+              icon={Building2}
+              title="No properties yet"
+              description="Add your first investment property to start tracking your portfolio."
+              action={{
+                label: "Add Your First Property",
+                onClick: () => window.location.href = "/properties/new",
+              }}
+            />
           )}
         </>
       )}
@@ -233,9 +227,7 @@ function PortfolioLoading() {
         <p className="text-muted-foreground">Overview of your investment properties</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-64 rounded-lg bg-muted animate-pulse" />
-        ))}
+        <DataSkeleton variant="card" count={3} />
       </div>
     </div>
   );

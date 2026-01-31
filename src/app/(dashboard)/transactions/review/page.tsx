@@ -12,6 +12,7 @@ import { ExtractionReviewCard } from "@/components/documents/ExtractionReviewCar
 import { Sparkles, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/errors";
 
 type ConfidenceFilter = "all" | "high" | "low";
 
@@ -32,7 +33,7 @@ export default function ReviewPage() {
       utils.categorization.getPendingCount.invalidate();
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -43,7 +44,7 @@ export default function ReviewPage() {
       utils.categorization.getPendingCount.invalidate();
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -54,7 +55,7 @@ export default function ReviewPage() {
       utils.categorization.getPendingCount.invalidate();
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -64,7 +65,7 @@ export default function ReviewPage() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -79,7 +80,7 @@ export default function ReviewPage() {
         refetchExtractions();
       },
       onError: (error) => {
-        toast.error(error.message);
+        toast.error(getErrorMessage(error));
       },
     });
 
@@ -90,7 +91,7 @@ export default function ReviewPage() {
         refetchExtractions();
       },
       onError: (error) => {
-        toast.error(error.message);
+        toast.error(getErrorMessage(error));
       },
     });
 
