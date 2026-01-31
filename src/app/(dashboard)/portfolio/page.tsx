@@ -13,6 +13,10 @@ import { AggregatedView } from "@/components/portfolio/AggregatedView";
 import { trpc } from "@/lib/trpc/client";
 import { Plus, Building2 } from "lucide-react";
 import { useTour } from "@/hooks/useTour";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { DataSkeleton } from "@/components/ui/data-skeleton";
+import { getErrorMessage } from "@/lib/errors";
 
 type ViewMode = "cards" | "table" | "aggregate";
 type Period = "monthly" | "quarterly" | "annual";
@@ -44,7 +48,7 @@ function PortfolioContent() {
     router.push(`/portfolio?${params.toString()}`);
   };
 
-  const { data: metrics, isLoading, refetch } = trpc.portfolio.getPropertyMetrics.useQuery(
+  const { data: metrics, isLoading, isError, error, refetch } = trpc.portfolio.getPropertyMetrics.useQuery(
     {
       period,
       sortBy,
@@ -104,10 +108,20 @@ function PortfolioContent() {
           <p className="text-muted-foreground">Overview of your investment properties</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-64 rounded-lg bg-muted animate-pulse" />
-          ))}
+          <DataSkeleton variant="card" count={3} />
         </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">Portfolio</h2>
+          <p className="text-muted-foreground">Overview of your investment properties</p>
+        </div>
+        <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
       </div>
     );
   }
