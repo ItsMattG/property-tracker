@@ -44,19 +44,31 @@ function PortfolioContent() {
     router.push(`/portfolio?${params.toString()}`);
   };
 
-  const { data: metrics, isLoading, refetch } = trpc.portfolio.getPropertyMetrics.useQuery({
-    period,
-    sortBy,
-    sortOrder: "desc",
-    state: stateFilter,
-    status: statusFilter as "active" | "sold" | undefined,
-  });
+  const { data: metrics, isLoading, refetch } = trpc.portfolio.getPropertyMetrics.useQuery(
+    {
+      period,
+      sortBy,
+      sortOrder: "desc",
+      state: stateFilter,
+      status: statusFilter as "active" | "sold" | undefined,
+    },
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    }
+  );
 
-  const { data: summary } = trpc.portfolio.getSummary.useQuery({
-    period,
-    state: stateFilter,
-    status: statusFilter as "active" | "sold" | undefined,
-  });
+  const { data: summary } = trpc.portfolio.getSummary.useQuery(
+    {
+      period,
+      state: stateFilter,
+      status: statusFilter as "active" | "sold" | undefined,
+    },
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    }
+  );
 
   const handleUpdateValue = (propertyId: string) => {
     setSelectedPropertyId(propertyId);
