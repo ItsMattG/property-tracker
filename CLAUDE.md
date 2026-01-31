@@ -78,6 +78,12 @@ Always follow this workflow for new features:
 Always create a feature branch first. Never commit directly to main.
 
 ## Notifications
-When waiting for user input/approval, send:
-- macOS desktop notification (with sound)
-- Push notification to `ntfy.sh/property-tracker-claude`
+When waiting for user input/approval, ALWAYS run these commands:
+```bash
+# macOS desktop notification with sound
+osascript -e 'display notification "Waiting for your input" with title "Claude Code" sound name "Ping"'
+
+# Push notification to phone via ntfy
+curl -s -X POST "https://ntfy.sh/property-tracker-claude" -d "Claude needs your input" -H "Title: Claude Code" -H "Priority: high"
+```
+Run both commands in parallel whenever you ask a question or need user action.
