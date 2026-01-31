@@ -13,11 +13,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc/client";
-import {
-  generateTaxReportPDF,
-  generateTransactionsExcel,
-  downloadBlob,
-} from "@/lib/export-utils";
+import { downloadBlob } from "@/lib/export-utils";
 import { Download, FileSpreadsheet, FileText, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +38,8 @@ export default function AccountantExportPage() {
     if (!taxReport) return;
 
     try {
+      // Lazy load jsPDF (~500KB) only when user clicks export
+      const { generateTaxReportPDF } = await import("@/lib/export-utils");
       const blob = await generateTaxReportPDF(taxReport);
       downloadBlob(blob, `tax-report-${taxReport.financialYear}.pdf`);
       toast.success("PDF exported successfully");
@@ -54,6 +52,8 @@ export default function AccountantExportPage() {
     if (!taxReport) return;
 
     try {
+      // Lazy load xlsx (~1.2MB) only when user clicks export
+      const { generateTransactionsExcel } = await import("@/lib/export-utils");
       // Get all transactions for the FY
       const transactions = taxReport.properties.flatMap((p) =>
         p.atoBreakdown.map((item) => ({

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { properties, transactions, propertySales } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import {
   calculateCostBase,
   calculateCapitalGain,
@@ -93,18 +93,27 @@ export const cgtRouter = router({
         userProperties = userProperties.filter((p) => p.status === "sold");
       }
 
-      // Get all capital transactions for the user
+      // Get all capital transactions for the user (filtered to capital categories at DB level)
       const allTxns = await ctx.db.query.transactions.findMany({
-        where: eq(transactions.userId, ctx.portfolio.ownerId),
+        where: and(
+          eq(transactions.userId, ctx.portfolio.ownerId),
+          sql`${transactions.category} = ANY(${CAPITAL_CATEGORIES})`
+        ),
       });
+
+      // Pre-index capital transactions by propertyId for O(1) lookup
+      const capitalTxnsByProperty = new Map<string, typeof allTxns>();
+      for (const txn of allTxns) {
+        if (txn.propertyId) {
+          const existing = capitalTxnsByProperty.get(txn.propertyId) ?? [];
+          existing.push(txn);
+          capitalTxnsByProperty.set(txn.propertyId, existing);
+        }
+      }
 
       // Build summary for each property
       const propertySummaries = userProperties.map((property) => {
-        const propertyCapitalTxns = allTxns.filter(
-          (t) =>
-            t.propertyId === property.id &&
-            CAPITAL_CATEGORIES.includes(t.category)
-        );
+        const propertyCapitalTxns = capitalTxnsByProperty.get(property.id) ?? [];
 
         const costBase = calculateCostBase(
           property.purchasePrice,
@@ -332,20 +341,16 @@ export const cgtRouter = router({
         });
       }
 
-      // Look for transactions that might be selling costs
-      const potentialCosts = await ctx.db.query.transactions.findMany({
+      // Look for transactions that might be selling costs (filtered at DB level)
+      const sellingCostCategories = ["property_agent_fees", "legal_expenses"];
+      const sellingCosts = await ctx.db.query.transactions.findMany({
         where: and(
           eq(transactions.propertyId, input.propertyId),
-          eq(transactions.userId, ctx.portfolio.ownerId)
+          eq(transactions.userId, ctx.portfolio.ownerId),
+          sql`${transactions.category} = ANY(${sellingCostCategories})`
         ),
         orderBy: (t, { desc }) => [desc(t.date)],
       });
-
-      // Filter to likely selling cost categories
-      const sellingCostCategories = ["property_agent_fees", "legal_expenses"];
-      const sellingCosts = potentialCosts.filter((t) =>
-        sellingCostCategories.includes(t.category)
-      );
 
       return {
         transactions: sellingCosts.map((t) => ({

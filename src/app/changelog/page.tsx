@@ -22,10 +22,13 @@ async function getEntries(category?: "feature" | "improvement" | "fix") {
 }
 
 export default async function ChangelogPage() {
-  const allEntries = await getEntries();
-  const featureEntries = await getEntries("feature");
-  const improvementEntries = await getEntries("improvement");
-  const fixEntries = await getEntries("fix");
+  // Fetch all categories in parallel instead of sequentially
+  const [allEntries, featureEntries, improvementEntries, fixEntries] = await Promise.all([
+    getEntries(),
+    getEntries("feature"),
+    getEntries("improvement"),
+    getEntries("fix"),
+  ]);
 
   return (
     <main className="py-12 px-4">

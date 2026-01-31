@@ -233,16 +233,15 @@ export const propertyValueRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
-      const latestValuation = await ctx.db.query.propertyValues.findFirst({
+      // Fetch latest 2 valuations in single query instead of 2 queries
+      const recentValuations = await ctx.db.query.propertyValues.findMany({
         where: eq(propertyValues.propertyId, input.propertyId),
         orderBy: [desc(propertyValues.valueDate)],
+        limit: 2,
       });
 
-      const previousValuation = await ctx.db.query.propertyValues.findFirst({
-        where: eq(propertyValues.propertyId, input.propertyId),
-        orderBy: [desc(propertyValues.valueDate)],
-        offset: 1,
-      });
+      const latestValuation = recentValuations[0];
+      const previousValuation = recentValuations[1];
 
       if (!latestValuation) {
         return null;
