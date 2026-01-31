@@ -18,6 +18,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Skip static generation - app uses Clerk auth which validates key at build time
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "PropertyTracker - Australian Property Investment Tracking",
   description:
