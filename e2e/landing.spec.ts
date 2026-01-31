@@ -30,7 +30,7 @@ test.describe("Landing Page", () => {
 
     await expect(page.getByText(/properties tracked/i)).toBeVisible();
     await expect(page.getByText(/investors/i).first()).toBeVisible();
-    await expect(page.getByText(/bank-grade security/i)).toBeVisible();
+    await expect(page.getByText(/bank-grade security/i).first()).toBeVisible();
     await expect(page.getByText(/australian/i).first()).toBeVisible();
   });
 
@@ -74,7 +74,7 @@ test.describe("Landing Page", () => {
     const trigger = page.getByText(/is my data safe/i);
     await trigger.click();
 
-    await expect(page.getByText(/bank-grade security/i)).toBeVisible();
+    await expect(page.getByText(/bank-grade security/i).first()).toBeVisible();
   });
 
   test("should navigate to sign up when clicking Get Started", async ({ page }) => {
