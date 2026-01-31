@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { trpc } from "@/lib/trpc/client";
 import { Plus, Building2 } from "lucide-react";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function PropertiesPage() {
   const { data: properties, isLoading, refetch } = trpc.property.list.useQuery(
@@ -15,7 +17,13 @@ export default function PropertiesPage() {
     }
   );
   const deleteProperty = trpc.property.delete.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Property deleted");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
   });
 
   const handleDelete = async (id: string) => {

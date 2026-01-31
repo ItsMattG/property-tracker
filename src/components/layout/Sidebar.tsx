@@ -75,6 +75,7 @@ const settingsItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const utils = trpc.useUtils();
   const shouldFetchPendingCount = pathname === "/dashboard" || pathname === "/transactions/review" || pathname?.startsWith("/transactions");
 
   const { data: pendingCount } = trpc.categorization.getPendingCount.useQuery(undefined, {
@@ -85,6 +86,21 @@ export function Sidebar() {
   const { data: activeEntity } = trpc.entity.getActive.useQuery(undefined, {
     staleTime: Infinity, // Entity rarely changes, invalidate on switch
   });
+
+  // Prefetch data when hovering nav items
+  const handlePrefetch = (href: string) => {
+    if (href === "/dashboard") {
+      utils.stats.dashboard.prefetch();
+      utils.property.list.prefetch();
+    } else if (href === "/portfolio") {
+      utils.portfolio.getSummary.prefetch({ period: "monthly" });
+      utils.portfolio.getPropertyMetrics.prefetch({ period: "monthly", sortBy: "alphabetical", sortOrder: "desc" });
+    } else if (href === "/properties") {
+      utils.property.list.prefetch();
+    } else if (href === "/transactions") {
+      utils.transaction.list.prefetch({ limit: 50, offset: 0 });
+    }
+  };
 
   return (
     <aside className="w-64 border-r border-border bg-card min-h-screen p-4">
@@ -127,6 +143,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onMouseEnter={() => handlePrefetch(item.href)}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                 isActive

@@ -17,6 +17,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc/client";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 
 interface DocumentItem {
   id: string;
@@ -58,18 +60,19 @@ export function DocumentList({ propertyId, transactionId }: DocumentListProps) {
 
   const deleteDocument = trpc.documents.delete.useMutation({
     onSuccess: () => {
+      toast.success("Document deleted");
       refetch();
+      setDeletingId(null);
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
       setDeletingId(null);
     },
   });
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
-    try {
-      await deleteDocument.mutateAsync({ id });
-    } catch {
-      setDeletingId(null);
-    }
+    await deleteDocument.mutateAsync({ id });
   };
 
   const getFileIcon = (fileType: string) => {
