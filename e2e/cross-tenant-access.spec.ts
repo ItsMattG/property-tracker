@@ -11,7 +11,14 @@ test.describe("Cross-Tenant Access Protection", () => {
       decoyIds = await seedDecoyData();
     } catch (error) {
       // If pool exhaustion, mark for skipping rather than failing
-      if ((error as Error).message?.includes("MaxClientsInSessionMode")) {
+      // Check both error.message and error.cause.message (drizzle wraps postgres errors)
+      const errorMessage = (error as Error).message || "";
+      const causeMessage = ((error as Error).cause as Error)?.message || "";
+      const isPoolError =
+        errorMessage.includes("MaxClientsInSessionMode") ||
+        causeMessage.includes("MaxClientsInSessionMode");
+
+      if (isPoolError) {
         console.warn("Skipping cross-tenant tests due to database pool exhaustion");
         seedingFailed = true;
       } else {
