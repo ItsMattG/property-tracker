@@ -1,6 +1,12 @@
 import { sign, verify } from "jsonwebtoken";
 
-export const JWT_SECRET = process.env.JWT_SECRET || "development-secret-change-me";
+// Security: JWT_SECRET must be explicitly set - no weak default
+const secret = process.env.JWT_SECRET;
+if (!secret) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
+
+export const JWT_SECRET = secret;
 export const JWT_EXPIRES_IN = "30d";
 
 export interface MobileJwtPayload {
