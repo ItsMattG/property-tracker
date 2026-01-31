@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { anomalyAlerts } from "../db/schema";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 export const anomalyRouter = router({
@@ -66,19 +66,26 @@ export const anomalyRouter = router({
     }),
 
   getActiveCount: protectedProcedure.query(async ({ ctx }) => {
-    const alerts = await ctx.db.query.anomalyAlerts.findMany({
-      where: and(
-        eq(anomalyAlerts.userId, ctx.portfolio.ownerId),
-        eq(anomalyAlerts.status, "active")
-      ),
-      columns: { severity: true },
-    });
+    const result = await ctx.db
+      .select({
+        total: sql<number>`count(*)::int`,
+        critical: sql<number>`count(*) filter (where ${anomalyAlerts.severity} = 'critical')::int`,
+        warning: sql<number>`count(*) filter (where ${anomalyAlerts.severity} = 'warning')::int`,
+        info: sql<number>`count(*) filter (where ${anomalyAlerts.severity} = 'info')::int`,
+      })
+      .from(anomalyAlerts)
+      .where(
+        and(
+          eq(anomalyAlerts.userId, ctx.portfolio.ownerId),
+          eq(anomalyAlerts.status, "active")
+        )
+      );
 
     return {
-      total: alerts.length,
-      critical: alerts.filter((a) => a.severity === "critical").length,
-      warning: alerts.filter((a) => a.severity === "warning").length,
-      info: alerts.filter((a) => a.severity === "info").length,
+      total: result[0]?.total ?? 0,
+      critical: result[0]?.critical ?? 0,
+      warning: result[0]?.warning ?? 0,
+      info: result[0]?.info ?? 0,
     };
   }),
 
