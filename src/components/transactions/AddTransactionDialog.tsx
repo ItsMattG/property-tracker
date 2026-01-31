@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 import { Plus } from "lucide-react";
 import { categories } from "@/lib/categories";
 
@@ -84,7 +85,7 @@ export function AddTransactionDialog({
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to add transaction");
+      toast.error(getErrorMessage(error));
     },
   });
 

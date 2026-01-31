@@ -40,7 +40,11 @@ export function PortfolioSwitcher() {
     <div className="px-3 mb-4">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="w-full justify-between">
+          <Button
+            variant="outline"
+            className="w-full justify-between"
+            aria-label={`Switch portfolio. Current: ${context?.isOwnPortfolio ? "My Portfolio" : context?.ownerName || "Select portfolio"}`}
+          >
             <div className="flex items-center gap-2">
               <Briefcase className="w-4 h-4" />
               <span className="truncate">
