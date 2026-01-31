@@ -46,7 +46,7 @@ describe("POST /api/entity/switch", () => {
 
   it("returns 401 when user not found in database", async () => {
     vi.mocked(auth).mockResolvedValue({ userId: "clerk_123" } as never);
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(null);
+    vi.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
 
     const request = new NextRequest("http://localhost/api/entity/switch", {
       method: "POST",
@@ -63,7 +63,7 @@ describe("POST /api/entity/switch", () => {
       id: "user-1",
       clerkId: "clerk_123",
     } as never);
-    vi.mocked(db.query.portfolioMembers.findFirst).mockResolvedValue(null);
+    vi.mocked(db.query.portfolioMembers.findFirst).mockResolvedValue(undefined);
 
     const request = new NextRequest("http://localhost/api/entity/switch", {
       method: "POST",
