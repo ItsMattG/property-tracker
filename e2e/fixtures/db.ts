@@ -4,7 +4,8 @@ import * as schema from "../../src/server/db/schema";
 import { eq } from "drizzle-orm";
 
 const connectionString = process.env.DATABASE_URL!;
-const client = postgres(connectionString);
+// Use minimal connection pool to avoid MaxClientsInSessionMode errors
+const client = postgres(connectionString, { max: 1, idle_timeout: 5 });
 export const testDb = drizzle(client, { schema });
 
 /**
