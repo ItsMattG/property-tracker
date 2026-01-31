@@ -24,10 +24,6 @@ export const mobileAuthRouter = router({
         where: eq(users.email, input.email.toLowerCase().trim()),
       });
 
-      console.log("[mobileAuth] Login attempt:", input.email.toLowerCase().trim());
-      console.log("[mobileAuth] User found:", !!user);
-      console.log("[mobileAuth] Has password:", !!user?.mobilePasswordHash);
-
       if (!user || !user.mobilePasswordHash) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
