@@ -7,6 +7,8 @@ import { TRPCError } from "@trpc/server";
 import { getPlanFromSubscription } from "../services/subscription";
 
 export const billingRouter = router({
+  // Shows subscription status of the portfolio being viewed
+  // (could be user's own or a portfolio they have access to)
   getSubscription: protectedProcedure.query(async ({ ctx }) => {
     const sub = await ctx.db.query.subscriptions.findFirst({
       where: eq(subscriptions.userId, ctx.portfolio.ownerId),
@@ -35,6 +37,8 @@ export const billingRouter = router({
     };
   }),
 
+  // Creates checkout session for the CURRENT USER (not portfolio owner)
+  // Users can only create/upgrade their own subscriptions
   createCheckoutSession: protectedProcedure
     .input(
       z.object({
@@ -77,6 +81,8 @@ export const billingRouter = router({
       return { url: session.url };
     }),
 
+  // Creates portal session for the CURRENT USER (not portfolio owner)
+  // Users can only manage their own billing
   createPortalSession: protectedProcedure.mutation(async ({ ctx }) => {
     const sub = await ctx.db.query.subscriptions.findFirst({
       where: eq(subscriptions.userId, ctx.user.id),

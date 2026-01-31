@@ -120,35 +120,65 @@ export const similarPropertiesRouter = router({
         return [];
       }
 
-      const vectorStr = `[${propertyVector.vector.join(",")}]`;
+      // Validate vector data before using in SQL
+      const vectorArray = propertyVector.vector;
+      if (
+        !Array.isArray(vectorArray) ||
+        !vectorArray.every((n) => typeof n === "number" && isFinite(n))
+      ) {
+        throw new Error("Invalid vector data");
+      }
+      const vectorStr = `[${vectorArray.join(",")}]`;
 
-      // Raw SQL for vector similarity search
-      const results = await ctx.db.execute(sql`
-        SELECT
-          pv.id,
-          pv.property_id,
-          pv.external_listing_id,
-          pv.user_id,
-          pv.vector <-> ${vectorStr}::vector AS distance,
-          p.suburb as property_suburb,
-          p.state as property_state,
-          p.address as property_address,
-          el.suburb as listing_suburb,
-          el.state as listing_state,
-          el.property_type as listing_type,
-          el.price as listing_price,
-          el.source_url as listing_url
-        FROM property_vectors pv
-        LEFT JOIN properties p ON p.id = pv.property_id
-        LEFT JOIN external_listings el ON el.id = pv.external_listing_id
-        WHERE pv.id != ${propertyVector.id}
-          AND (
-            pv.user_id = ${ctx.portfolio.ownerId}
-            OR (${input.includeCommunity} AND pv.is_shared = true)
-          )
-        ORDER BY pv.vector <-> ${vectorStr}::vector
-        LIMIT ${input.limit}
-      `);
+      // Build query with conditional structure to avoid boolean interpolation
+      // Note: pgvector requires the vector as a string literal for the <-> operator
+      const results = input.includeCommunity
+        ? await ctx.db.execute(sql`
+            SELECT
+              pv.id,
+              pv.property_id,
+              pv.external_listing_id,
+              pv.user_id,
+              pv.vector <-> ${vectorStr}::vector AS distance,
+              p.suburb as property_suburb,
+              p.state as property_state,
+              p.address as property_address,
+              el.suburb as listing_suburb,
+              el.state as listing_state,
+              el.property_type as listing_type,
+              el.price as listing_price,
+              el.source_url as listing_url
+            FROM property_vectors pv
+            LEFT JOIN properties p ON p.id = pv.property_id
+            LEFT JOIN external_listings el ON el.id = pv.external_listing_id
+            WHERE pv.id != ${propertyVector.id}
+              AND (pv.user_id = ${ctx.portfolio.ownerId} OR pv.is_shared = true)
+            ORDER BY pv.vector <-> ${vectorStr}::vector
+            LIMIT ${input.limit}
+          `)
+        : await ctx.db.execute(sql`
+            SELECT
+              pv.id,
+              pv.property_id,
+              pv.external_listing_id,
+              pv.user_id,
+              pv.vector <-> ${vectorStr}::vector AS distance,
+              p.suburb as property_suburb,
+              p.state as property_state,
+              p.address as property_address,
+              el.suburb as listing_suburb,
+              el.state as listing_state,
+              el.property_type as listing_type,
+              el.price as listing_price,
+              el.source_url as listing_url
+            FROM property_vectors pv
+            LEFT JOIN properties p ON p.id = pv.property_id
+            LEFT JOIN external_listings el ON el.id = pv.external_listing_id
+            WHERE pv.id != ${propertyVector.id}
+              AND pv.user_id = ${ctx.portfolio.ownerId}
+            ORDER BY pv.vector <-> ${vectorStr}::vector
+            LIMIT ${input.limit}
+          `);
 
       return (results as unknown as Array<Record<string, unknown>>).map((row) => {
         const isPortfolio = row.property_id && row.user_id === ctx.portfolio.ownerId;
