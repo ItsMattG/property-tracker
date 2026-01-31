@@ -4,8 +4,8 @@ test.describe("Landing Page", () => {
   test("should display hero section with tagline", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("heading", { name: /your spreadsheet/i })).toBeVisible();
-    await expect(page.getByText(/automated/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /track smarter/i })).toBeVisible();
+    await expect(page.getByText(/tax time sorted/i)).toBeVisible();
     await expect(page.getByRole("link", { name: /start free trial/i }).first()).toBeVisible();
   });
 
@@ -20,9 +20,9 @@ test.describe("Landing Page", () => {
   test("should display feature cards", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("heading", { name: /australian bank feeds/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /ato tax categories/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /bank-grade security/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /automatic bank feeds/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /ato-ready categories/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /your data stays here/i })).toBeVisible();
   });
 
   test("should display social proof bar", async ({ page }) => {
@@ -30,30 +30,30 @@ test.describe("Landing Page", () => {
 
     await expect(page.getByText(/properties tracked/i)).toBeVisible();
     await expect(page.getByText(/investors/i).first()).toBeVisible();
-    await expect(page.getByText(/bank-grade encryption/i)).toBeVisible();
-    await expect(page.getByText(/australian owned/i)).toBeVisible();
+    await expect(page.getByText(/bank-grade security/i)).toBeVisible();
+    await expect(page.getByText(/australian/i).first()).toBeVisible();
   });
 
   test("should display product screenshot panels", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByText(/see your whole portfolio at a glance/i)).toBeVisible();
-    await expect(page.getByText(/tax-ready reports in one click/i)).toBeVisible();
-    await expect(page.getByText(/automatic bank transaction import/i)).toBeVisible();
+    await expect(page.getByText(/your portfolio, one screen/i)).toBeVisible();
+    await expect(page.getByText(/tax time in minutes/i)).toBeVisible();
+    await expect(page.getByText(/transactions that categorize themselves/i)).toBeVisible();
   });
 
   test("should display benefits list", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByText(/automatic transaction import/i)).toBeVisible();
-    await expect(page.getByText(/smart categorization/i)).toBeVisible();
-    await expect(page.getByText(/one-click export/i)).toBeVisible();
+    await expect(page.getByText(/bank transactions import and categorize automatically/i)).toBeVisible();
+    await expect(page.getByText(/ato expense codes applied/i)).toBeVisible();
+    await expect(page.getByText(/export-ready reports/i)).toBeVisible();
   });
 
   test("should display pricing cards", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByText(/simple, transparent pricing/i)).toBeVisible();
+    await expect(page.getByText(/simple pricing/i)).toBeVisible();
     await expect(page.getByText("$0")).toBeVisible();
     await expect(page.getByText("$14")).toBeVisible();
     await expect(page.getByText("$29")).toBeVisible();
@@ -64,17 +64,17 @@ test.describe("Landing Page", () => {
     await page.goto("/");
 
     await expect(page.getByText(/frequently asked questions/i)).toBeVisible();
-    await expect(page.getByText(/is my financial data secure/i)).toBeVisible();
-    await expect(page.getByText(/which australian banks/i)).toBeVisible();
+    await expect(page.getByText(/is my data safe/i)).toBeVisible();
+    await expect(page.getByText(/which banks are supported/i)).toBeVisible();
   });
 
   test("FAQ accordion expands on click", async ({ page }) => {
     await page.goto("/");
 
-    const trigger = page.getByText(/is my financial data secure/i);
+    const trigger = page.getByText(/is my data safe/i);
     await trigger.click();
 
-    await expect(page.getByText(/aes-256 encryption/i)).toBeVisible();
+    await expect(page.getByText(/bank-grade security/i)).toBeVisible();
   });
 
   test("should navigate to sign up when clicking Get Started", async ({ page }) => {
