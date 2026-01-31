@@ -5,10 +5,8 @@ import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { trpc } from "@/lib/trpc/client";
 import { Plus, Building2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 export default function PropertiesPage() {
-  const router = useRouter();
   const { data: properties, isLoading, refetch } = trpc.property.list.useQuery();
   const deleteProperty = trpc.property.delete.useMutation({
     onSuccess: () => refetch(),
@@ -18,10 +16,6 @@ export default function PropertiesPage() {
     if (confirm("Are you sure you want to delete this property?")) {
       await deleteProperty.mutateAsync({ id });
     }
-  };
-
-  const handleEdit = (id: string) => {
-    router.push(`/properties/${id}/edit`);
   };
 
   if (isLoading) {
@@ -70,7 +64,6 @@ export default function PropertiesPage() {
             <PropertyCard
               key={property.id}
               property={property}
-              onEdit={handleEdit}
               onDelete={handleDelete}
             />
           ))}

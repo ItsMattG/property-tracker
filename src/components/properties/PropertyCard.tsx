@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import type { Property } from "@/server/db/schema";
+import { trpc } from "@/lib/trpc/client";
 
 // When serialized through tRPC, Date fields become strings
 type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
@@ -27,6 +28,12 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) {
+  const utils = trpc.useUtils();
+
+  const handlePrefetch = () => {
+    utils.property.get.prefetch({ id: property.id });
+  };
+
   const formattedPrice = new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: "AUD",
@@ -34,7 +41,12 @@ export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) 
   }).format(Number(property.purchasePrice));
 
   return (
-    <Card>
+    <Link
+      href={`/properties/${property.id}`}
+      onMouseEnter={handlePrefetch}
+      className="block"
+    >
+      <Card className="hover:border-primary transition-colors">
       <CardHeader className="flex flex-row items-start justify-between pb-2">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -49,16 +61,16 @@ export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) 
           </div>
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
             <Button variant="ghost" size="sm">
               <MoreVertical className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit?.(property.id)}>
+            <DropdownMenuItem onClick={(e) => { e.preventDefault(); onEdit?.(property.id); }}>
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild onClick={(e) => e.preventDefault()}>
               <Link href={`/properties/${property.id}/documents`}>
                 <FileText className="w-4 h-4 mr-2" />
                 Documents
@@ -66,7 +78,7 @@ export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) 
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
-              onClick={() => onDelete?.(property.id)}
+              onClick={(e) => { e.preventDefault(); onDelete?.(property.id); }}
             >
               Delete
             </DropdownMenuItem>
@@ -89,5 +101,6 @@ export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) 
         </div>
       </CardContent>
     </Card>
+    </Link>
   );
 }

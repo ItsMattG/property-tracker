@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { TRPCProvider } from "@/lib/trpc/Provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
 import "./globals.css";
 
@@ -67,6 +68,7 @@ export default function RootLayout({
           </TRPCProvider>
           <Toaster richColors position="top-right" />
           <Analytics />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>

@@ -2,7 +2,12 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { ChatProvider } from "@/components/chat/ChatProvider";
 import { ChatButton } from "@/components/chat/ChatButton";
-import { ChatPanel } from "@/components/chat/ChatPanel";
+import nextDynamic from "next/dynamic";
+
+const ChatPanel = nextDynamic(
+  () => import("@/components/chat/ChatPanel").then((m) => ({ default: m.ChatPanel })),
+  { ssr: false }
+);
 
 // All dashboard pages require auth - skip static generation
 export const dynamic = "force-dynamic";
