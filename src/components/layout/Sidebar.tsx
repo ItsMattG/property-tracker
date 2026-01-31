@@ -75,9 +75,12 @@ const settingsItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const shouldFetchPendingCount = pathname === "/dashboard" || pathname === "/transactions/review" || pathname?.startsWith("/transactions");
+
   const { data: pendingCount } = trpc.categorization.getPendingCount.useQuery(undefined, {
-    staleTime: 30_000, // Refresh every 30 seconds
+    staleTime: 60_000, // Refresh every 60 seconds (increased from 30)
     refetchOnWindowFocus: false,
+    enabled: shouldFetchPendingCount,
   });
   const { data: activeEntity } = trpc.entity.getActive.useQuery(undefined, {
     staleTime: Infinity, // Entity rarely changes, invalidate on switch

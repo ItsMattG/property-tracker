@@ -50,6 +50,7 @@ import { referralRouter } from "./referral";
 import { billingRouter } from "./billing";
 import { rentalYieldRouter } from "./rentalYield";
 import { settlementRouter } from "./settlement";
+import { dashboardRouter } from "./dashboard";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -103,6 +104,7 @@ export const appRouter = router({
   billing: billingRouter,
   rentalYield: rentalYieldRouter,
   settlement: settlementRouter,
+  dashboard: dashboardRouter,
 });
 
 export type AppRouter = typeof appRouter;

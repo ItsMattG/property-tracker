@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, ArrowLeftRight, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
@@ -17,36 +17,55 @@ import { useTour } from "@/hooks/useTour";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 import { RentalYieldCard } from "@/components/rental-yield";
 
-interface DashboardStats {
-  propertyCount: number;
-  transactionCount: number;
-  uncategorizedCount: number;
+// Server-side data structure from dashboard.getInitialData
+// Note: Dates are Date objects on server but get serialized to strings when passed to client
+interface DashboardInitialData {
+  stats: {
+    propertyCount: number;
+    transactionCount: number;
+    uncategorizedCount: number;
+  };
+  alerts: unknown[];
+  onboarding: unknown | null;
+  properties: unknown[];
 }
 
 interface DashboardClientProps {
-  initialStats: DashboardStats | null;
+  initialData: DashboardInitialData | null;
 }
 
-export function DashboardClient({ initialStats }: DashboardClientProps) {
+export function DashboardClient({ initialData }: DashboardClientProps) {
   const [wizardClosed, setWizardClosed] = useState(false);
   const utils = trpc.useUtils();
   useReferralTracking();
 
+  // Background prefetch common navigation targets after initial render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      utils.property.list.prefetch();
+      utils.transaction.list.prefetch({ limit: 50, offset: 0 });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [utils]);
+
+  // Stats only contains numbers, so initialData works directly
   const { data: stats, isLoading } = trpc.stats.dashboard.useQuery(undefined, {
-    initialData: initialStats ?? undefined,
-    staleTime: 60_000, // Dashboard stats can be stale for 1 minute
+    initialData: initialData?.stats,
+    staleTime: 60_000,
   });
 
+  // For queries with Date fields, we fetch fresh data on client
+  // The server still fetches in parallel for SSR hydration benefits
   const { data: alerts } = trpc.banking.listAlerts.useQuery(undefined, {
-    staleTime: 10_000, // Alerts should be fresher
+    staleTime: 10_000,
   });
 
   const { data: onboarding } = trpc.onboarding.getProgress.useQuery(undefined, {
-    staleTime: 5 * 60_000, // Onboarding rarely changes
+    staleTime: 5 * 60_000,
   });
 
   const { data: properties } = trpc.property.list.useQuery(undefined, {
-    staleTime: 5 * 60_000, // Properties rarely change
+    staleTime: 5 * 60_000,
   });
 
   const dismissAlert = trpc.banking.dismissAlert.useMutation({
