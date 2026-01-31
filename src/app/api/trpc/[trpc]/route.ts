@@ -19,16 +19,15 @@ const handler = (req: Request) =>
       // Database/unknown errors - generate ID, log full details, sanitize message
       const errorId = randomUUID().slice(0, 8);
 
-      logger.error("Unhandled API error", {
-        errorId,
-        path,
-        message: error.message,
-        stack: error.stack,
-        cause: error.cause instanceof Error ? {
-          message: error.cause.message,
-          stack: error.cause.stack,
-        } : error.cause,
-      });
+      logger.error(
+        "Unhandled API error",
+        error,
+        {
+          errorId,
+          path,
+          causeMessage: error.cause instanceof Error ? error.cause.message : String(error.cause ?? ""),
+        }
+      );
 
       // Replace error message with sanitized version
       // The error object is mutable, so this affects what gets sent to client
