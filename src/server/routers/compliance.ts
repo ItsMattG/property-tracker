@@ -113,12 +113,39 @@ export const complianceRouter = router({
       status: ReturnType<typeof calculateComplianceStatus>;
     }> = [];
 
+    // Pre-index records by propertyId for O(1) lookup
+    const recordsByProperty = new Map<string, typeof allRecords>();
+    for (const record of allRecords) {
+      const existing = recordsByProperty.get(record.propertyId) ?? [];
+      existing.push(record);
+      recordsByProperty.set(record.propertyId, existing);
+    }
+
+    // Cache requirements by state to avoid redundant calls
+    const requirementsByState = new Map<string, ReturnType<typeof getRequirementsForState>>();
+
     for (const property of userProperties) {
-      const requirements = getRequirementsForState(property.state as AustralianState);
-      const propertyRecords = allRecords.filter((r) => r.propertyId === property.id);
+      // Get cached requirements or fetch and cache
+      let requirements = requirementsByState.get(property.state);
+      if (!requirements) {
+        requirements = getRequirementsForState(property.state as AustralianState);
+        requirementsByState.set(property.state, requirements);
+      }
+
+      // O(1) lookup instead of O(n) filter
+      const propertyRecords = recordsByProperty.get(property.id) ?? [];
+
+      // Pre-index property records by requirementId for O(1) lookup
+      const recordsByRequirement = new Map<string, (typeof allRecords)[0]>();
+      for (const record of propertyRecords) {
+        // Keep most recent (already sorted by nextDueAt desc)
+        if (!recordsByRequirement.has(record.requirementId)) {
+          recordsByRequirement.set(record.requirementId, record);
+        }
+      }
 
       for (const requirement of requirements) {
-        const lastRecord = propertyRecords.find((r) => r.requirementId === requirement.id);
+        const lastRecord = recordsByRequirement.get(requirement.id);
 
         if (lastRecord) {
           const nextDueAt = new Date(lastRecord.nextDueAt);

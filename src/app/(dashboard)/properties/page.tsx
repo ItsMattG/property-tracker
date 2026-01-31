@@ -7,7 +7,13 @@ import { trpc } from "@/lib/trpc/client";
 import { Plus, Building2 } from "lucide-react";
 
 export default function PropertiesPage() {
-  const { data: properties, isLoading, refetch } = trpc.property.list.useQuery();
+  const { data: properties, isLoading, refetch } = trpc.property.list.useQuery(
+    undefined,
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    }
+  );
   const deleteProperty = trpc.property.delete.useMutation({
     onSuccess: () => refetch(),
   });
