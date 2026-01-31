@@ -12,20 +12,23 @@ test.describe("Dashboard", () => {
   });
 
   test("should display sidebar navigation", async ({ authenticatedPage: page }) => {
-    await expect(page.getByRole("link", { name: /dashboard/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /properties/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /transactions/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /banking/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /export/i })).toBeVisible();
+    const sidebar = page.locator("aside");
+    await expect(sidebar.getByRole("link", { name: /dashboard/i })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: /properties/i })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: /transactions/i })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: /banking/i })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: /export/i })).toBeVisible();
   });
 
   test("should navigate to properties from sidebar", async ({ authenticatedPage: page }) => {
-    await page.getByRole("link", { name: /properties/i }).click();
+    const sidebar = page.locator("aside");
+    await sidebar.getByRole("link", { name: /properties/i }).click();
     await expect(page).toHaveURL(/properties/);
   });
 
   test("should navigate to transactions from sidebar", async ({ authenticatedPage: page }) => {
-    await page.getByRole("link", { name: /transactions/i }).click();
+    const sidebar = page.locator("aside");
+    await sidebar.getByRole("link", { name: /transactions/i }).click();
     await expect(page).toHaveURL(/transactions/);
   });
 });

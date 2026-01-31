@@ -22,12 +22,21 @@ import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
 import { Upload, Loader2, FileText } from "lucide-react";
 import { DepreciationTable } from "./DepreciationTable";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Lazy-initialize Supabase client to avoid errors when env vars are missing
+let supabaseClient: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (!supabaseClient) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      throw new Error("Supabase environment variables are not configured");
+    }
+    supabaseClient = createClient(url, key);
+  }
+  return supabaseClient;
+}
 
 interface ExtractedAsset {
   assetName: string;
@@ -101,7 +110,7 @@ export function DepreciationUpload() {
       const fileName = `${Date.now()}-${file.name}`;
       const path = `depreciation/${selectedProperty}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await getSupabase().storage
         .from("documents")
         .upload(path, file);
 

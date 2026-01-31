@@ -10,7 +10,7 @@ test.describe("Task Management", () => {
 
   test("shows empty state when no tasks exist", async ({ authenticatedPage: page }) => {
     await expect(page.getByText("No tasks yet")).toBeVisible();
-    await expect(page.getByText("New Task")).toBeVisible();
+    await expect(page.getByRole("button", { name: /new task/i })).toBeVisible();
   });
 
   test("creates a new task", async ({ authenticatedPage: page }) => {
