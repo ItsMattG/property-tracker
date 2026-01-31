@@ -1,12 +1,24 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { ArrowLeft, Loader2, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { ValuationOverviewCard } from "@/components/property/valuation-overview-card";
 import { CapitalGrowthStats } from "@/components/property/capital-growth-stats";
-import { ValuationChart } from "@/components/property/valuation-chart";
+import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+
+const ValuationChart = dynamic(
+  () =>
+    import("@/components/property/valuation-chart").then((m) => ({
+      default: m.ValuationChart,
+    })),
+  {
+    loading: () => <ChartSkeleton height={300} />,
+    ssr: false,
+  }
+);
 
 export default function PropertyValuationPage() {
   const params = useParams();
