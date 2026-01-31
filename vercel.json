@@ -30,7 +30,7 @@
     },
     {
       "path": "/api/cron/uptime-check",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/api/cron/health-monitor",
