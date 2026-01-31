@@ -17,7 +17,7 @@ test.describe("Dashboard", () => {
     await expect(sidebar.getByRole("link", { name: /properties/i })).toBeVisible();
     await expect(sidebar.getByRole("link", { name: /transactions/i })).toBeVisible();
     await expect(sidebar.getByRole("link", { name: /banking/i })).toBeVisible();
-    await expect(sidebar.getByRole("link", { name: /export/i })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: "Export", exact: true })).toBeVisible();
   });
 
   test("should navigate to properties from sidebar", async ({ authenticatedPage: page }) => {
