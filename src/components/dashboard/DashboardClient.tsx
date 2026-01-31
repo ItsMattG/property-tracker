@@ -45,7 +45,9 @@ export function DashboardClient({ initialStats }: DashboardClientProps) {
     staleTime: 5 * 60_000, // Onboarding rarely changes
   });
 
-  const { data: properties } = trpc.property.list.useQuery();
+  const { data: properties } = trpc.property.list.useQuery(undefined, {
+    staleTime: 5 * 60_000, // Properties rarely change
+  });
 
   const dismissAlert = trpc.banking.dismissAlert.useMutation({
     onMutate: async (newData) => {
