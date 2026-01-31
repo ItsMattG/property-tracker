@@ -42,7 +42,7 @@ export default function AccountantExportPage() {
     if (!taxReport) return;
 
     try {
-      const blob = generateTaxReportPDF(taxReport);
+      const blob = await generateTaxReportPDF(taxReport);
       downloadBlob(blob, `tax-report-${taxReport.financialYear}.pdf`);
       toast.success("PDF exported successfully");
     } catch (error) {
@@ -67,7 +67,7 @@ export default function AccountantExportPage() {
         }))
       );
 
-      const blob = generateTransactionsExcel(transactions, taxReport.financialYear);
+      const blob = await generateTransactionsExcel(transactions, taxReport.financialYear);
       downloadBlob(blob, `transactions-${taxReport.financialYear}.xlsx`);
       toast.success("Excel exported successfully");
     } catch (error) {
