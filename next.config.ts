@@ -1,10 +1,12 @@
 import { withSentryConfig } from "@sentry/nextjs";
-import bundleAnalyzer from "@next/bundle-analyzer";
 import type { NextConfig } from "next";
 
-const withBundleAnalyzer = bundleAnalyzer({
-  enabled: process.env.ANALYZE === "true",
-});
+// Only load bundle analyzer when ANALYZE is set (avoids type errors in CI)
+const withBundleAnalyzer =
+  process.env.ANALYZE === "true"
+    ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require("@next/bundle-analyzer")({ enabled: true })
+    : (config: NextConfig) => config;
 
 const nextConfig: NextConfig = {
   async headers() {
