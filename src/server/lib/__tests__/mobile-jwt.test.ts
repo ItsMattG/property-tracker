@@ -18,24 +18,40 @@ describe("mobile-jwt", () => {
   });
 
   describe("JWT_SECRET validation", () => {
-    it("should throw an error when JWT_SECRET is not set", async () => {
+    it("should throw an error when signing without JWT_SECRET", async () => {
       // Arrange: Remove JWT_SECRET from environment
       delete process.env.JWT_SECRET;
 
-      // Act & Assert: Dynamic import should throw
-      await expect(
-        import("../mobile-jwt")
-      ).rejects.toThrow("JWT_SECRET environment variable is required");
+      const { signMobileToken } = await import("../mobile-jwt");
+
+      // Act & Assert: Function call should throw
+      expect(() =>
+        signMobileToken({ userId: "user-123", email: "test@example.com" })
+      ).toThrow("JWT_SECRET environment variable is required");
+    });
+
+    it("should throw an error when verifying without JWT_SECRET", async () => {
+      // Arrange: Remove JWT_SECRET from environment
+      delete process.env.JWT_SECRET;
+
+      const { verifyMobileToken } = await import("../mobile-jwt");
+
+      // Act & Assert: Function call should throw
+      expect(() => verifyMobileToken("some-token")).toThrow(
+        "JWT_SECRET environment variable is required"
+      );
     });
 
     it("should throw an error when JWT_SECRET is empty string", async () => {
       // Arrange: Set JWT_SECRET to empty string
       process.env.JWT_SECRET = "";
 
-      // Act & Assert: Dynamic import should throw
-      await expect(
-        import("../mobile-jwt")
-      ).rejects.toThrow("JWT_SECRET environment variable is required");
+      const { signMobileToken } = await import("../mobile-jwt");
+
+      // Act & Assert: Function call should throw
+      expect(() =>
+        signMobileToken({ userId: "user-123", email: "test@example.com" })
+      ).toThrow("JWT_SECRET environment variable is required");
     });
   });
 
@@ -46,18 +62,14 @@ describe("mobile-jwt", () => {
       process.env.JWT_SECRET = TEST_SECRET;
     });
 
-    it("should export JWT_SECRET correctly", async () => {
-      const { JWT_SECRET } = await import("../mobile-jwt");
-      expect(JWT_SECRET).toBe(TEST_SECRET);
-    });
-
     it("should export JWT_EXPIRES_IN as 30d", async () => {
       const { JWT_EXPIRES_IN } = await import("../mobile-jwt");
       expect(JWT_EXPIRES_IN).toBe("30d");
     });
 
     it("should sign and verify tokens correctly", async () => {
-      const { signMobileToken, verifyMobileToken } = await import("../mobile-jwt");
+      const { signMobileToken, verifyMobileToken } =
+        await import("../mobile-jwt");
 
       const payload = {
         userId: "user-123",
