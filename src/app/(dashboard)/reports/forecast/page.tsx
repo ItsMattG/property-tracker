@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { trpc } from "@/lib/trpc/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,10 +12,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ForecastChart } from "@/components/forecast/ForecastChart";
 import { ForecastSummary } from "@/components/forecast/ForecastSummary";
 import { ScenarioModal } from "@/components/forecast/ScenarioModal";
 import { Plus, Settings } from "lucide-react";
+import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+
+const ForecastChart = dynamic(
+  () =>
+    import("@/components/forecast/ForecastChart").then((m) => ({
+      default: m.ForecastChart,
+    })),
+  {
+    loading: () => <ChartSkeleton height={320} />,
+    ssr: false,
+  }
+);
 
 export default function ForecastPage() {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
