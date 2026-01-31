@@ -8,6 +8,10 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/api/webhooks(.*)",
   "/api/trpc/mobileAuth(.*)",
+  "/api/health",
+  "/api/cron(.*)",
+  "/sitemap.xml",
+  "/robots.txt",
 ]);
 
 // Generate a unique request ID for correlation
