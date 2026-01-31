@@ -9,7 +9,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400; // Revalidate daily
 
 const categoryStyles: Record<string, string> = {
   fundamentals:

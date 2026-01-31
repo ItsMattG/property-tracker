@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400; // Revalidate daily
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://propertytracker.com.au";
 
