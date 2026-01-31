@@ -91,13 +91,13 @@ export default async function HomePage() {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            Your spreadsheet,{" "}
-            <span className="text-primary">automated</span>
+            Track smarter.{" "}
+            <span className="text-primary">Tax time sorted.</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Stop spending hours updating spreadsheets. PropertyTracker
-            automatically imports your bank transactions, categorizes them for
-            tax, and generates accountant-ready reports.
+            PropertyTracker connects to your bank, categorizes every transaction
+            for tax, and generates ATO-ready reports automatically. No more
+            spreadsheets. No more stress at EOFY.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" asChild>
@@ -129,13 +129,13 @@ export default async function HomePage() {
             </div>
             <div className="flex flex-col items-center gap-1">
               <Lock className="w-5 h-5 text-primary mb-1" />
-              <span className="text-2xl font-bold">AES-256</span>
-              <span className="text-sm text-muted-foreground">Bank-Grade Encryption</span>
+              <span className="text-2xl font-bold">Secure</span>
+              <span className="text-sm text-muted-foreground">Bank-Grade Security</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <Globe className="w-5 h-5 text-primary mb-1" />
-              <span className="text-2xl font-bold">AU</span>
-              <span className="text-sm text-muted-foreground">Australian Owned</span>
+              <span className="text-2xl font-bold">100%</span>
+              <span className="text-sm text-muted-foreground">Australian</span>
             </div>
           </div>
         </div>
@@ -145,37 +145,37 @@ export default async function HomePage() {
       <section className="py-20 px-4 bg-secondary">
         <div className="container mx-auto max-w-5xl">
           <h2 className="text-3xl font-bold text-center mb-12">
-            Built for Australian property investors
+            Built for Australian investors
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Landmark className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-semibold mb-2">Australian Bank Feeds</h3>
+              <h3 className="font-semibold mb-2">Automatic Bank Feeds</h3>
               <p className="text-muted-foreground">
-                Connect all major Australian banks. Transactions import
-                automatically via secure open banking.
+                Connect CBA, NAB, ANZ, Westpac and 100+ other banks. Transactions
+                flow in daily via secure open banking.
               </p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <FileSpreadsheet className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-semibold mb-2">ATO Tax Categories</h3>
+              <h3 className="font-semibold mb-2">ATO-Ready Categories</h3>
               <p className="text-muted-foreground">
-                Every expense maps to the correct ATO category. Export CSV files
-                your accountant will love.
+                Every expense maps to the right ATO label. Export clean reports
+                your accountant can use directly.
               </p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Shield className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-semibold mb-2">Bank-Grade Security</h3>
+              <h3 className="font-semibold mb-2">Your Data Stays Here</h3>
               <p className="text-muted-foreground">
-                Your data is encrypted and stored on Australian servers. We
-                never see your bank passwords.
+                Encrypted, stored on Australian servers, and we never see your
+                bank passwords.
               </p>
             </div>
           </div>
@@ -186,10 +186,10 @@ export default async function HomePage() {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-5xl">
           <h2 className="text-3xl font-bold text-center mb-4">
-            See PropertyTracker in action
+            See it in action
           </h2>
           <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Everything you need to manage your investment properties, all in one place.
+            One place for properties, transactions, and tax reports.
           </p>
 
           <div className="space-y-16">
@@ -208,12 +208,12 @@ export default async function HomePage() {
               <div className="flex-1">
                 <span className="text-sm font-medium text-primary">Dashboard</span>
                 <h3 className="text-2xl font-bold mt-1 mb-3">
-                  See your whole portfolio at a glance
+                  Your portfolio, one screen
                 </h3>
                 <p className="text-muted-foreground">
-                  Track property values, rental income, expenses, and equity across all
-                  your investments in one unified dashboard. Monitor cash flow, spot
-                  anomalies, and see how each property is performing.
+                  Property values, rental income, expenses, loan balances, and equity —
+                  all updated automatically. Spot potential savings and track each
+                  property&apos;s performance at a glance.
                 </p>
               </div>
             </div>
@@ -232,12 +232,12 @@ export default async function HomePage() {
               <div className="flex-1">
                 <span className="text-sm font-medium text-primary">Reports</span>
                 <h3 className="text-2xl font-bold mt-1 mb-3">
-                  Tax-ready reports in one click
+                  Tax time in minutes, not hours
                 </h3>
                 <p className="text-muted-foreground">
-                  Generate ATO-compliant income and expense reports broken down by
-                  property. Export CSV files your accountant will love. Track
-                  depreciation, capital gains, and tax deductions automatically.
+                  Generate income and expense reports by property, ready for your
+                  accountant or MyTax. Track depreciation, capital gains, and
+                  deductions without touching a spreadsheet.
                 </p>
               </div>
             </div>
@@ -256,12 +256,11 @@ export default async function HomePage() {
               <div className="flex-1">
                 <span className="text-sm font-medium text-primary">Banking</span>
                 <h3 className="text-2xl font-bold mt-1 mb-3">
-                  Automatic bank transaction import
+                  Transactions that categorize themselves
                 </h3>
                 <p className="text-muted-foreground">
-                  Connect all major Australian banks via secure open banking. Transactions
-                  import and categorize automatically. Review and approve with a single
-                  click.
+                  Connect your bank once. Transactions import daily and categorize
+                  automatically using smart rules. Just review and approve.
                 </p>
               </div>
             </div>
@@ -273,15 +272,15 @@ export default async function HomePage() {
       <section className="py-20 px-4 bg-secondary">
         <div className="container mx-auto max-w-3xl">
           <h2 className="text-3xl font-bold text-center mb-12">
-            Save hours every week
+            What you get back: time
           </h2>
           <div className="space-y-4">
             {[
-              "Automatic transaction import from all your accounts",
-              "Smart categorization with ATO-compliant expense codes",
-              "One-click export for your accountant",
-              "Track multiple properties across entities",
-              "Works with trusts, companies, and personal ownership",
+              "Bank transactions import and categorize automatically",
+              "ATO expense codes applied without manual entry",
+              "Export-ready reports for your accountant or MyTax",
+              "Unlimited properties across multiple entities",
+              "Full support for trusts, companies, and SMSFs",
             ].map((benefit, i) => (
               <div key={i} className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
@@ -296,10 +295,10 @@ export default async function HomePage() {
       <section className="py-20 px-4" id="pricing">
         <div className="container mx-auto max-w-5xl">
           <h2 className="text-3xl font-bold text-center mb-4">
-            Simple, transparent pricing
+            Simple pricing. No surprises.
           </h2>
           <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Start free. Upgrade when you&apos;re ready.
+            Start free, upgrade when you need more.
           </p>
 
           {/* Lifetime Deal Banner */}
@@ -317,10 +316,9 @@ export default async function HomePage() {
               <ul className="space-y-3 flex-1 mb-8">
                 {[
                   "1 property",
-                  "Australian bank feeds",
-                  "Basic tax categorization",
-                  "Transaction import",
-                  "Mobile app access",
+                  "Bank feeds included",
+                  "Basic tax categories",
+                  "Mobile app",
                 ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
@@ -348,12 +346,11 @@ export default async function HomePage() {
               <ul className="space-y-3 flex-1 mb-8">
                 {[
                   "Unlimited properties",
-                  "Everything in Free",
-                  "Full tax reports & CSV export",
-                  "Scenario simulator",
-                  "Climate & flood risk data",
-                  "Trust/SMSF entity support",
-                  "Performance benchmarking",
+                  "Full tax reports & exports",
+                  "Scenario modelling",
+                  "Climate & flood risk",
+                  "Trusts, companies & SMSFs",
+                  "Depreciation tracking",
                 ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
@@ -407,11 +404,10 @@ export default async function HomePage() {
       <section className="py-20 px-4 bg-primary text-primary-foreground">
         <div className="container mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold mb-4">
-            Ready to automate your property tracking?
+            Ready to ditch the spreadsheet?
           </h2>
           <p className="mb-8 opacity-90">
-            Join Australian property investors who have stopped wrestling with
-            spreadsheets.
+            Join Australian investors who track smarter and stress less at tax time.
           </p>
           <Button size="lg" variant="secondary" asChild>
             <Link href="/sign-up">

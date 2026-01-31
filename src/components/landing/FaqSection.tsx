@@ -9,39 +9,39 @@ import {
 
 const faqs = [
   {
-    question: "Is my financial data secure?",
+    question: "Is my data safe?",
     answer:
-      "Your data is protected with bank-grade AES-256 encryption and stored on Australian servers. We use Basiq open banking to connect to your bank — we never see or store your bank passwords. Authentication is handled by Clerk with multi-factor support.",
+      "Your data is encrypted with bank-grade security and stored on Australian servers. We connect to your bank via Basiq open banking — we never see or store your login credentials.",
   },
   {
-    question: "Which Australian banks do you support?",
+    question: "Which banks are supported?",
     answer:
-      "We support all major Australian banks including Commonwealth Bank, NAB, ANZ, and Westpac, plus over 100 other financial institutions via Basiq open banking.",
+      "All major Australian banks including CBA, NAB, ANZ, and Westpac, plus 100+ other institutions via open banking.",
   },
   {
-    question: "Can I use PropertyTracker with my accountant?",
+    question: "Can my accountant access my data?",
     answer:
-      "Yes. Export ATO-compliant CSV and PDF reports at any time. You can also share read-only portfolio access directly with your accountant or broker via the Team plan.",
+      "Yes. Export ATO-ready reports anytime, or invite your accountant for read-only access on the Team plan.",
   },
   {
     question: "Does it work with trusts and SMSFs?",
     answer:
-      "Yes. PropertyTracker supports individual ownership, family trusts, unit trusts, companies, and self-managed super funds with full compliance tracking for each entity type.",
+      "Yes. We support personal ownership, family trusts, unit trusts, companies, and self-managed super funds.",
   },
   {
     question: "Can I cancel anytime?",
     answer:
-      "Yes, no lock-in contracts. Cancel anytime and keep access until the end of your current billing period. Your data remains available for export.",
+      "Yes. No lock-in contracts. Cancel anytime and keep access until your billing period ends.",
   },
   {
     question: "Is there a free plan?",
     answer:
-      "Yes. Track 1 property free forever with bank feeds and basic tax categorization. Upgrade to Pro when you add more properties.",
+      "Yes. Track one property free forever with bank feeds and basic tax categories. Upgrade to Pro when you're ready.",
   },
   {
-    question: "How does the lifetime deal work?",
+    question: "What's the lifetime deal?",
     answer:
-      "Pay $249 once and get permanent Pro access — no monthly or annual fees ever. This is limited to our first 100 founding members and the offer will be removed once all spots are claimed.",
+      "Pay $249 once for permanent Pro access — no ongoing fees. Limited to our first 100 founding members.",
   },
 ];
 
