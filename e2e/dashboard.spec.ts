@@ -29,6 +29,7 @@ test.describe("Dashboard", () => {
   test("should navigate to transactions from sidebar", async ({ authenticatedPage: page }) => {
     const sidebar = page.locator("aside");
     await sidebar.getByRole("link", { name: /transactions/i }).click();
+    await page.waitForURL(/transactions/, { timeout: 10000 });
     await expect(page).toHaveURL(/transactions/);
   });
 });
