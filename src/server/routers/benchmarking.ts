@@ -127,10 +127,18 @@ export const benchmarkingRouter = router({
       let managementFeesSavings = 0;
       let propertiesWithSavings = 0;
 
+      // Pre-index transactions by propertyId for O(1) lookup instead of O(n) filter
+      const txnsByProperty = new Map<string, typeof allTransactions>();
+      for (const txn of allTransactions) {
+        if (txn.propertyId) {
+          const existing = txnsByProperty.get(txn.propertyId) ?? [];
+          existing.push(txn);
+          txnsByProperty.set(txn.propertyId, existing);
+        }
+      }
+
       for (const property of userProperties) {
-        const propertyTxns = allTransactions.filter(
-          (t) => t.propertyId === property.id
-        );
+        const propertyTxns = txnsByProperty.get(property.id) ?? [];
 
         const sumByCategory = (category: string) =>
           propertyTxns

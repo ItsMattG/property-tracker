@@ -139,6 +139,10 @@ export const bankingRouter = router({
             account.defaultPropertyId ?? undefined
           );
 
+          // Collect all anomaly alerts to batch insert
+          type AnomalyAlertInsert = typeof anomalyAlerts.$inferInsert;
+          const anomalyAlertsToInsert: AnomalyAlertInsert[] = [];
+
           for (const txn of basiqTransactions.slice(0, transactionsAdded)) {
             const txnInput = {
               id: txn.id,
@@ -155,7 +159,7 @@ export const bankingRouter = router({
             );
             const unusualResult = detectUnusualAmount(txnInput, historical);
             if (unusualResult) {
-              await ctx.db.insert(anomalyAlerts).values({
+              anomalyAlertsToInsert.push({
                 userId: ctx.portfolio.ownerId,
                 propertyId: account.defaultPropertyId,
                 ...unusualResult,
@@ -173,7 +177,7 @@ export const bankingRouter = router({
               }))
             );
             if (duplicateResult) {
-              await ctx.db.insert(anomalyAlerts).values({
+              anomalyAlertsToInsert.push({
                 userId: ctx.portfolio.ownerId,
                 propertyId: account.defaultPropertyId,
                 ...duplicateResult,
@@ -183,12 +187,17 @@ export const bankingRouter = router({
             // Check for unexpected expense
             const unexpectedResult = detectUnexpectedExpense(txnInput, knownMerchants);
             if (unexpectedResult) {
-              await ctx.db.insert(anomalyAlerts).values({
+              anomalyAlertsToInsert.push({
                 userId: ctx.portfolio.ownerId,
                 propertyId: account.defaultPropertyId,
                 ...unexpectedResult,
               });
             }
+          }
+
+          // Batch insert all anomaly alerts at once
+          if (anomalyAlertsToInsert.length > 0) {
+            await ctx.db.insert(anomalyAlerts).values(anomalyAlertsToInsert);
           }
 
           // Run AI categorization on new uncategorized transactions

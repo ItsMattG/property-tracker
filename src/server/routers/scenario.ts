@@ -252,22 +252,21 @@ export const scenarioRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
       }
 
-      // Get portfolio state
-      const userProperties = await ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ctx.portfolio.ownerId),
-      });
-
-      const userLoans = await ctx.db.query.loans.findMany({
-        where: eq(loans.userId, ctx.portfolio.ownerId),
-      });
-
-      // Get recurring transactions for base income/expenses
-      const recurring = await ctx.db.query.recurringTransactions.findMany({
-        where: and(
-          eq(recurringTransactions.userId, ctx.portfolio.ownerId),
-          eq(recurringTransactions.isActive, true)
-        ),
-      });
+      // Get portfolio state - fetch all 3 queries in parallel
+      const [userProperties, userLoans, recurring] = await Promise.all([
+        ctx.db.query.properties.findMany({
+          where: eq(properties.userId, ctx.portfolio.ownerId),
+        }),
+        ctx.db.query.loans.findMany({
+          where: eq(loans.userId, ctx.portfolio.ownerId),
+        }),
+        ctx.db.query.recurringTransactions.findMany({
+          where: and(
+            eq(recurringTransactions.userId, ctx.portfolio.ownerId),
+            eq(recurringTransactions.isActive, true)
+          ),
+        }),
+      ]);
 
       // Build portfolio state
       const portfolioState: PortfolioState = {
