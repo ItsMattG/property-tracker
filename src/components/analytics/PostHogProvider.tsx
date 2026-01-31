@@ -1,18 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { initPostHog, posthog } from "@/lib/posthog";
 import { useUser } from "@clerk/nextjs";
 
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
+function PostHogPageTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user } = useUser();
-
-  useEffect(() => {
-    initPostHog();
-  }, []);
 
   // Track page views on route change
   useEffect(() => {
@@ -21,6 +16,16 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       $current_url: window.location.href,
     });
   }, [pathname, searchParams]);
+
+  return null;
+}
+
+export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useUser();
+
+  useEffect(() => {
+    initPostHog();
+  }, []);
 
   // Identify user
   useEffect(() => {
@@ -32,5 +37,12 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  return <>{children}</>;
+  return (
+    <>
+      <Suspense fallback={null}>
+        <PostHogPageTracker />
+      </Suspense>
+      {children}
+    </>
+  );
 }

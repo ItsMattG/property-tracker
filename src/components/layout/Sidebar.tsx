@@ -75,8 +75,13 @@ const settingsItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: pendingCount } = trpc.categorization.getPendingCount.useQuery();
-  const { data: activeEntity } = trpc.entity.getActive.useQuery();
+  const { data: pendingCount } = trpc.categorization.getPendingCount.useQuery(undefined, {
+    staleTime: 30_000, // Refresh every 30 seconds
+    refetchOnWindowFocus: false,
+  });
+  const { data: activeEntity } = trpc.entity.getActive.useQuery(undefined, {
+    staleTime: Infinity, // Entity rarely changes, invalidate on switch
+  });
 
   return (
     <aside className="w-64 border-r border-border bg-card min-h-screen p-4">

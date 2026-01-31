@@ -4,7 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { ChangelogEntry } from "@/components/changelog/ChangelogEntry";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // Revalidate hourly
 
 async function getEntries(category?: "feature" | "improvement" | "fix") {
   const conditions = category ? eq(changelogEntries.category, category) : undefined;

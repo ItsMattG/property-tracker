@@ -8,7 +8,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // Revalidate hourly
 
 const categoryStyles = {
   feature: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
