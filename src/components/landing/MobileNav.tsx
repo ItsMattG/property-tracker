@@ -5,7 +5,11 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function MobileNav() {
+interface MobileNavProps {
+  isSignedIn?: boolean;
+}
+
+export function MobileNav({ isSignedIn = false }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -67,20 +71,32 @@ export function MobileNav() {
           >
             Blog
           </Link>
-          <Link
-            href="/sign-in"
-            onClick={() => setIsOpen(false)}
-            className="block px-4 py-2 text-sm hover:bg-secondary"
-          >
-            Sign In
-          </Link>
-          <div className="px-4 py-2">
-            <Button asChild className="w-full">
-              <Link href="/sign-up" onClick={() => setIsOpen(false)}>
-                Get Started
+          {isSignedIn ? (
+            <div className="px-4 py-2">
+              <Button asChild className="w-full">
+                <Link href="/dashboard" onClick={() => setIsOpen(false)}>
+                  Open BrickTrack
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Link
+                href="/sign-in"
+                onClick={() => setIsOpen(false)}
+                className="block px-4 py-2 text-sm hover:bg-secondary"
+              >
+                Sign In
               </Link>
-            </Button>
-          </div>
+              <div className="px-4 py-2">
+                <Button asChild className="w-full">
+                  <Link href="/sign-up" onClick={() => setIsOpen(false)}>
+                    Get Started
+                  </Link>
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
