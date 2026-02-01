@@ -277,25 +277,43 @@ jobs:
       - name: Get Vercel preview URL
         id: vercel-url
         run: |
-          # Construct Vercel preview URL from branch name
-          BRANCH="${{ github.head_ref }}"
-          BRANCH_SLUG=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
-          URL="https://property-tracker-git-${BRANCH_SLUG}-gleesonmatt96-7300s-projects.vercel.app"
-          echo "url=$URL" >> $GITHUB_OUTPUT
-          echo "Preview URL: $URL"
-
-          # Wait for deployment to be ready (simple HTTP check)
+          # Extract preview URL from Vercel bot comment on PR
           for i in {1..30}; do
-            if curl -s -o /dev/null -w "%{http_code}" "$URL" | grep -q "200"; then
-              echo "Deployment is ready!"
+            # Get comments from vercel bot and extract the Preview URL
+            URL=$(gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+              --jq '.[] | select(.user.login == "vercel[bot]") | .body' 2>/dev/null \
+              | grep -oP 'https://[a-z0-9-]+\.vercel\.app' | head -1 || true)
+
+            if [ -n "$URL" ]; then
+              echo "url=$URL" >> $GITHUB_OUTPUT
+              echo "Found preview URL from Vercel comment: $URL"
+
+              # Wait for it to be ready
+              for j in {1..12}; do
+                HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL" 2>/dev/null || echo "000")
+                if echo "$HTTP_CODE" | grep -qE "^(200|301|302)$"; then
+                  echo "Deployment is ready (HTTP $HTTP_CODE)!"
+                  exit 0
+                fi
+                echo "Waiting for deployment... ($j/12, HTTP $HTTP_CODE)"
+                sleep 5
+              done
+              echo "Proceeding with Lighthouse anyway"
               exit 0
             fi
-            echo "Waiting for deployment... ($i/30)"
+
+            echo "Waiting for Vercel comment... ($i/30)"
             sleep 10
           done
-          echo "Deployment may not be fully ready, proceeding anyway"
+
+          # If we can't get URL, skip Lighthouse
+          echo "Could not get Vercel preview URL from comments"
+          echo "url=" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Lighthouse
+        if: steps.vercel-url.outputs.url != ''
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: |
@@ -306,8 +324,13 @@ jobs:
           configPath: ./lighthouserc.json
 
       - name: Upload Lighthouse report
+        if: steps.vercel-url.outputs.url != ''
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-report
           path: .lighthouseci/
           retention-days: 7
+
+      - name: Skip notice
+        if: steps.vercel-url.outputs.url == ''
+        run: echo "Lighthouse skipped - could not determine Vercel preview URL"
