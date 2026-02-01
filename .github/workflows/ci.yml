@@ -274,19 +274,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Wait for Vercel deployment
-        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
-        id: vercel-deployment
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 300
+      - name: Get Vercel preview URL
+        id: vercel-url
+        run: |
+          # Construct Vercel preview URL from branch name
+          BRANCH="${{ github.head_ref }}"
+          BRANCH_SLUG=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+          URL="https://property-tracker-git-${BRANCH_SLUG}-gleesonmatt96-7300s-projects.vercel.app"
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "Preview URL: $URL"
+
+          # Wait for deployment to be ready (simple HTTP check)
+          for i in {1..30}; do
+            if curl -s -o /dev/null -w "%{http_code}" "$URL" | grep -q "200"; then
+              echo "Deployment is ready!"
+              exit 0
+            fi
+            echo "Waiting for deployment... ($i/30)"
+            sleep 10
+          done
+          echo "Deployment may not be fully ready, proceeding anyway"
 
       - name: Run Lighthouse
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: |
-            ${{ steps.vercel-deployment.outputs.url }}
-            ${{ steps.vercel-deployment.outputs.url }}/blog
+            ${{ steps.vercel-url.outputs.url }}
+            ${{ steps.vercel-url.outputs.url }}/blog
           uploadArtifacts: true
           temporaryPublicStorage: true
           configPath: ./lighthouserc.json
