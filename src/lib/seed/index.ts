@@ -1,4 +1,4 @@
-import type { SeedMode, SeedOptions, SeedSummary } from "./types";
+import type { SeedOptions, SeedSummary } from "./types";
 import { generateDemoData } from "./profiles/demo";
 import { generateDevData } from "./profiles/dev";
 import { getOrCreateUser, cleanupUserData, insertDemoData, insertDevData } from "./db";
@@ -13,6 +13,9 @@ export {
   seedAnomalyScenario,
   seedComplianceScenario,
 } from "./profiles/test";
+
+// Re-export UI audit seed profile for E2E testing
+export { generateUIAuditData, type UIAuditData } from "./profiles/ui-audit";
 
 /**
  * Main seed function - seeds data based on mode
