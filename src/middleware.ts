@@ -11,6 +11,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/webhooks(.*)",
   "/api/trpc/mobileAuth(.*)",
   "/api/health(.*)",
+  "/api/debug(.*)",
   "/api/cron(.*)",
   "/sitemap.xml",
   "/robots.txt",
