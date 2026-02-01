@@ -1,8 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import {
-  ArrowRight,
   Building2,
   Shield,
   Landmark,
@@ -13,29 +11,84 @@ import {
   Lock,
   Globe,
 } from "lucide-react";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/server/db";
-import { users, properties } from "@/server/db/schema";
-import { sql } from "drizzle-orm";
-import { LifetimeBanner, FaqSection, MobileNav } from "@/components/landing";
+import { users, properties, subscriptions } from "@/server/db/schema";
+import { sql, eq, and, inArray, gt } from "drizzle-orm";
+import {
+  LifetimeBanner,
+  FaqSection,
+  MobileNav,
+  HeaderNav,
+  HeroCTA,
+  PricingCTA,
+  BottomCTA,
+} from "@/components/landing";
+import type { UserState } from "@/components/landing";
 
 export const revalidate = 3600; // Revalidate every hour
 
-export default async function HomePage() {
-  // Fetch live stats for social proof (gracefully handle missing DB during build)
-  let userCount = 0;
-  let propertyCount = 0;
+async function getUserState(): Promise<UserState> {
   try {
-    const [userCountResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(users);
-    const [propertyCountResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(properties);
-    userCount = userCountResult?.count ?? 0;
-    propertyCount = propertyCountResult?.count ?? 0;
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) return "signed-out";
+
+    // Get internal user ID from Clerk ID
+    const [user] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.clerkId, clerkUserId))
+      .limit(1);
+
+    if (!user) return "signed-out";
+
+    // Check for active paid subscription
+    const [sub] = await db
+      .select({ plan: subscriptions.plan })
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.userId, user.id),
+          inArray(subscriptions.status, ["active", "trialing"]),
+          gt(subscriptions.currentPeriodEnd, new Date())
+        )
+      )
+      .limit(1);
+
+    if (sub && ["pro", "team", "lifetime"].includes(sub.plan)) {
+      return "paid";
+    }
+
+    return "free";
   } catch {
-    // DB unavailable during build — use fallback zeros
+    return "signed-out";
   }
+}
+
+export default async function HomePage() {
+  // Fetch user state and live stats in parallel
+  const [userState, statsResult] = await Promise.all([
+    getUserState(),
+    (async () => {
+      try {
+        const [userCountResult] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(users);
+        const [propertyCountResult] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(properties);
+        return {
+          userCount: userCountResult?.count ?? 0,
+          propertyCount: propertyCountResult?.count ?? 0,
+        };
+      } catch {
+        return { userCount: 0, propertyCount: 0 };
+      }
+    })(),
+  ]);
+
+  const { userCount, propertyCount } = statsResult;
+  const isSignedIn = userState !== "signed-out";
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,19 +126,9 @@ export default async function HomePage() {
             <span className="font-semibold text-lg">PropertyTracker</span>
           </Link>
           {/* Desktop navigation */}
-          <div className="hidden md:flex items-center gap-4">
-            <Button variant="ghost" asChild>
-              <Link href="/blog">Blog</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/sign-in">Sign In</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/sign-up">Get Started</Link>
-            </Button>
-          </div>
+          <HeaderNav isSignedIn={isSignedIn} />
           {/* Mobile navigation */}
-          <MobileNav />
+          <MobileNav isSignedIn={isSignedIn} />
         </div>
       </header>
 
@@ -101,17 +144,7 @@ export default async function HomePage() {
             for tax, and generates ATO-ready reports automatically. No more
             spreadsheets. No more stress at EOFY.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild>
-              <Link href="/sign-up">
-                Start Free Trial
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/sign-in">Sign In</Link>
-            </Button>
-          </div>
+          <HeroCTA userState={userState} />
         </div>
       </section>
 
@@ -328,9 +361,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Button variant="outline" className="w-full" asChild>
-                <Link href="/sign-up">Start Free</Link>
-              </Button>
+              <PricingCTA isSignedIn={isSignedIn} plan="free" />
             </div>
 
             {/* Pro */}
@@ -360,9 +391,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Button className="w-full" asChild>
-                <Link href="/sign-up?plan=pro">Start Free Trial</Link>
-              </Button>
+              <PricingCTA isSignedIn={isSignedIn} plan="pro" />
             </div>
 
             {/* Team */}
@@ -387,9 +416,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <Button variant="outline" className="w-full" asChild>
-                <Link href="/sign-up?plan=team">Start Free Trial</Link>
-              </Button>
+              <PricingCTA isSignedIn={isSignedIn} plan="team" />
             </div>
           </div>
 
@@ -411,12 +438,7 @@ export default async function HomePage() {
           <p className="mb-8 opacity-90">
             Join Australian investors who track smarter and stress less at tax time.
           </p>
-          <Button size="lg" variant="secondary" asChild>
-            <Link href="/sign-up">
-              Get Started Free
-              <ArrowRight className="ml-2 w-4 h-4" />
-            </Link>
-          </Button>
+          <BottomCTA isSignedIn={isSignedIn} />
         </div>
       </section>
 
