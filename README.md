@@ -173,72 +173,9 @@ graph TB
 
 ---
 
-## Getting Started
+## Try It
 
-### Prerequisites
-
-- Node.js 18+
-- pnpm 8+ (recommended) or npm
-- PostgreSQL database (or [Supabase](https://supabase.com) account)
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/mgleeson/property-tracker.git
-cd property-tracker
-
-# Install dependencies
-pnpm install
-
-# Copy environment variables
-cp .env.local.example .env.local
-```
-
-### Environment Setup
-
-Fill in `.env.local` with your credentials:
-
-```bash
-# Database
-DATABASE_URL="postgresql://..."
-
-# Auth (Clerk)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_..."
-CLERK_SECRET_KEY="sk_..."
-
-# Banking (Basiq)
-BASIQ_API_KEY="..."
-
-# AI (Anthropic)
-ANTHROPIC_API_KEY="sk-ant-..."
-
-# Payments (Stripe)
-STRIPE_SECRET_KEY="sk_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_..."
-```
-
-See `.env.local.example` for the complete list of required variables.
-
-### Database Setup
-
-```bash
-# Push schema to database
-pnpm db:push
-
-# Or run migrations
-pnpm db:migrate
-```
-
-### Development
-
-```bash
-# Start dev server
-pnpm dev
-
-# Open http://localhost:3000
-```
+**[Start tracking at bricktrack.au](https://bricktrack.au)** - Free tier available, no credit card required.
 
 ---
 
@@ -335,54 +272,6 @@ lint → typecheck → unit tests → build → E2E
 ```
 
 See `.github/workflows/ci.yml` for the full pipeline.
-
----
-
-## Deployment
-
-### Vercel (Recommended)
-
-BrickTrack is optimized for Vercel with Next.js native support.
-
-1. **Connect repository** to Vercel
-2. **Set environment variables** in Vercel dashboard (copy from `.env.local.example`)
-3. **Configure region** to Sydney (`syd1`) for Australian users
-4. **Deploy** - automatic on push to `main`
-
-### Environment Variables
-
-Required for production:
-
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `CLERK_SECRET_KEY` | Clerk authentication |
-| `BASIQ_API_KEY` | Open banking API |
-| `ANTHROPIC_API_KEY` | Claude AI |
-| `STRIPE_SECRET_KEY` | Payments |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook verification |
-| `SENTRY_DSN` | Error tracking |
-| `AXIOM_TOKEN` | Logging |
-| `POSTHOG_KEY` | Analytics |
-
-### Webhooks
-
-Configure webhook endpoints in each service:
-
-| Service | Endpoint |
-|---------|----------|
-| Clerk | `https://your-domain.com/api/webhooks/clerk` |
-| Stripe | `https://your-domain.com/api/webhooks/stripe` |
-| Basiq | `https://your-domain.com/api/webhooks/basiq` |
-
-### Cron Jobs
-
-Vercel cron handles scheduled tasks (configured in `vercel.json`):
-
-| Job | Schedule | Purpose |
-|-----|----------|---------|
-| Bank sync | Daily 6am AEST | Fetch latest transactions |
-| Trial reminders | Daily | Email users before trial expires |
 
 ---
 
