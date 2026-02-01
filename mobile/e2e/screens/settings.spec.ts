@@ -43,7 +43,7 @@ describe('Settings Screen', () => {
   describe('Version Display', () => {
     it('shows app version', async () => {
       await expect(element(by.id('app-version'))).toBeVisible();
-      await expect(element(by.text('PropertyTracker Mobile v1.0.0'))).toBeVisible();
+      await expect(element(by.text('BrickTrack Mobile v1.0.0'))).toBeVisible();
     });
   });
 

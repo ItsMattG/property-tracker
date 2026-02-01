@@ -96,7 +96,7 @@ export function SettingsScreen() {
 
       {/* Version */}
       <Text testID="app-version" className="text-center text-gray-400 text-sm mt-8">
-        PropertyTracker Mobile v1.0.0
+        BrickTrack Mobile v1.0.0
       </Text>
     </View>
   );
