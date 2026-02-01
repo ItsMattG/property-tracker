@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
+import { Input } from "@/components/ui/input";
 import { useGoogleMapsLoaded } from "@/components/providers/GoogleMapsProvider";
 import { cn } from "@/lib/utils";
 
@@ -21,151 +22,95 @@ interface AddressAutocompleteProps {
 
 export function AddressAutocomplete({
   onAddressSelect,
+  defaultValue = "",
   placeholder = "Start typing an address...",
   className,
   disabled,
 }: AddressAutocompleteProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const elementRef = useRef<HTMLElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const [inputValue, setInputValue] = useState(defaultValue);
   const isLoaded = useGoogleMapsLoaded();
 
   const parseAddressComponents = useCallback(
-    (
-      addressComponents: google.maps.places.AddressComponent[]
-    ): ParsedAddress => {
+    (place: google.maps.places.PlaceResult): ParsedAddress => {
+      const components = place.address_components || [];
+
       let streetNumber = "";
       let route = "";
       let suburb = "";
       let state = "";
       let postcode = "";
 
-      for (const component of addressComponents) {
+      for (const component of components) {
         const types = component.types;
 
         if (types.includes("street_number")) {
-          streetNumber = component.longText || "";
+          streetNumber = component.long_name;
         } else if (types.includes("route")) {
-          route = component.longText || "";
+          route = component.long_name;
         } else if (types.includes("locality")) {
-          suburb = component.longText || "";
+          suburb = component.long_name;
         } else if (types.includes("administrative_area_level_1")) {
-          state = component.shortText || "";
+          // Use short_name for state (NSW, VIC, etc.)
+          state = component.short_name;
         } else if (types.includes("postal_code")) {
-          postcode = component.longText || "";
+          postcode = component.long_name;
         }
       }
 
+      // Combine street number and route for full street address
       const street = [streetNumber, route].filter(Boolean).join(" ");
+
       return { street, suburb, state, postcode };
     },
     []
   );
 
   useEffect(() => {
-    if (!isLoaded || !containerRef.current || elementRef.current) return;
+    if (!isLoaded || !inputRef.current || autocompleteRef.current) return;
 
-    // Check if PlaceAutocompleteElement is available
-    if (!google.maps.places.PlaceAutocompleteElement) {
-      console.error("PlaceAutocompleteElement not available");
-      return;
-    }
-
-    // Create the new PlaceAutocompleteElement
-    const placeAutocomplete = new google.maps.places.PlaceAutocompleteElement({
+    // Initialize autocomplete
+    const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: "au" },
+      fields: ["address_components", "formatted_address"],
       types: ["address"],
     });
 
-    // Set placeholder via the input element inside
-    placeAutocomplete.setAttribute("placeholder", placeholder);
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
 
-    if (disabled) {
-      placeAutocomplete.setAttribute("disabled", "true");
-    }
-
-    // Listen for place selection
-    placeAutocomplete.addEventListener(
-      "gmp-placeselect",
-      async (event: Event) => {
-        const customEvent = event as CustomEvent;
-        const place = customEvent.detail?.place;
-
-        if (!place) return;
-
-        try {
-          // Fetch address components
-          await place.fetchFields({
-            fields: ["addressComponents", "formattedAddress"],
-          });
-
-          if (place.addressComponents) {
-            const parsed = parseAddressComponents(place.addressComponents);
-            onAddressSelect(parsed);
-          }
-        } catch (error) {
-          console.error("Error fetching place details:", error);
-        }
+      if (place.address_components) {
+        const parsed = parseAddressComponents(place);
+        setInputValue(place.formatted_address || parsed.street);
+        onAddressSelect(parsed);
       }
-    );
+    });
 
-    // Append to container
-    containerRef.current.appendChild(placeAutocomplete);
-    elementRef.current = placeAutocomplete;
+    autocompleteRef.current = autocomplete;
 
     return () => {
-      if (elementRef.current && containerRef.current) {
-        try {
-          containerRef.current.removeChild(elementRef.current);
-        } catch {
-          // Element may already be removed
-        }
-        elementRef.current = null;
+      if (autocompleteRef.current) {
+        google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
-  }, [isLoaded, onAddressSelect, parseAddressComponents, placeholder, disabled]);
+  }, [isLoaded, onAddressSelect, parseAddressComponents]);
 
-  // Handle disabled state changes
+  // Update input value when defaultValue changes
   useEffect(() => {
-    if (elementRef.current) {
-      if (disabled) {
-        elementRef.current.setAttribute("disabled", "true");
-      } else {
-        elementRef.current.removeAttribute("disabled");
-      }
-    }
-  }, [disabled]);
+    setInputValue(defaultValue);
+  }, [defaultValue]);
 
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "address-autocomplete-container w-full",
-        "[&_gmp-place-autocomplete]:w-full",
-        "[&_gmp-place-autocomplete]:block",
-        "[&_input]:flex",
-        "[&_input]:h-10",
-        "[&_input]:w-full",
-        "[&_input]:rounded-md",
-        "[&_input]:border",
-        "[&_input]:border-input",
-        "[&_input]:bg-background",
-        "[&_input]:px-3",
-        "[&_input]:py-2",
-        "[&_input]:text-sm",
-        "[&_input]:ring-offset-background",
-        "[&_input]:file:border-0",
-        "[&_input]:file:bg-transparent",
-        "[&_input]:file:text-sm",
-        "[&_input]:file:font-medium",
-        "[&_input]:placeholder:text-muted-foreground",
-        "[&_input]:focus-visible:outline-none",
-        "[&_input]:focus-visible:ring-2",
-        "[&_input]:focus-visible:ring-ring",
-        "[&_input]:focus-visible:ring-offset-2",
-        "[&_input]:disabled:cursor-not-allowed",
-        "[&_input]:disabled:opacity-50",
-        className
-      )}
+    <Input
+      ref={inputRef}
+      type="text"
+      value={inputValue}
+      onChange={(e) => setInputValue(e.target.value)}
+      placeholder={placeholder}
+      className={cn(className)}
+      disabled={disabled}
+      autoComplete="off"
     />
   );
 }
