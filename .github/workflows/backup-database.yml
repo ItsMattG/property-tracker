@@ -1,0 +1,55 @@
+name: Database Backup
+
+on:
+  schedule:
+    # Daily at 3am UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    # Allow manual trigger for testing
+
+jobs:
+  backup:
+    name: Backup Database
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          # Create backup with pg_dump
+          pg_dump "$DATABASE_URL" \
+            --no-owner \
+            --no-acl \
+            --format=plain \
+            --file=backup.sql
+
+          # Compress the backup
+          gzip backup.sql
+
+          # Show backup size
+          ls -lh backup.sql.gz
+          echo "Backup created successfully"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}-${{ github.run_number }}
+          path: backup.sql.gz
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://ntfy.sh/property-tracker-claude" \
+            -d "Database backup FAILED! Check GitHub Actions: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -H "Title: BrickTrack Backup Failed" \
+            -H "Priority: urgent" \
+            -H "Tags: warning"
