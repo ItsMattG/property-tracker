@@ -98,7 +98,7 @@ export default async function HomePage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
-            name: "PropertyTracker",
+            name: "BrickTrack",
             applicationCategory: "FinanceApplication",
             operatingSystem: "Web",
             url: "https://www.propertytracker.com.au",
@@ -110,7 +110,7 @@ export default async function HomePage() {
             ],
             publisher: {
               "@type": "Organization",
-              name: "PropertyTracker",
+              name: "BrickTrack",
               url: "https://www.propertytracker.com.au",
             },
           }),
@@ -123,7 +123,7 @@ export default async function HomePage() {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Building2 className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-lg">PropertyTracker</span>
+            <span className="font-semibold text-lg">BrickTrack</span>
           </Link>
           {/* Desktop navigation */}
           <HeaderNav isSignedIn={isSignedIn} />
@@ -140,7 +140,7 @@ export default async function HomePage() {
             <span className="text-primary">Tax time sorted.</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            PropertyTracker connects to your bank, categorizes every transaction
+            BrickTrack connects to your bank, categorizes every transaction
             for tax, and generates ATO-ready reports automatically. No more
             spreadsheets. No more stress at EOFY.
           </p>
@@ -233,7 +233,7 @@ export default async function HomePage() {
               <div className="flex-1 rounded-xl border overflow-hidden shadow-lg">
                 <Image
                   src="/images/screenshots/dashboard.png"
-                  alt="PropertyTracker dashboard showing portfolio overview with properties, transactions, potential savings, and rental yield metrics"
+                  alt="BrickTrack dashboard showing portfolio overview with properties, transactions, potential savings, and rental yield metrics"
                   width={1280}
                   height={800}
                   className="w-full h-auto"
@@ -258,7 +258,7 @@ export default async function HomePage() {
               <div className="flex-1 rounded-xl border overflow-hidden shadow-lg">
                 <Image
                   src="/images/screenshots/tax-reports.png"
-                  alt="PropertyTracker reports page showing tax report options including ATO-compliant reports, capital gains tax, cash flow forecast, and audit checks"
+                  alt="BrickTrack reports page showing tax report options including ATO-compliant reports, capital gains tax, cash flow forecast, and audit checks"
                   width={1280}
                   height={800}
                   className="w-full h-auto"
@@ -282,7 +282,7 @@ export default async function HomePage() {
               <div className="flex-1 rounded-xl border overflow-hidden shadow-lg">
                 <Image
                   src="/images/screenshots/banking.png"
-                  alt="PropertyTracker banking page showing connected bank accounts with Commonwealth Bank transaction and offset accounts"
+                  alt="BrickTrack banking page showing connected bank accounts with Commonwealth Bank transaction and offset accounts"
                   width={1280}
                   height={800}
                   className="w-full h-auto"
@@ -448,7 +448,7 @@ export default async function HomePage() {
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />
             <span className="text-sm text-muted-foreground">
-              PropertyTracker &copy; {new Date().getFullYear()}
+              BrickTrack &copy; {new Date().getFullYear()}
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">

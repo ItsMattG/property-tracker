@@ -1,4 +1,4 @@
-# PropertyTracker
+# BrickTrack
 
 Australian property investment tracking - "Your spreadsheet, automated."
 
