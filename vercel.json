@@ -6,6 +6,12 @@
   "framework": "nextjs",
   "regions": ["syd1"],
   "functions": {
+    "src/app/api/trpc/**/*.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/**/*.ts": {
+      "maxDuration": 60
+    },
     "src/app/**/*.ts": {
       "maxDuration": 60
     },
