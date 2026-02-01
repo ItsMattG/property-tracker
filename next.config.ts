@@ -8,45 +8,45 @@ const withBundleAnalyzer =
       require("@next/bundle-analyzer")({ enabled: true })
     : (config: NextConfig) => config;
 
+// Common security headers (non-CSP)
+const securityHeaders = [
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+];
+
+// Standard CSP for most pages
+const standardCSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.posthog.com https://*.clerk.accounts.dev https://clerk.bricktrack.au https://challenges.cloudflare.com https://*.cloudflare.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https: http:",
+  "font-src 'self' https://fonts.gstatic.com",
+  "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.posthog.com https://*.clerk.accounts.dev https://*.clerk.dev wss://*.clerk.accounts.dev https://*.bricktrack.au wss://*.bricktrack.au https://api.basiq.io https://sentry.io https://*.ingest.sentry.io https://img.logo.dev https://*.cloudflare.com",
+  "frame-src 'self' https://js.stripe.com https://*.clerk.accounts.dev https://*.bricktrack.au https://challenges.cloudflare.com https://*.cloudflare.com",
+  "worker-src 'self' blob:",
+].join("; ");
+
 const nextConfig: NextConfig = {
   async headers() {
     return [
+      // Auth pages - no CSP (let Clerk handle it to avoid conflicts with Turnstile)
       {
-        source: "/(.*)",
+        source: "/sign-in/:path*",
+        headers: securityHeaders,
+      },
+      {
+        source: "/sign-up/:path*",
+        headers: securityHeaders,
+      },
+      // All other pages - standard CSP
+      {
+        source: "/((?!sign-in|sign-up).*)",
         headers: [
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
-          {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
-          },
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains",
-          },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.posthog.com https://*.clerk.accounts.dev https://clerk.bricktrack.au https://challenges.cloudflare.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' data: blob: https: http:",
-              "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.posthog.com https://*.clerk.accounts.dev https://*.clerk.dev wss://*.clerk.accounts.dev https://*.bricktrack.au wss://*.bricktrack.au https://api.basiq.io https://sentry.io https://*.ingest.sentry.io https://img.logo.dev",
-              "frame-src 'self' https://js.stripe.com https://*.clerk.accounts.dev https://*.bricktrack.au https://challenges.cloudflare.com",
-              "worker-src 'self' blob:",
-            ].join("; "),
-          },
+          ...securityHeaders,
+          { key: "Content-Security-Policy", value: standardCSP },
         ],
       },
     ];
