@@ -36,7 +36,11 @@ const entityTypeLabels = {
   company: "Company",
 };
 
-export function EntitySwitcher() {
+interface EntitySwitcherProps {
+  isCollapsed?: boolean;
+}
+
+export function EntitySwitcher({ isCollapsed = false }: EntitySwitcherProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -56,8 +60,19 @@ export function EntitySwitcher() {
 
   if (isLoading) {
     return (
-      <Button variant="outline" disabled className="w-[200px] justify-between">
-        <span className="text-muted-foreground">Loading...</span>
+      <Button
+        variant="outline"
+        disabled
+        className={cn(
+          "justify-between",
+          isCollapsed ? "w-10 h-10 p-0" : "w-[200px]"
+        )}
+      >
+        {isCollapsed ? (
+          <Building2 className="h-4 w-4" />
+        ) : (
+          <span className="text-muted-foreground">Loading...</span>
+        )}
       </Button>
     );
   }
@@ -66,13 +81,20 @@ export function EntitySwitcher() {
     return (
       <Button
         variant="outline"
-        className="w-[200px] justify-between"
+        className={cn(
+          "justify-between",
+          isCollapsed ? "w-10 h-10 p-0" : "w-[200px]"
+        )}
         onClick={() => router.push("/entities/new")}
       >
-        <div className="flex items-center gap-2">
+        {isCollapsed ? (
           <Plus className="h-4 w-4" />
-          <span>Create Entity</span>
-        </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            <span>Create Entity</span>
+          </div>
+        )}
       </Button>
     );
   }
@@ -86,16 +108,25 @@ export function EntitySwitcher() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="w-[200px] justify-between"
+          className={cn(
+            "justify-between",
+            isCollapsed ? "w-10 h-10 p-0" : "w-[200px]"
+          )}
           aria-label={`Switch entity. Current: ${activeEntity?.name || "Select Entity"}`}
         >
-          <div className="flex items-center gap-2">
+          {isCollapsed ? (
             <Icon className="h-4 w-4" />
-            <span className="truncate">
-              {activeEntity?.name || "Select Entity"}
-            </span>
-          </div>
-          <ChevronDown className="h-4 w-4 opacity-50" />
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4" />
+                <span className="truncate">
+                  {activeEntity?.name || "Select Entity"}
+                </span>
+              </div>
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-[200px]" align="start">
