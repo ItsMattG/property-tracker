@@ -42,7 +42,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https: http:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.posthog.com https://*.clerk.accounts.dev https://*.clerk.dev wss://*.clerk.accounts.dev https://*.bricktrack.au wss://*.bricktrack.au https://api.basiq.io https://sentry.io https://*.ingest.sentry.io",
+              "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.posthog.com https://*.clerk.accounts.dev https://*.clerk.dev wss://*.clerk.accounts.dev https://*.bricktrack.au wss://*.bricktrack.au https://api.basiq.io https://sentry.io https://*.ingest.sentry.io https://img.logo.dev",
               "frame-src 'self' https://js.stripe.com https://*.clerk.accounts.dev https://*.bricktrack.au https://challenges.cloudflare.com",
               "worker-src 'self' blob:",
             ].join("; "),
