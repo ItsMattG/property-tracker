@@ -16,8 +16,7 @@ import {
 import { db } from "@/server/db";
 import { users, properties } from "@/server/db/schema";
 import { sql } from "drizzle-orm";
-import { LifetimeBanner } from "@/components/landing/LifetimeBanner";
-import { FaqSection } from "@/components/landing/FaqSection";
+import { LifetimeBanner, FaqSection, MobileNav } from "@/components/landing";
 
 export const revalidate = 3600; // Revalidate every hour
 
@@ -73,7 +72,8 @@ export default async function HomePage() {
             </div>
             <span className="font-semibold text-lg">PropertyTracker</span>
           </Link>
-          <div className="flex items-center gap-4">
+          {/* Desktop navigation */}
+          <div className="hidden md:flex items-center gap-4">
             <Button variant="ghost" asChild>
               <Link href="/blog">Blog</Link>
             </Button>
@@ -84,6 +84,8 @@ export default async function HomePage() {
               <Link href="/sign-up">Get Started</Link>
             </Button>
           </div>
+          {/* Mobile navigation */}
+          <MobileNav />
         </div>
       </header>
 
