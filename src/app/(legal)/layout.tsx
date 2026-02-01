@@ -3,12 +3,7 @@ import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/landing";
 
-export const metadata = {
-  title: "Changelog - PropertyTracker",
-  description: "See what's new in PropertyTracker. Latest features, improvements, and fixes.",
-};
-
-export default function ChangelogLayout({
+export default function LegalLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -55,6 +50,9 @@ export default function ChangelogLayout({
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">
             <Link href="/blog" className="hover:text-foreground">
               Blog
+            </Link>
+            <Link href="/changelog" className="hover:text-foreground">
+              Changelog
             </Link>
             <Link href="/privacy" className="hover:text-foreground">
               Privacy Policy
