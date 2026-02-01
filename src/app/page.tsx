@@ -11,7 +11,8 @@ import {
   Lock,
   Globe,
 } from "lucide-react";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
+import { addDays } from "date-fns";
 import { db } from "@/server/db";
 import { users, properties, subscriptions } from "@/server/db/schema";
 import { sql, eq, and, inArray, gt } from "drizzle-orm";
@@ -34,11 +35,47 @@ async function getUserState(): Promise<UserState> {
     if (!clerkUserId) return "signed-out";
 
     // Get internal user ID from Clerk ID
-    const [user] = await db
+    let [user] = await db
       .select({ id: users.id })
       .from(users)
       .where(eq(users.clerkId, clerkUserId))
       .limit(1);
+
+    // Auto-create user if they exist in Clerk but not in our database
+    // This handles cases where the webhook hasn't fired yet (race condition on first sign-in)
+    if (!user) {
+      try {
+        const clerk = await clerkClient();
+        const clerkUser = await clerk.users.getUser(clerkUserId);
+        const primaryEmail = clerkUser.emailAddresses.find(
+          (e) => e.id === clerkUser.primaryEmailAddressId
+        );
+
+        if (primaryEmail) {
+          const name = [clerkUser.firstName, clerkUser.lastName]
+            .filter(Boolean)
+            .join(" ") || null;
+
+          const now = new Date();
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              clerkId: clerkUserId,
+              email: primaryEmail.emailAddress.toLowerCase(),
+              name,
+              trialStartedAt: now,
+              trialEndsAt: addDays(now, 14),
+              trialPlan: "pro",
+            })
+            .returning({ id: users.id });
+
+          user = newUser;
+        }
+      } catch {
+        // Failed to auto-create - treat as signed out
+        return "signed-out";
+      }
+    }
 
     if (!user) return "signed-out";
 

@@ -1,12 +1,28 @@
+# README.md Design Document
+
+**Date:** 2026-02-02
+**Status:** Approved
+**Purpose:** Comprehensive README for GitHub repository
+
+## Overview
+
+Design a ~500-800 line README that serves both developers contributing to the codebase and technical evaluators/stakeholders. Visual-rich with Mermaid diagrams, screenshots, and badges.
+
+## Sections
+
+### 1. Hero (Logo, Tagline, Badges)
+
+```markdown
 # 🧱 BrickTrack
 
 **Track smarter. Tax time sorted.**
 
 Your spreadsheet, automated. BrickTrack is an Australian property investment tracking platform that connects to your bank, automatically categorizes transactions for tax, and generates ATO-ready reports.
 
-[![CI](https://github.com/mgleeson/property-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/mgleeson/property-tracker/actions)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![CI](https://github.com/your-org/bricktrack/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/bricktrack/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/your-org/bricktrack)](https://codecov.io/gh/your-org/bricktrack)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![License](https://img.shields.io/badge/License-Proprietary-red)]()
 
 ---
@@ -17,9 +33,13 @@ Your spreadsheet, automated. BrickTrack is an Australian property investment tra
 - 🤖 **AI categorization** - Every transaction mapped to correct ATO tax categories
 - 📊 **Tax-ready reports** - Generate reports for your accountant or MyTax in one click
 - 🇦🇺 **Australian-first** - Built for Australian tax law, banks, and property investors
+```
 
 ---
 
+### 2. Screenshots
+
+```markdown
 ## Screenshots
 
 <p align="center">
@@ -39,13 +59,18 @@ Your spreadsheet, automated. BrickTrack is an Australian property investment tra
   <br/>
   <em>ATO-ready tax reports exportable to CSV or MyTax format</em>
 </p>
+```
+
+**Note:** Screenshots to be captured and added to `docs/screenshots/`.
 
 ---
 
+### 3. Features
+
+```markdown
 ## Features
 
 ### Core
-
 | Feature | Description |
 |---------|-------------|
 | **Property Portfolio** | Track unlimited properties with purchase details, valuations, and equity |
@@ -56,7 +81,6 @@ Your spreadsheet, automated. BrickTrack is an Australian property investment tra
 | **Rental Yield Calculator** | Gross and net yield calculations on dashboard |
 
 ### Advanced
-
 | Feature | Description |
 |---------|-------------|
 | **Multi-Entity Support** | Personal, Trust, Company, and SMSF ownership structures |
@@ -67,7 +91,6 @@ Your spreadsheet, automated. BrickTrack is an Australian property investment tra
 | **Broker Portal** | Generate loan packs for refinancing |
 
 ### Subscription Tiers
-
 | | Free | Pro ($14/mo) | Team ($29/mo) |
 |---|:---:|:---:|:---:|
 | Properties | 1 | Unlimited | Unlimited |
@@ -75,13 +98,16 @@ Your spreadsheet, automated. BrickTrack is an Australian property investment tra
 | Tax reports | Basic | Full | Full |
 | AI categorization | ❌ | ✅ | ✅ |
 | Team members | — | — | Up to 5 |
+```
 
 ---
 
+### 4. Tech Stack
+
+```markdown
 ## Tech Stack
 
 ### Frontend
-
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
@@ -95,7 +121,6 @@ Your spreadsheet, automated. BrickTrack is an Australian property investment tra
 - **Charts:** Recharts
 
 ### Backend
-
 ![tRPC](https://img.shields.io/badge/tRPC-11-2596BE)
 ![Drizzle](https://img.shields.io/badge/Drizzle-0.45-C5F74F)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
@@ -107,7 +132,6 @@ Your spreadsheet, automated. BrickTrack is an Australian property investment tra
 - **Email:** Resend
 
 ### External Services
-
 | Service | Purpose |
 |---------|---------|
 | [Basiq](https://basiq.io) | Open banking - Australian bank feeds |
@@ -117,9 +141,13 @@ Your spreadsheet, automated. BrickTrack is an Australian property investment tra
 | [Sentry](https://sentry.io) | Error tracking |
 | [Axiom](https://axiom.co) | Structured logging |
 | [Supabase](https://supabase.com) | Database hosting + file storage |
+```
 
 ---
 
+### 5. Architecture
+
+```markdown
 ## Architecture
 
 ```mermaid
@@ -170,9 +198,13 @@ graph TB
 | **Claude for AI** | Superior categorization accuracy vs GPT-4, better at Australian tax context |
 | **PostHog over GA** | Privacy-friendly, no cookie banners needed, self-hostable |
 | **Vercel Sydney region** | <50ms latency for Australian users, native Next.js optimization |
+```
 
 ---
 
+### 6. Getting Started
+
+```markdown
 ## Getting Started
 
 ### Prerequisites
@@ -185,8 +217,8 @@ graph TB
 
 ```bash
 # Clone the repository
-git clone https://github.com/mgleeson/property-tracker.git
-cd property-tracker
+git clone https://github.com/your-org/bricktrack.git
+cd bricktrack
 
 # Install dependencies
 pnpm install
@@ -239,9 +271,13 @@ pnpm dev
 
 # Open http://localhost:3000
 ```
+```
 
 ---
 
+### 7. Project Structure
+
+```markdown
 ## Project Structure
 
 ```
@@ -280,9 +316,13 @@ bricktrack/
 ├── content/                    # Blog MDX content
 └── public/                     # Static assets
 ```
+```
 
 ---
 
+### 8. Testing
+
+```markdown
 ## Testing
 
 ### Unit Tests
@@ -335,9 +375,13 @@ lint → typecheck → unit tests → build → E2E
 ```
 
 See `.github/workflows/ci.yml` for the full pipeline.
+```
 
 ---
 
+### 9. Deployment
+
+```markdown
 ## Deployment
 
 ### Vercel (Recommended)
@@ -383,9 +427,13 @@ Vercel cron handles scheduled tasks (configured in `vercel.json`):
 |-----|----------|---------|
 | Bank sync | Daily 6am AEST | Fetch latest transactions |
 | Trial reminders | Daily | Email users before trial expires |
+```
 
 ---
 
+### 10. Roadmap
+
+```markdown
 ## Roadmap
 
 ### Current: V0.4 (9/15 complete)
@@ -418,9 +466,13 @@ Vercel cron handles scheduled tasks (configured in `vercel.json`):
 | V0.1 | Core platform, PropertyMe import, mobile app, compliance checks |
 
 See [`docs/plans/2026-01-28-v04-roadmap-design.md`](docs/plans/2026-01-28-v04-roadmap-design.md) for detailed progress.
+```
 
 ---
 
+### 11. Contributing
+
+```markdown
 ## Contributing
 
 ### Development Workflow
@@ -469,12 +521,18 @@ bd show <id>      # View task details
 bd update <id>    # Add progress notes
 bd done <id>      # Mark complete
 ```
+```
 
 ---
 
+### 12. License
+
+```markdown
 ## License
 
 This project is proprietary software. All rights reserved.
+
+For licensing inquiries, contact [your-email@example.com](mailto:your-email@example.com).
 
 ---
 
@@ -483,3 +541,34 @@ This project is proprietary software. All rights reserved.
   <br/>
   🇦🇺 Sydney, Australia
 </p>
+```
+
+---
+
+## Implementation Notes
+
+1. **Screenshots required** - Capture and add to `docs/screenshots/`:
+   - `dashboard.png` - Portfolio overview
+   - `transactions.png` - Transaction list with categorization
+   - `tax-report.png` - Tax report or property detail
+
+2. **Badge URLs** - Update `your-org/bricktrack` to actual GitHub org/repo
+
+3. **Contact email** - Replace placeholder in License section
+
+4. **Estimated length** - ~600 lines with all sections
+
+## Approval
+
+- [x] Hero section
+- [x] Screenshots section
+- [x] Features section
+- [x] Tech Stack section
+- [x] Architecture section
+- [x] Getting Started section
+- [x] Project Structure section
+- [x] Testing section
+- [x] Deployment section
+- [x] Roadmap section
+- [x] Contributing section
+- [x] License section

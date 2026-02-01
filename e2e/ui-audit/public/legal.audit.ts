@@ -19,7 +19,7 @@ test.describe("Legal Pages Audit", () => {
     }
 
     // Check navigation back to home
-    const homeLink = page.getByRole("link", { name: /propertytracker/i }).first();
+    const homeLink = page.getByRole("link", { name: /bricktrack/i }).first();
     if (!(await homeLink.isVisible())) {
       addFinding({
         element: "Home link",

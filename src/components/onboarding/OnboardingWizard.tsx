@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, ChevronRight, Building2, Landmark, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -133,13 +134,20 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="address">Street Address</Label>
-                  <Input
-                    id="address"
-                    placeholder="123 Main Street"
-                    value={propertyData.address}
-                    onChange={(e) =>
-                      setPropertyData({ ...propertyData, address: e.target.value })
-                    }
+                  <AddressAutocomplete
+                    defaultValue={propertyData.address}
+                    placeholder="Start typing an address..."
+                    onAddressSelect={(addr) => {
+                      setPropertyData({
+                        ...propertyData,
+                        address: addr.street,
+                        suburb: addr.suburb,
+                        state: STATES.includes(addr.state as typeof STATES[number])
+                          ? (addr.state as typeof STATES[number])
+                          : propertyData.state,
+                        postcode: addr.postcode,
+                      });
+                    }}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">

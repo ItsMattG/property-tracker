@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import {
   Form,
   FormControl,
@@ -70,7 +71,18 @@ export function PropertyForm({
             <FormItem data-tour="address-field">
               <FormLabel>Street Address</FormLabel>
               <FormControl>
-                <Input placeholder="123 Main Street" {...field} />
+                <AddressAutocomplete
+                  defaultValue={field.value}
+                  placeholder="Start typing an address..."
+                  onAddressSelect={(addr) => {
+                    form.setValue("address", addr.street, { shouldValidate: true });
+                    form.setValue("suburb", addr.suburb, { shouldValidate: true });
+                    if (addr.state && states.includes(addr.state as typeof states[number])) {
+                      form.setValue("state", addr.state as typeof states[number], { shouldValidate: true });
+                    }
+                    form.setValue("postcode", addr.postcode, { shouldValidate: true });
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
