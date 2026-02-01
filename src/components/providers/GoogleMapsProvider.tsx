@@ -29,24 +29,43 @@ interface GoogleMapsProviderProps {
   children: ReactNode;
 }
 
-export function GoogleMapsProvider({ children }: GoogleMapsProviderProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
-
+// Inner component that uses the hook (only rendered when API key exists)
+function GoogleMapsLoaderProvider({
+  children,
+  apiKey
+}: {
+  children: ReactNode;
+  apiKey: string;
+}) {
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: apiKey || "",
+    googleMapsApiKey: apiKey,
     libraries,
-    // Prevent loading if no API key
     preventGoogleFontsLoading: true,
   });
 
-  // If no API key, don't try to load - components will fall back to regular inputs
-  const effectiveIsLoaded = apiKey ? isLoaded : false;
-
   return (
-    <GoogleMapsContext.Provider
-      value={{ isLoaded: effectiveIsLoaded, loadError }}
-    >
+    <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>
       {children}
     </GoogleMapsContext.Provider>
+  );
+}
+
+// Outer component that conditionally renders the loader
+export function GoogleMapsProvider({ children }: GoogleMapsProviderProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
+
+  // If no API key, render children without Google Maps functionality
+  if (!apiKey) {
+    return (
+      <GoogleMapsContext.Provider value={{ isLoaded: false, loadError: undefined }}>
+        {children}
+      </GoogleMapsContext.Provider>
+    );
+  }
+
+  return (
+    <GoogleMapsLoaderProvider apiKey={apiKey}>
+      {children}
+    </GoogleMapsLoaderProvider>
   );
 }
