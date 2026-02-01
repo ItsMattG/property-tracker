@@ -29,30 +29,29 @@ const entityTypeLabels = {
   company: "Company",
 };
 
+function EntityCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="w-10 h-10 rounded-lg" />
+          <div>
+            <Skeleton className="h-5 w-32 mb-1" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+        </div>
+        <Skeleton className="h-5 w-5" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-4 w-24 mb-1" />
+        <Skeleton className="h-4 w-20" />
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function EntitiesPage() {
   const { data: entities, isLoading } = trpc.entity.list.useQuery();
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Entities</h1>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-24" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -66,7 +65,13 @@ export default function EntitiesPage() {
         </Link>
       </div>
 
-      {entities?.length === 0 ? (
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <EntityCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : entities?.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground mb-4" />

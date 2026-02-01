@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc/client";
 import { Plus, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { PropertyListSkeleton } from "@/components/skeletons";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,29 +53,6 @@ export default function PropertiesPage() {
 
   const propertyToDelete = properties?.find((p) => p.id === deletePropertyId);
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Properties</h2>
-            <p className="text-muted-foreground">
-              Manage your investment properties
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-48 rounded-lg bg-muted animate-pulse"
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -92,7 +70,9 @@ export default function PropertiesPage() {
         </Button>
       </div>
 
-      {properties && properties.length > 0 ? (
+      {isLoading ? (
+        <PropertyListSkeleton count={3} />
+      ) : properties && properties.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {properties.map((property) => (
             <PropertyCard

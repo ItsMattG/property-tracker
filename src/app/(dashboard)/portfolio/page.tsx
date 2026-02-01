@@ -15,8 +15,9 @@ import { Plus, Building2 } from "lucide-react";
 import { useTour } from "@/hooks/useTour";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { DataSkeleton } from "@/components/ui/data-skeleton";
 import { getErrorMessage } from "@/lib/errors";
+import { PropertyListSkeleton } from "@/components/skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ViewMode = "cards" | "table" | "aggregate";
 type Period = "monthly" | "quarterly" | "annual";
@@ -100,20 +101,6 @@ function PortfolioContent() {
     a.click();
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold">Portfolio</h2>
-          <p className="text-muted-foreground">Overview of your investment properties</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <DataSkeleton variant="card" count={3} />
-        </div>
-      </div>
-    );
-  }
-
   if (isError) {
     return (
       <div className="space-y-6">
@@ -141,16 +128,37 @@ function PortfolioContent() {
         </Button>
       </div>
 
-      {/* Add equity summary card */}
-      {summary && (
-        <div data-tour="portfolio-summary">
+      {/* Equity summary card - show skeleton while loading */}
+      <div data-tour="portfolio-summary">
+        {isLoading ? (
+          <div className="border rounded-lg p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-28" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-28" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-8 w-28" />
+              </div>
+            </div>
+          </div>
+        ) : summary ? (
           <PortfolioEquityCard
             totalValue={summary.totalValue}
             totalLoans={summary.totalDebt}
             propertyCount={metrics?.length ?? 0}
           />
-        </div>
-      )}
+        ) : null}
+      </div>
 
       <PortfolioToolbar
         viewMode={viewMode}
@@ -167,7 +175,9 @@ function PortfolioContent() {
 
       {viewMode === "cards" && (
         <>
-          {metrics && metrics.length > 0 ? (
+          {isLoading ? (
+            <PropertyListSkeleton count={3} />
+          ) : metrics && metrics.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-tour="property-cards">
               {metrics.map((property) => (
                 <PortfolioCard
@@ -191,19 +201,27 @@ function PortfolioContent() {
         </>
       )}
 
-      {viewMode === "table" && metrics && (
-        <ComparisonTable
-          properties={metrics}
-          onExport={handleExportCSV}
-        />
+      {viewMode === "table" && (
+        isLoading ? (
+          <PropertyListSkeleton count={3} />
+        ) : metrics ? (
+          <ComparisonTable
+            properties={metrics}
+            onExport={handleExportCSV}
+          />
+        ) : null
       )}
 
-      {viewMode === "aggregate" && summary && metrics && (
-        <AggregatedView
-          summary={summary}
-          properties={metrics}
-          period={period}
-        />
+      {viewMode === "aggregate" && (
+        isLoading ? (
+          <PropertyListSkeleton count={3} />
+        ) : summary && metrics ? (
+          <AggregatedView
+            summary={summary}
+            properties={metrics}
+            period={period}
+          />
+        ) : null
       )}
 
       <AddPropertyValueDialog
@@ -222,13 +240,47 @@ function PortfolioContent() {
 function PortfolioLoading() {
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Portfolio</h2>
-        <p className="text-muted-foreground">Overview of your investment properties</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Portfolio</h2>
+          <p className="text-muted-foreground">Overview of your investment properties</p>
+        </div>
+        <Button asChild>
+          <Link href="/properties/new">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Property
+          </Link>
+        </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <DataSkeleton variant="card" count={3} />
+      {/* Equity summary skeleton */}
+      <div className="border rounded-lg p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-6 w-24" />
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-8 w-28" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-8 w-28" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-8 w-28" />
+          </div>
+        </div>
       </div>
+      {/* Toolbar placeholder */}
+      <div className="flex gap-2">
+        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-10 w-32" />
+      </div>
+      {/* Property cards skeleton */}
+      <PropertyListSkeleton count={3} />
     </div>
   );
 }

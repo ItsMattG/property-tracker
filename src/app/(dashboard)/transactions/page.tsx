@@ -14,6 +14,7 @@ import type { Category, TransactionFilterInput } from "@/types/category";
 import { useTour } from "@/hooks/useTour";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { TransactionTableSkeleton } from "@/components/skeletons";
 
 type ViewMode = "transactions" | "reconciliation";
 
@@ -173,20 +174,6 @@ export default function TransactionsPage() {
     setPage(1);
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold">Transactions</h2>
-          <p className="text-muted-foreground">
-            Review and categorize your transactions
-          </p>
-        </div>
-        <div className="h-96 rounded-lg bg-muted animate-pulse" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -231,36 +218,38 @@ export default function TransactionsPage() {
             />
           </div>
 
-          {transactions && transactions.transactions.length > 0 ? (
-        <>
-          <TransactionTable
-            transactions={transactions.transactions as any}
-            properties={properties ?? []}
-            onCategoryChange={handleCategoryChange}
-            onToggleVerified={handleToggleVerified}
-            onBulkCategoryChange={handleBulkCategoryChange}
-          />
-          {totalPages > 1 && (
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              isLoading={isLoading}
-            />
+          {isLoading ? (
+            <TransactionTableSkeleton />
+          ) : transactions && transactions.transactions.length > 0 ? (
+            <>
+              <TransactionTable
+                transactions={transactions.transactions as any}
+                properties={properties ?? []}
+                onCategoryChange={handleCategoryChange}
+                onToggleVerified={handleToggleVerified}
+                onBulkCategoryChange={handleBulkCategoryChange}
+              />
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  isLoading={isLoading}
+                />
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <ArrowLeftRight className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">No transactions yet</h3>
+              <p className="text-muted-foreground max-w-sm mt-2">
+                Connect your bank account to automatically import transactions, or
+                add them manually.
+              </p>
+            </div>
           )}
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <ArrowLeftRight className="w-8 h-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-semibold">No transactions yet</h3>
-          <p className="text-muted-foreground max-w-sm mt-2">
-            Connect your bank account to automatically import transactions, or
-            add them manually.
-          </p>
-        </div>
-      )}
         </>
       ) : (
         <ReconciliationView propertyId={filters.propertyId} />
