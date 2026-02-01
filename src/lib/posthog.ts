@@ -4,6 +4,10 @@ export function initPostHog() {
   if (typeof window === "undefined") return;
   if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) return;
 
+  // Temporarily disabled - PostHog detectStore() crashes in production
+  // TODO: Upgrade posthog-js or investigate storage detection issue
+  return;
+
   try {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
       api_host:
