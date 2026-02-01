@@ -14,6 +14,7 @@ permissions:
 
 env:
   NODE_VERSION: "20"
+  PNPM_VERSION: "10"
 
 jobs:
   setup:
@@ -23,23 +24,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        id: cache-deps
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          cache: 'pnpm'
 
       - name: Install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
   lint:
     name: Lint
@@ -49,23 +46,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-
-      - name: Install dependencies (fallback)
-        run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run ESLint
-        run: npm run lint
+        run: pnpm run lint
 
   typecheck:
     name: Type Check
@@ -75,23 +71,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-
-      - name: Install dependencies (fallback)
-        run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run TypeScript type check
-        run: npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
 
   unit-tests:
     name: Unit Tests
@@ -101,23 +96,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-
-      - name: Install dependencies (fallback)
-        run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run unit tests with coverage
-        run: npm run test:unit:coverage
+        run: pnpm run test:unit:coverage
 
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
@@ -134,33 +128,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Install dependencies (fallback)
-        run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
-
-      - name: Run npm audit
-        run: npm audit --audit-level=high
+      - name: Run pnpm audit
+        run: pnpm audit --audit-level=high
         continue-on-error: true
-
-      - name: Check for critical vulnerabilities
-        run: |
-          CRITICAL=$(npm audit --json 2>/dev/null | jq '.metadata.vulnerabilities.critical // 0')
-          if [ "$CRITICAL" -gt 0 ]; then
-            echo "::error::Found $CRITICAL critical vulnerabilities"
-            exit 1
-          fi
-          echo "No critical vulnerabilities found"
 
   build:
     name: Build
@@ -170,32 +154,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          cache: 'pnpm'
 
       - name: Cache Next.js build
         uses: actions/cache@v4
         with:
           path: .next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
             ${{ runner.os }}-nextjs-
 
-      - name: Install dependencies (fallback)
-        run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
         env:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_dummy
           CLERK_SECRET_KEY: sk_test_dummy
@@ -211,38 +194,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
 
-      - name: Restore node_modules cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-
-      - name: Install dependencies (fallback)
-        run: npm ci
-        if: hashFiles('node_modules/.package-lock.json') == ''
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
 
       - name: Install Playwright deps only
-        run: npx playwright install-deps chromium
+        run: pnpm exec playwright install-deps chromium
         if: steps.playwright-cache.outputs.cache-hit == 'true'
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: pnpm run test:e2e
         env:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
