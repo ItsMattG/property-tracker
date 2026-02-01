@@ -19,6 +19,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { Plus, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { LoanListSkeleton } from "@/components/skeletons";
 
 export default function LoansPage() {
   const router = useRouter();
@@ -51,24 +52,6 @@ export default function LoansPage() {
     router.push(`/loans/${id}/edit`);
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Loans</h2>
-            <p className="text-muted-foreground">Manage your investment property loans</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-48 rounded-lg bg-muted animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -84,7 +67,9 @@ export default function LoansPage() {
         </Button>
       </div>
 
-      {loans && loans.length > 0 ? (
+      {isLoading ? (
+        <LoanListSkeleton count={2} />
+      ) : loans && loans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {loans.map((loan) => (
             <LoanCard
