@@ -5,7 +5,7 @@ summary: "Understand how negative gearing works, when it makes sense, and how to
 category: tax
 tags: ["negative gearing", "tax deductions", "investment property", "tax strategy"]
 author: BrickTrack Team
-publishedAt: "2026-03-03"
+publishedAt: "2026-02-02"
 ---
 
 ## What Is Negative Gearing?

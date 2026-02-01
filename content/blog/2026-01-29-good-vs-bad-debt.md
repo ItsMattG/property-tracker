@@ -2,7 +2,7 @@
 title: "Good Debt vs Bad Debt for Property Investors"
 summary: "Not all debt is equal. Understanding the difference between good and bad debt is the foundation of smart property investing."
 category: "fundamentals"
-publishedAt: "2026-02-24"
+publishedAt: "2026-01-29"
 tags: ["finance", "debt", "strategy", "fundamentals"]
 author: "BrickTrack"
 ---

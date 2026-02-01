@@ -2,7 +2,7 @@
 title: "Positive vs Negative Gearing Explained"
 summary: "Australia's most talked-about property tax strategy. Here's what positive and negative gearing actually mean for your cash flow and tax."
 category: "fundamentals"
-publishedAt: "2026-02-10"
+publishedAt: "2026-01-21"
 tags: ["tax", "gearing", "cash-flow", "deductions"]
 author: "BrickTrack"
 ---
