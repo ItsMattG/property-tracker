@@ -90,7 +90,7 @@ export default async function HomePage() {
       </header>
 
       {/* Hero */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-4xl text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
             Track smarter.{" "}
@@ -144,7 +144,7 @@ export default async function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-4 bg-secondary">
+      <section className="py-12 md:py-20 px-4 bg-secondary">
         <div className="container mx-auto max-w-5xl">
           <h2 className="text-3xl font-bold text-center mb-12">
             Built for Australian investors
@@ -185,7 +185,7 @@ export default async function HomePage() {
       </section>
 
       {/* Product Screenshots */}
-      <section className="py-20 px-4">
+      <section className="py-12 md:py-20 px-4">
         <div className="container mx-auto max-w-5xl">
           <h2 className="text-3xl font-bold text-center mb-4">
             See it in action
@@ -194,7 +194,7 @@ export default async function HomePage() {
             One place for properties, transactions, and tax reports.
           </p>
 
-          <div className="space-y-16">
+          <div className="space-y-12 md:space-y-16">
             {/* Panel 1: Dashboard */}
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="flex-1 rounded-xl border overflow-hidden shadow-lg">
@@ -271,7 +271,7 @@ export default async function HomePage() {
       </section>
 
       {/* Benefits */}
-      <section className="py-20 px-4 bg-secondary">
+      <section className="py-12 md:py-20 px-4 bg-secondary">
         <div className="container mx-auto max-w-3xl">
           <h2 className="text-3xl font-bold text-center mb-12">
             What you get back: time
@@ -294,7 +294,7 @@ export default async function HomePage() {
       </section>
 
       {/* Pricing */}
-      <section className="py-20 px-4" id="pricing">
+      <section className="py-12 md:py-20 px-4" id="pricing">
         <div className="container mx-auto max-w-5xl">
           <h2 className="text-3xl font-bold text-center mb-4">
             Simple pricing. No surprises.
@@ -403,7 +403,7 @@ export default async function HomePage() {
       <FaqSection />
 
       {/* CTA */}
-      <section className="py-20 px-4 bg-primary text-primary-foreground">
+      <section className="py-12 md:py-20 px-4 bg-primary text-primary-foreground">
         <div className="container mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold mb-4">
             Ready to ditch the spreadsheet?
@@ -429,7 +429,7 @@ export default async function HomePage() {
               PropertyTracker &copy; {new Date().getFullYear()}
             </span>
           </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">
             <Link href="/blog" className="hover:text-foreground">
               Blog
             </Link>
