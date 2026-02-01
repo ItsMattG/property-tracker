@@ -5,6 +5,14 @@
   "installCommand": "npm ci",
   "framework": "nextjs",
   "regions": ["syd1"],
+  "functions": {
+    "src/app/**/*.ts": {
+      "maxDuration": 60
+    },
+    "src/app/**/*.tsx": {
+      "maxDuration": 60
+    }
+  },
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://propertytracker.vercel.app"
   },
