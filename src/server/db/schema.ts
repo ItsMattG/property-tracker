@@ -739,6 +739,7 @@ export const properties = pgTable("properties", {
   soldAt: date("sold_at"),
   climateRisk: jsonb("climate_risk").$type<import("@/types/climate-risk").ClimateRisk>(),
   forwardingAddress: text("forwarding_address").unique(),
+  locked: boolean("locked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
