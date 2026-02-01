@@ -28,7 +28,7 @@ export function inviteEmailTemplate({
 
   const content = `
     <h2 style="color: #333; margin-bottom: 20px;">You've been invited!</h2>
-    <p><strong>${ownerName}</strong> has invited you to access their property portfolio on PropertyTracker.</p>
+    <p><strong>${ownerName}</strong> has invited you to access their property portfolio on BrickTrack.</p>
 
     <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
       <p style="margin: 0;"><strong>Your role:</strong> ${role.charAt(0).toUpperCase() + role.slice(1)}</p>

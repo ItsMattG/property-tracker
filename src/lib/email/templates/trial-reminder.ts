@@ -1,9 +1,9 @@
 import { baseTemplate } from "./base";
 
 export function trialReminderSubject(daysLeft: number): string {
-  if (daysLeft === 0) return "Your PropertyTracker Pro trial has ended";
-  if (daysLeft === 1) return "Last day of your PropertyTracker Pro trial";
-  return `Your PropertyTracker Pro trial ends in ${daysLeft} days`;
+  if (daysLeft === 0) return "Your BrickTrack Pro trial has ended";
+  if (daysLeft === 1) return "Last day of your BrickTrack Pro trial";
+  return `Your BrickTrack Pro trial ends in ${daysLeft} days`;
 }
 
 export function trialReminderTemplate({
@@ -22,7 +22,7 @@ export function trialReminderTemplate({
       <h2 style="color: #dc2626; margin: 0 0 20px 0;">Your Pro Trial Has Ended</h2>
       <p style="font-size: 16px; margin: 0 0 16px 0;">${greeting}</p>
       <p style="font-size: 16px; color: #374151; margin: 0 0 16px 0;">
-        Your 14-day PropertyTracker Pro trial has ended. Your account has been moved to the Free plan.
+        Your 14-day BrickTrack Pro trial has ended. Your account has been moved to the Free plan.
       </p>
       <p style="font-size: 16px; color: #374151; margin: 0 0 16px 0;">
         On the Free plan, you can access 1 property. Any additional properties have been locked but your data is safe.
@@ -37,7 +37,7 @@ export function trialReminderTemplate({
         </a>
       </div>
       <p style="font-size: 16px; color: #374151; margin: 20px 0 0 0;">
-        Thanks for trying PropertyTracker!
+        Thanks for trying BrickTrack!
       </p>
     `;
     return baseTemplate(content);
@@ -49,7 +49,7 @@ export function trialReminderTemplate({
     </h2>
     <p style="font-size: 16px; margin: 0 0 16px 0;">${greeting}</p>
     <p style="font-size: 16px; color: #374151; margin: 0 0 16px 0;">
-      Your PropertyTracker Pro trial ${daysLeft === 1 ? "ends tomorrow" : `ends in ${daysLeft} days`}.
+      Your BrickTrack Pro trial ${daysLeft === 1 ? "ends tomorrow" : `ends in ${daysLeft} days`}.
     </p>
     <p style="font-size: 16px; color: #374151; margin: 0 0 20px 0;">
       To keep access to unlimited properties, bank feeds, tax reports, and more, upgrade now:
@@ -61,7 +61,7 @@ export function trialReminderTemplate({
       </a>
     </div>
     <p style="font-size: 16px; color: #374151; margin: 20px 0 0 0;">
-      Thanks for using PropertyTracker!
+      Thanks for using BrickTrack!
     </p>
   `;
   return baseTemplate(content);
