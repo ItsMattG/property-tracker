@@ -370,5 +370,5 @@ This project is proprietary software. All rights reserved.
 <p align="center">
   <strong>Built for Australian property investors</strong>
   <br/>
-  🇦🇺 Sydney, Australia
+  🇦🇺 Melbourne, Australia
 </p>
