@@ -91,7 +91,7 @@ async function checkPage(page: Page, url: string, pageName: string, checks: {
 }
 
 async function runManualQA() {
-  console.log("=== PropertyTracker Manual QA Test ===\n");
+  console.log("=== BrickTrack Manual QA Test ===\n");
   console.log(`Testing against: ${BASE_URL}\n`);
 
   await clerkSetup();
@@ -109,7 +109,7 @@ async function runManualQA() {
 
   await checkPage(page, BASE_URL, "Landing Page", {
     waitFor: "text=Track smarter",
-    shouldContain: ["PropertyTracker", "Sign up"],
+    shouldContain: ["BrickTrack", "Sign up"],
   });
 
   await checkPage(page, `${BASE_URL}/blog`, "Blog", {

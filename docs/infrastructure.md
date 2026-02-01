@@ -2,7 +2,7 @@
 
 ## Overview
 
-PropertyTracker uses the following infrastructure:
+BrickTrack uses the following infrastructure:
 
 - **Hosting:** Vercel (Next.js optimized)
 - **Database:** PostgreSQL on Supabase
