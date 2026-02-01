@@ -4,7 +4,7 @@ summary: "Rental yield tells you how hard your property is working. Here's the f
 category: "strategy"
 publishedAt: "2026-02-17"
 tags: ["yield", "rental", "strategy", "analysis"]
-author: "PropertyTracker"
+author: "BrickTrack"
 ---
 
 Rental yield measures how much income your property generates relative to its value. It's the quickest way to compare investment properties and understand your cash flow position.

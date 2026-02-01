@@ -4,7 +4,7 @@ summary: "Loan-to-value ratio is the single most important number in property fi
 category: "fundamentals"
 publishedAt: "2026-02-03"
 tags: ["finance", "lvr", "equity", "lending"]
-author: "PropertyTracker"
+author: "BrickTrack"
 ---
 
 If you're investing in property, your **Loan-to-Value Ratio (LVR)** is the number that determines how much you can borrow, what interest rate you'll pay, and whether you need Lenders Mortgage Insurance (LMI).

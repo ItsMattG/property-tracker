@@ -4,7 +4,7 @@ summary: "Not all debt is equal. Understanding the difference between good and b
 category: "fundamentals"
 publishedAt: "2026-02-24"
 tags: ["finance", "debt", "strategy", "fundamentals"]
-author: "PropertyTracker"
+author: "BrickTrack"
 ---
 
 Most people are taught that debt is bad. But property investors know there's a critical difference between debt that costs you money and debt that builds wealth.
