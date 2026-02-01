@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/landing";
 
 export const metadata = {
-  title: "Changelog - PropertyTracker",
-  description: "See what's new in PropertyTracker. Latest features, improvements, and fixes.",
+  title: "Changelog - BrickTrack",
+  description: "See what's new in BrickTrack. Latest features, improvements, and fixes.",
 };
 
 export default function ChangelogLayout({
@@ -22,7 +22,7 @@ export default function ChangelogLayout({
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Building2 className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-lg">PropertyTracker</span>
+            <span className="font-semibold text-lg">BrickTrack</span>
           </Link>
           {/* Desktop navigation */}
           <div className="hidden md:flex items-center gap-4">
@@ -49,7 +49,7 @@ export default function ChangelogLayout({
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />
             <span className="text-sm text-muted-foreground">
-              PropertyTracker &copy; {new Date().getFullYear()}
+              BrickTrack &copy; {new Date().getFullYear()}
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">

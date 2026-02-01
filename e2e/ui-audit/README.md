@@ -1,6 +1,6 @@
 # UI/UX Audit System
 
-Automated UI/UX audit for PropertyTracker using Playwright. Captures screenshots of all page states and logs findings for review.
+Automated UI/UX audit for BrickTrack using Playwright. Captures screenshots of all page states and logs findings for review.
 
 ## Quick Start
 

@@ -164,7 +164,7 @@ export async function sendEmailNotification(
     const resend = getResend();
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "PropertyTracker <notifications@propertytracker.com>",
+      from: process.env.EMAIL_FROM || "BrickTrack <notifications@propertytracker.com>",
       to,
       subject,
       html,

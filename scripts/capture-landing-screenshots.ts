@@ -56,7 +56,7 @@ async function captureScreenshots() {
   await page.goto(`${BASE_URL}/dashboard`);
   await page.waitForLoadState("networkidle");
   // Wait for dashboard content to load
-  await page.waitForSelector("text=Welcome to PropertyTracker", { timeout: 10000 }).catch(() => {
+  await page.waitForSelector("text=Welcome to BrickTrack", { timeout: 10000 }).catch(() => {
     // Try alternate selector if welcome message not found
     return page.waitForSelector('[data-testid="dashboard"]', { timeout: 5000 }).catch(() => {});
   });

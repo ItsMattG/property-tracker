@@ -55,7 +55,7 @@ export default function BankingConnectPage() {
                 <h4 className="font-medium">Bank-grade security</h4>
                 <p className="text-sm text-muted-foreground">
                   We use Basiq, a regulated open banking provider. Your login
-                  credentials are never stored or seen by PropertyTracker.
+                  credentials are never stored or seen by BrickTrack.
                 </p>
               </div>
             </div>

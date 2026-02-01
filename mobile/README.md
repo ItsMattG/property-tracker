@@ -1,6 +1,6 @@
-# PropertyTracker Mobile App
+# BrickTrack Mobile App
 
-React Native mobile app for PropertyTracker.
+React Native mobile app for BrickTrack.
 
 ## Development
 

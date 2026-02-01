@@ -58,7 +58,7 @@ export default function MobileSettingsPage() {
         <div>
           <h2 className="text-2xl font-bold">Mobile App Access</h2>
           <p className="text-muted-foreground">
-            Set up a password to access PropertyTracker from the mobile app
+            Set up a password to access BrickTrack from the mobile app
           </p>
         </div>
         <div className="h-64 rounded-lg bg-muted animate-pulse" />
@@ -71,7 +71,7 @@ export default function MobileSettingsPage() {
       <div>
         <h2 className="text-2xl font-bold">Mobile App Access</h2>
         <p className="text-muted-foreground">
-          Set up a password to access PropertyTracker from the mobile app
+          Set up a password to access BrickTrack from the mobile app
         </p>
       </div>
 
@@ -154,7 +154,7 @@ export default function MobileSettingsPage() {
           <CardTitle className="text-base">How to use</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>1. Download the PropertyTracker mobile app from the App Store or Google Play</p>
+          <p>1. Download the BrickTrack mobile app from the App Store or Google Play</p>
           <p>2. Open the app and tap &quot;Sign In&quot;</p>
           <p>3. Enter your email address and the mobile password you set above</p>
           <p className="pt-2 text-xs">

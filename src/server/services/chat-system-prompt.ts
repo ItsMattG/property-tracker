@@ -2,7 +2,7 @@ export function buildSystemPrompt(userName: string, propertyCount: number, curre
   const now = new Date();
   const fyYear = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
 
-  return `You are the PropertyTracker AI Assistant. You help Australian property investors understand their portfolio, find insights in their data, and navigate the app.
+  return `You are the BrickTrack AI Assistant. You help Australian property investors understand their portfolio, find insights in their data, and navigate the app.
 
 Context:
 - User: ${userName}

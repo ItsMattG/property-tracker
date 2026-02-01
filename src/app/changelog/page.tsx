@@ -36,7 +36,7 @@ export default async function ChangelogPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Changelog</h1>
           <p className="text-xl text-muted-foreground">
-            See what&apos;s new in PropertyTracker
+            See what&apos;s new in BrickTrack
           </p>
         </div>
 

@@ -29,19 +29,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!share || new Date() > new Date(share.expiresAt)) {
     return {
-      title: "Portfolio — PropertyTracker",
-      description: "Track your investment properties with PropertyTracker.",
+      title: "Portfolio — BrickTrack",
+      description: "Track your investment properties with BrickTrack.",
     };
   }
 
   const ogImageUrl = `${BASE_URL}/api/og/share/${token}`;
 
   return {
-    title: `${share.title} — PropertyTracker`,
-    description: "Portfolio snapshot shared via PropertyTracker.",
+    title: `${share.title} — BrickTrack`,
+    description: "Portfolio snapshot shared via BrickTrack.",
     openGraph: {
-      title: `${share.title} — PropertyTracker`,
-      description: "Portfolio snapshot shared via PropertyTracker.",
+      title: `${share.title} — BrickTrack`,
+      description: "Portfolio snapshot shared via BrickTrack.",
       type: "website",
       images: [
         {
@@ -54,8 +54,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: "summary_large_image",
-      title: `${share.title} — PropertyTracker`,
-      description: "Portfolio snapshot shared via PropertyTracker.",
+      title: `${share.title} — BrickTrack`,
+      description: "Portfolio snapshot shared via BrickTrack.",
       images: [ogImageUrl],
     },
   };
@@ -118,7 +118,7 @@ export default async function ShareViewPage({ params }: PageProps) {
               This portfolio share link has expired and is no longer available.
             </p>
             <Link href="/">
-              <Button>Go to PropertyTracker</Button>
+              <Button>Go to BrickTrack</Button>
             </Link>
           </CardContent>
         </Card>
@@ -188,7 +188,7 @@ export default async function ShareViewPage({ params }: PageProps) {
               <p className="text-sm text-muted-foreground">
                 Powered by{" "}
                 <Link href="/" className="font-medium text-foreground hover:underline">
-                  PropertyTracker
+                  BrickTrack
                 </Link>
               </p>
               <p className="text-xs text-muted-foreground mt-1">

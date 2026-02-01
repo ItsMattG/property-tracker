@@ -1,10 +1,10 @@
 ---
 title: "Negative Gearing Explained: How It Works for Australian Property Investors"
 slug: negative-gearing-guide
-summary: "Understand how negative gearing works, when it makes sense, and how to track it with PropertyTracker."
+summary: "Understand how negative gearing works, when it makes sense, and how to track it with BrickTrack."
 category: tax
 tags: ["negative gearing", "tax deductions", "investment property", "tax strategy"]
-author: PropertyTracker Team
+author: BrickTrack Team
 publishedAt: "2026-03-03"
 ---
 
@@ -48,9 +48,9 @@ Negative gearing is not a strategy on its own — it's a side effect of holding 
 
 It does not make sense to deliberately lose money just for a tax deduction. The tax benefit only offsets part of the loss.
 
-## Tracking Negative Gearing with PropertyTracker
+## Tracking Negative Gearing with BrickTrack
 
-PropertyTracker automatically calculates your net rental position:
+BrickTrack automatically calculates your net rental position:
 
 1. **Import transactions** via bank feeds to capture all income and expenses
 2. **Categorize expenses** using AI-powered auto-categorization
@@ -61,4 +61,4 @@ The Tax Position card on your dashboard shows whether each property is positivel
 
 ## The Bottom Line
 
-Negative gearing is a tool, not a goal. Focus on acquiring properties with strong fundamentals (location, demand, growth potential) and use PropertyTracker to keep your expenses organized and your tax position clear.
+Negative gearing is a tool, not a goal. Focus on acquiring properties with strong fundamentals (location, demand, growth potential) and use BrickTrack to keep your expenses organized and your tax position clear.

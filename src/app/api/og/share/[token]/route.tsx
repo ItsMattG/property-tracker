@@ -80,7 +80,7 @@ export async function GET(
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: "32px", fontWeight: 700 }}>PropertyTracker</div>
+            <div style={{ fontSize: "32px", fontWeight: 700 }}>BrickTrack</div>
             <div style={{ fontSize: "24px", opacity: 0.8 }}>Portfolio Share</div>
           </div>
 

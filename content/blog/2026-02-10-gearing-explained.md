@@ -4,7 +4,7 @@ summary: "Australia's most talked-about property tax strategy. Here's what posit
 category: "fundamentals"
 publishedAt: "2026-02-10"
 tags: ["tax", "gearing", "cash-flow", "deductions"]
-author: "PropertyTracker"
+author: "BrickTrack"
 ---
 
 Gearing is simply whether your investment property makes or loses money each year before tax. It's the foundation of every Australian property investor's tax strategy.

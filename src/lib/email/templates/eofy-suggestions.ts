@@ -33,7 +33,7 @@ export function eofySuggestionsTemplate(data: {
   </a>
 
   <p style="color: #999; font-size: 14px; margin-top: 30px;">
-    PropertyTracker - Smart property investment tracking
+    BrickTrack - Smart property investment tracking
   </p>
 </body>
 </html>

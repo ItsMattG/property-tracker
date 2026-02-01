@@ -45,7 +45,7 @@ export function LoginScreen() {
     >
       <View className="flex-1 justify-center px-6">
         <Text className="text-3xl font-bold text-center mb-2">
-          PropertyTracker
+          BrickTrack
         </Text>
         <Text className="text-gray-500 text-center mb-8">
           Sign in with your mobile password

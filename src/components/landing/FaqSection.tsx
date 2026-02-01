@@ -53,7 +53,7 @@ export function FaqSection() {
           Frequently asked questions
         </h2>
         <p className="text-center text-muted-foreground mb-12">
-          Everything you need to know about PropertyTracker.
+          Everything you need to know about BrickTrack.
         </p>
         <Accordion type="single" collapsible className="w-full">
           {faqs.map((faq, i) => (

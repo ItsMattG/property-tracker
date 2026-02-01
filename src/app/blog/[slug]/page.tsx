@@ -58,13 +58,13 @@ export async function generateMetadata({
     .where(and(eq(blogPosts.slug, slug), lte(blogPosts.publishedAt, now)));
 
   if (!post) {
-    return { title: "Not Found - PropertyTracker" };
+    return { title: "Not Found - BrickTrack" };
   }
 
   const url = `${BASE_URL}/blog/${post.slug}`;
 
   return {
-    title: `${post.title} - Blog - PropertyTracker`,
+    title: `${post.title} - Blog - BrickTrack`,
     description: post.summary,
     openGraph: {
       title: post.title,
@@ -135,7 +135,7 @@ export default async function BlogPostPage({
     },
     publisher: {
       "@type": "Organization",
-      name: "PropertyTracker",
+      name: "BrickTrack",
       url: BASE_URL,
     },
     mainEntityOfPage: {

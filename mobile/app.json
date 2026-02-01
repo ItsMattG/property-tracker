@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "PropertyTracker",
+    "name": "BrickTrack",
     "slug": "property-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.propertytracker.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "PropertyTracker needs camera access to capture receipts and documents"
+        "NSCameraUsageDescription": "BrickTrack needs camera access to capture receipts and documents"
       }
     },
     "android": {
