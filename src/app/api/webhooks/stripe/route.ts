@@ -32,7 +32,11 @@ export async function POST(req: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutComplete(session);
+        if (session.mode === "payment") {
+          await handleLifetimeCheckout(session);
+        } else {
+          await handleCheckoutComplete(session);
+        }
         break;
       }
       case "customer.subscription.updated": {
@@ -97,6 +101,34 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     });
 
   logger.info("Checkout complete", { userId, plan });
+}
+
+async function handleLifetimeCheckout(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId;
+  if (!userId || !session.customer) return;
+
+  await db
+    .insert(subscriptions)
+    .values({
+      userId,
+      stripeCustomerId: session.customer as string,
+      stripeSubscriptionId: null,
+      plan: "lifetime",
+      status: "active",
+      currentPeriodEnd: null,
+    })
+    .onConflictDoUpdate({
+      target: subscriptions.userId,
+      set: {
+        stripeCustomerId: session.customer as string,
+        plan: "lifetime",
+        status: "active",
+        currentPeriodEnd: null,
+        updatedAt: new Date(),
+      },
+    });
+
+  logger.info("Lifetime checkout complete", { userId });
 }
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
@@ -173,9 +205,18 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
 function getPlanFromPriceId(
   priceId: string | undefined
-): "free" | "pro" | "team" {
-  if (priceId === process.env.STRIPE_PRO_PRICE_ID) return "pro";
-  if (priceId === process.env.STRIPE_TEAM_PRICE_ID) return "team";
+): "free" | "pro" | "team" | "lifetime" {
+  if (priceId === process.env.STRIPE_LIFETIME_PRICE_ID) return "lifetime";
+  if (
+    priceId === process.env.STRIPE_PRO_MONTHLY_PRICE_ID ||
+    priceId === process.env.STRIPE_PRO_ANNUAL_PRICE_ID
+  )
+    return "pro";
+  if (
+    priceId === process.env.STRIPE_TEAM_MONTHLY_PRICE_ID ||
+    priceId === process.env.STRIPE_TEAM_ANNUAL_PRICE_ID
+  )
+    return "team";
   return "free";
 }
 

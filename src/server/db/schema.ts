@@ -495,6 +495,9 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name"),
   mobilePasswordHash: text("mobile_password_hash"),
+  trialStartedAt: timestamp("trial_started_at"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  trialPlan: varchar("trial_plan", { length: 20 }).default("pro"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -736,6 +739,7 @@ export const properties = pgTable("properties", {
   soldAt: date("sold_at"),
   climateRisk: jsonb("climate_risk").$type<import("@/types/climate-risk").ClimateRisk>(),
   forwardingAddress: text("forwarding_address").unique(),
+  locked: boolean("locked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -3140,6 +3144,7 @@ export const subscriptionPlanEnum = pgEnum("subscription_plan", [
   "free",
   "pro",
   "team",
+  "lifetime",
 ]);
 
 export const subscriptionStatusEnum = pgEnum("subscription_status", [

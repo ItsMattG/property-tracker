@@ -6,6 +6,33 @@ import { stripe } from "@/lib/stripe";
 import { TRPCError } from "@trpc/server";
 import { getPlanFromSubscription } from "../services/subscription";
 
+type BillingInterval = "monthly" | "annual";
+type PlanType = "pro" | "team" | "lifetime";
+
+function getPriceId(plan: PlanType, interval?: BillingInterval): string {
+  if (plan === "lifetime") {
+    const id = process.env.STRIPE_LIFETIME_PRICE_ID;
+    if (!id) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Lifetime price not configured" });
+    return id;
+  }
+
+  const priceMap: Record<string, string | undefined> = {
+    "pro-monthly": process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
+    "pro-annual": process.env.STRIPE_PRO_ANNUAL_PRICE_ID,
+    "team-monthly": process.env.STRIPE_TEAM_MONTHLY_PRICE_ID,
+    "team-annual": process.env.STRIPE_TEAM_ANNUAL_PRICE_ID,
+  };
+
+  const key = `${plan}-${interval || "monthly"}`;
+  const id = priceMap[key];
+
+  if (!id) {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Price not configured: ${key}` });
+  }
+
+  return id;
+}
+
 export const billingRouter = router({
   // Shows subscription status of the portfolio being viewed
   // (could be user's own or a portfolio they have access to)
@@ -42,21 +69,13 @@ export const billingRouter = router({
   createCheckoutSession: protectedProcedure
     .input(
       z.object({
-        plan: z.enum(["pro", "team"]),
+        plan: z.enum(["pro", "team", "lifetime"]),
+        interval: z.enum(["monthly", "annual"]).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const priceId =
-        input.plan === "pro"
-          ? process.env.STRIPE_PRO_PRICE_ID
-          : process.env.STRIPE_TEAM_PRICE_ID;
-
-      if (!priceId) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Stripe price not configured",
-        });
-      }
+      const priceId = getPriceId(input.plan, input.interval);
+      const isLifetime = input.plan === "lifetime";
 
       // Check for existing customer
       const existing = await ctx.db.query.subscriptions.findFirst({
@@ -64,7 +83,7 @@ export const billingRouter = router({
       });
 
       const session = await stripe.checkout.sessions.create({
-        mode: "subscription",
+        mode: isLifetime ? "payment" : "subscription",
         payment_method_types: ["card"],
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/billing?success=true`,
