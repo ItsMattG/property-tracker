@@ -2,7 +2,7 @@
 title: "How to Calculate Rental Yield"
 summary: "Rental yield tells you how hard your property is working. Here's the formula every Australian investor should know."
 category: "strategy"
-publishedAt: "2026-02-17"
+publishedAt: "2026-01-25"
 tags: ["yield", "rental", "strategy", "analysis"]
 author: "BrickTrack"
 ---

@@ -2,7 +2,7 @@
 title: "What Is LVR and Why Does It Matter?"
 summary: "Loan-to-value ratio is the single most important number in property finance. Here's what it means and why every investor needs to know it."
 category: "fundamentals"
-publishedAt: "2026-02-03"
+publishedAt: "2026-01-17"
 tags: ["finance", "lvr", "equity", "lending"]
 author: "BrickTrack"
 ---
