@@ -61,16 +61,27 @@ export async function POST(req: Request) {
 
     try {
       const now = new Date();
-      await db.insert(users).values({
-        clerkId: id,
-        email: primaryEmail.email_address,
-        name,
-        trialStartedAt: now,
-        trialEndsAt: addDays(now, 14),
-        trialPlan: "pro",
-      });
+      // Use upsert to handle duplicate webhook deliveries gracefully
+      await db
+        .insert(users)
+        .values({
+          clerkId: id,
+          email: primaryEmail.email_address,
+          name,
+          trialStartedAt: now,
+          trialEndsAt: addDays(now, 14),
+          trialPlan: "pro",
+        })
+        .onConflictDoUpdate({
+          target: users.clerkId,
+          set: {
+            email: primaryEmail.email_address,
+            name,
+            updatedAt: now,
+          },
+        });
 
-      console.log("User created with 14-day Pro trial:", id);
+      console.log("User created/updated with 14-day Pro trial:", id);
     } catch (error) {
       console.error("Error creating user:", error);
       return new Response("Error: Database insert failed", { status: 500 });
