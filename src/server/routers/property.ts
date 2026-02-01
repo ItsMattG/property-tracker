@@ -18,6 +18,25 @@ const propertySchema = z.object({
 
 export const propertyRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
+    // Get user's current plan to determine if locked properties should be filtered
+    const sub = await ctx.db.query.subscriptions.findFirst({
+      where: eq(subscriptions.userId, ctx.portfolio.ownerId),
+    });
+    const currentPlan = getPlanFromSubscription(
+      sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
+    );
+
+    // Free users cannot see locked properties
+    if (currentPlan === "free") {
+      return ctx.db.query.properties.findMany({
+        where: and(
+          eq(properties.userId, ctx.portfolio.ownerId),
+          eq(properties.locked, false)
+        ),
+        orderBy: (properties, { desc }) => [desc(properties.createdAt)],
+      });
+    }
+
     return ctx.db.query.properties.findMany({
       where: eq(properties.userId, ctx.portfolio.ownerId),
       orderBy: (properties, { desc }) => [desc(properties.createdAt)],
@@ -36,6 +55,23 @@ export const propertyRouter = router({
 
       if (!property) {
         throw new Error("Property not found");
+      }
+
+      // Free users cannot access locked properties
+      if (property.locked) {
+        const sub = await ctx.db.query.subscriptions.findFirst({
+          where: eq(subscriptions.userId, ctx.portfolio.ownerId),
+        });
+        const currentPlan = getPlanFromSubscription(
+          sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
+        );
+
+        if (currentPlan === "free") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "This property is locked. Upgrade to Pro to access all your properties.",
+          });
+        }
       }
 
       return property;
