@@ -1,9 +1,10 @@
-export type Plan = "free" | "pro" | "team";
+export type Plan = "free" | "pro" | "team" | "lifetime";
 
 const PLAN_RANK: Record<Plan, number> = {
   free: 0,
   pro: 1,
   team: 2,
+  lifetime: 3,
 };
 
 export const PLAN_LIMITS = {
@@ -28,6 +29,16 @@ export const PLAN_LIMITS = {
     auditLog: false,
   },
   team: {
+    maxProperties: Infinity,
+    bankFeeds: true,
+    export: true,
+    emailForwarding: true,
+    aiChat: true,
+    teamMembers: true,
+    advisorAccess: true,
+    auditLog: true,
+  },
+  lifetime: {
     maxProperties: Infinity,
     bankFeeds: true,
     export: true,

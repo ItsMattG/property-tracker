@@ -3144,6 +3144,7 @@ export const subscriptionPlanEnum = pgEnum("subscription_plan", [
   "free",
   "pro",
   "team",
+  "lifetime",
 ]);
 
 export const subscriptionStatusEnum = pgEnum("subscription_status", [
