@@ -25,9 +25,9 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
         httpBatchLink({
           url: "/api/trpc",
           // Limit batch size to prevent function timeouts
-          // With high database latency, large batches can exceed 60s
-          // maxURLLength of 500 chars splits batches into ~4-5 queries each
-          maxURLLength: 500,
+          // With 1.6s database latency per query, large batches exceed 60s timeout
+          // maxURLLength of 100 forces ~1-2 procedures per batch
+          maxURLLength: 100,
         }),
       ],
     })
