@@ -109,13 +109,13 @@ export default async function BlogPage() {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Blog",
-              name: "PropertyTracker Blog",
+              name: "BrickTrack Blog",
               description:
                 "Property investment insights for Australian investors",
               url: `${BASE_URL}/blog`,
               publisher: {
                 "@type": "Organization",
-                name: "PropertyTracker",
+                name: "BrickTrack",
                 url: BASE_URL,
               },
             }),

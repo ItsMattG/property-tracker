@@ -25,7 +25,7 @@ export const dashboardTour: TourDefinition = {
       element: "[data-tour='setup-checklist']",
       popover: {
         title: "Setup Progress",
-        description: "Track your progress here. Complete all steps to get the most out of PropertyTracker.",
+        description: "Track your progress here. Complete all steps to get the most out of BrickTrack.",
         side: "bottom",
         align: "start",
       },

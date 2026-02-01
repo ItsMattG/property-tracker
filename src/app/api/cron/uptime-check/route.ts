@@ -44,7 +44,7 @@ export async function GET(request: Request) {
   // 3. Detect transitions and alert
   if (previousStatus === "healthy" && currentStatus === "unhealthy") {
     await sendAlert(
-      "[ALERT] PropertyTracker is DOWN",
+      "[ALERT] BrickTrack is DOWN",
       `Health check failed at ${now.toISOString()}. Investigating...`,
       "high"
     );
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
       ? Math.round((now.getTime() - downSince.getTime()) / 60_000)
       : 0;
     await sendAlert(
-      "[OK] PropertyTracker recovered",
+      "[OK] BrickTrack recovered",
       `Site is back up. Was down for ~${duration} minutes.`,
       "default"
     );

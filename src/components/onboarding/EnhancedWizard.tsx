@@ -152,7 +152,7 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                 <Building2 className="w-8 h-8 text-primary" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold">Welcome to PropertyTracker</h2>
+                <h2 className="text-2xl font-semibold">Welcome to BrickTrack</h2>
                 <p className="text-muted-foreground">
                   Track your properties, automate expenses, and optimize your tax
                   position.

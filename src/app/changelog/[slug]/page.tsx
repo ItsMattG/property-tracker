@@ -30,11 +30,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .where(eq(changelogEntries.id, slug));
 
   if (!entry) {
-    return { title: "Not Found - PropertyTracker" };
+    return { title: "Not Found - BrickTrack" };
   }
 
   return {
-    title: `${entry.title} - Changelog - PropertyTracker`,
+    title: `${entry.title} - Changelog - BrickTrack`,
     description: entry.summary,
   };
 }

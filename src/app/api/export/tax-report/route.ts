@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
     // Footer
     doc.setFontSize(8);
     doc.text(
-      `Generated on ${new Date().toLocaleDateString("en-AU")} by PropertyTracker`,
+      `Generated on ${new Date().toLocaleDateString("en-AU")} by BrickTrack`,
       20,
       285
     );

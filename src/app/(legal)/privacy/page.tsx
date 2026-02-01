@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - PropertyTracker",
-  description: "How PropertyTracker collects, uses, and protects your data.",
+  title: "Privacy Policy - BrickTrack",
+  description: "How BrickTrack collects, uses, and protects your data.",
 };
 
 export default function PrivacyPage() {
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
 
         <h2>1. Information We Collect</h2>
         <p>
-          When you use PropertyTracker, we collect information you provide directly:
+          When you use BrickTrack, we collect information you provide directly:
         </p>
         <ul>
           <li>Account information (name, email address)</li>

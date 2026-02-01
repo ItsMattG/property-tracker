@@ -182,7 +182,7 @@ export function Sidebar() {
               <Building2 className="w-5 h-5 text-primary-foreground" />
             </div>
             {!isCollapsed && (
-              <span className="font-semibold text-lg">PropertyTracker</span>
+              <span className="font-semibold text-lg">BrickTrack</span>
             )}
           </Link>
         </div>

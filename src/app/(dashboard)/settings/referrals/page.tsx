@@ -31,7 +31,7 @@ export default function ReferralsPage() {
       <div>
         <h2 className="text-2xl font-bold">Referrals</h2>
         <p className="text-muted-foreground">
-          Invite friends and earn free months of PropertyTracker Pro
+          Invite friends and earn free months of BrickTrack Pro
         </p>
       </div>
 
@@ -140,7 +140,7 @@ export default function ReferralsPage() {
         <CardContent>
           <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
             <li>Share your referral link with a friend</li>
-            <li>They sign up for PropertyTracker</li>
+            <li>They sign up for BrickTrack</li>
             <li>They add their first investment property</li>
             <li>You both get 1 month of Pro free</li>
           </ol>

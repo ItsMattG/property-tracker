@@ -1,8 +1,8 @@
 import { FeatureList } from "@/components/feedback/FeatureList";
 
 export const metadata = {
-  title: "Feature Requests | PropertyTracker",
-  description: "Vote on features and suggest improvements for PropertyTracker",
+  title: "Feature Requests | BrickTrack",
+  description: "Vote on features and suggest improvements for BrickTrack",
 };
 
 export default function FeedbackPage() {

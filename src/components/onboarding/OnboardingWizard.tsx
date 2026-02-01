@@ -108,7 +108,7 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                   <Building2 className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold">Welcome to PropertyTracker</h3>
+                <h3 className="text-xl font-semibold">Welcome to BrickTrack</h3>
                 <p className="text-muted-foreground">
                   Let's set up your portfolio in 3 quick steps. You can always
                   add more details later.
@@ -247,7 +247,7 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
                 </div>
                 <h3 className="text-lg font-semibold">You're All Set!</h3>
                 <p className="text-muted-foreground">
-                  Your PropertyTracker is ready. Check out your dashboard to
+                  Your BrickTrack is ready. Check out your dashboard to
                   see your portfolio summary.
                 </p>
               </div>

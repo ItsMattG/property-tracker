@@ -191,7 +191,7 @@ export default function PropertyMeIntegrationPage() {
             <div>
               <CardTitle>Property Mappings</CardTitle>
               <CardDescription>
-                Link PropertyMe properties to your PropertyTracker properties
+                Link PropertyMe properties to your BrickTrack properties
               </CardDescription>
             </div>
             <Button
