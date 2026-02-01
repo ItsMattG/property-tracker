@@ -5,6 +5,11 @@ import { addDays } from "date-fns";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
+import { sendEmailNotification } from "@/server/services/notification";
+import {
+  welcomeEmailSubject,
+  welcomeEmailTemplate,
+} from "@/lib/email/templates/welcome";
 
 export async function POST(req: Request) {
   // Get the headers
@@ -82,6 +87,22 @@ export async function POST(req: Request) {
         });
 
       console.log("User created/updated with 14-day Pro trial:", id);
+
+      // Send welcome email (don't fail webhook if email fails)
+      const trialEndsAt = addDays(now, 14);
+      try {
+        await sendEmailNotification(
+          primaryEmail.email_address,
+          welcomeEmailSubject(),
+          welcomeEmailTemplate({
+            name,
+            trialEndsAt,
+          })
+        );
+        console.log("Welcome email sent to:", primaryEmail.email_address);
+      } catch (emailError) {
+        console.error("Failed to send welcome email:", emailError);
+      }
     } catch (error) {
       console.error("Error creating user:", error);
       return new Response("Error: Database insert failed", { status: 500 });
