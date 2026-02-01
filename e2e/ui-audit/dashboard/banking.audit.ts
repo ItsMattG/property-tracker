@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/demo-account";
+import { authenticatedTest as test, expect } from "../fixtures/demo-account";
 
 test.describe("Banking Page Audit", () => {
   test("captures banking connection states", async ({ audit }) => {

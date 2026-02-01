@@ -4,8 +4,8 @@ import * as fs from "fs/promises";
 import * as path from "path";
 
 // Demo user credentials - set in .env.local or use defaults
-const DEMO_USER_EMAIL = process.env.E2E_DEMO_USER_EMAIL || "demo@propertytracker.test";
-const DEMO_USER_PASSWORD = process.env.E2E_DEMO_USER_PASSWORD || "Demo123!Property";
+const DEMO_USER_EMAIL = process.env.E2E_DEMO_USER_EMAIL;
+const DEMO_USER_PASSWORD = process.env.E2E_DEMO_USER_PASSWORD;
 
 export interface AuditFinding {
   page: string;
@@ -24,15 +24,93 @@ export interface AuditContext {
 }
 
 /**
- * Extended test fixture with demo account authentication and audit helpers.
- * Provides an `audit` context for capturing UI states and logging findings.
+ * Creates audit context helpers for a page
+ */
+function createAuditContext(page: Page, findings: AuditFinding[]): AuditContext {
+  let currentPage = "/";
+
+  // Track page navigations
+  page.on("framenavigated", (frame) => {
+    if (frame === page.mainFrame()) {
+      try {
+        currentPage = new URL(frame.url()).pathname;
+      } catch {
+        // Ignore invalid URLs
+      }
+    }
+  });
+
+  return {
+    page,
+    findings,
+
+    addFinding: (finding) => {
+      findings.push({
+        ...finding,
+        page: finding.page || currentPage,
+      });
+    },
+
+    captureState: async (name: string): Promise<string> => {
+      const pageName = currentPage.replace(/\//g, "-").slice(1) || "home";
+      const screenshotName = `${pageName}-${name}.png`;
+      const screenshotPath = path.join(
+        process.cwd(),
+        "e2e/ui-audit/results/screenshots",
+        screenshotName
+      );
+
+      await page.screenshot({
+        path: screenshotPath,
+        fullPage: true,
+      });
+
+      return screenshotName;
+    },
+  };
+}
+
+/**
+ * Writes findings to the audit log after test completes
+ */
+async function writeFindings(findings: AuditFinding[]): Promise<void> {
+  if (findings.length === 0) return;
+
+  const auditLogPath = path.join(process.cwd(), "e2e/ui-audit/results/audit-log.json");
+
+  let existingFindings: AuditFinding[] = [];
+  try {
+    const existingData = await fs.readFile(auditLogPath, "utf-8");
+    existingFindings = JSON.parse(existingData);
+  } catch {
+    // File doesn't exist yet
+  }
+
+  const allFindings = [...existingFindings, ...findings];
+  await fs.mkdir(path.dirname(auditLogPath), { recursive: true });
+  await fs.writeFile(auditLogPath, JSON.stringify(allFindings, null, 2));
+}
+
+/**
+ * Unauthenticated audit fixture for public pages
  */
 export const test = base.extend<{ audit: AuditContext }>({
   audit: async ({ page }, use) => {
     const findings: AuditFinding[] = [];
-    let currentPage = "/";
+    const context = createAuditContext(page, findings);
+    await use(context);
+    await writeFindings(findings);
+  },
+});
 
-    // Set up Clerk testing token (bypasses bot detection)
+/**
+ * Authenticated audit fixture for protected pages
+ */
+export const authenticatedTest = base.extend<{ audit: AuditContext }>({
+  audit: async ({ page }, use) => {
+    const findings: AuditFinding[] = [];
+
+    // Set up Clerk testing token
     await setupClerkTestingToken({ page });
 
     // Sign in with demo account if credentials provided
@@ -40,85 +118,20 @@ export const test = base.extend<{ audit: AuditContext }>({
       await page.goto("/sign-in");
       await page.waitForSelector('[data-clerk-component="SignIn"]', { timeout: 15000 });
 
-      // Fill email
       await page.getByLabel(/email/i).fill(DEMO_USER_EMAIL);
       await page.getByRole("button", { name: "Continue", exact: true }).click();
 
-      // Fill password
       const passwordInput = page.locator('input[type="password"]');
       await passwordInput.waitFor({ timeout: 5000 });
       await passwordInput.fill(DEMO_USER_PASSWORD);
 
-      // Submit
       await page.getByRole("button", { name: "Continue", exact: true }).click();
-
-      // Wait for redirect away from sign-in
       await page.waitForURL((url) => !url.pathname.includes("/sign-in"), { timeout: 15000 });
     }
 
-    // Track page navigations to update currentPage
-    page.on("framenavigated", (frame) => {
-      if (frame === page.mainFrame()) {
-        try {
-          currentPage = new URL(frame.url()).pathname;
-        } catch {
-          // Ignore invalid URLs
-        }
-      }
-    });
-
-    // Create the audit context
-    const context: AuditContext = {
-      page,
-      findings,
-
-      addFinding: (finding) => {
-        findings.push({
-          ...finding,
-          page: finding.page || currentPage,
-        });
-      },
-
-      captureState: async (name: string): Promise<string> => {
-        // Generate screenshot filename from current page and state name
-        const pageName = currentPage.replace(/\//g, "-").slice(1) || "home";
-        const screenshotName = `${pageName}-${name}.png`;
-        const screenshotPath = path.join(
-          process.cwd(),
-          "e2e/ui-audit/results/screenshots",
-          screenshotName
-        );
-
-        await page.screenshot({
-          path: screenshotPath,
-          fullPage: true,
-        });
-
-        return screenshotName;
-      },
-    };
-
-    // Run the test with audit context
+    const context = createAuditContext(page, findings);
     await use(context);
-
-    // After test: write findings to JSON
-    if (findings.length > 0) {
-      const auditLogPath = path.join(process.cwd(), "e2e/ui-audit/results/audit-log.json");
-
-      // Read existing findings if file exists
-      let existingFindings: AuditFinding[] = [];
-      try {
-        const existingData = await fs.readFile(auditLogPath, "utf-8");
-        existingFindings = JSON.parse(existingData);
-      } catch {
-        // File doesn't exist yet, start fresh
-      }
-
-      // Merge and write
-      const allFindings = [...existingFindings, ...findings];
-      await fs.mkdir(path.dirname(auditLogPath), { recursive: true });
-      await fs.writeFile(auditLogPath, JSON.stringify(allFindings, null, 2));
-    }
+    await writeFindings(findings);
   },
 });
 

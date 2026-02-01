@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/demo-account";
+import { authenticatedTest as test, expect } from "../fixtures/demo-account";
 
 test.describe("Dialog Components Audit", () => {
   test("captures confirm dialog states", async ({ audit }) => {

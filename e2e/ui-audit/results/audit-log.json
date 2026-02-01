@@ -1,0 +1,44 @@
+[
+  {
+    "element": "Terms heading",
+    "state": "loaded",
+    "issue": "Terms of Service heading not visible",
+    "severity": "critical",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Section: Acceptance of Terms",
+    "state": "loaded",
+    "issue": "Required section \"Acceptance of Terms\" not visible",
+    "severity": "major",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Section: Description of Service",
+    "state": "loaded",
+    "issue": "Required section \"Description of Service\" not visible",
+    "severity": "major",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Section: Limitation of Liability",
+    "state": "loaded",
+    "issue": "Required section \"Limitation of Liability\" not visible",
+    "severity": "major",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Privacy heading",
+    "state": "loaded",
+    "issue": "Privacy Policy heading not visible",
+    "severity": "critical",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Home link",
+    "state": "loaded",
+    "issue": "No link back to home page",
+    "severity": "minor",
+    "page": "/sign-in"
+  }
+]
