@@ -34,6 +34,7 @@ export default function TransactionsPage() {
   const {
     data: transactions,
     isLoading,
+    isFetching,
   } = trpc.transaction.list.useQuery({
     propertyId: filters.propertyId,
     category: filters.category,
@@ -43,6 +44,9 @@ export default function TransactionsPage() {
     limit: PAGE_SIZE,
     offset,
   });
+
+  // Show loading skeleton on initial load or when filters change
+  const showLoading = isLoading || (isFetching && !transactions);
 
   const totalPages = transactions?.total
     ? Math.ceil(transactions.total / PAGE_SIZE)
@@ -218,7 +222,7 @@ export default function TransactionsPage() {
             />
           </div>
 
-          {isLoading ? (
+          {showLoading ? (
             <TransactionTableSkeleton />
           ) : transactions && transactions.transactions.length > 0 ? (
             <>
