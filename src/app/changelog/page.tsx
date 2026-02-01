@@ -41,7 +41,7 @@ export default async function ChangelogPage() {
         </div>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList className="flex w-full overflow-x-auto mb-8">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
             <TabsTrigger value="improvements">Improvements</TabsTrigger>
