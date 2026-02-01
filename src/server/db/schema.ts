@@ -870,6 +870,7 @@ export const transactions = pgTable(
     index("transactions_date_idx").on(table.date),
     index("transactions_category_idx").on(table.category),
     index("transactions_user_date_idx").on(table.userId, table.date),
+    index("transactions_user_property_date_idx").on(table.userId, table.propertyId, table.date),
     index("transactions_provider_tx_id_idx").on(table.providerTransactionId),
   ]
 );
