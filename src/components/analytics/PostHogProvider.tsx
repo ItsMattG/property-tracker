@@ -12,9 +12,13 @@ function PostHogPageTracker() {
   // Track page views on route change
   useEffect(() => {
     if (!pathname) return;
-    posthog.capture("$pageview", {
-      $current_url: window.location.href,
-    });
+    try {
+      posthog.capture("$pageview", {
+        $current_url: window.location.href,
+      });
+    } catch (error) {
+      console.warn("PostHog pageview capture failed:", error);
+    }
   }, [pathname, searchParams]);
 
   return null;
@@ -30,10 +34,14 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
   // Identify user
   useEffect(() => {
     if (user?.id) {
-      posthog.identify(user.id, {
-        email: user.primaryEmailAddress?.emailAddress,
-        name: user.fullName,
-      });
+      try {
+        posthog.identify(user.id, {
+          email: user.primaryEmailAddress?.emailAddress,
+          name: user.fullName,
+        });
+      } catch (error) {
+        console.warn("PostHog identify failed:", error);
+      }
     }
   }, [user]);
 
