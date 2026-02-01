@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/properties/PropertyCard";
@@ -7,8 +8,20 @@ import { trpc } from "@/lib/trpc/client";
 import { Plus, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function PropertiesPage() {
+  const [deletePropertyId, setDeletePropertyId] = useState<string | null>(null);
+
   const { data: properties, isLoading, refetch } = trpc.property.list.useQuery(
     undefined,
     {
@@ -26,11 +39,18 @@ export default function PropertiesPage() {
     },
   });
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this property?")) {
-      await deleteProperty.mutateAsync({ id });
+  const handleDelete = (id: string) => {
+    setDeletePropertyId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deletePropertyId) {
+      await deleteProperty.mutateAsync({ id: deletePropertyId });
+      setDeletePropertyId(null);
     }
   };
+
+  const propertyToDelete = properties?.find((p) => p.id === deletePropertyId);
 
   if (isLoading) {
     return (
@@ -99,6 +119,28 @@ export default function PropertiesPage() {
           </Button>
         </div>
       )}
+
+      <AlertDialog
+        open={!!deletePropertyId}
+        onOpenChange={(open) => !open && setDeletePropertyId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Property</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium">{propertyToDelete?.address}</span>?
+              This action cannot be undone and will remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
