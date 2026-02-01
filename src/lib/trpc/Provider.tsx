@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink } from "@trpc/client";
+import { httpLink } from "@trpc/client";
 import { useState } from "react";
 import { trpc } from "./client";
 
@@ -22,12 +22,11 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [
-        httpBatchLink({
+        // Use httpLink (no batching) instead of httpBatchLink
+        // With high database latency (1.6s), batched requests exceed 60s timeout
+        // Individual parallel requests are faster and more reliable
+        httpLink({
           url: "/api/trpc",
-          // Limit batch size to prevent function timeouts
-          // With 1.6s database latency per query, large batches exceed 60s timeout
-          // maxURLLength of 100 forces ~1-2 procedures per batch
-          maxURLLength: 100,
         }),
       ],
     })
