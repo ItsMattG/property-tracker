@@ -1,34 +1,40 @@
 # PropertyTracker UI/UX Audit Report
 
 **Generated:** 2026-02-01
-**Pages Audited:** 0
-**Total Findings:** 0
-**Screenshots Captured:** 0
+**Pages Audited:** 1
+**Total Findings:** 6
+**Screenshots Captured:** 9
 
 ## Executive Summary
 
 | Severity | Count | Description |
 |----------|-------|-------------|
-| Critical | 0 | Blocks user from completing task |
-| Major | 0 | Significantly degrades experience |
-| Minor | 0 | Polish/consistency issue |
+| Critical | 2 | Blocks user from completing task |
+| Major | 3 | Significantly degrades experience |
+| Minor | 1 | Polish/consistency issue |
 | Suggestion | 0 | Enhancement opportunity |
 
 
-> **Status:** No issues found (or no audit data available)
+> **Status:** Action required - 2 critical issue(s) found
 
 ---
 
 ## Findings by Severity
 
-### Critical Issues
-None found.
+### Critical Issues (Blocks user flow)
 
-### Major Issues
-None found.
+- **/sign-in** - Terms heading (loaded): Terms of Service heading not visible
+- **/sign-in** - Privacy heading (loaded): Privacy Policy heading not visible
 
-### Minor Issues
-None found.
+### Major Issues (Degrades experience)
+
+- **/sign-in** - Section: Acceptance of Terms (loaded): Required section "Acceptance of Terms" not visible
+- **/sign-in** - Section: Description of Service (loaded): Required section "Description of Service" not visible
+- **/sign-in** - Section: Limitation of Liability (loaded): Required section "Limitation of Liability" not visible
+
+### Minor Issues (Polish/consistency)
+
+- **/sign-in** - Home link (loaded): No link back to home page
 
 ### Suggestions
 None found.
@@ -37,13 +43,35 @@ None found.
 
 ## Findings by Page
 
+### /sign-in
+
+| Element | State | Issue | Severity |
+|---------|-------|-------|----------|
+| Terms heading | loaded | Terms of Service heading not visible | critical |
+| Section: Acceptance of Terms | loaded | Required section "Acceptance of Terms" not visible | major |
+| Section: Description of Service | loaded | Required section "Description of Service" not visible | major |
+| Section: Limitation of Liability | loaded | Required section "Limitation of Liability" not visible | major |
+| Privacy heading | loaded | Privacy Policy heading not visible | critical |
+| Home link | loaded | No link back to home page | minor |
+
 ---
 
 ## Screenshots
 
 Screenshots are stored in `e2e/ui-audit/results/screenshots/`.
 
-No screenshots captured yet.
+**home:**
+- `home-cta-hover.png`
+- `home-faq-expanded.png`
+- `home-footer.png`
+- `home-loaded.png`
+- `home-mobile-menu-open.png`
+- `home-mobile.png`
+- `home-pricing-section.png`
+
+**sign:**
+- `sign-in-loaded.png`
+- `sign-in-mobile.png`
 
 ---
 
@@ -58,7 +86,7 @@ Based on the audit findings, prioritize fixes in this order:
 
 ### Quick Wins
 
-No obvious quick wins identified.
+- /sign-in: No link back to home page
 
 
 ---

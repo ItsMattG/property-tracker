@@ -24,34 +24,35 @@ export interface AuditContext {
 }
 
 /**
+ * Gets current page path from URL
+ */
+function getCurrentPath(page: Page): string {
+  try {
+    return new URL(page.url()).pathname;
+  } catch {
+    return "/";
+  }
+}
+
+/**
  * Creates audit context helpers for a page
  */
 function createAuditContext(page: Page, findings: AuditFinding[]): AuditContext {
-  let currentPage = "/";
-
-  // Track page navigations
-  page.on("framenavigated", (frame) => {
-    if (frame === page.mainFrame()) {
-      try {
-        currentPage = new URL(frame.url()).pathname;
-      } catch {
-        // Ignore invalid URLs
-      }
-    }
-  });
-
   return {
     page,
     findings,
 
     addFinding: (finding) => {
+      // Get current page path at time of finding
+      const currentPage = finding.page || getCurrentPath(page);
       findings.push({
         ...finding,
-        page: finding.page || currentPage,
+        page: currentPage,
       });
     },
 
     captureState: async (name: string): Promise<string> => {
+      const currentPage = getCurrentPath(page);
       const pageName = currentPage.replace(/\//g, "-").slice(1) || "home";
       const screenshotName = `${pageName}-${name}.png`;
       const screenshotPath = path.join(
