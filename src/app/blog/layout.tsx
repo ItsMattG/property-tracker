@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MobileNav } from "@/components/landing";
 
 export const metadata = {
   title: "Blog - PropertyTracker",
@@ -24,7 +25,8 @@ export default function BlogLayout({
             </div>
             <span className="font-semibold text-lg">PropertyTracker</span>
           </Link>
-          <div className="flex items-center gap-4">
+          {/* Desktop navigation */}
+          <div className="hidden md:flex items-center gap-4">
             <Button variant="ghost" asChild>
               <Link href="/blog">Blog</Link>
             </Button>
@@ -38,6 +40,8 @@ export default function BlogLayout({
               <Link href="/sign-up">Get Started</Link>
             </Button>
           </div>
+          {/* Mobile navigation */}
+          <MobileNav />
         </div>
       </header>
 
@@ -52,7 +56,7 @@ export default function BlogLayout({
               PropertyTracker &copy; {new Date().getFullYear()}
             </span>
           </div>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">
             <Link href="/blog" className="hover:text-foreground">
               Blog
             </Link>

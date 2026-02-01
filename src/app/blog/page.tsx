@@ -130,7 +130,7 @@ export default async function BlogPage() {
         </div>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList className="flex w-full overflow-x-auto mb-8">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="fundamentals">Fundamentals</TabsTrigger>
             <TabsTrigger value="strategy">Strategy</TabsTrigger>
