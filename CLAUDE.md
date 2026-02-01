@@ -78,12 +78,24 @@ Always follow this workflow for new features:
 Always create a feature branch first. Never commit directly to main.
 
 ## Notifications
-When waiting for user input/approval, ALWAYS run these commands:
-```bash
-# macOS desktop notification with sound
-osascript -e 'display notification "Waiting for your input" with title "Claude Code" sound name "Ping"'
+**ALWAYS notify the user via ntfy for these events:**
+1. When asking a question or waiting for input
+2. When a task or PR is complete
+3. When there's an error or blocker
+4. When waiting for CI to finish
 
-# Push notification to phone via ntfy
-curl -s -X POST "https://ntfy.sh/property-tracker-claude" -d "Claude needs your input" -H "Title: Claude Code" -H "Priority: high"
+**Notification command (run this, do not ask):**
+```bash
+curl -s -X POST "https://ntfy.sh/property-tracker-claude" \
+  -d "YOUR MESSAGE HERE" \
+  -H "Title: Claude Code" \
+  -H "Priority: high"
 ```
-Run both commands in parallel whenever you ask a question or need user action.
+
+**Examples:**
+- Question: `"Need your input: Which approach do you prefer?"`
+- Complete: `"PR #123 ready for review: https://github.com/..."`
+- Error: `"Build failed - need your help to debug"`
+- CI: `"All CI checks passed - ready to merge"`
+
+This is mandatory. Never skip notifications.
