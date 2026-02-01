@@ -2,7 +2,7 @@ import { test, expect } from "./fixtures/auth";
 
 test.describe("Dashboard", () => {
   test("should display welcome message", async ({ authenticatedPage: page }) => {
-    await expect(page.getByRole("heading", { name: /welcome to propertytracker/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /welcome to bricktrack/i })).toBeVisible();
   });
 
   test("should display stats cards", async ({ authenticatedPage: page }) => {
