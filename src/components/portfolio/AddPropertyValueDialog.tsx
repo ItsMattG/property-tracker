@@ -16,6 +16,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 
 const formSchema = z.object({
   estimatedValue: z.string().regex(/^\d+\.?\d*$/, "Invalid value"),
@@ -62,7 +64,7 @@ export function AddPropertyValueDialog({
       onSuccess();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update value");
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -97,6 +99,9 @@ export function AddPropertyValueDialog({
                   <FormControl>
                     <Input type="number" placeholder="650000" {...field} />
                   </FormControl>
+                  <FormDescription>
+                    Current market value for tracking equity and portfolio performance
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

@@ -84,7 +84,11 @@ export function EntitySwitcher() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="w-[200px] justify-between">
+        <Button
+          variant="outline"
+          className="w-[200px] justify-between"
+          aria-label={`Switch entity. Current: ${activeEntity?.name || "Select Entity"}`}
+        >
           <div className="flex items-center gap-2">
             <Icon className="h-4 w-4" />
             <span className="truncate">

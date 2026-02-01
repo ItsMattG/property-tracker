@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -28,9 +30,9 @@ const loanFormSchema = z.object({
   accountNumberMasked: z.string().optional(),
   loanType: z.enum(["principal_and_interest", "interest_only"]),
   rateType: z.enum(["variable", "fixed", "split"]),
-  originalAmount: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
-  currentBalance: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
-  interestRate: z.string().regex(/^\d+\.?\d*$/, "Invalid rate"),
+  originalAmount: z.string().regex(/^\d+\.?\d*$/, "Enter a valid loan amount (must be greater than 0)"),
+  currentBalance: z.string().regex(/^\d+\.?\d*$/, "Enter a valid balance amount"),
+  interestRate: z.string().regex(/^\d+\.?\d*$/, "Enter a valid interest rate (e.g., 6.5)"),
   fixedRateExpiry: z.string().optional(),
   repaymentAmount: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
   repaymentFrequency: z.enum(["weekly", "fortnightly", "monthly"]),
@@ -145,6 +147,9 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
                     <SelectItem value="interest_only">Interest Only</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormDescription>
+                  P&I: builds equity over time. IO: lower payments, no equity built.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -214,6 +219,9 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
                 <FormControl>
                   <Input type="number" step="0.01" placeholder="6.5" {...field} />
                 </FormControl>
+                <FormDescription>
+                  Annual interest rate (e.g., 6.5 for 6.5% p.a.)
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -276,7 +284,14 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
         </div>
 
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Save Loan"}
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Loan"
+          )}
         </Button>
       </form>
     </Form>

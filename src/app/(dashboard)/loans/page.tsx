@@ -1,15 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { LoanCard } from "@/components/loans/LoanCard";
 import { trpc } from "@/lib/trpc/client";
+import { getErrorMessage } from "@/lib/errors";
 import { Plus, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function LoansPage() {
   const router = useRouter();
+  const [deleteLoanId, setDeleteLoanId] = useState<string | null>(null);
   const { data: loans, isLoading, refetch } = trpc.loan.list.useQuery();
   const deleteLoan = trpc.loan.delete.useMutation({
     onSuccess: () => {
@@ -17,13 +30,20 @@ export default function LoansPage() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to delete loan");
+      toast.error(getErrorMessage(error));
     },
   });
 
+  const loanToDelete = loans?.find((loan) => loan.id === deleteLoanId);
+
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this loan?")) {
-      deleteLoan.mutate({ id });
+    setDeleteLoanId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteLoanId) {
+      deleteLoan.mutate({ id: deleteLoanId });
+      setDeleteLoanId(null);
     }
   };
 
@@ -92,6 +112,25 @@ export default function LoansPage() {
           </Button>
         </div>
       )}
+
+      <AlertDialog open={!!deleteLoanId} onOpenChange={(open) => !open && setDeleteLoanId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Loan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the {loanToDelete?.lender} loan
+              {loanToDelete?.property && ` for ${loanToDelete.property.address}, ${loanToDelete.property.suburb}`}?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

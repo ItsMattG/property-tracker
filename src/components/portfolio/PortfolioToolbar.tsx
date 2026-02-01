@@ -44,11 +44,13 @@ export function PortfolioToolbar({
   return (
     <div className="flex flex-wrap items-center gap-4">
       {/* View Mode Toggle */}
-      <div className="flex items-center gap-1 border rounded-lg p-1">
+      <div className="flex items-center gap-1 border rounded-lg p-1" role="group" aria-label="View mode">
         <Button
           variant={viewMode === "cards" ? "default" : "ghost"}
           size="sm"
           onClick={() => onViewModeChange("cards")}
+          aria-label="Card view"
+          aria-pressed={viewMode === "cards"}
         >
           <LayoutGrid className="w-4 h-4" />
         </Button>
@@ -56,6 +58,8 @@ export function PortfolioToolbar({
           variant={viewMode === "table" ? "default" : "ghost"}
           size="sm"
           onClick={() => onViewModeChange("table")}
+          aria-label="Table view"
+          aria-pressed={viewMode === "table"}
         >
           <Table2 className="w-4 h-4" />
         </Button>
@@ -63,6 +67,8 @@ export function PortfolioToolbar({
           variant={viewMode === "aggregate" ? "default" : "ghost"}
           size="sm"
           onClick={() => onViewModeChange("aggregate")}
+          aria-label="Aggregate view"
+          aria-pressed={viewMode === "aggregate"}
         >
           <PieChart className="w-4 h-4" />
         </Button>
