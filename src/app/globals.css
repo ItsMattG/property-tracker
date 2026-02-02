@@ -129,10 +129,18 @@
 }
 
 @layer base {
-  * {
+  *:not([class*="cl-"]):not([data-clerk]) {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Ensure Clerk components render properly */
+.cl-userButtonPopoverCard,
+.cl-userButtonPopoverActions,
+.cl-userButtonPopoverFooter,
+[data-clerk-component] {
+  all: revert;
 }

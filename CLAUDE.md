@@ -15,11 +15,10 @@ V0.1, v0.2, and v0.3 roadmaps are **complete**. V0.4 is **in progress** (9/15 do
 - Settlement Statement Capture (AI extraction, post-creation flow, CGT cost base)
 - Depreciation Schedules & Sitemap/Robots.txt (pre-existed)
 
-**V0.4 remaining (6 items):**
+**V0.4 remaining (5 items):**
 - 4.2 CI/CD Pipeline (GitHub Actions) — recommended next
 - 2.3 Dynamic OG Images (@vercel/og)
 - 4.3 Monitoring & Alerting (Checkly uptime, cron health)
-- 4.5 Database Backup Verification
 - 3.1 PropTrack AVM (blocked on API key)
 - 4.1 Gmail/Outlook Integration (highest complexity)
 
@@ -61,21 +60,50 @@ After completing each task:
 4. Run `/compact`
 5. Begin the next task (check `bd ready`)
 
+## Git Worktrees (Required for Feature Work)
+Use git worktrees to isolate feature work. This prevents branch conflicts when multiple Claude sessions run in parallel.
+
+**Setup (one-time):**
+```bash
+mkdir -p ~/worktrees/property-tracker
+```
+
+**For each feature:**
+```bash
+# Create worktree with feature branch
+git worktree add ~/worktrees/property-tracker/<feature-name> -b feature/<feature-name>
+
+# Work in the worktree directory
+cd ~/worktrees/property-tracker/<feature-name>
+```
+
+**Cleanup after merge:**
+```bash
+git worktree remove ~/worktrees/property-tracker/<feature-name>
+```
+
+**Why worktrees:**
+- Each Claude session works in its own isolated directory
+- No branch switching conflicts between sessions
+- Main repo stays on `main` for quick checks
+- Parallel feature development without interference
+
 ## Development Workflow
 Always follow this workflow for new features:
 1. **Pick task**: `bd ready` to find next task, `bd show <id>` for details
-2. **Create feature branch**: `git checkout -b feature/<feature-name>` before any code changes
-3. **Brainstorm**: Use `superpowers:brainstorming` for design
-4. **Plan**: Use `superpowers:writing-plans` for implementation plan
-5. **Execute**: Use `superpowers:executing-plans` (batch execution - more token efficient than subagent-driven)
-6. **Verify**: Use `superpowers:verification-before-completion` — run tests, lint, build before claiming done
-7. **Create PR**: Push branch and create PR with `gh pr create`
-8. **Wait for CI**: Run `gh pr checks --watch` to wait for GitHub Actions and Vercel preview deploy to pass
-9. **Merge PR**: Only after CI passes, merge with `gh pr merge`
-10. **Wait for deploy**: Check Vercel production deployment succeeded (via GitHub checks on main or Vercel dashboard)
-11. **Complete task**: `bd done <id>`, then `/clear` for fresh context
+2. **Create worktree**: `git worktree add ~/worktrees/property-tracker/<feature-name> -b feature/<feature-name>`
+3. **Change to worktree**: `cd ~/worktrees/property-tracker/<feature-name>`
+4. **Brainstorm**: Use `superpowers:brainstorming` for design
+5. **Plan**: Use `superpowers:writing-plans` for implementation plan
+6. **Execute**: Use `superpowers:executing-plans` (batch execution - more token efficient than subagent-driven)
+7. **Verify**: Use `superpowers:verification-before-completion` — run tests, lint, build before claiming done
+8. **Create PR**: Push branch and create PR with `gh pr create`
+9. **Wait for CI**: Run `gh pr checks --watch` to wait for GitHub Actions and Vercel preview deploy to pass
+10. **Merge PR**: Only after CI passes, merge with `gh pr merge`
+11. **Cleanup**: `git worktree remove ~/worktrees/property-tracker/<feature-name>`
+12. **Complete task**: `bd done <id>`, then `/clear` for fresh context
 
-Always create a feature branch first. Never commit directly to main.
+Always use a worktree for feature work. Never commit directly to main.
 
 ## Notifications
 **ALWAYS notify the user via ntfy for these events:**

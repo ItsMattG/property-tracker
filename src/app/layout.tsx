@@ -6,7 +6,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
-import { GoogleMapsProvider } from "@/components/providers/GoogleMapsProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -65,9 +64,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <TRPCProvider>
-            <PostHogProvider>
-              <GoogleMapsProvider>{children}</GoogleMapsProvider>
-            </PostHogProvider>
+            <PostHogProvider>{children}</PostHogProvider>
           </TRPCProvider>
           <Toaster richColors position="top-right" />
           <Analytics />
