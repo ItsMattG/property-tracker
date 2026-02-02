@@ -11,6 +11,7 @@ This document describes how to recover BrickTrack data in case of data loss or c
 | **Location** | GitHub Actions artifacts |
 | **Format** | Compressed SQL (`.sql.gz`) |
 | **Scope** | PostgreSQL database only |
+| **Secret Required** | `DATABASE_URL_DIRECT` (direct connection, not pooler) |
 
 ## What IS Backed Up
 
