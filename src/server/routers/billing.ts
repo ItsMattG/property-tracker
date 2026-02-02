@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { subscriptions } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { subscriptions, users, properties } from "../db/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { stripe } from "@/lib/stripe";
 import { TRPCError } from "@trpc/server";
 import { getPlanFromSubscription } from "../services/subscription";
@@ -120,5 +120,39 @@ export const billingRouter = router({
     });
 
     return { url: session.url };
+  }),
+
+  // Get trial status and property count for the current portfolio owner
+  getTrialStatus: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.db.query.users.findFirst({
+      where: eq(users.id, ctx.portfolio.ownerId),
+    });
+
+    if (!user || !user.trialEndsAt) {
+      return { isOnTrial: false, trialEndsAt: null, propertyCount: 0 };
+    }
+
+    const now = new Date();
+    const hasActiveSub = await ctx.db.query.subscriptions.findFirst({
+      where: and(
+        eq(subscriptions.userId, ctx.portfolio.ownerId),
+        eq(subscriptions.status, "active")
+      ),
+    });
+
+    if (hasActiveSub) {
+      return { isOnTrial: false, trialEndsAt: null, propertyCount: 0 };
+    }
+
+    const [countResult] = await ctx.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(properties)
+      .where(eq(properties.userId, ctx.portfolio.ownerId));
+
+    return {
+      isOnTrial: user.trialEndsAt > now,
+      trialEndsAt: user.trialEndsAt,
+      propertyCount: countResult?.count ?? 0,
+    };
   }),
 });
