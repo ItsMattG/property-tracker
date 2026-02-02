@@ -101,9 +101,9 @@ dropdb bricktrack_restore_test
 
 ## Incident Response
 
-1. **Assess** - Determine scope of data loss
-2. **Communicate** - Notify affected users if needed
-3. **Identify** - Find the most recent good backup
-4. **Restore** - Follow restore procedure above
-5. **Verify** - Check data integrity after restore
-6. **Document** - Write post-mortem
+1. **Assess** — Determine scope of data loss
+2. **Communicate** — Notify affected users if needed
+3. **Identify** — Find the most recent good backup
+4. **Restore** — Follow restore procedure above
+5. **Verify** — Check data integrity after restore
+6. **Document** — Write post-mortem
