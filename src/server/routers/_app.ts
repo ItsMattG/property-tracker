@@ -39,6 +39,8 @@ import { feedbackRouter } from "./feedback";
 import { changelogRouter } from "./changelog";
 import { blogRouter } from "./blog";
 import { emailRouter } from "./email";
+import { emailConnectionRouter } from "./emailConnection";
+import { emailSenderRouter } from "./emailSender";
 import { taskRouter } from "./task";
 import { chatRouter } from "./chat";
 import { mytaxRouter } from "./mytax";
@@ -93,6 +95,8 @@ export const appRouter = router({
   changelog: changelogRouter,
   blog: blogRouter,
   email: emailRouter,
+  emailConnection: emailConnectionRouter,
+  emailSender: emailSenderRouter,
   task: taskRouter,
   chat: chatRouter,
   mytax: mytaxRouter,
