@@ -225,6 +225,9 @@ importers:
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
+      '@types/google.maps':
+        specifier: ^3.58.1
+        version: 3.58.1
       '@types/jsonwebtoken':
         specifier: ^9.0.10
         version: 9.0.10
