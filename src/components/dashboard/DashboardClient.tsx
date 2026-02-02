@@ -18,6 +18,7 @@ import { useReferralTracking } from "@/hooks/useReferralTracking";
 import { RentalYieldCard } from "@/components/rental-yield";
 import { ErrorState } from "@/components/ui/error-state";
 import { getErrorMessage } from "@/lib/errors";
+import { TrialPropertyLimitBanner } from "@/components/banners/TrialPropertyLimitBanner";
 
 // Server-side data structure from dashboard.getInitialData
 // Note: Dates are Date objects on server but get serialized to strings when passed to client
@@ -68,6 +69,10 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
 
   const { data: properties } = trpc.property.list.useQuery(undefined, {
     staleTime: 5 * 60_000,
+  });
+
+  const { data: trialStatus } = trpc.billing.getTrialStatus.useQuery(undefined, {
+    staleTime: 60_000,
   });
 
   const dismissAlert = trpc.banking.dismissAlert.useMutation({
@@ -122,6 +127,13 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
           alertCount={alerts.length}
           hasAuthError={hasAuthError}
           onDismiss={handleDismissAllAlerts}
+        />
+      )}
+
+      {trialStatus?.isOnTrial && trialStatus.propertyCount >= 2 && trialStatus.trialEndsAt && (
+        <TrialPropertyLimitBanner
+          propertyCount={trialStatus.propertyCount}
+          trialEndsAt={new Date(trialStatus.trialEndsAt)}
         />
       )}
 
