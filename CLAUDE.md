@@ -1,11 +1,11 @@
 # Claude Code Rules
 
-## Project Status (as of 2026-01-28)
-V0.1, v0.2, and v0.3 roadmaps are **complete**. V0.4 is **in progress** (9/15 done).
+## Project Status (as of 2026-02-02)
+V0.1, v0.2, and v0.3 roadmaps are **complete**. V0.4 is **in progress** (13/15 done).
 
 **V0.4 Roadmap:** See `docs/plans/2026-01-28-v04-roadmap-design.md` for full progress tracker.
 
-**V0.4 completed (PRs #48-#52):**
+**V0.4 completed:**
 - Stripe Billing Integration (subscriptions, webhooks, plan-gated middleware, billing page)
 - Blog Content Pipeline (5 SEO articles)
 - PostHog Analytics (provider, page tracking, user identification)
@@ -14,13 +14,14 @@ V0.1, v0.2, and v0.3 roadmaps are **complete**. V0.4 is **in progress** (9/15 do
 - Security Hardening (rate limiting middleware, security headers)
 - Settlement Statement Capture (AI extraction, post-creation flow, CGT cost base)
 - Depreciation Schedules & Sitemap/Robots.txt (pre-existed)
+- Dynamic OG Images (@vercel/og)
+- CI/CD Pipeline (GitHub Actions)
+- Monitoring & Alerting (uptime cron, cron health, ntfy.sh alerts)
+- Gmail OAuth Integration (PR #122)
 
-**V0.4 remaining (5 items):**
-- 4.2 CI/CD Pipeline (GitHub Actions) — recommended next
-- 2.3 Dynamic OG Images (@vercel/og)
-- 4.3 Monitoring & Alerting (Checkly uptime, cron health)
+**V0.4 remaining (2 items):**
+- 4.5 Database Backups — verification task, low complexity
 - 3.1 PropTrack AVM (blocked on API key)
-- 4.1 Gmail/Outlook Integration (highest complexity)
 
 **Earlier roadmaps (all complete):**
 - v0.1-v0.2: PropertyMe, Mobile App, Scenarios, Portfolio Share, Compliance, Milestones, Broker Portal, Climate Risk, Trust/SMSF, Benchmarking, Tax Position, Similar Properties, Axiom

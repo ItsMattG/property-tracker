@@ -18,18 +18,17 @@
 | 3.2 | Depreciation Schedules | **Done** | Pre-existed | Full CRUD, PDF extraction, MyTax integration |
 | 3.3 | Settlement Capture | **Done** | #52 | AI extraction, post-creation upload flow, CGT cost base |
 | 3.4 | Rental Yield Calculator | **Done** | #49 | Dashboard widget, gross/net yield |
-| 4.1 | Gmail/Outlook Integration | **TODO** | — | OAuth, inbox scanning, property matching |
+| 4.1 | Gmail/Outlook Integration | **Done** | #122 | Gmail OAuth complete; Outlook deferred to future |
 | 4.2 | CI/CD Pipeline | **Done** | #53 | Pipeline pre-existed; fixed ESLint ignores for worktrees/coverage |
 | 4.3 | Monitoring & Alerting | **Done** | #55 | Self-contained: uptime cron, cron health monitor, ntfy.sh alerts |
 | 4.4 | Security Hardening | **Done** | #51 | Rate limiting, security headers |
 | 4.5 | Database Backups | **TODO** | — | Verify Supabase backups, test restore, document DR |
 
-**Completed: 12/15 | Remaining: 3**
+**Completed: 13/15 | Remaining: 2**
 
 ### Recommended next items:
 1. **4.5 Database Backups** — verification task, low complexity
 2. **3.1 PropTrack AVM** — blocked on API key
-3. **4.1 Gmail/Outlook** — highest complexity remaining
 
 ---
 
