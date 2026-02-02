@@ -74,7 +74,18 @@ export function PropertyForm({
                 <AddressAutocomplete
                   value={field.value}
                   onChange={field.onChange}
-                  placeholder="Enter street address..."
+                  placeholder="Start typing an address..."
+                  onAddressSelect={(parsed) => {
+                    if (parsed.suburb) {
+                      form.setValue("suburb", parsed.suburb);
+                    }
+                    if (parsed.state && ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"].includes(parsed.state)) {
+                      form.setValue("state", parsed.state as typeof states[number]);
+                    }
+                    if (parsed.postcode) {
+                      form.setValue("postcode", parsed.postcode);
+                    }
+                  }}
                 />
               </FormControl>
               <FormMessage />
