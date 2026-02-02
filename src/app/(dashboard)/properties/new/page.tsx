@@ -84,7 +84,7 @@ export default function NewPropertyPage() {
           open={showTrialModal}
           onOpenChange={setShowTrialModal}
           onConfirm={handleModalConfirm}
-          trialEndsAt={trialStatus.trialEndsAt}
+          trialEndsAt={new Date(trialStatus.trialEndsAt)}
           isLoading={createProperty.isPending}
         />
       )}

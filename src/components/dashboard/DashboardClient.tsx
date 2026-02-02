@@ -133,7 +133,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       {trialStatus?.isOnTrial && trialStatus.propertyCount >= 2 && trialStatus.trialEndsAt && (
         <TrialPropertyLimitBanner
           propertyCount={trialStatus.propertyCount}
-          trialEndsAt={trialStatus.trialEndsAt}
+          trialEndsAt={new Date(trialStatus.trialEndsAt)}
         />
       )}
 
