@@ -75,6 +75,7 @@
     "date-fns": "^4.1.0",
     "driver.js": "^1.4.0",
     "drizzle-orm": "^0.45.1",
+    "googleapis": "^171.0.0",
     "gray-matter": "^4.0.3",
     "isomorphic-dompurify": "^2.35.0",
     "jsonwebtoken": "^9.0.3",
