@@ -1,13 +1,15 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { properties, transactions, propertySales } from "../db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { properties, transactions, propertySales, categoryEnum } from "../db/schema";
+import { eq, and, inArray } from "drizzle-orm";
 import {
   calculateCostBase,
   calculateCapitalGain,
   CAPITAL_CATEGORIES,
 } from "../services/cgt";
+
+type Category = (typeof categoryEnum.enumValues)[number];
 
 export const cgtRouter = router({
   /**
@@ -97,7 +99,7 @@ export const cgtRouter = router({
       const allTxns = await ctx.db.query.transactions.findMany({
         where: and(
           eq(transactions.userId, ctx.portfolio.ownerId),
-          sql`${transactions.category} = ANY(${CAPITAL_CATEGORIES})`
+          inArray(transactions.category, CAPITAL_CATEGORIES as Category[])
         ),
       });
 
@@ -342,12 +344,12 @@ export const cgtRouter = router({
       }
 
       // Look for transactions that might be selling costs (filtered at DB level)
-      const sellingCostCategories = ["property_agent_fees", "legal_expenses"];
+      const sellingCostCategories: Category[] = ["property_agent_fees", "legal_expenses"];
       const sellingCosts = await ctx.db.query.transactions.findMany({
         where: and(
           eq(transactions.propertyId, input.propertyId),
           eq(transactions.userId, ctx.portfolio.ownerId),
-          sql`${transactions.category} = ANY(${sellingCostCategories})`
+          inArray(transactions.category, sellingCostCategories)
         ),
         orderBy: (t, { desc }) => [desc(t.date)],
       });

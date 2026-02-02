@@ -32,7 +32,8 @@
     "seed:demo": "npx tsx src/scripts/seed.ts demo",
     "seed:dev": "npx tsx src/scripts/seed.ts dev",
     "seed:clean": "npx tsx src/scripts/seed.ts clean",
-    "changelog:sync": "npx tsx scripts/sync-changelog.ts"
+    "changelog:sync": "npx tsx scripts/sync-changelog.ts",
+    "blog:sync": "npx tsx scripts/sync-blog.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.28",
