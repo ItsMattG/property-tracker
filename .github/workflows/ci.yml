@@ -88,7 +88,7 @@ jobs:
       - name: Run TypeScript type check
         run: pnpm exec tsc --noEmit
         env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
+          NODE_OPTIONS: "--max-old-space-size=8192"
 
   unit-tests:
     name: Unit Tests
