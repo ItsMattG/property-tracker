@@ -73,6 +73,7 @@ const navItems = [
 const settingsItems = [
   { href: "/settings/notifications", label: "Notifications", icon: Bell },
   { href: "/settings/refinance-alerts", label: "Refinance Alerts", icon: BellRing },
+  { href: "/settings/email-connections", label: "Email Connections", icon: Mail },
   { href: "/settings/mobile", label: "Mobile App", icon: Smartphone },
   { href: "/settings/team", label: "Team", icon: Users },
   { href: "/settings/audit-log", label: "Audit Log", icon: History },
