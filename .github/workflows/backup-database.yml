@@ -27,8 +27,8 @@ jobs:
           # Use direct connection, not pooler (pg_dump doesn't work with pooler)
           DATABASE_URL: ${{ secrets.DATABASE_URL_DIRECT }}
         run: |
-          # Create backup with pg_dump
-          pg_dump "$DATABASE_URL" \
+          # Create backup with pg_dump (use full path to PG17 version)
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" \
             --no-owner \
             --no-acl \
             --format=plain \
