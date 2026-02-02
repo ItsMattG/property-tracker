@@ -4,7 +4,7 @@
   "devCommand": "pnpm run dev",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": "nextjs",
-  "regions": ["syd1"],
+  "regions": ["syd1", "sin1"],
   "functions": {
     "src/app/api/trpc/**/*.ts": {
       "maxDuration": 300
