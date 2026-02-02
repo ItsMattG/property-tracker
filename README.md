@@ -201,10 +201,11 @@ graph TB
    pnpm db:push
    ```
 
-4. (Optional) Seed with demo data:
+4. (Optional) Seed with demo data (requires a Clerk user ID):
    ```bash
-   pnpm seed:demo
+   pnpm seed:demo -- --clerk-id=user_xxx
    ```
+   Note: You must have valid Clerk keys in `.env.local` and sign up first to get your user ID.
 
 5. Start the development server:
    ```bash
@@ -228,7 +229,7 @@ To start fresh:
 docker compose down -v
 docker compose up -d
 pnpm db:push
-pnpm seed:demo
+pnpm seed:demo -- --clerk-id=user_xxx
 ```
 
 ---
