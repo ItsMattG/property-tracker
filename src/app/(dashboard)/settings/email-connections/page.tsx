@@ -27,8 +27,8 @@ import { toast } from "sonner";
 
 export default function EmailConnectionsPage() {
   const searchParams = useSearchParams();
-  const success = searchParams.get("success");
-  const error = searchParams.get("error");
+  const success = searchParams?.get("success");
+  const error = searchParams?.get("error");
 
   const utils = trpc.useUtils();
   const { data: connections, isLoading } = trpc.emailConnection.list.useQuery();

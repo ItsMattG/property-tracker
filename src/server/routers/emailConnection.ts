@@ -22,7 +22,7 @@ export const emailConnectionRouter = router({
         createdAt: emailConnections.createdAt,
       })
       .from(emailConnections)
-      .where(eq(emailConnections.userId, ctx.userId));
+      .where(eq(emailConnections.userId, ctx.user.id));
 
     return connections;
   }),
@@ -49,7 +49,7 @@ export const emailConnectionRouter = router({
         .where(
           and(
             eq(emailConnections.id, input.id),
-            eq(emailConnections.userId, ctx.userId)
+            eq(emailConnections.userId, ctx.user.id)
           )
         );
 
@@ -75,7 +75,7 @@ export const emailConnectionRouter = router({
         .where(
           and(
             eq(emailConnections.id, input.id),
-            eq(emailConnections.userId, ctx.userId)
+            eq(emailConnections.userId, ctx.user.id)
           )
         );
 
@@ -109,7 +109,7 @@ export const emailConnectionRouter = router({
         .where(
           and(
             eq(emailConnections.id, input.id),
-            eq(emailConnections.userId, ctx.userId)
+            eq(emailConnections.userId, ctx.user.id)
           )
         );
 
@@ -132,7 +132,7 @@ export const emailConnectionRouter = router({
    */
   syncNow: proProcedure.mutation(async ({ ctx }) => {
     try {
-      const result = await syncUserEmails(ctx.userId);
+      const result = await syncUserEmails(ctx.user.id);
       return {
         success: true,
         synced: result.total,

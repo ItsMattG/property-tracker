@@ -19,7 +19,7 @@ export const emailSenderRouter = router({
         createdAt: emailApprovedSenders.createdAt,
       })
       .from(emailApprovedSenders)
-      .where(eq(emailApprovedSenders.userId, ctx.userId));
+      .where(eq(emailApprovedSenders.userId, ctx.user.id));
 
     return senders;
   }),
@@ -58,7 +58,7 @@ export const emailSenderRouter = router({
           .where(
             and(
               eq(properties.id, input.defaultPropertyId),
-              eq(properties.userId, ctx.userId)
+              eq(properties.userId, ctx.user.id)
             )
           );
 
@@ -73,7 +73,7 @@ export const emailSenderRouter = router({
       const [sender] = await db
         .insert(emailApprovedSenders)
         .values({
-          userId: ctx.userId,
+          userId: ctx.user.id,
           emailPattern: input.emailPattern.toLowerCase(),
           label: input.label,
           defaultPropertyId: input.defaultPropertyId,
@@ -101,7 +101,7 @@ export const emailSenderRouter = router({
         .where(
           and(
             eq(emailApprovedSenders.id, input.id),
-            eq(emailApprovedSenders.userId, ctx.userId)
+            eq(emailApprovedSenders.userId, ctx.user.id)
           )
         );
 
@@ -120,7 +120,7 @@ export const emailSenderRouter = router({
           .where(
             and(
               eq(properties.id, input.defaultPropertyId),
-              eq(properties.userId, ctx.userId)
+              eq(properties.userId, ctx.user.id)
             )
           );
 
@@ -156,7 +156,7 @@ export const emailSenderRouter = router({
         .where(
           and(
             eq(emailApprovedSenders.id, input.id),
-            eq(emailApprovedSenders.userId, ctx.userId)
+            eq(emailApprovedSenders.userId, ctx.user.id)
           )
         );
 

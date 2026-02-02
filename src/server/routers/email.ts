@@ -218,6 +218,10 @@ export const emailRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Email not found" });
       }
 
+      if (!email.propertyId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot approve email without property assignment" });
+      }
+
       // Add sender to allowlist
       await ctx.db
         .insert(propertyEmailSenders)

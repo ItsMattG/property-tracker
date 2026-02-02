@@ -233,7 +233,7 @@ export default function GlobalInboxPage() {
                         {email.subject}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {propertyMap.get(email.propertyId) ?? "Unknown property"}
+                        {email.propertyId ? (propertyMap.get(email.propertyId) ?? "Unknown property") : "Unassigned"}
                       </p>
                     </div>
                   </div>
