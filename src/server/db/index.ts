@@ -2,10 +2,10 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 
-const connectionString = process.env.DATABASE_URL!;
+const connectionString = process.env.DATABASE_URL ?? '';
 
 // Only require SSL for remote databases (not localhost)
-const isLocalhost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const isLocalhost = !connectionString || connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
 
 const client = postgres(connectionString, {
   prepare: false,
