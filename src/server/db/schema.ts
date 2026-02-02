@@ -447,6 +447,14 @@ export const emailStatusEnum = pgEnum("email_status", [
   "rejected",
 ]);
 
+export const emailProviderEnum = pgEnum("email_provider", ["gmail", "outlook"]);
+
+export const emailConnectionStatusEnum = pgEnum("email_connection_status", [
+  "active",
+  "needs_reauth",
+  "disconnected",
+]);
+
 export const invoiceMatchStatusEnum = pgEnum("invoice_match_status", [
   "pending",
   "accepted",
@@ -1109,6 +1117,37 @@ export const propertyEmailSenders = pgTable(
     uniqueIndex("property_email_senders_property_pattern_idx").on(
       table.propertyId,
       table.emailPattern
+    ),
+  ]
+);
+
+// ─── Email Connections (OAuth) ───────────────────────────────
+
+export const emailConnections = pgTable(
+  "email_connections",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    provider: emailProviderEnum("provider").notNull(),
+    emailAddress: text("email_address").notNull(),
+    accessTokenEncrypted: text("access_token_encrypted").notNull(),
+    refreshTokenEncrypted: text("refresh_token_encrypted").notNull(),
+    tokenExpiresAt: timestamp("token_expires_at").notNull(),
+    pushSubscriptionId: text("push_subscription_id"),
+    pushExpiresAt: timestamp("push_expires_at"),
+    lastSyncAt: timestamp("last_sync_at"),
+    lastError: text("last_error"),
+    status: emailConnectionStatusEnum("status").default("active").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("email_connections_user_provider_email_idx").on(
+      table.userId,
+      table.provider,
+      table.emailAddress
     ),
   ]
 );
@@ -3075,6 +3114,9 @@ export type PropertyEmailInvoiceMatch = typeof propertyEmailInvoiceMatches.$infe
 export type NewPropertyEmailInvoiceMatch = typeof propertyEmailInvoiceMatches.$inferInsert;
 export type PropertyEmailSender = typeof propertyEmailSenders.$inferSelect;
 export type NewPropertyEmailSender = typeof propertyEmailSenders.$inferInsert;
+// Email Connection Types
+export type EmailConnection = typeof emailConnections.$inferSelect;
+export type NewEmailConnection = typeof emailConnections.$inferInsert;
 // Task Types
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
