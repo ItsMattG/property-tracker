@@ -24,10 +24,15 @@ const filenameSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}-.+\.md$/);
 async function syncChangelog() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error("DATABASE_URL not set");
+    console.warn("⚠ DATABASE_URL not set, skipping changelog sync");
+    return;
   }
 
-  const client = postgres(connectionString, { prepare: false });
+  const client = postgres(connectionString, {
+    prepare: false,
+    connect_timeout: 10,
+    idle_timeout: 20,
+  });
   const db = drizzle(client);
 
   console.log("Syncing changelog entries...");
@@ -123,6 +128,7 @@ async function syncChangelog() {
 }
 
 syncChangelog().catch((e) => {
-  console.error("Sync failed:", e);
-  process.exit(1);
+  console.warn("⚠ Changelog sync failed (non-blocking):", e.message || e);
+  console.warn("  Changelog content will be synced on next successful deployment.");
+  process.exit(0); // Don't fail the build
 });
