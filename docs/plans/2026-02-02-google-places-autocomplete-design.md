@@ -1,100 +1,132 @@
-# Google Places Address Autocomplete
+# Google Places Autocomplete Design
 
 **Date:** 2026-02-02
 **Status:** Approved
 
 ## Overview
 
-Add Google Places Autocomplete to all address input fields. When users start typing an address, suggestions appear. Selecting a suggestion auto-fills street, suburb, state, and postcode fields.
+Integrate Google Places Autocomplete into the property form to auto-fill address fields (street, suburb, state, postcode) when a user selects a suggestion.
 
-## Component Architecture
+## Decisions
 
-### New Component
-`src/components/ui/address-autocomplete.tsx`
+| Aspect | Decision |
+|--------|----------|
+| UX | Autocomplete dropdown, auto-fills all address fields |
+| API approach | Client-side with `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY` |
+| Region | Australia only |
+| Library | `@react-google-maps/api` |
+| Error handling | Graceful degradation to plain text input |
 
-- Built on existing `Input` component
-- Uses Google Places Autocomplete (New) API
-- Restricted to Australian addresses
-- Returns structured address components
-- Integrates with react-hook-form via callback
+## Architecture
 
-### Props Interface
+```
+┌─────────────────────────────────────────────────────────┐
+│  PropertyForm                                           │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  AddressAutocomplete (enhanced)                   │  │
+│  │  - Uses @react-google-maps/api                    │  │
+│  │  - Restricts to Australia                         │  │
+│  │  - Calls onAddressSelect with parsed fields       │  │
+│  └───────────────────────────────────────────────────┘  │
+│                         │                               │
+│                         ▼                               │
+│  ┌─────────┐ ┌─────────┐ ┌──────────┐ ┌──────────────┐  │
+│  │ suburb  │ │  state  │ │ postcode │ │ other fields │  │
+│  │ (auto)  │ │ (auto)  │ │  (auto)  │ │   (manual)   │  │
+│  └─────────┘ └─────────┘ └──────────┘ └──────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Data Flow
+
+1. User types in AddressAutocomplete
+2. Google Places API returns Australian address suggestions
+3. User selects a suggestion
+4. Component parses address into street, suburb, state, postcode
+5. `onAddressSelect` callback fires with parsed data
+6. PropertyForm updates all fields
+
+## Files to Modify
+
+### 1. New: `src/components/providers/google-maps-provider.tsx`
+
+Provider component that loads the Google Maps script once at app level.
+
+- Uses `LoadScript` from `@react-google-maps/api`
+- Loads only the "places" library
+- Uses `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY`
+- Children render immediately (script loads async)
+
+### 2. Enhance: `src/components/ui/address-autocomplete.tsx`
+
+Update to use Google Places Autocomplete.
+
+- Wrap input with `<Autocomplete>` component
+- Configure restrictions: `{ country: "au" }`
+- Request fields: `["address_components", "formatted_address"]`
+- Parse `address_components` into `ParsedAddress`
+
+**Parsing logic:**
+- `street_number` + `route` → street (e.g., "42 Wallaby Way")
+- `locality` → suburb
+- `administrative_area_level_1` → state (mapped to enum)
+- `postal_code` → postcode
+
+### 3. Update: `src/components/properties/PropertyForm.tsx`
+
+Wire up the `onAddressSelect` callback to populate form fields.
+
 ```typescript
-interface AddressAutocompleteProps {
-  onAddressSelect: (address: {
-    street: string;
-    suburb: string;
-    state: string;
-    postcode: string;
-  }) => void;
-  defaultValue?: string;
-  placeholder?: string;
-}
+onAddressSelect={(parsed) => {
+  if (parsed.suburb) setValue("suburb", parsed.suburb);
+  if (parsed.state) setValue("state", parsed.state);
+  if (parsed.postcode) setValue("postcode", parsed.postcode);
+}}
 ```
 
-### Usage Example
-```tsx
-<AddressAutocomplete
-  onAddressSelect={(addr) => {
-    form.setValue("address", addr.street);
-    form.setValue("suburb", addr.suburb);
-    form.setValue("state", addr.state);
-    form.setValue("postcode", addr.postcode);
-  }}
-/>
-```
+### 4. Update: `src/app/(dashboard)/layout.tsx`
 
-## Technical Implementation
+Wrap children with `GoogleMapsProvider`.
 
-### Dependencies
+## Error Handling
+
+| Scenario | Behavior |
+|----------|----------|
+| API key missing/invalid | Falls back to plain text input |
+| Network failure | Regular text input, no autocomplete |
+| Incomplete address selected | Only available fields filled |
+| Parsing fails | Field left empty for manual entry |
+
+## Dependencies
+
 ```bash
 npm install @react-google-maps/api
 ```
 
-### Environment Variable
-```
-NEXT_PUBLIC_GOOGLE_PLACES_API_KEY=your_key_here
-```
+## State Mapping
 
-### Implementation Details
-- Load Google Maps script once via provider at app level
-- Debounced input (300ms)
-- Filter to Australia: `componentRestrictions: { country: 'au' }`
-- On selection, call `getDetails()` to extract components
-- Map Google's `address_components`:
-  - `street_number` + `route` → street address
-  - `locality` → suburb
-  - `administrative_area_level_1` → state (NSW, VIC, etc.)
-  - `postal_code` → postcode
+Google returns full names or abbreviations. Map to enum:
 
-### Fallback
-If API fails to load, component degrades to regular text input.
-
-## Integration Points
-
-### Primary
-- `src/components/properties/PropertyForm.tsx`
-- `src/components/onboarding/EnhancedWizard.tsx`
-- `src/components/onboarding/OnboardingWizard.tsx`
-
-### Secondary
-- `src/components/similar-properties/AddListingModal.tsx`
-
-### Provider
-- Add `GoogleMapsProvider` in `src/app/layout.tsx`
+| Google returns | Maps to |
+|----------------|---------|
+| "New South Wales" or "NSW" | NSW |
+| "Victoria" or "VIC" | VIC |
+| "Queensland" or "QLD" | QLD |
+| "South Australia" or "SA" | SA |
+| "Western Australia" or "WA" | WA |
+| "Tasmania" or "TAS" | TAS |
+| "Northern Territory" or "NT" | NT |
+| "Australian Capital Territory" or "ACT" | ACT |
 
 ## Google Cloud Setup
 
 ### Project
 bricktrack-486109
 
-### Steps
-1. Enable "Places API (New)"
-2. Create API Key
-3. Restrict key:
-   - HTTP referrers only
-   - `localhost:3000/*`, `*.propertytracker.com.au/*`, `*.vercel.app/*`
-   - Places API (New) only
+### API Key Restrictions
+1. HTTP referrers only
+2. Allowed domains: `localhost:3000/*`, `*.propertytracker.com.au/*`, `*.vercel.app/*`
+3. Places API only
 
 ### Cost Estimate
 - Autocomplete: ~$2.83 per 1000 requests
