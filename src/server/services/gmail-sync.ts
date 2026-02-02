@@ -257,9 +257,6 @@ function parseGmailMessage(message: GmailMessage): ParsedEmail {
   const fromMatch = from.match(/^(?:"?([^"]*)"?\s)?<?([^>]+)>?$/);
 
   // Extract body
-  let bodyText: string | undefined;
-  let bodyHtml: string | undefined;
-
   const extractBody = (
     payload: GmailMessage["payload"]
   ): { text?: string; html?: string } => {
@@ -286,9 +283,7 @@ function parseGmailMessage(message: GmailMessage): ParsedEmail {
     return {};
   };
 
-  const body = extractBody(message.payload);
-  bodyText = body.text;
-  bodyHtml = body.html;
+  const { text: bodyText, html: bodyHtml } = extractBody(message.payload);
 
   return {
     id: message.id,
