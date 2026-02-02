@@ -74,6 +74,9 @@ async function syncChangelog() {
 
     validSlugs.push(slug);
 
+    // Convert publishedAt string to Date for Drizzle date column
+    const publishedDate = new Date(publishedAt);
+
     // Upsert entry
     await db
       .insert(changelogEntries)
@@ -83,7 +86,7 @@ async function syncChangelog() {
         summary,
         content: markdownContent.trim(),
         category,
-        publishedAt,
+        publishedAt: publishedDate,
       })
       .onConflictDoUpdate({
         target: changelogEntries.id,
@@ -92,7 +95,7 @@ async function syncChangelog() {
           summary,
           content: markdownContent.trim(),
           category,
-          publishedAt,
+          publishedAt: publishedDate,
         },
       });
 

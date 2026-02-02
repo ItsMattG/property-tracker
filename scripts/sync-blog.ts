@@ -73,6 +73,9 @@ async function syncBlog() {
 
     validSlugs.push(slug);
 
+    // Convert publishedAt string to Date for Drizzle date column
+    const publishedDate = new Date(publishedAt);
+
     // Upsert blog post
     const existing = await db
       .select()
@@ -89,7 +92,7 @@ async function syncBlog() {
           category,
           tags,
           author,
-          publishedAt,
+          publishedAt: publishedDate,
         })
         .where(eq(blogPosts.slug, slug));
     } else {
@@ -101,7 +104,7 @@ async function syncBlog() {
         category,
         tags,
         author,
-        publishedAt,
+        publishedAt: publishedDate,
       });
     }
 
