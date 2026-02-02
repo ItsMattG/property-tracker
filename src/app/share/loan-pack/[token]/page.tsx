@@ -52,7 +52,7 @@ export default async function LoanPackViewPage({ params }: PageProps) {
   const isExpiringSoon = daysUntilExpiry <= 3 && daysUntilExpiry > 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -69,7 +69,7 @@ export default async function LoanPackViewPage({ params }: PageProps) {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         <LoanPackReport data={snapshot} />
       </main>
 
