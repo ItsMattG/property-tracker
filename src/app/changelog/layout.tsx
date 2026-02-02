@@ -14,7 +14,7 @@ export default function ChangelogLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -41,10 +41,10 @@ export default function ChangelogLayout({
         </div>
       </header>
 
-      {children}
+      <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      <footer className="border-t py-8 px-4">
+      <footer className="border-t py-8 px-4 mt-auto">
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />

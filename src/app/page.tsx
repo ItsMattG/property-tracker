@@ -128,7 +128,7 @@ export default async function HomePage() {
   const isSignedIn = userState !== "signed-out";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -480,7 +480,7 @@ export default async function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8 px-4">
+      <footer className="border-t py-8 px-4 mt-auto">
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />

@@ -72,16 +72,9 @@ export function PropertyForm({
               <FormLabel>Street Address</FormLabel>
               <FormControl>
                 <AddressAutocomplete
-                  defaultValue={field.value}
-                  placeholder="Start typing an address..."
-                  onAddressSelect={(addr) => {
-                    form.setValue("address", addr.street, { shouldValidate: true });
-                    form.setValue("suburb", addr.suburb, { shouldValidate: true });
-                    if (addr.state && states.includes(addr.state as typeof states[number])) {
-                      form.setValue("state", addr.state as typeof states[number], { shouldValidate: true });
-                    }
-                    form.setValue("postcode", addr.postcode, { shouldValidate: true });
-                  }}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Enter street address..."
                 />
               </FormControl>
               <FormMessage />
