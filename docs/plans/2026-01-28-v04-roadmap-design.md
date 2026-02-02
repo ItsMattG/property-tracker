@@ -22,13 +22,12 @@
 | 4.2 | CI/CD Pipeline | **Done** | #53 | Pipeline pre-existed; fixed ESLint ignores for worktrees/coverage |
 | 4.3 | Monitoring & Alerting | **Done** | #55 | Self-contained: uptime cron, cron health monitor, ntfy.sh alerts |
 | 4.4 | Security Hardening | **Done** | #51 | Rate limiting, security headers |
-| 4.5 | Database Backups | **TODO** | — | Verify Supabase backups, test restore, document DR |
+| 4.5 | Database Backups | **Done** | — | Daily pg_dump via GitHub Actions, 90-day retention, DR documented |
 
-**Completed: 13/15 | Remaining: 2**
+**Completed: 14/15 | Remaining: 1**
 
 ### Recommended next items:
-1. **4.5 Database Backups** — verification task, low complexity
-2. **3.1 PropTrack AVM** — blocked on API key
+1. **3.1 PropTrack AVM** — blocked on API key
 
 ---
 
