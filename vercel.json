@@ -35,6 +35,10 @@
   ],
   "crons": [
     {
+      "path": "/api/cron/email-sync",
+      "schedule": "0 5 * * *"
+    },
+    {
       "path": "/api/cron/sync-banks",
       "schedule": "0 6 * * *"
     },

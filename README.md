@@ -179,6 +179,61 @@ graph TB
 
 ---
 
+## Local Development with Docker
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+### Quick Start
+
+1. Start the local PostgreSQL database:
+   ```bash
+   docker compose up -d
+   ```
+
+2. Update your `.env.local` with the local database URL:
+   ```
+   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/property_tracker
+   ```
+
+3. Run database migrations:
+   ```bash
+   pnpm db:push
+   ```
+
+4. (Optional) Seed with demo data (requires a Clerk user ID):
+   ```bash
+   pnpm seed:demo -- --clerk-id=user_xxx
+   ```
+   Note: You must have valid Clerk keys in `.env.local` and sign up first to get your user ID.
+
+5. Start the development server:
+   ```bash
+   pnpm dev
+   ```
+
+### Database Commands
+
+| Command | Description |
+|---------|-------------|
+| `docker compose up -d` | Start database (background) |
+| `docker compose down` | Stop database (keeps data) |
+| `docker compose down -v` | Stop and wipe all data |
+| `docker compose logs -f db` | View database logs |
+| `pnpm db:studio` | Open Drizzle Studio GUI |
+
+### Resetting the Database
+
+To start fresh:
+```bash
+docker compose down -v
+docker compose up -d
+pnpm db:push
+pnpm seed:demo -- --clerk-id=user_xxx
+```
+
+---
+
 ## Project Structure
 
 ```

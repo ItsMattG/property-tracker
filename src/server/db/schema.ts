@@ -447,6 +447,20 @@ export const emailStatusEnum = pgEnum("email_status", [
   "rejected",
 ]);
 
+export const emailProviderEnum = pgEnum("email_provider", ["gmail", "outlook"]);
+
+export const emailConnectionStatusEnum = pgEnum("email_connection_status", [
+  "active",
+  "needs_reauth",
+  "disconnected",
+]);
+
+export const emailSourceEnum = pgEnum("email_source", [
+  "forwarded",
+  "gmail",
+  "outlook",
+]);
+
 export const invoiceMatchStatusEnum = pgEnum("invoice_match_status", [
   "pending",
   "accepted",
@@ -1045,9 +1059,9 @@ export const propertyManagerSyncLogs = pgTable("property_manager_sync_logs", {
 
 export const propertyEmails = pgTable("property_emails", {
   id: serial("id").primaryKey(),
-  propertyId: uuid("property_id")
-    .references(() => properties.id, { onDelete: "cascade" })
-    .notNull(),
+  propertyId: uuid("property_id").references(() => properties.id, {
+    onDelete: "set null",
+  }),
   userId: uuid("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
@@ -1063,6 +1077,12 @@ export const propertyEmails = pgTable("property_emails", {
   isRead: boolean("is_read").default(false).notNull(),
   receivedAt: timestamp("received_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // OAuth email source tracking
+  source: emailSourceEnum("source").default("forwarded").notNull(),
+  connectionId: integer("connection_id").references(() => emailConnections.id, {
+    onDelete: "set null",
+  }),
+  externalId: text("external_id"), // Gmail/Outlook message ID for dedup
 });
 
 export const propertyEmailAttachments = pgTable("property_email_attachments", {
@@ -1109,6 +1129,83 @@ export const propertyEmailSenders = pgTable(
     uniqueIndex("property_email_senders_property_pattern_idx").on(
       table.propertyId,
       table.emailPattern
+    ),
+  ]
+);
+
+// ─── Email Connections (OAuth) ───────────────────────────────
+
+export const emailConnections = pgTable(
+  "email_connections",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    provider: emailProviderEnum("provider").notNull(),
+    emailAddress: text("email_address").notNull(),
+    accessTokenEncrypted: text("access_token_encrypted").notNull(),
+    refreshTokenEncrypted: text("refresh_token_encrypted").notNull(),
+    tokenExpiresAt: timestamp("token_expires_at").notNull(),
+    pushSubscriptionId: text("push_subscription_id"),
+    pushExpiresAt: timestamp("push_expires_at"),
+    lastSyncAt: timestamp("last_sync_at"),
+    lastError: text("last_error"),
+    status: emailConnectionStatusEnum("status").default("active").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("email_connections_user_provider_email_idx").on(
+      table.userId,
+      table.provider,
+      table.emailAddress
+    ),
+  ]
+);
+
+export const emailApprovedSenders = pgTable(
+  "email_approved_senders",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    emailPattern: text("email_pattern").notNull(), // e.g., "*@raywhite.com"
+    label: text("label"),
+    defaultPropertyId: uuid("default_property_id").references(
+      () => properties.id,
+      { onDelete: "set null" }
+    ),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("email_approved_senders_user_pattern_idx").on(
+      table.userId,
+      table.emailPattern
+    ),
+  ]
+);
+
+export const senderPropertyHistory = pgTable(
+  "sender_property_history",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    senderAddress: text("sender_address").notNull(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+    confidence: real("confidence").default(1.0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("sender_property_history_user_sender_idx").on(
+      table.userId,
+      table.senderAddress
     ),
   ]
 );
@@ -3075,6 +3172,13 @@ export type PropertyEmailInvoiceMatch = typeof propertyEmailInvoiceMatches.$infe
 export type NewPropertyEmailInvoiceMatch = typeof propertyEmailInvoiceMatches.$inferInsert;
 export type PropertyEmailSender = typeof propertyEmailSenders.$inferSelect;
 export type NewPropertyEmailSender = typeof propertyEmailSenders.$inferInsert;
+// Email Connection Types
+export type EmailConnection = typeof emailConnections.$inferSelect;
+export type NewEmailConnection = typeof emailConnections.$inferInsert;
+export type EmailApprovedSender = typeof emailApprovedSenders.$inferSelect;
+export type NewEmailApprovedSender = typeof emailApprovedSenders.$inferInsert;
+export type SenderPropertyHistory = typeof senderPropertyHistory.$inferSelect;
+export type NewSenderPropertyHistory = typeof senderPropertyHistory.$inferInsert;
 // Task Types
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;

@@ -87,6 +87,8 @@ jobs:
 
       - name: Run TypeScript type check
         run: pnpm exec tsc --noEmit
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
 
   unit-tests:
     name: Unit Tests
@@ -180,6 +182,7 @@ jobs:
       - name: Build
         run: pnpm run build
         env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_dummy
           CLERK_SECRET_KEY: sk_test_dummy
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy

@@ -7,8 +7,10 @@ import {
   propertyEmailInvoiceMatches,
   propertyEmailSenders,
   properties,
+  senderPropertyHistory,
 } from "../db/schema";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, inArray, isNull } from "drizzle-orm";
+import { recordSenderPropertyMatch } from "../services/gmail-sync";
 import {
   ensureForwardingAddress,
   regenerateForwardingAddress,
@@ -214,6 +216,10 @@ export const emailRouter = router({
 
       if (!email) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Email not found" });
+      }
+
+      if (!email.propertyId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot approve email without property assignment" });
       }
 
       // Add sender to allowlist
@@ -468,5 +474,117 @@ export const emailRouter = router({
         filename: attachment.filename,
         contentType: attachment.contentType,
       };
+    }),
+
+  // List unassigned emails (no property assigned)
+  listUnassigned: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(50),
+        cursor: z.number().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const conditions = [
+        eq(propertyEmails.userId, ctx.portfolio.ownerId),
+        isNull(propertyEmails.propertyId),
+      ];
+
+      if (input.cursor) {
+        conditions.push(sql`${propertyEmails.id} < ${input.cursor}`);
+      }
+
+      const emails = await ctx.db
+        .select({
+          id: propertyEmails.id,
+          fromAddress: propertyEmails.fromAddress,
+          fromName: propertyEmails.fromName,
+          subject: propertyEmails.subject,
+          bodyText: propertyEmails.bodyText,
+          isRead: propertyEmails.isRead,
+          receivedAt: propertyEmails.receivedAt,
+          source: propertyEmails.source,
+        })
+        .from(propertyEmails)
+        .where(and(...conditions))
+        .orderBy(desc(propertyEmails.receivedAt))
+        .limit(input.limit + 1);
+
+      const hasMore = emails.length > input.limit;
+      const items = hasMore ? emails.slice(0, -1) : emails;
+      const nextCursor = hasMore ? items[items.length - 1]?.id : undefined;
+
+      return {
+        items,
+        nextCursor,
+      };
+    }),
+
+  // Assign an email to a property
+  assignToProperty: writeProcedure
+    .input(
+      z.object({
+        emailId: z.number(),
+        propertyId: z.string().uuid(),
+        rememberSender: z.boolean().default(true),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify email belongs to user
+      const [email] = await ctx.db
+        .select({
+          id: propertyEmails.id,
+          fromAddress: propertyEmails.fromAddress,
+        })
+        .from(propertyEmails)
+        .where(
+          and(
+            eq(propertyEmails.id, input.emailId),
+            eq(propertyEmails.userId, ctx.portfolio.ownerId)
+          )
+        );
+
+      if (!email) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Email not found",
+        });
+      }
+
+      // Verify property belongs to user
+      const [property] = await ctx.db
+        .select({ id: properties.id })
+        .from(properties)
+        .where(
+          and(
+            eq(properties.id, input.propertyId),
+            eq(properties.userId, ctx.portfolio.ownerId)
+          )
+        );
+
+      if (!property) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Property not found",
+        });
+      }
+
+      // Update the email
+      await ctx.db
+        .update(propertyEmails)
+        .set({ propertyId: input.propertyId })
+        .where(eq(propertyEmails.id, input.emailId));
+
+      // Record sender-property association for future matching
+      if (input.rememberSender && email.fromAddress) {
+        await recordSenderPropertyMatch(
+          ctx.portfolio.ownerId,
+          email.fromAddress,
+          input.propertyId,
+          1.0
+        );
+      }
+
+      return { success: true };
     }),
 });
