@@ -6,15 +6,7 @@ import {
   Landmark,
   FileSpreadsheet,
   CheckCircle,
-  Home,
-  Users,
-  Lock,
-  Globe,
 } from "lucide-react";
-import { auth } from "@clerk/nextjs/server";
-import { db } from "@/server/db";
-import { users, properties, subscriptions } from "@/server/db/schema";
-import { sql, eq, and, inArray, gt } from "drizzle-orm";
 import {
   LifetimeBanner,
   FaqSection,
@@ -23,71 +15,21 @@ import {
   HeroCTA,
   PricingCTA,
   BottomCTA,
+  StatsBar,
 } from "@/components/landing";
-import type { UserState } from "@/components/landing";
+import { db } from "@/server/db";
+import { users, properties } from "@/server/db/schema";
+import { sql } from "drizzle-orm";
 
-export const revalidate = 3600; // Revalidate every hour
+// Revalidate stats every 24 hours
+export const revalidate = 86400;
 
-// Timeout wrapper to prevent slow DB/API calls from blocking page render
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
-  ]);
-}
-
-async function getUserStateInternal(): Promise<UserState> {
-  const { userId: clerkUserId } = await auth();
-  if (!clerkUserId) return "signed-out";
-
-  // Get internal user ID from Clerk ID
-  const [user] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.clerkId, clerkUserId))
-    .limit(1);
-
-  // If user not in DB yet, they'll be created by webhook on first dashboard visit
-  // Don't block the landing page with Clerk API calls
-  if (!user) return "free";
-
-  // Check for active paid subscription
-  const [sub] = await db
-    .select({ plan: subscriptions.plan })
-    .from(subscriptions)
-    .where(
-      and(
-        eq(subscriptions.userId, user.id),
-        inArray(subscriptions.status, ["active", "trialing"]),
-        gt(subscriptions.currentPeriodEnd, new Date())
-      )
-    )
-    .limit(1);
-
-  if (sub && ["pro", "team", "lifetime"].includes(sub.plan)) {
-    return "paid";
-  }
-
-  return "free";
-}
-
-async function getUserState(): Promise<UserState> {
+async function getStats() {
   try {
-    // 5 second timeout - if DB is slow, show signed-out state and let page render
-    return await withTimeout(getUserStateInternal(), 5000, "signed-out");
-  } catch {
-    return "signed-out";
-  }
-}
-
-async function getStats(): Promise<{ userCount: number; propertyCount: number }> {
-  try {
-    const [userCountResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(users);
-    const [propertyCountResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(properties);
+    const [[userCountResult], [propertyCountResult]] = await Promise.all([
+      db.select({ count: sql<number>`count(*)::int` }).from(users),
+      db.select({ count: sql<number>`count(*)::int` }).from(properties),
+    ]);
     return {
       userCount: userCountResult?.count ?? 0,
       propertyCount: propertyCountResult?.count ?? 0,
@@ -98,15 +40,7 @@ async function getStats(): Promise<{ userCount: number; propertyCount: number }>
 }
 
 export default async function HomePage() {
-  // Fetch user state and stats with timeout protection
-  // If DB is slow (cold start), return defaults after 5s so page renders
-  const [userState, { userCount, propertyCount }] = await withTimeout(
-    Promise.all([getUserState(), getStats()]),
-    5000,
-    ["signed-out" as UserState, { userCount: 0, propertyCount: 0 }]
-  );
-  const isSignedIn = userState !== "signed-out";
-
+  const { userCount, propertyCount } = await getStats();
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <script
@@ -118,7 +52,7 @@ export default async function HomePage() {
             name: "BrickTrack",
             applicationCategory: "FinanceApplication",
             operatingSystem: "Web",
-            url: "https://www.propertytracker.com.au",
+            url: "https://www.bricktrack.au",
             description: "Track your investment properties, automate bank feeds, and generate tax reports.",
             offers: [
               { "@type": "Offer", price: "0", priceCurrency: "AUD", name: "Free" },
@@ -128,7 +62,7 @@ export default async function HomePage() {
             publisher: {
               "@type": "Organization",
               name: "BrickTrack",
-              url: "https://www.propertytracker.com.au",
+              url: "https://www.bricktrack.au",
             },
           }),
         }}
@@ -142,10 +76,10 @@ export default async function HomePage() {
             </div>
             <span className="font-semibold text-lg">BrickTrack</span>
           </Link>
-          {/* Desktop navigation */}
-          <HeaderNav isSignedIn={isSignedIn} />
-          {/* Mobile navigation */}
-          <MobileNav isSignedIn={isSignedIn} />
+          {/* Desktop navigation - client component handles auth */}
+          <HeaderNav />
+          {/* Mobile navigation - client component handles auth */}
+          <MobileNav />
         </div>
       </header>
 
@@ -161,37 +95,12 @@ export default async function HomePage() {
             for tax, and generates ATO-ready reports automatically. No more
             spreadsheets. No more stress at EOFY.
           </p>
-          <HeroCTA userState={userState} />
+          <HeroCTA />
         </div>
       </section>
 
-      {/* Social Proof Bar */}
-      <section className="py-6 px-4 bg-muted border-y">
-        <div className="container mx-auto max-w-4xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div className="flex flex-col items-center gap-1">
-              <Home className="w-5 h-5 text-primary mb-1" />
-              <span className="text-2xl font-bold">{propertyCount}+</span>
-              <span className="text-sm text-muted-foreground">Properties Tracked</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Users className="w-5 h-5 text-primary mb-1" />
-              <span className="text-2xl font-bold">{userCount}+</span>
-              <span className="text-sm text-muted-foreground">Investors</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Lock className="w-5 h-5 text-primary mb-1" />
-              <span className="text-2xl font-bold">Secure</span>
-              <span className="text-sm text-muted-foreground">Bank-Grade Security</span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <Globe className="w-5 h-5 text-primary mb-1" />
-              <span className="text-2xl font-bold">100%</span>
-              <span className="text-sm text-muted-foreground">Australian</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Social Proof Bar - stats baked in at build time */}
+      <StatsBar propertyCount={propertyCount} userCount={userCount} />
 
       {/* Features */}
       <section className="py-12 md:py-20 px-4 bg-secondary">
@@ -378,7 +287,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <PricingCTA isSignedIn={isSignedIn} plan="free" />
+              <PricingCTA plan="free" />
             </div>
 
             {/* Pro */}
@@ -408,7 +317,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <PricingCTA isSignedIn={isSignedIn} plan="pro" />
+              <PricingCTA plan="pro" />
             </div>
 
             {/* Team */}
@@ -433,7 +342,7 @@ export default async function HomePage() {
                   </li>
                 ))}
               </ul>
-              <PricingCTA isSignedIn={isSignedIn} plan="team" />
+              <PricingCTA plan="team" />
             </div>
           </div>
 
@@ -455,7 +364,7 @@ export default async function HomePage() {
           <p className="mb-8 opacity-90">
             Join Australian investors who track smarter and stress less at tax time.
           </p>
-          <BottomCTA isSignedIn={isSignedIn} />
+          <BottomCTA />
         </div>
       </section>
 
