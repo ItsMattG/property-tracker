@@ -11,8 +11,7 @@ import {
   Lock,
   Globe,
 } from "lucide-react";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import { addDays } from "date-fns";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/server/db";
 import { users, properties, subscriptions } from "@/server/db/schema";
 import { sql, eq, and, inArray, gt } from "drizzle-orm";
@@ -29,74 +28,53 @@ import type { UserState } from "@/components/landing";
 
 export const revalidate = 3600; // Revalidate every hour
 
+// Timeout wrapper to prevent slow DB/API calls from blocking page render
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
+async function getUserStateInternal(): Promise<UserState> {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) return "signed-out";
+
+  // Get internal user ID from Clerk ID
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.clerkId, clerkUserId))
+    .limit(1);
+
+  // If user not in DB yet, they'll be created by webhook on first dashboard visit
+  // Don't block the landing page with Clerk API calls
+  if (!user) return "free";
+
+  // Check for active paid subscription
+  const [sub] = await db
+    .select({ plan: subscriptions.plan })
+    .from(subscriptions)
+    .where(
+      and(
+        eq(subscriptions.userId, user.id),
+        inArray(subscriptions.status, ["active", "trialing"]),
+        gt(subscriptions.currentPeriodEnd, new Date())
+      )
+    )
+    .limit(1);
+
+  if (sub && ["pro", "team", "lifetime"].includes(sub.plan)) {
+    return "paid";
+  }
+
+  return "free";
+}
+
 async function getUserState(): Promise<UserState> {
   try {
-    const { userId: clerkUserId } = await auth();
-    if (!clerkUserId) return "signed-out";
-
-    // Get internal user ID from Clerk ID
-    let [user] = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.clerkId, clerkUserId))
-      .limit(1);
-
-    // Auto-create user if they exist in Clerk but not in our database
-    // This handles cases where the webhook hasn't fired yet (race condition on first sign-in)
-    if (!user) {
-      try {
-        const clerk = await clerkClient();
-        const clerkUser = await clerk.users.getUser(clerkUserId);
-        const primaryEmail = clerkUser.emailAddresses.find(
-          (e) => e.id === clerkUser.primaryEmailAddressId
-        );
-
-        if (primaryEmail) {
-          const name = [clerkUser.firstName, clerkUser.lastName]
-            .filter(Boolean)
-            .join(" ") || null;
-
-          const now = new Date();
-          const [newUser] = await db
-            .insert(users)
-            .values({
-              clerkId: clerkUserId,
-              email: primaryEmail.emailAddress.toLowerCase(),
-              name,
-              trialStartedAt: now,
-              trialEndsAt: addDays(now, 14),
-              trialPlan: "pro",
-            })
-            .returning({ id: users.id });
-
-          user = newUser;
-        }
-      } catch {
-        // Failed to auto-create - treat as signed out
-        return "signed-out";
-      }
-    }
-
-    if (!user) return "signed-out";
-
-    // Check for active paid subscription
-    const [sub] = await db
-      .select({ plan: subscriptions.plan })
-      .from(subscriptions)
-      .where(
-        and(
-          eq(subscriptions.userId, user.id),
-          inArray(subscriptions.status, ["active", "trialing"]),
-          gt(subscriptions.currentPeriodEnd, new Date())
-        )
-      )
-      .limit(1);
-
-    if (sub && ["pro", "team", "lifetime"].includes(sub.plan)) {
-      return "paid";
-    }
-
-    return "free";
+    // 5 second timeout - if DB is slow, show signed-out state and let page render
+    return await withTimeout(getUserStateInternal(), 5000, "signed-out");
   } catch {
     return "signed-out";
   }
