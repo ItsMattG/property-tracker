@@ -80,29 +80,31 @@ async function getUserState(): Promise<UserState> {
   }
 }
 
-export default async function HomePage() {
-  // Fetch user state and live stats in parallel
-  const [userState, statsResult] = await Promise.all([
-    getUserState(),
-    (async () => {
-      try {
-        const [userCountResult] = await db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(users);
-        const [propertyCountResult] = await db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(properties);
-        return {
-          userCount: userCountResult?.count ?? 0,
-          propertyCount: propertyCountResult?.count ?? 0,
-        };
-      } catch {
-        return { userCount: 0, propertyCount: 0 };
-      }
-    })(),
-  ]);
+async function getStats(): Promise<{ userCount: number; propertyCount: number }> {
+  try {
+    const [userCountResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(users);
+    const [propertyCountResult] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(properties);
+    return {
+      userCount: userCountResult?.count ?? 0,
+      propertyCount: propertyCountResult?.count ?? 0,
+    };
+  } catch {
+    return { userCount: 0, propertyCount: 0 };
+  }
+}
 
-  const { userCount, propertyCount } = statsResult;
+export default async function HomePage() {
+  // Fetch user state and stats with timeout protection
+  // If DB is slow (cold start), return defaults after 5s so page renders
+  const [userState, { userCount, propertyCount }] = await withTimeout(
+    Promise.all([getUserState(), getStats()]),
+    5000,
+    ["signed-out" as UserState, { userCount: 0, propertyCount: 0 }]
+  );
   const isSignedIn = userState !== "signed-out";
 
   return (
