@@ -11,7 +11,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AddressAutocomplete } from "@/components/ui/address-autocomplete";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -216,18 +215,11 @@ export function AddListingModal({ open, onOpenChange, onSuccess }: AddListingMod
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="suburb">Suburb *</Label>
-                <AddressAutocomplete
-                  defaultValue={manualData.suburb || ""}
-                  placeholder="Start typing suburb..."
-                  onAddressSelect={(addr) => {
-                    setManualData({
-                      ...manualData,
-                      address: addr.street,
-                      suburb: addr.suburb,
-                      state: addr.state,
-                      postcode: addr.postcode,
-                    });
-                  }}
+                <Input
+                  id="suburb"
+                  placeholder="Sydney"
+                  value={manualData.suburb || ""}
+                  onChange={(e) => setManualData({ ...manualData, suburb: e.target.value })}
                 />
               </div>
               <div>
