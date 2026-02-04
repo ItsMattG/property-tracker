@@ -51,6 +51,38 @@ async function captureScreenshots() {
 
   const screenshotsDir = path.join(process.cwd(), "public/images/screenshots");
 
+  // Helper to remove Next.js dev elements before screenshot
+  async function removeDevElements() {
+    await page.evaluate(() => {
+      // Remove all possible Next.js dev indicators
+      const selectors = [
+        'nextjs-portal',
+        '[data-nextjs-toast]',
+        '[data-nextjs-dialog]',
+        '#__next-build-indicator',
+        // The floating button in bottom-right corner
+        'button[data-nextjs-data-runtime-error-collapsed-action]',
+      ];
+      selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => el.remove());
+      });
+      // Also remove any fixed position elements in bottom corners (likely dev tools)
+      document.querySelectorAll('*').forEach(el => {
+        const style = window.getComputedStyle(el);
+        if (style.position === 'fixed' &&
+            (style.bottom === '0px' || parseInt(style.bottom) < 50) &&
+            (style.right === '0px' || parseInt(style.right) < 50 ||
+             style.left === '0px' || parseInt(style.left) < 50)) {
+          const rect = el.getBoundingClientRect();
+          // Small fixed elements in corners are likely dev tools
+          if (rect.width < 100 && rect.height < 100) {
+            (el as HTMLElement).style.display = 'none';
+          }
+        }
+      });
+    });
+  }
+
   // Screenshot 1: Dashboard
   console.log("Capturing dashboard...");
   await page.goto(`${BASE_URL}/dashboard`);
@@ -62,6 +94,7 @@ async function captureScreenshots() {
   });
   // Give charts/widgets time to render
   await page.waitForTimeout(1500);
+  await removeDevElements();
   await page.screenshot({ path: `${screenshotsDir}/dashboard.png` });
   console.log("✓ Dashboard screenshot saved");
 
@@ -70,6 +103,7 @@ async function captureScreenshots() {
   await page.goto(`${BASE_URL}/reports`);
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(1500);
+  await removeDevElements();
   await page.screenshot({ path: `${screenshotsDir}/tax-reports.png` });
   console.log("✓ Reports screenshot saved");
 
@@ -78,6 +112,7 @@ async function captureScreenshots() {
   await page.goto(`${BASE_URL}/banking`);
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(1500);
+  await removeDevElements();
   await page.screenshot({ path: `${screenshotsDir}/banking.png` });
   console.log("✓ Banking screenshot saved");
 

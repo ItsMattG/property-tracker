@@ -42,3 +42,6 @@ next-env.d.ts
 
 # worktrees
 .worktrees/
+
+# clerk configuration (can include secrets)
+/.clerk/
