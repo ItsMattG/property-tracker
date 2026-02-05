@@ -6,7 +6,10 @@ import {
   recurringTransactions,
   loans,
   type CashFlowForecast,
+  type RecurringTransaction,
+  type Loan,
 } from "../db/schema";
+import { type db as dbInstance } from "../db";
 import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
@@ -238,7 +241,7 @@ export const forecastRouter = router({
 });
 
 async function generateForecastsForScenario(
-  db: any,
+  db: typeof dbInstance,
   userId: string,
   scenarioId: string
 ) {
@@ -262,21 +265,21 @@ async function generateForecastsForScenario(
   });
 
   const baseIncome = recurring
-    .filter((r: any) => r.transactionType === "income")
-    .reduce((sum: number, r: any) => sum + Math.abs(Number(r.amount)), 0);
+    .filter((r: RecurringTransaction) => r.transactionType === "income")
+    .reduce((sum: number, r: RecurringTransaction) => sum + Math.abs(Number(r.amount)), 0);
 
   const baseExpenses = recurring
-    .filter((r: any) => r.transactionType === "expense")
-    .reduce((sum: number, r: any) => sum + Math.abs(Number(r.amount)), 0);
+    .filter((r: RecurringTransaction) => r.transactionType === "expense")
+    .reduce((sum: number, r: RecurringTransaction) => sum + Math.abs(Number(r.amount)), 0);
 
   const totalLoanBalance = userLoans.reduce(
-    (sum: number, l: any) => sum + Number(l.currentBalance),
+    (sum: number, l: Loan) => sum + Number(l.currentBalance),
     0
   );
   const weightedRate =
     totalLoanBalance > 0
       ? userLoans.reduce(
-          (sum: number, l: any) =>
+          (sum: number, l: Loan) =>
             sum + (Number(l.currentBalance) / totalLoanBalance) * Number(l.interestRate),
           0
         )
@@ -286,7 +289,7 @@ async function generateForecastsForScenario(
     .delete(cashFlowForecasts)
     .where(eq(cashFlowForecasts.scenarioId, scenarioId));
 
-  for (let month = 0; month < 12; month++) {
+  const forecastValues = Array.from({ length: 12 }, (_, month) => {
     const projection = calculateMonthlyProjection({
       monthsAhead: month,
       baseIncome,
@@ -296,7 +299,7 @@ async function generateForecastsForScenario(
       assumptions,
     });
 
-    await db.insert(cashFlowForecasts).values({
+    return {
       userId,
       scenarioId,
       propertyId: null,
@@ -309,6 +312,8 @@ async function generateForecastsForScenario(
         baseExpenses,
         loanInterest: projection.projectedExpenses - baseExpenses,
       }),
-    });
-  }
+    };
+  });
+
+  await db.insert(cashFlowForecasts).values(forecastValues);
 }

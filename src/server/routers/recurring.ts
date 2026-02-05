@@ -420,6 +420,15 @@ export const recurringRouter = router({
       confidence: "high" | "medium" | "low" | null;
     }> = [];
 
+    // Collect batch updates to avoid N+1 sequential DB calls
+    const expectedUpdates: Array<{ id: string; matchedTransactionId: string }> = [];
+    const transactionUpdates: Array<{
+      id: string;
+      category: string;
+      transactionType: string;
+      propertyId: string;
+    }> = [];
+
     for (const expected of pending) {
       if (!expected.recurringTransaction) continue;
 
@@ -434,25 +443,17 @@ export const recurringRouter = router({
       );
 
       if (matches.length > 0 && matches[0].confidence === "high") {
-        // Auto-match high confidence
-        await ctx.db
-          .update(expectedTransactions)
-          .set({
-            status: "matched",
-            matchedTransactionId: matches[0].transaction.id,
-          })
-          .where(eq(expectedTransactions.id, expected.id));
-
-        // Apply template to transaction
-        await ctx.db
-          .update(transactions)
-          .set({
-            category: expected.recurringTransaction.category,
-            transactionType: expected.recurringTransaction.transactionType,
-            propertyId: expected.propertyId,
-            updatedAt: new Date(),
-          })
-          .where(eq(transactions.id, matches[0].transaction.id));
+        // Collect for batch update
+        expectedUpdates.push({
+          id: expected.id,
+          matchedTransactionId: matches[0].transaction.id,
+        });
+        transactionUpdates.push({
+          id: matches[0].transaction.id,
+          category: expected.recurringTransaction.category,
+          transactionType: expected.recurringTransaction.transactionType,
+          propertyId: expected.propertyId,
+        });
 
         results.push({
           expectedId: expected.id,
@@ -473,6 +474,33 @@ export const recurringRouter = router({
           confidence: null,
         });
       }
+    }
+
+    // Batch execute all DB updates in parallel
+    if (expectedUpdates.length > 0) {
+      const now = new Date();
+      await Promise.all([
+        ...expectedUpdates.map((eu) =>
+          ctx.db
+            .update(expectedTransactions)
+            .set({
+              status: "matched",
+              matchedTransactionId: eu.matchedTransactionId,
+            })
+            .where(eq(expectedTransactions.id, eu.id))
+        ),
+        ...transactionUpdates.map((tu) =>
+          ctx.db
+            .update(transactions)
+            .set({
+              category: tu.category as typeof transactions.$inferInsert.category,
+              transactionType: tu.transactionType as typeof transactions.$inferInsert.transactionType,
+              propertyId: tu.propertyId,
+              updatedAt: now,
+            })
+            .where(eq(transactions.id, tu.id))
+        ),
+      ]);
     }
 
     return results;
