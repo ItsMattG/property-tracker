@@ -286,7 +286,7 @@ async function generateForecastsForScenario(
     .delete(cashFlowForecasts)
     .where(eq(cashFlowForecasts.scenarioId, scenarioId));
 
-  for (let month = 0; month < 12; month++) {
+  const forecastValues = Array.from({ length: 12 }, (_, month) => {
     const projection = calculateMonthlyProjection({
       monthsAhead: month,
       baseIncome,
@@ -296,7 +296,7 @@ async function generateForecastsForScenario(
       assumptions,
     });
 
-    await db.insert(cashFlowForecasts).values({
+    return {
       userId,
       scenarioId,
       propertyId: null,
@@ -309,6 +309,8 @@ async function generateForecastsForScenario(
         baseExpenses,
         loanInterest: projection.projectedExpenses - baseExpenses,
       }),
-    });
-  }
+    };
+  });
+
+  await db.insert(cashFlowForecasts).values(forecastValues);
 }
