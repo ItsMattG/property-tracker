@@ -64,10 +64,13 @@ describe("portfolio router", () => {
       const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
 
       ctx.db = {
+        execute: vi.fn().mockResolvedValue([
+          { property_id: "prop-1", estimated_value: "650000" },
+          { property_id: "prop-2", estimated_value: "700000" },
+        ]),
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findMany: vi.fn().mockResolvedValue(mockProperties) },
-          propertyValues: { findMany: vi.fn().mockResolvedValue(mockPropertyValues) },
           loans: { findMany: vi.fn().mockResolvedValue(mockLoans) },
           transactions: { findMany: vi.fn().mockResolvedValue(mockTransactions) },
         },
@@ -105,10 +108,12 @@ describe("portfolio router", () => {
       const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
 
       ctx.db = {
+        execute: vi.fn().mockResolvedValue([
+          { property_id: "prop-1", estimated_value: "650000" },
+        ]),
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findMany: vi.fn().mockResolvedValue(mockProperties) },
-          propertyValues: { findMany: vi.fn().mockResolvedValue([mockPropertyValues[0]]) },
           loans: { findMany: vi.fn().mockResolvedValue([mockLoans[0]]) },
           transactions: { findMany: vi.fn().mockResolvedValue([mockTransactions[0], mockTransactions[1]]) },
         },
@@ -129,10 +134,13 @@ describe("portfolio router", () => {
       const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
 
       ctx.db = {
+        execute: vi.fn().mockResolvedValue([
+          { property_id: "prop-1", estimated_value: "650000" },
+          { property_id: "prop-2", estimated_value: "700000" },
+        ]),
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findMany: vi.fn().mockResolvedValue(mockProperties) },
-          propertyValues: { findMany: vi.fn().mockResolvedValue(mockPropertyValues) },
           loans: { findMany: vi.fn().mockResolvedValue(mockLoans) },
           transactions: { findMany: vi.fn().mockResolvedValue(mockTransactions) },
         },
@@ -157,10 +165,13 @@ describe("portfolio router", () => {
       const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
 
       ctx.db = {
+        execute: vi.fn().mockResolvedValue([
+          { property_id: "prop-1", estimated_value: "650000" },
+          { property_id: "prop-2", estimated_value: "700000" },
+        ]),
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findMany: vi.fn().mockResolvedValue(mockProperties) },
-          propertyValues: { findMany: vi.fn().mockResolvedValue(mockPropertyValues) },
           loans: { findMany: vi.fn().mockResolvedValue(mockLoans) },
           transactions: { findMany: vi.fn().mockResolvedValue(mockTransactions) },
         },

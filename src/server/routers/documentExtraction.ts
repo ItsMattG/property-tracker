@@ -45,11 +45,17 @@ export const documentExtractionRouter = router({
         .values({ documentId: input.documentId, status: "processing" })
         .returning();
 
-      // Run extraction async (fire and forget pattern)
-      extractDocument(document.storagePath, document.fileType)
-        .then(async (result) => {
+      // Capture context-dependent values before the async gap
+      const db = ctx.db;
+      const ownerId = ctx.portfolio.ownerId;
+
+      // Run extraction async (fire and forget)
+      void (async () => {
+        try {
+          const result = await extractDocument(document.storagePath, document.fileType);
+
           if (!result.success || !result.data) {
-            await ctx.db.update(documentExtractions)
+            await db.update(documentExtractions)
               .set({
                 status: "failed",
                 error: result.error || "Extraction failed",
@@ -64,8 +70,8 @@ export const documentExtractionRouter = router({
 
           // Try to match property by address
           if (result.data.propertyAddress) {
-            const userProperties = await ctx.db.query.properties.findMany({
-              where: eq(properties.userId, ctx.portfolio.ownerId),
+            const userProperties = await db.query.properties.findMany({
+              where: eq(properties.userId, ownerId),
             });
             const match = matchPropertyByAddress(result.data.propertyAddress, userProperties);
             if (match.propertyId && match.confidence > 0.5) {
@@ -77,8 +83,8 @@ export const documentExtractionRouter = router({
           // Create draft transaction if amount was extracted
           let draftTransactionId: string | null = null;
           if (result.data.amount) {
-            const [draftTx] = await ctx.db.insert(transactions).values({
-              userId: ctx.portfolio.ownerId,
+            const [draftTx] = await db.insert(transactions).values({
+              userId: ownerId,
               propertyId: matchedPropertyId,
               date: result.data.date || new Date().toISOString().split("T")[0],
               description: result.data.vendor || "Extracted from document",
@@ -91,7 +97,7 @@ export const documentExtractionRouter = router({
           }
 
           // Update extraction with results
-          await ctx.db.update(documentExtractions).set({
+          await db.update(documentExtractions).set({
             status: "completed",
             documentType: result.data.documentType,
             extractedData: JSON.stringify(result.data),
@@ -101,16 +107,21 @@ export const documentExtractionRouter = router({
             draftTransactionId,
             completedAt: new Date(),
           }).where(eq(documentExtractions.id, extraction.id));
-        })
-        .catch(async (error) => {
-          await ctx.db.update(documentExtractions)
-            .set({
-              status: "failed",
-              error: error instanceof Error ? error.message : "Unknown error",
-              completedAt: new Date(),
-            })
-            .where(eq(documentExtractions.id, extraction.id));
-        });
+        } catch (error) {
+          console.error("Document extraction failed for extraction", extraction.id, error);
+          try {
+            await db.update(documentExtractions)
+              .set({
+                status: "failed",
+                error: error instanceof Error ? error.message : "Unknown error",
+                completedAt: new Date(),
+              })
+              .where(eq(documentExtractions.id, extraction.id));
+          } catch (dbError) {
+            console.error("Failed to update extraction status to failed for extraction", extraction.id, dbError);
+          }
+        }
+      })();
 
       return extraction;
     }),

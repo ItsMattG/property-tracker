@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { properties, propertyValues, loans, transactions } from "../db/schema";
-import { eq, and, gte, lte, desc, inArray } from "drizzle-orm";
+import { properties, loans, transactions } from "../db/schema";
+import { eq, and, gte, lte, inArray, sql } from "drizzle-orm";
 import {
   calculateEquity,
   calculateLVR,
@@ -10,6 +10,32 @@ import {
   calculateNetYield,
   getDateRangeForPeriod,
 } from "../services/portfolio";
+
+/** Fetch the latest property value per property using DISTINCT ON to avoid N+1 */
+async function getLatestPropertyValues(
+  db: typeof import("../db")["db"],
+  userId: string,
+  propertyIds: string[]
+): Promise<Map<string, number>> {
+  if (propertyIds.length === 0) return new Map();
+
+  const rows = await db.execute(sql`
+    SELECT DISTINCT ON (property_id) property_id, estimated_value
+    FROM property_values
+    WHERE user_id = ${userId}
+      AND property_id = ANY(${propertyIds})
+    ORDER BY property_id, value_date DESC
+  `);
+
+  const latestValues = new Map<string, number>();
+  for (const row of rows) {
+    latestValues.set(
+      row.property_id as string,
+      Number(row.estimated_value)
+    );
+  }
+  return latestValues;
+}
 
 const periodSchema = z.enum(["monthly", "quarterly", "annual"]);
 const sortBySchema = z.enum(["cashFlow", "equity", "lvr", "alphabetical"]);
@@ -58,22 +84,12 @@ export const portfolioRouter = router({
 
       const propertyIds = propertyList.map((p) => p.id);
 
-      // Get latest values for each property
-      const allValues = await ctx.db.query.propertyValues.findMany({
-        where: and(
-          eq(propertyValues.userId, ctx.portfolio.ownerId),
-          inArray(propertyValues.propertyId, propertyIds)
-        ),
-        orderBy: [desc(propertyValues.valueDate)],
-      });
-
-      // Get latest value per property
-      const latestValues = new Map<string, number>();
-      for (const v of allValues) {
-        if (!latestValues.has(v.propertyId)) {
-          latestValues.set(v.propertyId, Number(v.estimatedValue));
-        }
-      }
+      // Get latest value per property using DISTINCT ON (single row per property)
+      const latestValues = await getLatestPropertyValues(
+        ctx.db,
+        ctx.portfolio.ownerId,
+        propertyIds
+      );
 
       // Get all loans
       const allLoans = await ctx.db.query.loans.findMany({
@@ -167,21 +183,12 @@ export const portfolioRouter = router({
 
       const propertyIds = propertyList.map((p) => p.id);
 
-      // Get latest values
-      const allValues = await ctx.db.query.propertyValues.findMany({
-        where: and(
-          eq(propertyValues.userId, ctx.portfolio.ownerId),
-          inArray(propertyValues.propertyId, propertyIds)
-        ),
-        orderBy: [desc(propertyValues.valueDate)],
-      });
-
-      const latestValues = new Map<string, number>();
-      for (const v of allValues) {
-        if (!latestValues.has(v.propertyId)) {
-          latestValues.set(v.propertyId, Number(v.estimatedValue));
-        }
-      }
+      // Get latest value per property using DISTINCT ON (single row per property)
+      const latestValues = await getLatestPropertyValues(
+        ctx.db,
+        ctx.portfolio.ownerId,
+        propertyIds
+      );
 
       // Get all loans
       const allLoans = await ctx.db.query.loans.findMany({

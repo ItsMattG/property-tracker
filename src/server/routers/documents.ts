@@ -208,8 +208,10 @@ export const documentsRouter = router({
         const ownerId = ctx.portfolio.ownerId;
         const db = ctx.db;
 
-        extractDocument(storagePath, fileType)
-          .then(async (result) => {
+        void (async () => {
+          try {
+            const result = await extractDocument(storagePath, fileType);
+
             if (!result.success || !result.data) {
               await db
                 .update(documentExtractions)
@@ -279,17 +281,22 @@ export const documentsRouter = router({
                 completedAt: new Date(),
               })
               .where(eq(documentExtractions.id, extraction.id));
-          })
-          .catch(async (error) => {
-            await db
-              .update(documentExtractions)
-              .set({
-                status: "failed",
-                error: error instanceof Error ? error.message : "Unknown error",
-                completedAt: new Date(),
-              })
-              .where(eq(documentExtractions.id, extraction.id));
-          });
+          } catch (error) {
+            console.error("Document extraction failed for extraction", extraction.id, error);
+            try {
+              await db
+                .update(documentExtractions)
+                .set({
+                  status: "failed",
+                  error: error instanceof Error ? error.message : "Unknown error",
+                  completedAt: new Date(),
+                })
+                .where(eq(documentExtractions.id, extraction.id));
+            } catch (dbError) {
+              console.error("Failed to update extraction status to failed for extraction", extraction.id, dbError);
+            }
+          }
+        })();
       }
 
       return document;
