@@ -8,9 +8,9 @@
 
 | Severity | Count |
 |----------|-------|
-| Critical | 4 |
-| Major | 18 |
-| Minor | ~40 |
+| Critical | 7 |
+| Major | 19 |
+| Minor | ~45 |
 | Cosmetic | ~15 |
 
 ---
@@ -36,6 +36,21 @@
 **Area:** Entities
 **File:** `src/app/(dashboard)/entities/page.tsx:96`
 **Description:** Entity cards link to `/entities/${entity.id}` but no `entities/[id]/page.tsx` exists.
+
+### C5. SECURITY: Document extraction listPendingReviews has no user filtering
+**Area:** Transaction Review
+**File:** `src/server/routers/documentExtraction.ts:151-163`
+**Description:** `listPendingReviews` queries ALL `documentExtractions` with status "completed" across ALL users, not just the current user. The `documentExtractions` table has no `userId` column — ownership must be verified via the `documents` relation, but no such join/filter is present. Any user can see other users' document extractions.
+
+### C6. SECURITY: confirmTransaction has no user ownership check
+**Area:** Transaction Review
+**File:** `src/server/routers/documentExtraction.ts:169-201`
+**Description:** Looks up extraction by ID only without verifying it belongs to the current user. A malicious user could confirm another user's draft transaction.
+
+### C7. SECURITY: discardExtraction has no user ownership check
+**Area:** Transaction Review
+**File:** `src/server/routers/documentExtraction.ts:206-229`
+**Description:** Deletes extractions and draft transactions by ID without verifying user ownership. A user could delete another user's extractions.
 
 ---
 
@@ -131,6 +146,11 @@
 **File:** `src/components/loans/LoanCard.tsx:58`
 **Description:** `{loan.property?.address}, {loan.property?.suburb}` renders `, ` when property is null.
 
+### M19. AccountStatusIndicator crashes on unexpected status
+**Area:** Banking
+**File:** `src/components/banking/AccountStatusIndicator.tsx:24`
+**Description:** `statusConfig[status]` returns undefined if status is not one of the 3 expected values. Accessing `.color` on undefined crashes the component.
+
 ---
 
 ## Minor Issues (Abbreviated)
@@ -180,6 +200,11 @@
 ---
 
 ## Recommended Priority for Fixes
+
+**URGENT (Critical — security vulnerabilities):**
+1. C5: Add user ownership filter to documentExtraction.listPendingReviews
+2. C6: Add user ownership check to documentExtraction.confirmTransaction
+3. C7: Add user ownership check to documentExtraction.discardExtraction
 
 **Immediate (Critical — user-facing breakage):**
 1. C1: Add CGT sale details page or fix link
