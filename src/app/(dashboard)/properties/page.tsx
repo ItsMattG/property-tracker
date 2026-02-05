@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function PropertiesPage() {
-  const [deletePropertyId, setDeletePropertyId] = useState<string | null>(null);
+  const [deleteProperty, setDeleteProperty] = useState<{ id: string; address: string } | null>(null);
 
   const { data: properties, isLoading, refetch } = trpc.property.list.useQuery(
     undefined,
@@ -30,7 +30,7 @@ export default function PropertiesPage() {
       refetchOnWindowFocus: false,
     }
   );
-  const deleteProperty = trpc.property.delete.useMutation({
+  const deletePropertyMutation = trpc.property.delete.useMutation({
     onSuccess: () => {
       toast.success("Property deleted");
       refetch();
@@ -41,17 +41,16 @@ export default function PropertiesPage() {
   });
 
   const handleDelete = (id: string) => {
-    setDeletePropertyId(id);
+    const prop = properties?.find((p) => p.id === id);
+    setDeleteProperty(prop ? { id: prop.id, address: prop.address } : { id, address: "" });
   };
 
   const confirmDelete = async () => {
-    if (deletePropertyId) {
-      await deleteProperty.mutateAsync({ id: deletePropertyId });
-      setDeletePropertyId(null);
+    if (deleteProperty) {
+      await deletePropertyMutation.mutateAsync({ id: deleteProperty.id });
+      setDeleteProperty(null);
     }
   };
-
-  const propertyToDelete = properties?.find((p) => p.id === deletePropertyId);
 
   return (
     <div className="space-y-6">
@@ -101,15 +100,15 @@ export default function PropertiesPage() {
       )}
 
       <AlertDialog
-        open={!!deletePropertyId}
-        onOpenChange={(open) => !open && setDeletePropertyId(null)}
+        open={!!deleteProperty}
+        onOpenChange={(open) => !open && setDeleteProperty(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Property</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete{" "}
-              <span className="font-medium">{propertyToDelete?.address}</span>?
+              <span className="font-medium">{deleteProperty?.address}</span>?
               This action cannot be undone and will remove all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -15,6 +15,7 @@ import { toast } from "sonner";
 export default function NewPropertyPage() {
   const router = useRouter();
   useTour({ tourId: "add-property" });
+  const utils = trpc.useUtils();
 
   const [showTrialModal, setShowTrialModal] = useState(false);
   const [pendingValues, setPendingValues] = useState<PropertyFormValues | null>(null);
@@ -23,6 +24,10 @@ export default function NewPropertyPage() {
 
   const createProperty = trpc.property.create.useMutation({
     onSuccess: (property) => {
+      // Pre-populate the property cache so the settlement page doesn't need to re-fetch
+      utils.property.get.setData({ id: property.id }, property);
+      utils.property.list.invalidate();
+
       // Show toast for 3rd+ property during trial
       if (trialStatus?.isOnTrial && trialStatus.propertyCount >= 2) {
         toast.info("Reminder: Only your first property stays active after your trial", {

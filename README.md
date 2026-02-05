@@ -281,13 +281,13 @@ bricktrack/
 
 ```bash
 # Run unit tests
-pnpm test
+pnpm test:unit
 
 # Run with coverage
-pnpm test:coverage
+pnpm test:unit:coverage
 
 # Watch mode
-pnpm test:watch
+pnpm test:unit:watch
 ```
 
 Uses [Vitest](https://vitest.dev/) with v8 coverage.
