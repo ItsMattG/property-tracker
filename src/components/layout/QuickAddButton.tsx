@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, Building2, ArrowLeftRight, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,17 +18,6 @@ export function QuickAddButton() {
   const [transactionDialogOpen, setTransactionDialogOpen] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setOpen((prev) => !prev);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   return (
     <>
@@ -40,7 +29,7 @@ export function QuickAddButton() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <div className="px-2 py-1.5 text-xs text-muted-foreground">
-            Quick Add <kbd className="ml-auto text-xs">⌘K</kbd>
+            Quick Add
           </div>
           <DropdownMenuItem onClick={() => router.push("/properties/new")}>
             <Building2 className="mr-2 h-4 w-4" />
