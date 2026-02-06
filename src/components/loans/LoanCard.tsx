@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2, Building2 } from "lucide-react";
+import { MoreVertical, Building2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface LoanCardProps {
@@ -65,20 +65,18 @@ export function LoanCard({ loan, onEdit, onDelete }: LoanCardProps) {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-              <MoreHorizontal className="w-4 h-4" />
+            <Button variant="ghost" size="sm" className="shrink-0">
+              <MoreVertical className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit(loan.id)}>
-              <Pencil className="w-4 h-4 mr-2" />
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem
+              variant="destructive"
               onClick={() => onDelete(loan.id)}
-              className="text-destructive"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -105,7 +103,7 @@ export function LoanCard({ loan, onEdit, onDelete }: LoanCardProps) {
         </div>
 
         {/* Details grid */}
-        <div className="grid grid-cols-3 gap-3 pt-1 border-t">
+        <div className="grid grid-cols-3 gap-3 pt-3 border-t">
           <div>
             <p className="text-xs text-muted-foreground">Rate</p>
             <p className="text-sm font-semibold tabular-nums">
