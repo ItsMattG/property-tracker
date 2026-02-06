@@ -233,6 +233,7 @@ export const suggestionStatusEnum = pgEnum("suggestion_status", [
   "pending",
   "accepted",
   "rejected",
+  "failed",
 ]);
 
 export const depreciationCategoryEnum = pgEnum("depreciation_category", [

@@ -13,10 +13,15 @@ export default function BankingCallbackPage() {
 
   const processConnection = trpc.banking.processConnection.useMutation({
     onSuccess: (data) => {
-      toast.success(
-        `Connected ${data.accountsAdded} account${data.accountsAdded !== 1 ? "s" : ""} and imported ${data.totalTransactions} transactions`
-      );
-      router.push("/banking");
+      if (data.accountsAdded > 0) {
+        toast.success(
+          `Connected ${data.accountsAdded} account${data.accountsAdded !== 1 ? "s" : ""}. Assign properties to start importing.`
+        );
+        router.push(`/banking/assign?accounts=${data.newAccountIds.join(",")}`);
+      } else {
+        toast.info("No new accounts found");
+        router.push("/banking");
+      }
     },
     onError: (error) => {
       toast.error(`Connection failed: ${error.message}`);

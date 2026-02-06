@@ -421,106 +421,39 @@ export const bankingRouter = router({
       const existingBasiqIds = new Set(existingAccounts.map((a) => a.basiqAccountId));
 
       let accountsAdded = 0;
+      const newAccounts: Array<{ id: string; accountName: string; institution: string; accountType: string }> = [];
+
       for (const acct of basiqAccounts) {
         if (existingBasiqIds.has(acct.id)) continue;
 
-        await ctx.db.insert(bankAccounts).values({
+        const accountType = (["transaction", "savings", "mortgage", "offset", "credit_card", "line_of_credit"].includes(acct.class?.type)
+          ? acct.class.type
+          : "transaction") as "transaction";
+
+        const [inserted] = await ctx.db.insert(bankAccounts).values({
           userId: ctx.portfolio.ownerId,
           basiqAccountId: acct.id,
           basiqConnectionId: acct.connection,
           accountName: acct.name,
           accountNumberMasked: acct.accountNo ? `****${acct.accountNo.slice(-4)}` : null,
-          accountType: (["transaction", "savings", "mortgage", "offset", "credit_card", "line_of_credit"].includes(acct.class?.type)
-            ? acct.class.type
-            : "transaction") as "transaction",
+          accountType,
           institution: acct.institution,
           connectionStatus: "connected",
+        }).returning({ id: bankAccounts.id });
+
+        newAccounts.push({
+          id: inserted.id,
+          accountName: acct.name,
+          institution: acct.institution,
+          accountType,
         });
         accountsAdded++;
       }
 
-      // Trigger initial sync for new accounts (90 days back)
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-      const fromDate = ninetyDaysAgo.toISOString().split("T")[0];
+      // Don't import transactions yet - user must assign properties first
+      // Transactions are imported via syncAccount after property assignment
 
-      const allAccounts = await ctx.db.query.bankAccounts.findMany({
-        where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
-      });
-
-      let totalTransactions = 0;
-      for (const account of allAccounts) {
-        if (!account.lastSyncedAt) {
-          try {
-            const { data: basiqTransactions } = await basiqService.getTransactions(
-              user.basiqUserId,
-              account.basiqAccountId,
-              fromDate
-            );
-
-            for (const txn of basiqTransactions) {
-              try {
-                await ctx.db.insert(transactions).values({
-                  userId: ctx.portfolio.ownerId,
-                  bankAccountId: account.id,
-                  basiqTransactionId: txn.id,
-                  propertyId: account.defaultPropertyId,
-                  date: txn.postDate,
-                  description: txn.description,
-                  amount: txn.direction === "credit" ? txn.amount : `-${txn.amount}`,
-                  transactionType: txn.direction === "credit" ? "income" : "expense",
-                });
-                totalTransactions++;
-              } catch {
-                // Skip duplicates
-              }
-            }
-
-            await ctx.db
-              .update(bankAccounts)
-              .set({ lastSyncedAt: new Date(), lastSyncStatus: "success" })
-              .where(eq(bankAccounts.id, account.id));
-          } catch (error) {
-            logger.warn("Initial sync failed for account", {
-              accountId: account.id,
-              error: error instanceof Error ? error.message : String(error),
-            });
-          }
-        }
-      }
-
-      // Run AI categorization on all newly imported uncategorized transactions
-      if (totalTransactions > 0) {
-        const uncategorizedTxns = await ctx.db.query.transactions.findMany({
-          where: and(
-            eq(transactions.userId, ctx.portfolio.ownerId),
-            eq(transactions.category, "uncategorized"),
-            sql`${transactions.suggestionStatus} IS NULL`
-          ),
-          orderBy: [desc(transactions.createdAt)],
-          limit: 100,
-        });
-
-        if (uncategorizedTxns.length > 0) {
-          try {
-            await batchCategorize(
-              ctx.portfolio.ownerId,
-              uncategorizedTxns.map((t) => ({
-                id: t.id,
-                description: t.description,
-                amount: parseFloat(t.amount),
-              }))
-            );
-          } catch (error) {
-            logger.warn("AI categorization failed during initial import", {
-              error: error instanceof Error ? error.message : String(error),
-              transactionCount: uncategorizedTxns.length,
-            });
-          }
-        }
-      }
-
-      return { accountsAdded, totalTransactions };
+      return { accountsAdded, newAccountIds: newAccounts.map((a) => a.id) };
     }),
 
   connect: bankProcedure
