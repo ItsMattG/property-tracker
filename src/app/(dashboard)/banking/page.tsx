@@ -23,6 +23,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc/client";
 import {
   Landmark,
@@ -431,29 +442,42 @@ export default function BankingPage() {
                                 lastManualSyncAt={account.lastManualSyncAt}
                               />
                             )}
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-muted-foreground hover:text-destructive"
-                                    onClick={() => {
-                                      const confirmed = window.confirm(
-                                        `Remove "${account.nickname || account.accountName}"? This will also delete all imported transactions for this account.`
-                                      );
-                                      if (confirmed) {
-                                        removeAccount.mutate({ accountId: account.id });
-                                      }
-                                    }}
-                                    disabled={removeAccount.isPending}
+                            <AlertDialog>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-muted-foreground hover:text-destructive"
+                                        disabled={removeAccount.isPending}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Remove account</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove account</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Remove &ldquo;{account.nickname || account.accountName}&rdquo;? This will also delete all imported transactions for this account.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    variant="destructive"
+                                    onClick={() => removeAccount.mutate({ accountId: account.id })}
                                   >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Remove account</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       );

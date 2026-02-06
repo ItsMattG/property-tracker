@@ -3,6 +3,7 @@
 import { AlertTriangle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 interface ConnectionAlertBannerProps {
@@ -18,6 +19,9 @@ export function ConnectionAlertBanner({
   onDismiss,
   className,
 }: ConnectionAlertBannerProps) {
+  const pathname = usePathname();
+  const isOnBankingPage = pathname === "/banking";
+
   if (alertCount === 0) {
     return null;
   }
@@ -47,9 +51,11 @@ export function ConnectionAlertBanner({
         <span className="text-sm font-medium">{message}</span>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/banking">View Details</Link>
-        </Button>
+        {!isOnBankingPage && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/banking">View Details</Link>
+          </Button>
+        )}
         {onDismiss && (
           <Button
             variant="ghost"
