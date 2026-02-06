@@ -290,8 +290,8 @@ export function Sidebar() {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "border-r border-border bg-card h-screen sticky top-0 p-4 transition-all duration-200 flex flex-col overflow-hidden",
-          isCollapsed ? "w-16" : "w-64"
+          "border-r border-border bg-card h-screen sticky top-0 p-4 transition-all duration-200 flex flex-col overflow-hidden shrink-0",
+          isCollapsed ? "w-16" : "w-56 xl:w-64"
         )}
       >
         {/* Logo */}

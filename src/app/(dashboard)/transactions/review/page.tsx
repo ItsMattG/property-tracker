@@ -13,6 +13,7 @@ import { Sparkles, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errors";
+import { broadcastInvalidation } from "@/lib/trpc/cross-tab";
 
 type ConfidenceFilter = "all" | "high" | "low";
 
@@ -26,11 +27,17 @@ export default function ReviewPage() {
     limit: 50,
   });
 
+  const invalidateAll = () => {
+    utils.categorization.getPendingReview.invalidate();
+    utils.categorization.getPendingCount.invalidate();
+    utils.transaction.list.invalidate();
+    broadcastInvalidation(["transaction.list", "categorization.getPendingCount"]);
+  };
+
   const acceptMutation = trpc.categorization.acceptSuggestion.useMutation({
     onSuccess: () => {
       toast.success("Suggestion accepted");
-      utils.categorization.getPendingReview.invalidate();
-      utils.categorization.getPendingCount.invalidate();
+      invalidateAll();
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));
@@ -40,8 +47,7 @@ export default function ReviewPage() {
   const rejectMutation = trpc.categorization.rejectSuggestion.useMutation({
     onSuccess: () => {
       toast.success("Category updated");
-      utils.categorization.getPendingReview.invalidate();
-      utils.categorization.getPendingCount.invalidate();
+      invalidateAll();
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));
@@ -51,8 +57,7 @@ export default function ReviewPage() {
   const batchAcceptMutation = trpc.categorization.batchAccept.useMutation({
     onSuccess: (result) => {
       toast.success(`${result.accepted} transactions categorized`);
-      utils.categorization.getPendingReview.invalidate();
-      utils.categorization.getPendingCount.invalidate();
+      invalidateAll();
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));

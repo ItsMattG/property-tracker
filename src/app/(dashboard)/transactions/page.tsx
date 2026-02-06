@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
@@ -14,6 +14,7 @@ import type { Category, TransactionFilterInput } from "@/types/category";
 import { useTour } from "@/hooks/useTour";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
+import { onCrossTabInvalidation } from "@/lib/trpc/cross-tab";
 import { TransactionTableSkeleton } from "@/components/skeletons";
 
 type ViewMode = "transactions" | "reconciliation";
@@ -29,6 +30,14 @@ export default function TransactionsPage() {
   const offset = (page - 1) * PAGE_SIZE;
 
   const utils = trpc.useUtils();
+
+  useEffect(() => {
+    return onCrossTabInvalidation((keys) => {
+      if (keys.includes("transaction.list")) {
+        utils.transaction.list.invalidate();
+      }
+    });
+  }, [utils]);
 
   const { data: properties } = trpc.property.list.useQuery();
   const {

@@ -138,6 +138,7 @@ export const categorizationRouter = router({
           category: txn.suggestedCategory,
           transactionType,
           isDeductible,
+          isVerified: true,
           suggestionStatus: "accepted",
           updatedAt: new Date(),
         })
@@ -201,6 +202,7 @@ export const categorizationRouter = router({
           category: input.newCategory as typeof transactions.category.enumValues[number],
           transactionType,
           isDeductible,
+          isVerified: true,
           suggestionStatus: "rejected",
           updatedAt: new Date(),
         })
@@ -261,6 +263,7 @@ export const categorizationRouter = router({
                 category: txn.suggestedCategory,
                 transactionType,
                 isDeductible,
+                isVerified: true,
                 suggestionStatus: "accepted",
                 updatedAt: new Date(),
               })
