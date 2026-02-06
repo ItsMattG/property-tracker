@@ -12,11 +12,14 @@ import { testDb, cleanupTestData, closeDbConnection, schema } from "./fixtures/d
 import { createSandboxUser, deleteSandboxUser, sandboxCredentials } from "./fixtures/basiq-sandbox";
 import { eq, and } from "drizzle-orm";
 
+const BASIQ_API_KEY = process.env.BASIQ_API_KEY;
+
 let basiqSandboxUserId: string | null = null;
 let testPropertyId: string | null = null;
 
 test.describe.serial("Core Loop - Happy Path", () => {
   test.beforeAll(async () => {
+    if (!BASIQ_API_KEY) return; // Tests will skip individually
     // Create a Basiq sandbox user for testing
     basiqSandboxUserId = await createSandboxUser(`e2e-test-${Date.now()}@bricktrack.test`);
   });
@@ -44,6 +47,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
   });
 
   test("Step 1: Create a test property", async ({ authenticatedPage: page }) => {
+    test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set - skipping Basiq-dependent tests");
     await page.goto("/properties/new");
     await expect(page).toHaveURL(/properties\/new/);
 
@@ -73,6 +77,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
   });
 
   test("Step 2: Connect bank account via Basiq", async ({ authenticatedPage: page }) => {
+    test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/banking/connect");
     await expect(page.getByRole("heading", { name: /connect your bank/i })).toBeVisible();
 
@@ -115,6 +120,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
   });
 
   test("Step 3: Link account to property", async ({ authenticatedPage: page }) => {
+    test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     test.skip(!testPropertyId, "No test property created");
 
     await page.goto("/banking");
@@ -127,6 +133,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
   });
 
   test("Step 4: Sync transactions", async ({ authenticatedPage: page }) => {
+    test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/banking");
 
     // Find and click the Sync button
@@ -144,11 +151,13 @@ test.describe.serial("Core Loop - Happy Path", () => {
   });
 
   test("Step 5: Verify transactions page loads", async ({ authenticatedPage: page }) => {
+    test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/transactions");
     await expect(page.getByRole("heading", { name: /transaction/i })).toBeVisible({ timeout: 10000 });
   });
 
   test("Step 6: Export - Reports export page", async ({ authenticatedPage: page }) => {
+    test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/reports/export");
     await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
 
@@ -165,6 +174,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
   });
 
   test("Step 7: Export - CSV export page", async ({ authenticatedPage: page }) => {
+    test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/export");
     await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
 
@@ -176,6 +186,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
 test.describe.serial("Core Loop - Bank Connection Failure", () => {
   test("should handle bank connection error gracefully", async ({ authenticatedPage: page }) => {
+    test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/banking/connect");
     await expect(page.getByRole("heading", { name: /connect your bank/i })).toBeVisible();
 

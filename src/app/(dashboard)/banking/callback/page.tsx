@@ -28,7 +28,7 @@ export default function BankingCallbackPage() {
     if (hasProcessed.current) return;
     hasProcessed.current = true;
 
-    const jobIds = searchParams.get("jobIds")?.split(",").filter(Boolean);
+    const jobIds = searchParams?.get("jobIds")?.split(",").filter(Boolean);
     processConnection.mutate({ jobIds: jobIds ?? undefined });
   }, [searchParams, processConnection]);
 
