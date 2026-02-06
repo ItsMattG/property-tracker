@@ -1,6 +1,11 @@
 import { test, expect } from "./fixtures/auth";
+import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Portfolio (Seeded Data)", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.portfolio, "portfolio feature flag is disabled");
+  });
+
   test.beforeEach(async ({ authenticatedPage: page }) => {
     await page.goto("/portfolio");
     await page.waitForLoadState("domcontentloaded");
