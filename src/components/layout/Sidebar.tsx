@@ -28,7 +28,6 @@ import {
   Calculator,
   Compass,
   MessageSquarePlus,
-  Bug,
   Mail,
   CheckSquare,
   Ticket,
@@ -90,8 +89,6 @@ const settingsItems: Array<{
   { href: "/settings/team", label: "Team", icon: Users, featureFlag: "team" },
   { href: "/settings/audit-log", label: "Audit Log", icon: History, featureFlag: "auditLog" },
   { href: "/settings/feature-requests", label: "Feature Requests", icon: MessageSquarePlus },
-  { href: "/settings/bug-reports", label: "Bug Reports", icon: Bug },
-  { href: "/settings/support", label: "Support", icon: Ticket },
   { href: "/settings/support-admin", label: "Support Admin", icon: Ticket, featureFlag: "supportAdmin" },
 ];
 
