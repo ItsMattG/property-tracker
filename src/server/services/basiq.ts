@@ -153,10 +153,19 @@ class BasiqService {
     throw lastError || new Error("Request failed after max retries");
   }
 
-  async createUser(email: string): Promise<BasiqUser> {
+  async createUser(email: string, mobile?: string): Promise<BasiqUser> {
+    const body: Record<string, string> = { email };
+    if (mobile) body.mobile = mobile;
     return this.request<BasiqUser>("/users", {
       method: "POST",
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(body),
+    });
+  }
+
+  async updateUser(userId: string, data: { mobile?: string; email?: string }): Promise<BasiqUser> {
+    return this.request<BasiqUser>(`/users/${userId}`, {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   }
 

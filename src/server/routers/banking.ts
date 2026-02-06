@@ -504,15 +504,22 @@ export const bankingRouter = router({
 
       let basiqUserId = user.basiqUserId;
 
+      // Basiq requires a mobile number for auth links.
+      // Use a placeholder for sandbox/dev if user has no phone.
+      const mobile = "+61400000000";
+
       // Create Basiq user if needed
       if (!basiqUserId) {
-        const basiqUser = await basiqService.createUser(user.email);
+        const basiqUser = await basiqService.createUser(user.email, mobile);
         basiqUserId = basiqUser.id;
 
         await ctx.db
           .update(users)
           .set({ basiqUserId })
           .where(eq(users.id, user.id));
+      } else {
+        // Ensure existing Basiq user has a mobile (required for auth links)
+        await basiqService.updateUser(basiqUserId, { mobile });
       }
 
       // Create auth link for consent flow
