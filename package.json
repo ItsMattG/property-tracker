@@ -119,7 +119,6 @@
     "@clerk/testing": "^1.13.31",
     "@playwright/test": "^1.58.0",
     "@tailwindcss/postcss": "^4",
-    "@tailwindcss/typography": "^0.5.19",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
