@@ -1,29 +1,30 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Landmark, Shield, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc/client";
 import { useTour } from "@/hooks/useTour";
 
 export default function BankingConnectPage() {
-  const [isConnecting, setIsConnecting] = useState(false);
   useTour({ tourId: "banking" });
 
-  const handleConnect = async () => {
-    setIsConnecting(true);
-    try {
-      // In production, this would call the Basiq API to create a user and auth link
-      // For now, show a placeholder message
-      toast.info("Basiq connection flow would open here. Configure your Basiq API key to enable this feature.");
-    } catch (error) {
-      toast.error("Failed to start connection flow");
-    } finally {
-      setIsConnecting(false);
-    }
+  const connectMutation = trpc.banking.connect.useMutation({
+    onSuccess: (data) => {
+      window.location.href = data.url;
+    },
+    onError: (error) => {
+      toast.error(`Failed to start connection: ${error.message}`);
+    },
+  });
+
+  const handleConnect = () => {
+    connectMutation.mutate();
   };
+
+  const isConnecting = connectMutation.isPending;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

@@ -237,6 +237,7 @@ jobs:
           E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
           E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
           E2E_CLERK_USER_ID: ${{ secrets.E2E_CLERK_USER_ID }}
+          BASIQ_API_KEY: ${{ secrets.BASIQ_API_KEY }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
