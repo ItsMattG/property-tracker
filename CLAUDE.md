@@ -1,5 +1,13 @@
 # Claude Code Rules
 
+## CRITICAL: Worktree Required Before Any Feature/Task Work
+**NEVER start feature or task work in the main repository directory.** Before writing any implementation code, you MUST:
+1. Create a git worktree: `git worktree add ~/worktrees/property-tracker/<feature-name> -b feature/<feature-name>`
+2. Change into it: `cd ~/worktrees/property-tracker/<feature-name>`
+3. Do ALL work in the worktree directory
+
+This applies to all feature development, bug fixes, and task work. Only trivial doc/config edits (e.g., updating CLAUDE.md) may be done directly on main. See the "Git Worktrees" section below for full details.
+
 ## Project Status (as of 2026-02-02)
 V0.1, v0.2, and v0.3 roadmaps are **complete**. V0.4 is **in progress** (14/15 done).
 
