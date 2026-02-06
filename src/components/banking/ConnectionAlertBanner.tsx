@@ -60,7 +60,7 @@ export function ConnectionAlertBanner({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 cursor-pointer"
             onClick={onDismiss}
           >
             <X className="w-4 h-4" />
