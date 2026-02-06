@@ -40,5 +40,110 @@
     "issue": "No link back to home page",
     "severity": "minor",
     "page": "/sign-in"
+  },
+  {
+    "page": "/dashboard",
+    "element": "Loading state",
+    "state": "initial",
+    "issue": "No visible loading indicator (skeleton or spinner) during load",
+    "severity": "suggestion"
+  },
+  {
+    "page": "/properties",
+    "element": "Loading state",
+    "state": "initial",
+    "issue": "No visible loading indicator (skeleton or spinner) during load",
+    "severity": "suggestion"
+  },
+  {
+    "page": "/transactions",
+    "element": "Loading state",
+    "state": "initial",
+    "issue": "No visible loading indicator (skeleton or spinner) during load",
+    "severity": "suggestion"
+  },
+  {
+    "page": "/banking",
+    "element": "Loading state",
+    "state": "initial",
+    "issue": "No visible loading indicator (skeleton or spinner) during load",
+    "severity": "suggestion"
+  },
+  {
+    "page": "/reports/tax",
+    "element": "Loading state",
+    "state": "initial",
+    "issue": "No visible loading indicator (skeleton or spinner) during load",
+    "severity": "suggestion"
+  },
+  {
+    "page": "/settings/billing",
+    "element": "Loading state",
+    "state": "initial",
+    "issue": "No visible loading indicator (skeleton or spinner) during load",
+    "severity": "suggestion"
+  },
+  {
+    "element": "Error state",
+    "state": "displayed",
+    "issue": "Error state has no retry/reconnect action",
+    "severity": "minor",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Banking heading",
+    "state": "loaded",
+    "issue": "No banking section heading visible",
+    "severity": "major",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Bank accounts",
+    "state": "loaded",
+    "issue": "No bank accounts visible and no empty state",
+    "severity": "critical",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Connect Bank button",
+    "state": "loaded",
+    "issue": "No Connect Bank button or link visible",
+    "severity": "major",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Properties heading",
+    "state": "loaded",
+    "issue": "Properties heading not visible",
+    "severity": "major",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Properties list",
+    "state": "loaded",
+    "issue": "No properties visible and no empty state",
+    "severity": "critical",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Transactions table",
+    "state": "loaded",
+    "issue": "No transactions table or empty state visible",
+    "severity": "critical",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Stats section",
+    "state": "loaded",
+    "issue": "No stats visible on dashboard",
+    "severity": "major",
+    "page": "/sign-in"
+  },
+  {
+    "element": "Sidebar",
+    "state": "loaded",
+    "issue": "Sidebar navigation not visible",
+    "severity": "critical",
+    "page": "/sign-in"
   }
 ]

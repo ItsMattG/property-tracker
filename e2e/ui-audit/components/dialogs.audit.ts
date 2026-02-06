@@ -1,6 +1,10 @@
 import { authenticatedTest as test, expect } from "../fixtures/demo-account";
 
 test.describe("Dialog Components Audit", () => {
+  test.beforeEach(() => {
+    test.fixme(!process.env.E2E_DEMO_USER_EMAIL, "Demo account credentials not configured");
+  });
+
   test("captures confirm dialog states", async ({ audit }) => {
     const { page, addFinding, captureState } = audit;
 
