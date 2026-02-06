@@ -9,6 +9,7 @@ import {
 } from "../db/schema";
 import { eq, and, desc, sql, asc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { sendEmailNotification } from "@/server/services/notification";
 
 export const feedbackRouter = router({
   // List all feature requests (public)
@@ -191,7 +192,7 @@ export const feedbackRouter = router({
       return comment;
     }),
 
-  // Submit bug report (authenticated)
+  // Submit bug report (authenticated) — sends email instead of DB insert
   submitBug: protectedProcedure
     .input(
       z.object({
@@ -203,19 +204,33 @@ export const feedbackRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [bugReport] = await ctx.db
-        .insert(bugReports)
-        .values({
-          userId: ctx.user.id,
-          description: input.description,
-          stepsToReproduce: input.stepsToReproduce,
-          severity: input.severity,
-          browserInfo: input.browserInfo,
-          currentPage: input.currentPage,
-        })
-        .returning();
+      const reporterEmail = ctx.user.email;
+      const reporterName = ctx.user.name || reporterEmail;
 
-      return { id: bugReport.id };
+      const browserInfoHtml = input.browserInfo
+        ? Object.entries(input.browserInfo)
+            .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
+            .join("")
+        : "<li>Not provided</li>";
+
+      const html = `
+        <h2>Bug Report from ${reporterName}</h2>
+        <p><strong>Severity:</strong> ${input.severity.toUpperCase()}</p>
+        <p><strong>Reporter:</strong> ${reporterEmail}</p>
+        <p><strong>Page:</strong> ${input.currentPage || "Unknown"}</p>
+        <h3>Description</h3>
+        <p>${input.description.replace(/\n/g, "<br>")}</p>
+        ${input.stepsToReproduce ? `<h3>Steps to Reproduce</h3><p>${input.stepsToReproduce.replace(/\n/g, "<br>")}</p>` : ""}
+        <h3>Browser Info</h3>
+        <ul>${browserInfoHtml}</ul>
+      `.trim();
+
+      const recipient = process.env.BUG_REPORT_EMAIL || "bugs@bricktrack.com.au";
+      const subject = `[Bug Report] [${input.severity.toUpperCase()}] ${input.description.slice(0, 80)}`;
+
+      await sendEmailNotification(recipient, subject, html);
+
+      return { id: "emailed" };
     }),
 
   // List bug reports (admin only - check env ADMIN_USER_IDS)
