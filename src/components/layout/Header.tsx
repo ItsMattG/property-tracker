@@ -166,8 +166,8 @@ function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
 export function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
-  const pageTitle = getPageTitle(pathname);
-  const breadcrumbs = getBreadcrumbs(pathname);
+  const pageTitle = getPageTitle(pathname ?? "");
+  const breadcrumbs = getBreadcrumbs(pathname ?? "");
 
   return (
     <>

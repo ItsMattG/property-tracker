@@ -72,7 +72,7 @@ export function PortfolioValueChart() {
   }
 
   // Generate trailing 6-month placeholder data based on current property values
-  const totalValue = properties.reduce((sum, p) => sum + (Number(p.currentValue) || Number(p.purchasePrice) || 0), 0);
+  const totalValue = properties.reduce((sum, p) => sum + (Number(p.purchasePrice) || 0), 0);
   const months = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
   const data = months.map((month, i) => ({
     month,
