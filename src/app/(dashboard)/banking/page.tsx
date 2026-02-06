@@ -31,6 +31,7 @@ import {
   ChevronDown,
   Building2,
   Pencil,
+  Trash2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
@@ -167,6 +168,17 @@ export default function BankingPage() {
     onSuccess: () => {
       toast.success("Property updated");
       utils.banking.listAccounts.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const removeAccount = trpc.banking.removeAccount.useMutation({
+    onSuccess: () => {
+      toast.success("Account removed");
+      utils.banking.listAccounts.invalidate();
+      utils.banking.listAlerts.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -396,7 +408,7 @@ export default function BankingPage() {
                           </div>
 
                           {/* Actions */}
-                          <div className="flex-shrink-0">
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             {needsReauth ? (
                               <Button
                                 variant="destructive"
@@ -419,6 +431,29 @@ export default function BankingPage() {
                                 lastManualSyncAt={account.lastManualSyncAt}
                               />
                             )}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-muted-foreground hover:text-destructive"
+                                    onClick={() => {
+                                      const confirmed = window.confirm(
+                                        `Remove "${account.nickname || account.accountName}"? This will also delete all imported transactions for this account.`
+                                      );
+                                      if (confirmed) {
+                                        removeAccount.mutate({ accountId: account.id });
+                                      }
+                                    }}
+                                    disabled={removeAccount.isPending}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Remove account</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </div>
                       );

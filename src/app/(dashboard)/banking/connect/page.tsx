@@ -1,11 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Landmark, Shield, RefreshCw } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, Landmark, Shield, RefreshCw, Home } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc/client";
@@ -36,6 +43,16 @@ function isValidAuMobile(value: string): boolean {
 export default function BankingConnectPage() {
   useTour({ tourId: "banking" });
   const [mobile, setMobile] = useState("");
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+
+  const { data: properties, isLoading: propertiesLoading } = trpc.property.list.useQuery();
+
+  // Auto-select if only one property
+  useEffect(() => {
+    if (properties?.length === 1 && !selectedPropertyId) {
+      setSelectedPropertyId(properties[0].id);
+    }
+  }, [properties, selectedPropertyId]);
 
   const connectMutation = trpc.banking.connect.useMutation({
     onSuccess: (data) => {
@@ -51,10 +68,49 @@ export default function BankingConnectPage() {
       toast.error("Please enter a valid Australian mobile number (04XX XXX XXX)");
       return;
     }
-    connectMutation.mutate({ mobile: toE164(mobile) });
+    if (!selectedPropertyId) {
+      toast.error("Please select a property for this bank account");
+      return;
+    }
+    connectMutation.mutate({
+      mobile: toE164(mobile),
+      propertyId: selectedPropertyId,
+    });
   };
 
   const isConnecting = connectMutation.isPending;
+  const hasMultipleProperties = (properties?.length ?? 0) > 1;
+  const hasNoProperties = !propertiesLoading && properties?.length === 0;
+  const canConnect = isValidAuMobile(mobile) && !!selectedPropertyId && !isConnecting;
+
+  // Redirect to create property if none exist
+  if (hasNoProperties) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/banking">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Link>
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center space-y-4">
+            <Home className="w-12 h-12 text-muted-foreground mx-auto" />
+            <h2 className="text-lg font-semibold">Add a property first</h2>
+            <p className="text-muted-foreground">
+              You need at least one property before connecting a bank account.
+              Transactions will be linked to your property automatically.
+            </p>
+            <Button asChild>
+              <Link href="/properties/create">Add Property</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -129,6 +185,28 @@ export default function BankingConnectPage() {
             </div>
           </div>
 
+          {/* Property selection - shown for multi-property users */}
+          {hasMultipleProperties && (
+            <div className="border-t pt-6 space-y-2">
+              <Label htmlFor="property">Property</Label>
+              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
+                <SelectTrigger id="property" className="w-full">
+                  <SelectValue placeholder="Which property is this account for?" />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties?.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.address}, {property.suburb}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                All connected accounts will be linked to this property. You can reassign individual accounts later.
+              </p>
+            </div>
+          )}
+
           <div className="border-t pt-6 space-y-2">
             <Label htmlFor="mobile">Mobile number</Label>
             <Input
@@ -149,7 +227,7 @@ export default function BankingConnectPage() {
             onClick={handleConnect}
             className="w-full"
             size="lg"
-            disabled={isConnecting || !isValidAuMobile(mobile)}
+            disabled={!canConnect}
           >
             {isConnecting ? "Connecting..." : "Connect Bank Account"}
           </Button>

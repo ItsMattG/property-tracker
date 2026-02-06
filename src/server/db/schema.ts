@@ -15,6 +15,7 @@ import {
   customType,
   serial,
   real,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -511,6 +512,7 @@ export const users = pgTable("users", {
   name: text("name"),
   mobilePasswordHash: text("mobile_password_hash"),
   basiqUserId: text("basiq_user_id"),
+  pendingBankPropertyId: uuid("pending_bank_property_id").references((): AnyPgColumn => properties.id, { onDelete: "set null" }),
   trialStartedAt: timestamp("trial_started_at"),
   trialEndsAt: timestamp("trial_ends_at"),
   trialPlan: varchar("trial_plan", { length: 20 }).default("pro"),
