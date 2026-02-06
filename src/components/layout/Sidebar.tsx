@@ -37,7 +37,6 @@ import {
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
 import { EntitySwitcher } from "@/components/entities";
-import { FeedbackButton } from "@/components/feedback";
 import { useSidebar } from "./SidebarProvider";
 import { featureFlags, type FeatureFlag } from "@/config/feature-flags";
 import {
@@ -245,13 +244,6 @@ export function Sidebar() {
             );
           })}
         </nav>
-
-        {/* Feedback Button */}
-        {!isCollapsed && (
-          <div className="mt-4 px-1">
-            <FeedbackButton />
-          </div>
-        )}
 
         {/* Settings Section */}
         <div className="mt-4 pt-4 border-t border-border">

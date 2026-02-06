@@ -7,6 +7,7 @@ import { AlertBadge } from "@/components/alerts/AlertBadge";
 import { WhatsNewButton } from "@/components/changelog/WhatsNewButton";
 import { WhatsNewDrawer } from "@/components/changelog/WhatsNewDrawer";
 import { HelpButton } from "@/components/onboarding/HelpButton";
+import { FeedbackButton } from "@/components/feedback";
 import { featureFlags } from "@/config/feature-flags";
 
 export function Header() {
@@ -20,6 +21,7 @@ export function Header() {
         </div>
         <div className="flex items-center gap-4" data-tour="quick-actions">
           <HelpButton />
+          <FeedbackButton />
           <AlertBadge />
           {featureFlags.whatsNew && (
             <WhatsNewButton onClick={() => setDrawerOpen(true)} />
