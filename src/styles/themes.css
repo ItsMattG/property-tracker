@@ -1,8 +1,8 @@
 /* Default Theme: Forest (Green) - Accessibility-compliant */
 :root {
 	/* Primary brand colors - GREEN ACCENT */
-	--color-primary: #16a34a;
-	--color-primary-hover: #15803d;
+	--color-primary: #15803d;
+	--color-primary-hover: #166534;
 	--color-primary-light: #dcfce7;
 	--color-primary-foreground: #ffffff;
 
@@ -21,7 +21,7 @@
 	/* Text - WCAG AA compliant (4.5:1 minimum) */
 	--text-primary: #111827;
 	--text-secondary: #4b5563;
-	--text-muted: #6b7280;
+	--text-muted: #636b75;
 	--text-inverse: #ffffff;
 
 	/* Borders - neutral and visible */
@@ -77,8 +77,8 @@
 
 /* Friendly Theme */
 [data-theme="friendly"] {
-	--color-primary: #059669;
-	--color-primary-hover: #047857;
+	--color-primary: #047857;
+	--color-primary-hover: #065f46;
 	--color-primary-light: #d1fae5;
 	--color-primary-foreground: #ffffff;
 	--bg-primary: #fafaf9;
