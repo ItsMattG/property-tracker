@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { loans } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, lt } from "drizzle-orm";
 
 const loanSchema = z.object({
   propertyId: z.string().uuid(),
@@ -18,7 +18,23 @@ const loanSchema = z.object({
   offsetAccountId: z.string().uuid().optional(),
 });
 
+const STALE_DAYS = 90;
+
 export const loanRouter = router({
+  stale: protectedProcedure.query(async ({ ctx }) => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - STALE_DAYS);
+
+    return ctx.db.query.loans.findMany({
+      where: and(
+        eq(loans.userId, ctx.portfolio.ownerId),
+        lt(loans.updatedAt, cutoff)
+      ),
+      with: { property: true },
+      orderBy: (loans, { asc }) => [asc(loans.updatedAt)],
+    });
+  }),
+
   list: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid().optional() }).optional())
     .query(async ({ ctx, input }) => {

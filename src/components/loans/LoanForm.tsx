@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -47,6 +48,7 @@ interface LoanFormProps {
 }
 
 export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) {
+  const router = useRouter();
   const { data: properties } = trpc.property.list.useQuery();
 
   const form = useForm<LoanFormValues>({
@@ -283,16 +285,25 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
           />
         </div>
 
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            "Save Loan"
-          )}
-        </Button>
+        <div className="flex items-center gap-3 pt-2">
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Loan"
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/loans")}
+          >
+            Cancel
+          </Button>
+        </div>
       </form>
     </Form>
   );
