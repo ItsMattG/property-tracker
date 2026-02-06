@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure, bankProcedure } from "../trpc";
-import { anomalyAlerts, bankAccounts, connectionAlerts, transactions, users } from "../db/schema";
+import { anomalyAlerts, bankAccounts, connectionAlerts, properties, transactions, users } from "../db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { batchCategorize } from "../services/categorization";
 import { TRPCError } from "@trpc/server";
@@ -443,6 +443,27 @@ export const bankingRouter = router({
       return account;
     }),
 
+  removeAccount: writeProcedure
+    .input(z.object({ accountId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      // Verify ownership
+      const account = await ctx.db.query.bankAccounts.findFirst({
+        where: and(
+          eq(bankAccounts.id, input.accountId),
+          eq(bankAccounts.userId, ctx.portfolio.ownerId)
+        ),
+      });
+
+      if (!account) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
+      }
+
+      // Delete bank account — transactions and connection_alerts cascade-delete via FK
+      await ctx.db.delete(bankAccounts).where(eq(bankAccounts.id, input.accountId));
+
+      return { success: true };
+    }),
+
   processConnection: bankProcedure
     .input(z.object({ jobIds: z.array(z.string()).optional() }))
     .mutation(async ({ ctx, input }) => {
@@ -497,14 +518,29 @@ export const bankingRouter = router({
         accountsAdded++;
       }
 
-      // Don't import transactions yet - user must assign properties first
-      // Transactions are imported via syncAccount after property assignment
+      // Check for pre-selected property from connect page
+      const pendingPropertyId = user.pendingBankPropertyId;
 
-      return { accountsAdded, newAccountIds: newAccounts.map((a) => a.id) };
+      // Clear the pending property regardless of outcome
+      if (pendingPropertyId) {
+        await ctx.db
+          .update(users)
+          .set({ pendingBankPropertyId: null })
+          .where(eq(users.id, ctx.portfolio.ownerId));
+      }
+
+      return {
+        accountsAdded,
+        newAccountIds: newAccounts.map((a) => a.id),
+        pendingPropertyId: pendingPropertyId ?? null,
+      };
     }),
 
   connect: bankProcedure
-    .input(z.object({ mobile: z.string().regex(/^\+61\d{9}$/, "Must be a valid Australian mobile number (+61...)") }))
+    .input(z.object({
+      mobile: z.string().regex(/^\+61\d{9}$/, "Must be a valid Australian mobile number (+61...)"),
+      propertyId: z.string().uuid().optional(),
+    }))
     .mutation(async ({ ctx, input }) => {
       // Look up user's basiqUserId
       const user = await ctx.db.query.users.findFirst({
@@ -516,7 +552,24 @@ export const bankingRouter = router({
       }
 
       let basiqUserId = user.basiqUserId;
-      const { mobile } = input;
+      const { mobile, propertyId } = input;
+
+      // Store the pre-selected property for auto-assignment after Basiq callback
+      if (propertyId) {
+        const property = await ctx.db.query.properties.findFirst({
+          where: and(
+            eq(properties.id, propertyId),
+            eq(properties.userId, ctx.portfolio.ownerId)
+          ),
+        });
+        if (!property) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
+        }
+        await ctx.db
+          .update(users)
+          .set({ pendingBankPropertyId: propertyId })
+          .where(eq(users.id, user.id));
+      }
 
       // Create Basiq user if needed
       if (!basiqUserId) {

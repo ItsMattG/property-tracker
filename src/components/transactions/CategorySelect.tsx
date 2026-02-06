@@ -15,22 +15,27 @@ import {
   capitalCategories,
   otherCategories,
 } from "@/lib/categories";
+import { cn } from "@/lib/utils";
 
 interface CategorySelectProps {
   value?: string;
   onValueChange: (value: string) => void;
   disabled?: boolean;
+  placeholder?: string;
+  compact?: boolean;
 }
 
 export function CategorySelect({
   value,
   onValueChange,
   disabled,
+  placeholder = "Select category",
+  compact = false,
 }: CategorySelectProps) {
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger className="w-[200px]">
-        <SelectValue placeholder="Select category" />
+      <SelectTrigger className={cn(compact ? "w-[200px] h-8 text-xs" : "w-[200px]")}>
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>

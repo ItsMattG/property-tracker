@@ -51,22 +51,23 @@ export const categorizationRouter = router({
         .from(transactions)
         .where(and(...conditions));
 
-      // Group by normalized merchant name for batch UI
+      // Group by normalized merchant name + suggested category for batch UI
       const grouped = new Map<string, typeof results>();
       for (const txn of results) {
         const merchantKey = txn.description.toLowerCase().split(" ").slice(0, 2).join(" ");
-        if (!grouped.has(merchantKey)) {
-          grouped.set(merchantKey, []);
+        const groupKey = `${merchantKey}::${txn.suggestedCategory || "uncategorized"}`;
+        if (!grouped.has(groupKey)) {
+          grouped.set(groupKey, []);
         }
-        grouped.get(merchantKey)!.push(txn);
+        grouped.get(groupKey)!.push(txn);
       }
 
       return {
         transactions: results,
         total,
         hasMore: input.offset + results.length < total,
-        groupedByMerchant: Array.from(grouped.entries()).map(([merchant, txns]) => ({
-          merchantKey: merchant,
+        groupedByMerchant: Array.from(grouped.entries()).map(([groupKey, txns]) => ({
+          merchantKey: groupKey.split("::")[0],
           transactions: txns,
           suggestedCategory: txns[0].suggestedCategory,
           avgConfidence:
@@ -138,6 +139,7 @@ export const categorizationRouter = router({
           category: txn.suggestedCategory,
           transactionType,
           isDeductible,
+          isVerified: true,
           suggestionStatus: "accepted",
           updatedAt: new Date(),
         })
@@ -201,6 +203,7 @@ export const categorizationRouter = router({
           category: input.newCategory as typeof transactions.category.enumValues[number],
           transactionType,
           isDeductible,
+          isVerified: true,
           suggestionStatus: "rejected",
           updatedAt: new Date(),
         })
@@ -261,6 +264,7 @@ export const categorizationRouter = router({
                 category: txn.suggestedCategory,
                 transactionType,
                 isDeductible,
+                isVerified: true,
                 suggestionStatus: "accepted",
                 updatedAt: new Date(),
               })

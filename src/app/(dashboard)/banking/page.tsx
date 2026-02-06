@@ -23,6 +23,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc/client";
 import {
   Landmark,
@@ -31,6 +42,7 @@ import {
   ChevronDown,
   Building2,
   Pencil,
+  Trash2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
@@ -167,6 +179,17 @@ export default function BankingPage() {
     onSuccess: () => {
       toast.success("Property updated");
       utils.banking.listAccounts.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const removeAccount = trpc.banking.removeAccount.useMutation({
+    onSuccess: () => {
+      toast.success("Account removed");
+      utils.banking.listAccounts.invalidate();
+      utils.banking.listAlerts.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -396,7 +419,7 @@ export default function BankingPage() {
                           </div>
 
                           {/* Actions */}
-                          <div className="flex-shrink-0">
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             {needsReauth ? (
                               <Button
                                 variant="destructive"
@@ -419,6 +442,42 @@ export default function BankingPage() {
                                 lastManualSyncAt={account.lastManualSyncAt}
                               />
                             )}
+                            <AlertDialog>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-muted-foreground hover:text-destructive"
+                                        disabled={removeAccount.isPending}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Remove account</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remove account</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Remove &ldquo;{account.nickname || account.accountName}&rdquo;? This will also delete all imported transactions for this account.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    variant="destructive"
+                                    onClick={() => removeAccount.mutate({ accountId: account.id })}
+                                  >
+                                    Remove
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       );

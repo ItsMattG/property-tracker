@@ -13,6 +13,13 @@ import { Sparkles, RefreshCw, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errors";
+import { broadcastInvalidation } from "@/lib/trpc/cross-tab";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type ConfidenceFilter = "all" | "high" | "low";
 
@@ -21,16 +28,24 @@ export default function ReviewPage() {
 
   const utils = trpc.useUtils();
 
+  const { data: pendingCount } = trpc.categorization.getPendingCount.useQuery();
+
   const { data, isLoading, refetch } = trpc.categorization.getPendingReview.useQuery({
     confidenceFilter,
     limit: 50,
   });
 
+  const invalidateAll = () => {
+    utils.categorization.getPendingReview.invalidate();
+    utils.categorization.getPendingCount.invalidate();
+    utils.transaction.list.invalidate();
+    broadcastInvalidation(["transaction.list", "categorization.getPendingCount"]);
+  };
+
   const acceptMutation = trpc.categorization.acceptSuggestion.useMutation({
     onSuccess: () => {
       toast.success("Suggestion accepted");
-      utils.categorization.getPendingReview.invalidate();
-      utils.categorization.getPendingCount.invalidate();
+      invalidateAll();
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));
@@ -40,8 +55,7 @@ export default function ReviewPage() {
   const rejectMutation = trpc.categorization.rejectSuggestion.useMutation({
     onSuccess: () => {
       toast.success("Category updated");
-      utils.categorization.getPendingReview.invalidate();
-      utils.categorization.getPendingCount.invalidate();
+      invalidateAll();
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));
@@ -51,8 +65,7 @@ export default function ReviewPage() {
   const batchAcceptMutation = trpc.categorization.batchAccept.useMutation({
     onSuccess: (result) => {
       toast.success(`${result.accepted} transactions categorized`);
-      utils.categorization.getPendingReview.invalidate();
-      utils.categorization.getPendingCount.invalidate();
+      invalidateAll();
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));
@@ -62,7 +75,7 @@ export default function ReviewPage() {
   const triggerMutation = trpc.categorization.triggerCategorization.useMutation({
     onSuccess: (result) => {
       toast.success(`Categorized ${result.categorized} of ${result.processed} transactions`);
-      refetch();
+      invalidateAll();
     },
     onError: (error) => {
       toast.error(getErrorMessage(error));
@@ -103,6 +116,7 @@ export default function ReviewPage() {
     discardExtractionMutation.isPending;
 
   return (
+    <TooltipProvider delayDuration={300}>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -111,23 +125,30 @@ export default function ReviewPage() {
             Review Suggestions
           </h1>
           <p className="text-muted-foreground">
-            {data?.total ?? 0} transactions pending review
+            {pendingCount?.count ?? data?.total ?? 0} transactions pending review
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          onClick={() => triggerMutation.mutate({ limit: 20 })}
-          disabled={triggerMutation.isPending}
-        >
-          <RefreshCw
-            className={cn(
-              "w-4 h-4 mr-2",
-              triggerMutation.isPending && "animate-spin"
-            )}
-          />
-          Scan Uncategorized
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              onClick={() => triggerMutation.mutate({ limit: 20 })}
+              disabled={triggerMutation.isPending}
+            >
+              <RefreshCw
+                className={cn(
+                  "w-4 h-4 mr-2",
+                  triggerMutation.isPending && "animate-spin"
+                )}
+              />
+              Scan Uncategorized
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Run AI categorization on uncategorized transactions
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <Tabs
@@ -204,5 +225,6 @@ export default function ReviewPage() {
         </div>
       )}
     </div>
+    </TooltipProvider>
   );
 }

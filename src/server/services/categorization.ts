@@ -4,9 +4,9 @@ import { merchantCategories, categorizationExamples, transactions } from "../db/
 import { eq, and, desc } from "drizzle-orm";
 import { categories } from "@/lib/categories";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+function getAnthropicClient(): Anthropic {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
 
 const VALID_CATEGORIES = categories.map((c) => c.value);
 const CONFIDENCE_THRESHOLD = 80;
@@ -165,7 +165,7 @@ export async function categorizeWithClaude(
   try {
     const prompt = buildCategorizationPrompt(description, amount, examples);
 
-    const message = await anthropic.messages.create({
+    const message = await getAnthropicClient().messages.create({
       model: "claude-3-haiku-20240307",
       max_tokens: 256,
       messages: [{ role: "user", content: prompt }],
