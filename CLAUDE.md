@@ -204,6 +204,31 @@ npm run test:e2e
 - The `bricktrack` DB is what `.env.local` DATABASE_URL points to (not the default `property_tracker`)
 - E2E requires Clerk env vars (`CLERK_PUBLISHABLE_KEY`, `E2E_CLERK_USER_EMAIL`, etc.) in `.env.local`
 
+## Playwright Authenticated Screenshots
+When you need to screenshot or interact with authenticated pages (dashboard, settings, etc.) using Playwright, log in with the test user credentials from `.env.local`:
+
+```javascript
+const { chromium } = require('@playwright/test');
+(async () => {
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+
+  // Log in via Clerk
+  await page.goto('http://localhost:3000/sign-in');
+  await page.fill('input[name="identifier"]', process.env.E2E_CLERK_USER_EMAIL);
+  await page.click('button:has-text("Continue")');
+  await page.fill('input[name="password"]', process.env.E2E_CLERK_USER_PASSWORD);
+  await page.click('button:has-text("Continue")');
+  await page.waitForURL('**/dashboard', { timeout: 15000 });
+
+  // Now take authenticated screenshots
+  await page.screenshot({ path: 'screenshot.png', fullPage: true });
+  await browser.close();
+})();
+```
+
+**Credentials:** Read `E2E_CLERK_USER_EMAIL` and `E2E_CLERK_USER_PASSWORD` from `.env.local`. Never hardcode them.
+
 ## E2E Test Standards
 All new E2E tests **must** follow these standards:
 
