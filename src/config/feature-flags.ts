@@ -28,6 +28,8 @@ export const featureFlags = {
   team: false,
   auditLog: false,
   supportAdmin: false,
+  bugReports: false,
+  support: false,
 
   // ── Other UI ──────────────────────────────────────────────────────
   aiAssistant: false,
@@ -56,6 +58,8 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/settings/team": "team",
   "/settings/audit-log": "auditLog",
   "/settings/support-admin": "supportAdmin",
+  "/settings/bug-reports": "bugReports",
+  "/settings/support": "support",
 };
 
 /**
