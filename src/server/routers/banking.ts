@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure, bankProcedure } from "../trpc";
-import { anomalyAlerts, bankAccounts, connectionAlerts, transactions } from "../db/schema";
+import { anomalyAlerts, bankAccounts, connectionAlerts, transactions, users } from "../db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { batchCategorize } from "../services/categorization";
 import { TRPCError } from "@trpc/server";
@@ -90,6 +90,18 @@ export const bankingRouter = router({
       const syncStartTime = Date.now();
       logger.info("Bank sync started", { accountId: input.accountId, institution: account.institution });
 
+      // Look up stored basiqUserId for API calls
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.portfolio.ownerId),
+      });
+
+      if (!user?.basiqUserId) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No Basiq account linked. Please connect your bank first.",
+        });
+      }
+
       try {
         // Refresh connection via Basiq
         await basiqService.refreshConnection(account.basiqConnectionId);
@@ -97,7 +109,7 @@ export const bankingRouter = router({
         // Fetch new transactions
         const fromDate = account.lastSyncedAt?.toISOString().split("T")[0];
         const { data: basiqTransactions } = await basiqService.getTransactions(
-          ctx.portfolio.ownerId,
+          user.basiqUserId,
           account.basiqAccountId,
           fromDate
         );
@@ -384,6 +396,131 @@ export const bankingRouter = router({
       return account;
     }),
 
+  processConnection: bankProcedure
+    .input(z.object({ jobIds: z.array(z.string()).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      // Look up stored basiqUserId
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.portfolio.ownerId),
+      });
+
+      if (!user?.basiqUserId) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No Basiq account linked.",
+        });
+      }
+
+      // Fetch accounts from Basiq
+      const { data: basiqAccounts } = await basiqService.getAccounts(user.basiqUserId);
+
+      // Get existing accounts to avoid duplicates
+      const existingAccounts = await ctx.db.query.bankAccounts.findMany({
+        where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
+      });
+      const existingBasiqIds = new Set(existingAccounts.map((a) => a.basiqAccountId));
+
+      let accountsAdded = 0;
+      for (const acct of basiqAccounts) {
+        if (existingBasiqIds.has(acct.id)) continue;
+
+        await ctx.db.insert(bankAccounts).values({
+          userId: ctx.portfolio.ownerId,
+          basiqAccountId: acct.id,
+          basiqConnectionId: acct.connection,
+          accountName: acct.name,
+          accountNumberMasked: acct.accountNo ? `****${acct.accountNo.slice(-4)}` : null,
+          accountType: (["transaction", "savings", "mortgage", "offset", "credit_card", "line_of_credit"].includes(acct.class?.type)
+            ? acct.class.type
+            : "transaction") as "transaction",
+          institution: acct.institution,
+          connectionStatus: "connected",
+        });
+        accountsAdded++;
+      }
+
+      // Trigger initial sync for new accounts (90 days back)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const fromDate = ninetyDaysAgo.toISOString().split("T")[0];
+
+      const allAccounts = await ctx.db.query.bankAccounts.findMany({
+        where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
+      });
+
+      let totalTransactions = 0;
+      for (const account of allAccounts) {
+        if (!account.lastSyncedAt) {
+          try {
+            const { data: basiqTransactions } = await basiqService.getTransactions(
+              user.basiqUserId,
+              account.basiqAccountId,
+              fromDate
+            );
+
+            for (const txn of basiqTransactions) {
+              try {
+                await ctx.db.insert(transactions).values({
+                  userId: ctx.portfolio.ownerId,
+                  bankAccountId: account.id,
+                  basiqTransactionId: txn.id,
+                  propertyId: account.defaultPropertyId,
+                  date: txn.postDate,
+                  description: txn.description,
+                  amount: txn.direction === "credit" ? txn.amount : `-${txn.amount}`,
+                  transactionType: txn.direction === "credit" ? "income" : "expense",
+                });
+                totalTransactions++;
+              } catch {
+                // Skip duplicates
+              }
+            }
+
+            await ctx.db
+              .update(bankAccounts)
+              .set({ lastSyncedAt: new Date(), lastSyncStatus: "success" })
+              .where(eq(bankAccounts.id, account.id));
+          } catch (error) {
+            logger.warn("Initial sync failed for account", {
+              accountId: account.id,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+      }
+
+      return { accountsAdded, totalTransactions };
+    }),
+
+  connect: bankProcedure.mutation(async ({ ctx }) => {
+      // Look up user's basiqUserId
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.portfolio.ownerId),
+      });
+
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      let basiqUserId = user.basiqUserId;
+
+      // Create Basiq user if needed
+      if (!basiqUserId) {
+        const basiqUser = await basiqService.createUser(user.email);
+        basiqUserId = basiqUser.id;
+
+        await ctx.db
+          .update(users)
+          .set({ basiqUserId })
+          .where(eq(users.id, user.id));
+      }
+
+      // Create auth link for consent flow
+      const { links } = await basiqService.createAuthLink(basiqUserId);
+
+      return { url: links.public };
+    }),
+
   reconnect: bankProcedure
     .input(z.object({ accountId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
@@ -398,8 +535,20 @@ export const bankingRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
       }
 
+      // Look up stored basiqUserId
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.portfolio.ownerId),
+      });
+
+      if (!user?.basiqUserId) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No Basiq account linked. Please connect your bank first.",
+        });
+      }
+
       // Generate new auth link via Basiq
-      const { links } = await basiqService.createAuthLink(ctx.portfolio.ownerId);
+      const { links } = await basiqService.createAuthLink(user.basiqUserId);
 
       return { url: links.public };
     }),

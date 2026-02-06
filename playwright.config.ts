@@ -21,6 +21,15 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "core-loop",
+      testMatch: "core-loop.spec.ts",
+      timeout: 300_000,
+      use: {
+        ...devices["Desktop Chrome"],
+        actionTimeout: 15_000,
+      },
+    },
   ],
   // Only start local server if not testing against a preview URL
   webServer: process.env.PLAYWRIGHT_BASE_URL
