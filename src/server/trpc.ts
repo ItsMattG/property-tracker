@@ -106,6 +106,11 @@ export const createCallerFactory = t.createCallerFactory;
 import { apiRateLimiter } from "./middleware/rate-limit";
 
 const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
+  // Skip rate limiting in development/test to avoid false 429s during E2E tests
+  if (process.env.NODE_ENV !== "production") {
+    return next({ ctx });
+  }
+
   const userId =
     ctx.clerkId ?? ctx.headers?.get("x-forwarded-for") ?? "anonymous";
   const result = apiRateLimiter.check(userId);
