@@ -8,6 +8,8 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export const revalidate = 86400; // Revalidate daily
 
@@ -34,13 +36,6 @@ function estimateReadingTime(content: string): string {
   const words = content.split(/\s+/).length;
   const minutes = Math.max(1, Math.ceil(words / 200));
   return `${minutes} min read`;
-}
-
-function formatMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, "<code>$1</code>");
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://propertytracker.com.au";
@@ -180,43 +175,9 @@ export default async function BlogPostPage({
           <p className="text-lg text-muted-foreground mb-8">{post.summary}</p>
 
           <div className="prose prose-neutral dark:prose-invert max-w-none">
-            {post.content.split("\n\n").map((paragraph, i) => {
-              // Headings
-              if (paragraph.startsWith("## ")) {
-                return (
-                  <h2 key={i} className="text-xl font-semibold mt-8 mb-4">
-                    {paragraph.slice(3)}
-                  </h2>
-                );
-              }
-              // Lists
-              if (paragraph.startsWith("- ")) {
-                const items = paragraph
-                  .split("\n")
-                  .filter((line) => line.startsWith("- "));
-                return (
-                  <ul key={i}>
-                    {items.map((item, j) => (
-                      <li
-                        key={j}
-                        dangerouslySetInnerHTML={{
-                          __html: formatMarkdown(item.slice(2)),
-                        }}
-                      />
-                    ))}
-                  </ul>
-                );
-              }
-              // Regular paragraphs
-              return (
-                <p
-                  key={i}
-                  dangerouslySetInnerHTML={{
-                    __html: formatMarkdown(paragraph),
-                  }}
-                />
-              );
-            })}
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {post.content}
+            </ReactMarkdown>
           </div>
         </article>
 

@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { isRouteGated } from "@/config/feature-flags";
 
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -27,6 +28,12 @@ function generateRequestId(): string {
 export default clerkMiddleware(async (auth, request) => {
   if (!isPublicRoute(request)) {
     await auth.protect();
+  }
+
+  // Redirect gated routes to dashboard
+  const pathname = request.nextUrl.pathname;
+  if (isRouteGated(pathname)) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   // Generate and attach request ID for observability

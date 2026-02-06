@@ -4,6 +4,7 @@ import { ChatProvider } from "@/components/chat/ChatProvider";
 import { ChatButton } from "@/components/chat/ChatButton";
 import { LazyChatPanel } from "@/components/chat/LazyChatPanel";
 import { SidebarProvider } from "@/components/layout/SidebarProvider";
+import { featureFlags } from "@/config/feature-flags";
 
 // All dashboard pages require auth - skip static generation
 export const dynamic = "force-dynamic";
@@ -24,8 +25,8 @@ export default function DashboardLayout({
           </div>
         </div>
       </SidebarProvider>
-      <ChatButton />
-      <LazyChatPanel />
+      {featureFlags.aiAssistant && <ChatButton />}
+      {featureFlags.aiAssistant && <LazyChatPanel />}
     </ChatProvider>
   );
 }
