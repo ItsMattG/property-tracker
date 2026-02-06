@@ -34,7 +34,7 @@ export function QuickAddButton() {
     <>
       <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button size="icon" className="rounded-full h-9 w-9">
+          <Button size="icon" className="rounded-full h-9 w-9" aria-label="Quick add">
             <Plus className="h-5 w-5" />
           </Button>
         </DropdownMenuTrigger>

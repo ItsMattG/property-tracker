@@ -38,6 +38,7 @@ export function SetupChecklist({ progress }: SetupChecklistProps) {
             size="icon"
             className="h-6 w-6"
             onClick={() => dismissChecklist.mutate()}
+            aria-label="Dismiss setup checklist"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -47,7 +48,7 @@ export function SetupChecklist({ progress }: SetupChecklistProps) {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Progress value={progressPercent} className="h-2" />
+        <Progress value={progressPercent} className="h-2" aria-label="Setup progress" />
 
         <div className="space-y-2">
           {progress.steps.map((step) => (
