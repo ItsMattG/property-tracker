@@ -835,6 +835,8 @@ export const bankAccounts = pgTable("bank_accounts", {
   basiqConnectionId: text("basiq_connection_id").notNull(),
   basiqAccountId: text("basiq_account_id").notNull().unique(),
   institution: text("institution").notNull(),
+  institutionNickname: text("institution_nickname"),
+  nickname: text("nickname"),
   accountName: text("account_name").notNull(),
   accountNumberMasked: text("account_number_masked"),
   accountType: accountTypeEnum("account_type").notNull(),

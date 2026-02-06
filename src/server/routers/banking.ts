@@ -372,6 +372,53 @@ export const bankingRouter = router({
       return alert;
     }),
 
+  renameInstitution: writeProcedure
+    .input(
+      z.object({
+        institution: z.string(),
+        nickname: z.string().trim().max(100).nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(bankAccounts)
+        .set({
+          institutionNickname: input.nickname || null,
+        })
+        .where(
+          and(
+            eq(bankAccounts.institution, input.institution),
+            eq(bankAccounts.userId, ctx.portfolio.ownerId)
+          )
+        );
+
+      return { success: true };
+    }),
+
+  renameAccount: writeProcedure
+    .input(
+      z.object({
+        accountId: z.string().uuid(),
+        nickname: z.string().trim().max(100).nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [account] = await ctx.db
+        .update(bankAccounts)
+        .set({
+          nickname: input.nickname || null,
+        })
+        .where(
+          and(
+            eq(bankAccounts.id, input.accountId),
+            eq(bankAccounts.userId, ctx.portfolio.ownerId)
+          )
+        )
+        .returning();
+
+      return account;
+    }),
+
   linkAccountToProperty: writeProcedure
     .input(
       z.object({

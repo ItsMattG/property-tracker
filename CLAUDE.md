@@ -128,6 +128,9 @@ mkdir -p ~/worktrees/property-tracker
 # Create worktree with feature branch
 git worktree add ~/worktrees/property-tracker/<feature-name> -b feature/<feature-name>
 
+# Copy .env.local into the worktree (not symlink — avoids accidental edits to shared file)
+cp ~/Documents/property-tracker/.env.local ~/worktrees/property-tracker/<feature-name>/.env.local
+
 # Work in the worktree directory
 cd ~/worktrees/property-tracker/<feature-name>
 ```
@@ -269,11 +272,12 @@ When E2E tests fail during step 9 (Green validation):
 - Wait for user guidance before continuing
 
 ## Notifications
-**ALWAYS notify the user via ntfy for these events:**
-1. When asking a question or waiting for input
+**CRITICAL: ALWAYS notify the user via ntfy EVERY TIME you need a response or are idle waiting. No exceptions.**
+1. When asking a question or waiting for input — **every single time**
 2. When a task or PR is complete
 3. When there's an error or blocker
 4. When waiting for CI to finish
+5. When you've finished a set of changes and are waiting for the user to test
 
 **Notification command (run this, do not ask):**
 ```bash

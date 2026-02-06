@@ -121,6 +121,7 @@ export function SyncButton({
       onClick={handleClick}
       disabled={status !== "ready"}
       className={cn(
+        "min-w-[130px] tabular-nums",
         status === "success" && "bg-green-600 hover:bg-green-600",
         className
       )}

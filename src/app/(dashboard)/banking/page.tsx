@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc/client";
 import {
   Landmark,
@@ -24,12 +30,84 @@ import {
   AlertTriangle,
   ChevronDown,
   Building2,
+  Pencil,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
 import { SyncButton } from "@/components/banking/SyncButton";
 import { AccountStatusIndicator } from "@/components/banking/AccountStatusIndicator";
 import { toast } from "sonner";
+
+function EditableName({
+  accountId,
+  nickname,
+  accountName,
+  onSave,
+}: {
+  accountId: string;
+  nickname: string | null;
+  accountName: string;
+  onSave: (accountId: string, nickname: string | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(nickname ?? "");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const displayName = nickname || accountName;
+
+  const handleSave = () => {
+    setEditing(false);
+    const trimmed = value.trim();
+    const newNickname = trimmed === "" || trimmed === accountName ? null : trimmed;
+    if (newNickname !== nickname) {
+      onSave(accountId, newNickname);
+    }
+  };
+
+  return (
+    <div className="h-6 flex items-center">
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSave();
+            if (e.key === "Escape") {
+              setValue(nickname ?? "");
+              setEditing(false);
+            }
+          }}
+          placeholder={accountName}
+          className="font-medium border-b border-primary bg-transparent outline-none text-sm h-6 leading-6"
+        />
+      ) : (
+        <button
+          onClick={() => {
+            setValue(nickname ?? "");
+            setEditing(true);
+          }}
+          className="font-medium truncate flex items-center gap-1.5 group hover:text-primary transition-colors h-6 leading-6"
+          title="Click to rename"
+        >
+          {displayName}
+          <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+const alertTypeMessages: Record<string, string> = {
+  disconnected: "Account disconnected — reconnect to resume syncing",
+  requires_reauth: "Re-authentication required — your bank session has expired",
+  sync_failed: "Sync failed — try again or reconnect your account",
+};
 
 export default function BankingPage() {
   const utils = trpc.useUtils();
@@ -45,6 +123,8 @@ export default function BankingPage() {
     },
     onError: (error) => {
       toast.error(error.message);
+      utils.banking.listAccounts.invalidate();
+      utils.banking.listAlerts.invalidate();
     },
   });
 
@@ -57,6 +137,26 @@ export default function BankingPage() {
   const reconnect = trpc.banking.reconnect.useMutation({
     onSuccess: (data) => {
       window.location.href = data.url;
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const renameInstitution = trpc.banking.renameInstitution.useMutation({
+    onSuccess: () => {
+      toast.success("Institution renamed");
+      utils.banking.listAccounts.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const renameAccount = trpc.banking.renameAccount.useMutation({
+    onSuccess: () => {
+      toast.success("Account renamed");
+      utils.banking.listAccounts.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -99,7 +199,8 @@ export default function BankingPage() {
     }
     return Array.from(groups.entries()).map(([institution, accts]) => ({
       institution,
-      accounts: accts,
+      institutionNickname: accts[0]?.institutionNickname ?? null,
+      accounts: accts.sort((a, b) => a.accountName.localeCompare(b.accountName)),
     }));
   }, [accounts]);
 
@@ -152,26 +253,40 @@ export default function BankingPage() {
 
       {groupedAccounts.length > 0 ? (
         <div className="space-y-4">
-          {groupedAccounts.map(({ institution, accounts: institutionAccounts }) => (
+          {groupedAccounts.map(({ institution, institutionNickname, accounts: institutionAccounts }) => (
             <Collapsible key={institution} defaultOpen>
               <Card>
-                <CollapsibleTrigger className="w-full">
-                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors rounded-t-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Landmark className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="text-left">
-                        <h3 className="font-semibold">{institution}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {institutionAccounts.length} account
-                          {institutionAccounts.length !== 1 ? "s" : ""}
-                        </p>
-                      </div>
+                <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors rounded-t-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Landmark className="w-5 h-5 text-primary" />
                     </div>
-                    <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+                    <div className="text-left">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <EditableName
+                          accountId={institution}
+                          nickname={institutionNickname}
+                          accountName={institution}
+                          onSave={(_id, nick) =>
+                            renameInstitution.mutate({
+                              institution,
+                              nickname: nick,
+                            })
+                          }
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {institutionAccounts.length} account
+                        {institutionAccounts.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
                   </div>
-                </CollapsibleTrigger>
+                  <CollapsibleTrigger asChild>
+                    <button className="p-1 rounded hover:bg-muted transition-colors cursor-pointer">
+                      <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+                    </button>
+                  </CollapsibleTrigger>
+                </div>
 
                 <CollapsibleContent>
                   <div className="border-t divide-y">
@@ -190,9 +305,17 @@ export default function BankingPage() {
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium truncate">
-                                {account.accountName}
-                              </span>
+                              <EditableName
+                                accountId={account.id}
+                                nickname={account.nickname ?? null}
+                                accountName={account.accountName}
+                                onSave={(id, nick) =>
+                                  renameAccount.mutate({
+                                    accountId: id,
+                                    nickname: nick,
+                                  })
+                                }
+                              />
                               <AccountStatusIndicator
                                 status={
                                   account.connectionStatus as
@@ -205,13 +328,27 @@ export default function BankingPage() {
                                 {account.accountType}
                               </Badge>
                               {accountAlerts && accountAlerts.length > 0 && (
-                                <Badge
-                                  variant="destructive"
-                                  className="gap-1 text-xs"
-                                >
-                                  <AlertTriangle className="w-3 h-3" />
-                                  {accountAlerts.length}
-                                </Badge>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge
+                                        variant="destructive"
+                                        className="gap-1 text-xs"
+                                      >
+                                        <AlertTriangle className="w-3 h-3" />
+                                        {accountAlerts.length}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-xs bg-red-900 text-white">
+                                      {accountAlerts.map((alert, i) => (
+                                        <p key={alert.id ?? i}>
+                                          {alertTypeMessages[alert.alertType] ??
+                                            "This account has an issue that needs attention"}
+                                        </p>
+                                      ))}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               )}
                             </div>
                             <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">

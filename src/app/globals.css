@@ -185,6 +185,37 @@
   }
 }
 
+/* Sonner toast type colors — must match specificity of sonner/dist/styles.css */
+[data-sonner-toaster][data-sonner-theme="light"] {
+  --success-bg: #f0fdf4;
+  --success-border: #bbf7d0;
+  --success-text: #166534;
+  --error-bg: #fef2f2;
+  --error-border: #fecaca;
+  --error-text: #991b1b;
+  --warning-bg: #fffbeb;
+  --warning-border: #fed7aa;
+  --warning-text: #92400e;
+  --info-bg: #eff6ff;
+  --info-border: #bfdbfe;
+  --info-text: #1e40af;
+}
+
+[data-sonner-toaster][data-sonner-theme="dark"] {
+  --success-bg: #052e16;
+  --success-border: #14532d;
+  --success-text: #86efac;
+  --error-bg: #450a0a;
+  --error-border: #7f1d1d;
+  --error-text: #fca5a5;
+  --warning-bg: #451a03;
+  --warning-border: #78350f;
+  --warning-text: #fcd34d;
+  --info-bg: #172554;
+  --info-border: #1e3a5f;
+  --info-text: #93c5fd;
+}
+
 /* Ensure Clerk components render properly */
 .cl-userButtonPopoverCard,
 .cl-userButtonPopoverActions,
