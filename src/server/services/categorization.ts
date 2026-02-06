@@ -176,7 +176,8 @@ export async function categorizeWithClaude(
 
     return parseCategorizationResponse(content.text);
   } catch (error) {
-    console.error("Claude API error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Claude API error:", message);
     return null;
   }
 }
@@ -218,6 +219,12 @@ export async function categorizeTransaction(
         suggestionConfidence: result.confidence.toString(),
         suggestionStatus: "pending",
       })
+      .where(eq(transactions.id, transactionId));
+  } else {
+    // Mark as failed so it's not retried endlessly
+    await db
+      .update(transactions)
+      .set({ suggestionStatus: "failed" })
       .where(eq(transactions.id, transactionId));
   }
 

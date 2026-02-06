@@ -1,11 +1,30 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { trpc } from "@/lib/trpc/client";
-import { Landmark, Plus, AlertTriangle } from "lucide-react";
+import {
+  Landmark,
+  Plus,
+  AlertTriangle,
+  ChevronDown,
+  Building2,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
 import { SyncButton } from "@/components/banking/SyncButton";
@@ -16,6 +35,7 @@ export default function BankingPage() {
   const utils = trpc.useUtils();
   const { data: accounts, isLoading } = trpc.banking.listAccounts.useQuery();
   const { data: alerts } = trpc.banking.listAlerts.useQuery();
+  const { data: properties } = trpc.property.list.useQuery();
 
   const syncAccount = trpc.banking.syncAccount.useMutation({
     onSuccess: (data) => {
@@ -43,6 +63,16 @@ export default function BankingPage() {
     },
   });
 
+  const linkAccount = trpc.banking.linkAccountToProperty.useMutation({
+    onSuccess: () => {
+      toast.success("Property updated");
+      utils.banking.listAccounts.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const handleDismissAllAlerts = async () => {
     if (!alerts) return;
     for (const alert of alerts) {
@@ -50,7 +80,28 @@ export default function BankingPage() {
     }
   };
 
-  const hasAuthError = alerts?.some((a) => a.alertType === "requires_reauth") ?? false;
+  const hasAuthError =
+    alerts?.some((a) => a.alertType === "requires_reauth") ?? false;
+
+  // Group accounts by institution
+  const groupedAccounts = useMemo(() => {
+    if (!accounts) return [];
+    const groups = new Map<
+      string,
+      typeof accounts
+    >();
+    for (const account of accounts) {
+      const key = account.institution;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(account);
+    }
+    return Array.from(groups.entries()).map(([institution, accts]) => ({
+      institution,
+      accounts: accts,
+    }));
+  }, [accounts]);
 
   if (isLoading) {
     return (
@@ -63,9 +114,9 @@ export default function BankingPage() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
           {[1, 2].map((i) => (
-            <div key={i} className="h-48 rounded-lg bg-muted animate-pulse" />
+            <div key={i} className="h-32 rounded-lg bg-muted animate-pulse" />
           ))}
         </div>
       </div>
@@ -86,7 +137,9 @@ export default function BankingPage() {
         <div>
           <h2 className="text-2xl font-bold">Banking</h2>
           <p className="text-muted-foreground">
-            Manage your connected bank accounts
+            {accounts?.length ?? 0} account{accounts?.length !== 1 ? "s" : ""}{" "}
+            across {groupedAccounts.length} institution
+            {groupedAccounts.length !== 1 ? "s" : ""}
           </p>
         </div>
         <Button asChild>
@@ -97,98 +150,147 @@ export default function BankingPage() {
         </Button>
       </div>
 
-      {accounts && accounts.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {accounts.map((account) => {
-            const accountAlerts = alerts?.filter(
-              (a) => a.bankAccountId === account.id
-            );
-            const needsReauth = accountAlerts?.some(
-              (a) => a.alertType === "requires_reauth"
-            );
-
-            return (
-              <Card key={account.id}>
-                <CardHeader className="flex flex-row items-start justify-between pb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Landmark className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-base">
-                          {account.accountName}
-                        </CardTitle>
-                        <AccountStatusIndicator
-                          status={account.connectionStatus as "connected" | "disconnected" | "error"}
-                        />
+      {groupedAccounts.length > 0 ? (
+        <div className="space-y-4">
+          {groupedAccounts.map(({ institution, accounts: institutionAccounts }) => (
+            <Collapsible key={institution} defaultOpen>
+              <Card>
+                <CollapsibleTrigger className="w-full">
+                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors rounded-t-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Landmark className="w-5 h-5 text-primary" />
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {account.institution}
-                      </p>
+                      <div className="text-left">
+                        <h3 className="font-semibold">{institution}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {institutionAccounts.length} account
+                          {institutionAccounts.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
                     </div>
+                    <ChevronDown className="w-5 h-5 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
                   </div>
-                  {accountAlerts && accountAlerts.length > 0 && (
-                    <Badge variant="destructive" className="gap-1">
-                      <AlertTriangle className="w-3 h-3" />
-                      {accountAlerts.length}
-                    </Badge>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Account</span>
-                      <span>{account.accountNumberMasked || "****"}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Type</span>
-                      <Badge variant="outline">{account.accountType}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Last synced</span>
-                      <span>
-                        {account.lastSyncedAt
-                          ? formatDistanceToNow(new Date(account.lastSyncedAt), {
-                              addSuffix: true,
-                            })
-                          : "Never"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Default property
-                      </span>
-                      <span>{account.defaultProperty?.suburb || "None"}</span>
-                    </div>
+                </CollapsibleTrigger>
 
-                    <div className="flex gap-2 pt-2">
-                      {needsReauth ? (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() =>
-                            reconnect.mutate({ accountId: account.id })
-                          }
+                <CollapsibleContent>
+                  <div className="border-t divide-y">
+                    {institutionAccounts.map((account) => {
+                      const accountAlerts = alerts?.filter(
+                        (a) => a.bankAccountId === account.id
+                      );
+                      const needsReauth = accountAlerts?.some(
+                        (a) => a.alertType === "requires_reauth"
+                      );
+
+                      return (
+                        <div
+                          key={account.id}
+                          className="p-4 flex items-center gap-4"
                         >
-                          Reconnect
-                        </Button>
-                      ) : (
-                        <SyncButton
-                          onSync={() =>
-                            syncAccount.mutateAsync({ accountId: account.id })
-                          }
-                          lastManualSyncAt={account.lastManualSyncAt}
-                          className="flex-1"
-                        />
-                      )}
-                    </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium truncate">
+                                {account.accountName}
+                              </span>
+                              <AccountStatusIndicator
+                                status={
+                                  account.connectionStatus as
+                                    | "connected"
+                                    | "disconnected"
+                                    | "error"
+                                }
+                              />
+                              <Badge variant="outline" className="text-xs">
+                                {account.accountType}
+                              </Badge>
+                              {accountAlerts && accountAlerts.length > 0 && (
+                                <Badge
+                                  variant="destructive"
+                                  className="gap-1 text-xs"
+                                >
+                                  <AlertTriangle className="w-3 h-3" />
+                                  {accountAlerts.length}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                              {account.accountNumberMasked && (
+                                <span>{account.accountNumberMasked}</span>
+                              )}
+                              <span>
+                                {account.lastSyncedAt
+                                  ? `Synced ${formatDistanceToNow(new Date(account.lastSyncedAt), { addSuffix: true })}`
+                                  : "Never synced"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Property assignment */}
+                          <div className="flex items-center gap-2">
+                            <Building2 className="w-4 h-4 text-muted-foreground" />
+                            <Select
+                              value={account.defaultPropertyId ?? "none"}
+                              onValueChange={(value) =>
+                                linkAccount.mutate({
+                                  accountId: account.id,
+                                  propertyId:
+                                    value === "none" ? null : value,
+                                })
+                              }
+                            >
+                              <SelectTrigger className="w-[180px]" size="sm">
+                                <SelectValue placeholder="Assign property" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">
+                                  Unassigned
+                                </SelectItem>
+                                {properties?.map((property) => (
+                                  <SelectItem
+                                    key={property.id}
+                                    value={property.id}
+                                  >
+                                    {property.suburb}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex-shrink-0">
+                            {needsReauth ? (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                  reconnect.mutate({
+                                    accountId: account.id,
+                                  })
+                                }
+                              >
+                                Reconnect
+                              </Button>
+                            ) : (
+                              <SyncButton
+                                onSync={() =>
+                                  syncAccount.mutateAsync({
+                                    accountId: account.id,
+                                  })
+                                }
+                                lastManualSyncAt={account.lastManualSyncAt}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </CardContent>
+                </CollapsibleContent>
               </Card>
-            );
-          })}
+            </Collapsible>
+          ))}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">

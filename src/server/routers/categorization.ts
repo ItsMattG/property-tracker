@@ -295,6 +295,13 @@ export const categorizationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "AI categorization is not configured. Please set the ANTHROPIC_API_KEY environment variable.",
+        });
+      }
+
       let txnsToProcess;
 
       if (input.transactionIds?.length) {
@@ -305,12 +312,12 @@ export const categorizationRouter = router({
           ),
         });
       } else {
-        // Get uncategorized transactions without suggestions
+        // Get uncategorized transactions without suggestions (exclude failed)
         txnsToProcess = await ctx.db.query.transactions.findMany({
           where: and(
             eq(transactions.userId, ctx.portfolio.ownerId),
             eq(transactions.category, "uncategorized"),
-            sql`${transactions.suggestionStatus} IS NULL`
+            sql`${transactions.suggestionStatus} IS NULL OR ${transactions.suggestionStatus} = 'failed'`
           ),
           limit: input.limit,
           orderBy: [desc(transactions.date)],
