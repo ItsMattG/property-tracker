@@ -18,14 +18,13 @@ export function FeedbackButton() {
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="w-full justify-start">
-            <MessageSquarePlus className="mr-2 h-4 w-4" />
-            Feedback
+          <Button variant="ghost" size="icon" title="Feedback">
+            <MessageSquarePlus className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onClick={() => setFeatureModalOpen(true)}>
             <MessageSquarePlus className="mr-2 h-4 w-4" />
             Request Feature

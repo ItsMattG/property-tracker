@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
 import { useRouter } from "next/navigation";
+import { featureFlags } from "@/config/feature-flags";
 
 export function QuickAddButton() {
   const [open, setOpen] = useState(false);
@@ -31,7 +32,7 @@ export function QuickAddButton() {
 
   return (
     <>
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
         <DropdownMenuTrigger asChild>
           <Button size="icon" className="rounded-full h-9 w-9">
             <Plus className="h-5 w-5" />
@@ -49,10 +50,12 @@ export function QuickAddButton() {
             <ArrowLeftRight className="mr-2 h-4 w-4" />
             Add Transaction
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/loans/new")}>
-            <Banknote className="mr-2 h-4 w-4" />
-            Add Loan
-          </DropdownMenuItem>
+          {featureFlags.loans && (
+            <DropdownMenuItem onClick={() => router.push("/loans/new")}>
+              <Banknote className="mr-2 h-4 w-4" />
+              Add Loan
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

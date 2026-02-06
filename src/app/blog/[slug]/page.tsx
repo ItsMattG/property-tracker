@@ -8,6 +8,8 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export const revalidate = 86400; // Revalidate daily
 
@@ -34,13 +36,6 @@ function estimateReadingTime(content: string): string {
   const words = content.split(/\s+/).length;
   const minutes = Math.max(1, Math.ceil(words / 200));
   return `${minutes} min read`;
-}
-
-function formatMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, "<code>$1</code>");
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://propertytracker.com.au";
@@ -179,44 +174,73 @@ export default async function BlogPostPage({
           <h1 className="text-3xl font-bold mb-2">{post.title}</h1>
           <p className="text-lg text-muted-foreground mb-8">{post.summary}</p>
 
-          <div className="prose prose-neutral dark:prose-invert max-w-none">
-            {post.content.split("\n\n").map((paragraph, i) => {
-              // Headings
-              if (paragraph.startsWith("## ")) {
-                return (
-                  <h2 key={i} className="text-xl font-semibold mt-8 mb-4">
-                    {paragraph.slice(3)}
-                  </h2>
-                );
-              }
-              // Lists
-              if (paragraph.startsWith("- ")) {
-                const items = paragraph
-                  .split("\n")
-                  .filter((line) => line.startsWith("- "));
-                return (
-                  <ul key={i}>
-                    {items.map((item, j) => (
-                      <li
-                        key={j}
-                        dangerouslySetInnerHTML={{
-                          __html: formatMarkdown(item.slice(2)),
-                        }}
-                      />
-                    ))}
-                  </ul>
-                );
-              }
-              // Regular paragraphs
-              return (
-                <p
-                  key={i}
-                  dangerouslySetInnerHTML={{
-                    __html: formatMarkdown(paragraph),
-                  }}
-                />
-              );
-            })}
+          <div className="max-w-none">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h2: ({ children }) => (
+                  <h2 className="text-xl font-semibold mt-8 mb-4">{children}</h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="text-lg font-semibold mt-6 mb-3">{children}</h3>
+                ),
+                p: ({ children }) => (
+                  <p className="mb-4 leading-relaxed">{children}</p>
+                ),
+                ul: ({ children }) => (
+                  <ul className="list-disc pl-6 mb-4 space-y-1">{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="list-decimal pl-6 mb-4 space-y-1">{children}</ol>
+                ),
+                li: ({ children }) => (
+                  <li className="leading-relaxed">{children}</li>
+                ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto mb-4">
+                    <table className="min-w-full border-collapse border border-border text-sm">
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead className="bg-muted">{children}</thead>
+                ),
+                th: ({ children }) => (
+                  <th className="border border-border px-4 py-2 text-left font-semibold">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="border border-border px-4 py-2">{children}</td>
+                ),
+                strong: ({ children }) => (
+                  <strong className="font-semibold">{children}</strong>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-4 border-muted pl-4 italic my-4">
+                    {children}
+                  </blockquote>
+                ),
+                code: ({ children, className }) => {
+                  const isBlock = className?.includes("language-");
+                  if (isBlock) {
+                    return (
+                      <code className="block bg-muted rounded-lg p-4 overflow-x-auto text-sm my-4">
+                        {children}
+                      </code>
+                    );
+                  }
+                  return (
+                    <code className="bg-muted px-1.5 py-0.5 rounded text-sm">
+                      {children}
+                    </code>
+                  );
+                },
+              }}
+            >
+              {post.content}
+            </ReactMarkdown>
           </div>
         </article>
 

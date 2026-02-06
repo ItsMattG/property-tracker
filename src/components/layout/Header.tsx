@@ -7,6 +7,8 @@ import { AlertBadge } from "@/components/alerts/AlertBadge";
 import { WhatsNewButton } from "@/components/changelog/WhatsNewButton";
 import { WhatsNewDrawer } from "@/components/changelog/WhatsNewDrawer";
 import { HelpButton } from "@/components/onboarding/HelpButton";
+import { FeedbackButton } from "@/components/feedback";
+import { featureFlags } from "@/config/feature-flags";
 
 export function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -19,13 +21,18 @@ export function Header() {
         </div>
         <div className="flex items-center gap-4" data-tour="quick-actions">
           <HelpButton />
+          <FeedbackButton />
           <AlertBadge />
-          <WhatsNewButton onClick={() => setDrawerOpen(true)} />
+          {featureFlags.whatsNew && (
+            <WhatsNewButton onClick={() => setDrawerOpen(true)} />
+          )}
           <QuickAddButton />
           <UserButton afterSignOutUrl="/" />
         </div>
       </header>
-      <WhatsNewDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      {featureFlags.whatsNew && (
+        <WhatsNewDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      )}
     </>
   );
 }

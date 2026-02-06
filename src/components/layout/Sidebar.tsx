@@ -28,7 +28,6 @@ import {
   Calculator,
   Compass,
   MessageSquarePlus,
-  Bug,
   Mail,
   CheckSquare,
   Ticket,
@@ -38,8 +37,8 @@ import {
 import { trpc } from "@/lib/trpc/client";
 import { PortfolioSwitcher } from "./PortfolioSwitcher";
 import { EntitySwitcher } from "@/components/entities";
-import { FeedbackButton } from "@/components/feedback";
 import { useSidebar } from "./SidebarProvider";
+import { featureFlags, type FeatureFlag } from "@/config/feature-flags";
 import {
   Tooltip,
   TooltipContent,
@@ -47,40 +46,49 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const navItems = [
+const navItems: Array<{
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  showBadge?: boolean;
+  featureFlag?: FeatureFlag;
+}> = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/discover", label: "Discover", icon: Compass },
-  { href: "/alerts", label: "Alerts", icon: Bell },
-  { href: "/portfolio", label: "Portfolio", icon: PieChart },
+  { href: "/discover", label: "Discover", icon: Compass, featureFlag: "discover" },
+  { href: "/alerts", label: "Alerts", icon: Bell, featureFlag: "alerts" },
+  { href: "/portfolio", label: "Portfolio", icon: PieChart, featureFlag: "portfolio" },
   { href: "/properties", label: "Properties", icon: Building2 },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/transactions/review", label: "Review", icon: Sparkles, showBadge: true },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/reports/tax-position", label: "Tax Position", icon: Calculator },
-  { href: "/reports/forecast", label: "Forecast", icon: TrendingUp },
-  { href: "/reports/share", label: "Portfolio Shares", icon: Share2 },
-  { href: "/reports/compliance", label: "Compliance", icon: ClipboardCheck },
-  { href: "/reports/brokers", label: "Broker Portal", icon: Briefcase },
-  { href: "/reports/mytax", label: "MyTax Export", icon: FileDown },
+  { href: "/reports/forecast", label: "Forecast", icon: TrendingUp, featureFlag: "forecast" },
+  { href: "/reports/share", label: "Portfolio Shares", icon: Share2, featureFlag: "portfolioShares" },
+  { href: "/reports/compliance", label: "Compliance", icon: ClipboardCheck, featureFlag: "compliance" },
+  { href: "/reports/brokers", label: "Broker Portal", icon: Briefcase, featureFlag: "brokerPortal" },
+  { href: "/reports/mytax", label: "MyTax Export", icon: FileDown, featureFlag: "mytaxExport" },
   { href: "/banking", label: "Banking", icon: Landmark },
-  { href: "/loans", label: "Loans", icon: Wallet },
-  { href: "/loans/compare", label: "Compare Loans", icon: Scale },
-  { href: "/export", label: "Export", icon: FileDown },
-  { href: "/emails", label: "Emails", icon: Mail },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/loans", label: "Loans", icon: Wallet, featureFlag: "loans" },
+  { href: "/loans/compare", label: "Compare Loans", icon: Scale, featureFlag: "compareLoans" },
+  { href: "/export", label: "Export", icon: FileDown, featureFlag: "export" },
+  { href: "/emails", label: "Emails", icon: Mail, featureFlag: "emails" },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare, featureFlag: "tasks" },
 ];
 
-const settingsItems = [
+const settingsItems: Array<{
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  featureFlag?: FeatureFlag;
+}> = [
   { href: "/settings/notifications", label: "Notifications", icon: Bell },
-  { href: "/settings/refinance-alerts", label: "Refinance Alerts", icon: BellRing },
-  { href: "/settings/email-connections", label: "Email Connections", icon: Mail },
-  { href: "/settings/mobile", label: "Mobile App", icon: Smartphone },
-  { href: "/settings/team", label: "Team", icon: Users },
-  { href: "/settings/audit-log", label: "Audit Log", icon: History },
+  { href: "/settings/refinance-alerts", label: "Refinance Alerts", icon: BellRing, featureFlag: "refinanceAlerts" },
+  { href: "/settings/email-connections", label: "Email Connections", icon: Mail, featureFlag: "emailConnections" },
+  { href: "/settings/mobile", label: "Mobile App", icon: Smartphone, featureFlag: "mobileApp" },
+  { href: "/settings/team", label: "Team", icon: Users, featureFlag: "team" },
+  { href: "/settings/audit-log", label: "Audit Log", icon: History, featureFlag: "auditLog" },
   { href: "/settings/feature-requests", label: "Feature Requests", icon: MessageSquarePlus },
-  { href: "/settings/bug-reports", label: "Bug Reports", icon: Bug },
-  { href: "/settings/support", label: "Support", icon: Ticket },
-  { href: "/settings/support-admin", label: "Support Admin", icon: Ticket },
+  { href: "/settings/support-admin", label: "Support Admin", icon: Ticket, featureFlag: "supportAdmin" },
 ];
 
 function NavItem({
@@ -212,7 +220,7 @@ export function Sidebar() {
 
         {/* Main Navigation */}
         <nav className="space-y-1 flex-1" data-tour="sidebar-nav">
-          {navItems.map((item) => {
+          {navItems.filter((item) => !item.featureFlag || featureFlags[item.featureFlag]).map((item) => {
             const isActive = pathname === item.href;
             const showBadge = "showBadge" in item && item.showBadge && pendingCount?.count && pendingCount.count > 0;
 
@@ -237,13 +245,6 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Feedback Button */}
-        {!isCollapsed && (
-          <div className="mt-4 px-1">
-            <FeedbackButton />
-          </div>
-        )}
-
         {/* Settings Section */}
         <div className="mt-4 pt-4 border-t border-border">
           {!isCollapsed && (
@@ -253,7 +254,7 @@ export function Sidebar() {
             </div>
           )}
           <nav className="space-y-1 mt-1">
-            {settingsItems.map((item) => {
+            {settingsItems.filter((item) => !item.featureFlag || featureFlags[item.featureFlag]).map((item) => {
               const isActive = pathname === item.href;
               return (
                 <NavItem
