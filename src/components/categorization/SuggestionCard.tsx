@@ -9,6 +9,11 @@ import { ConfidenceBadge } from "./ConfidenceBadge";
 import { getCategoryLabel } from "@/lib/categories";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SuggestionCardProps {
   transaction: {
@@ -86,9 +91,12 @@ export function SuggestionCard({
                   {getCategoryLabel(transaction.suggestedCategory || "uncategorized")}
                 </span>
                 <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
-                <span className="text-sm font-medium text-primary truncate">
-                  {getCategoryLabel(overrideCategory)}
-                </span>
+                <CategorySelect
+                  value={overrideCategory}
+                  onValueChange={setOverrideCategory}
+                  disabled={isLoading}
+                  compact
+                />
               </>
             ) : (
               <>
@@ -103,16 +111,21 @@ export function SuggestionCard({
           {/* Right: actions */}
           <div className="flex items-center gap-2 shrink-0">
             {hasOverride ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setOverrideCategory(undefined)}
-                disabled={isLoading}
-                className="text-muted-foreground h-8 px-2"
-                title="Undo — revert to AI suggestion"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setOverrideCategory(undefined)}
+                    disabled={isLoading}
+                    className="text-muted-foreground h-8 px-2"
+                    aria-label="Undo — revert to AI suggestion"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Undo — revert to AI suggestion</TooltipContent>
+              </Tooltip>
             ) : (
               <CategorySelect
                 value={overrideCategory}
@@ -123,16 +136,25 @@ export function SuggestionCard({
               />
             )}
 
-            <Button
-              size="sm"
-              onClick={handleConfirm}
-              disabled={isLoading}
-              variant={hasOverride ? "default" : "outline"}
-              className="h-8"
-            >
-              <Check className="w-3.5 h-3.5 mr-1.5" />
-              {hasOverride ? "Save override" : "Accept suggestion"}
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={handleConfirm}
+                  disabled={isLoading}
+                  variant={hasOverride ? "default" : "outline"}
+                  className="h-8"
+                >
+                  <Check className="w-3.5 h-3.5 mr-1.5" />
+                  {hasOverride ? "Save override" : "Accept suggestion"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {hasOverride
+                  ? `Categorize as "${getCategoryLabel(overrideCategory)}"`
+                  : `Accept AI suggestion: "${getCategoryLabel(transaction.suggestedCategory || "uncategorized")}"`}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </CardContent>

@@ -8,6 +8,11 @@ import { ConfidenceBadge } from "./ConfidenceBadge";
 import { SuggestionCard } from "./SuggestionCard";
 import { getCategoryLabel } from "@/lib/categories";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Transaction {
   id: string;
@@ -68,17 +73,25 @@ export function BatchSuggestionCard({
               ({transactions.length} transactions)
             </span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpanded(!expanded)}
-          >
-            {expanded ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpanded(!expanded)}
+                aria-label={expanded ? "Collapse transactions" : "Expand transactions"}
+              >
+                {expanded ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {expanded ? "Collapse" : "Expand to review individually"}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -96,17 +109,31 @@ export function BatchSuggestionCard({
                 totalAmount >= 0 ? "text-green-600" : "text-red-600"
               )}
             >
-              ${Math.abs(totalAmount).toFixed(2)} total
+              ${Math.abs(totalAmount).toLocaleString("en-AU", { minimumFractionDigits: 2 })} total
             </span>
           </div>
 
-          <Button
-            onClick={() => onBatchAccept(transactions.map((t) => t.id))}
-            disabled={isLoading}
-          >
-            <Check className="w-4 h-4 mr-2" />
-            Apply to all {transactions.length}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    `Apply "${getCategoryLabel(suggestedCategory || "uncategorized")}" to all ${transactions.length} transactions?`
+                  );
+                  if (confirmed) {
+                    onBatchAccept(transactions.map((t) => t.id));
+                  }
+                }}
+                disabled={isLoading}
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Apply to all {transactions.length}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Accept &ldquo;{getCategoryLabel(suggestedCategory || "uncategorized")}&rdquo; for all {transactions.length} transactions
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {expanded && (

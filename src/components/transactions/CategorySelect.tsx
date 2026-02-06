@@ -34,7 +34,7 @@ export function CategorySelect({
 }: CategorySelectProps) {
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-      <SelectTrigger className={cn(compact ? "w-[130px] h-8 text-xs" : "w-[200px]")}>
+      <SelectTrigger className={cn(compact ? "w-[200px] h-8 text-xs" : "w-[200px]")}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

@@ -1,4 +1,9 @@
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ConfidenceBadgeProps {
   confidence: number;
@@ -26,11 +31,16 @@ export function ConfidenceBadge({
   const dotSize = size === "sm" ? "w-2 h-2" : "w-3 h-3";
 
   return (
-    <div className="flex items-center gap-2" title={getLabel()}>
-      <span className={cn("rounded-full", dotSize, getColor())} />
-      {showValue && (
-        <span className="text-xs text-muted-foreground">{confidence.toFixed(0)}%</span>
-      )}
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-2 cursor-default" aria-label={getLabel()}>
+          <span className={cn("rounded-full", dotSize, getColor())} />
+          {showValue && (
+            <span className="text-xs text-muted-foreground">{confidence.toFixed(0)}%</span>
+          )}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{getLabel()} — {confidence.toFixed(0)}% sure</TooltipContent>
+    </Tooltip>
   );
 }
