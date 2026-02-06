@@ -139,27 +139,27 @@ export default async function BlogPage() {
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="all">
+          <TabsContent value="all" className="min-h-[400px]">
             {renderPosts(allPosts, "No blog posts yet. Check back soon!")}
           </TabsContent>
 
-          <TabsContent value="fundamentals">
+          <TabsContent value="fundamentals" className="min-h-[400px]">
             {renderPosts(fundamentalsPosts, "No fundamentals posts yet.")}
           </TabsContent>
 
-          <TabsContent value="strategy">
+          <TabsContent value="strategy" className="min-h-[400px]">
             {renderPosts(strategyPosts, "No strategy posts yet.")}
           </TabsContent>
 
-          <TabsContent value="finance">
+          <TabsContent value="finance" className="min-h-[400px]">
             {renderPosts(financePosts, "No finance posts yet.")}
           </TabsContent>
 
-          <TabsContent value="tax">
+          <TabsContent value="tax" className="min-h-[400px]">
             {renderPosts(taxPosts, "No tax posts yet.")}
           </TabsContent>
 
-          <TabsContent value="advanced">
+          <TabsContent value="advanced" className="min-h-[400px]">
             {renderPosts(advancedPosts, "No advanced posts yet.")}
           </TabsContent>
         </Tabs>
