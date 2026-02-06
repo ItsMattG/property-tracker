@@ -21,6 +21,11 @@ import {
   Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const entityTypeIcons = {
   personal: Building2,
@@ -78,7 +83,7 @@ export function EntitySwitcher({ isCollapsed = false }: EntitySwitcherProps) {
   }
 
   if (!entities || entities.length === 0) {
-    return (
+    const btn = (
       <Button
         variant="outline"
         className={cn(
@@ -86,6 +91,7 @@ export function EntitySwitcher({ isCollapsed = false }: EntitySwitcherProps) {
           isCollapsed ? "w-10 h-10 p-0" : "w-[200px]"
         )}
         onClick={() => router.push("/entities/new")}
+        style={{ cursor: "pointer" }}
       >
         {isCollapsed ? (
           <Plus className="h-4 w-4" />
@@ -97,38 +103,66 @@ export function EntitySwitcher({ isCollapsed = false }: EntitySwitcherProps) {
         )}
       </Button>
     );
+
+    if (isCollapsed) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>{btn}</TooltipTrigger>
+          <TooltipContent side="right">Create Entity</TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return btn;
   }
 
   const Icon = activeEntity
     ? entityTypeIcons[activeEntity.type]
     : Building2;
 
+  const triggerButton = (
+    <Button
+      variant="outline"
+      className={cn(
+        "justify-between",
+        isCollapsed ? "w-10 h-10 p-0" : "w-[200px]"
+      )}
+      aria-label={`Switch entity. Current: ${activeEntity?.name || "Select Entity"}`}
+    >
+      {isCollapsed ? (
+        <Icon className="h-4 w-4" />
+      ) : (
+        <>
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4" />
+            <span className="truncate">
+              {activeEntity?.name || "Select Entity"}
+            </span>
+          </div>
+          <ChevronDown className="h-4 w-4 opacity-50" />
+        </>
+      )}
+    </Button>
+  );
+
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "justify-between",
-            isCollapsed ? "w-10 h-10 p-0" : "w-[200px]"
-          )}
-          aria-label={`Switch entity. Current: ${activeEntity?.name || "Select Entity"}`}
-        >
-          {isCollapsed ? (
-            <Icon className="h-4 w-4" />
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                <span className="truncate">
-                  {activeEntity?.name || "Select Entity"}
-                </span>
-              </div>
-              <ChevronDown className="h-4 w-4 opacity-50" />
-            </>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
+      {isCollapsed ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              {triggerButton}
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            {activeEntity?.name || "Select Entity"}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <DropdownMenuTrigger asChild>
+          {triggerButton}
+        </DropdownMenuTrigger>
+      )}
       <DropdownMenuContent className="w-[200px]" align="start">
         {entities?.map((entity) => {
           const TypeIcon = entityTypeIcons[entity.type];

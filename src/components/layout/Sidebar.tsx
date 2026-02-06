@@ -290,7 +290,7 @@ export function Sidebar() {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "border-r border-border bg-card min-h-screen p-4 transition-all duration-200 flex flex-col",
+          "border-r border-border bg-card h-screen sticky top-0 p-4 transition-all duration-200 flex flex-col overflow-hidden",
           isCollapsed ? "w-16" : "w-64"
         )}
       >
@@ -329,7 +329,7 @@ export function Sidebar() {
         </div>
 
         {/* Top-level Navigation */}
-        <nav className="space-y-1 flex-1" data-tour="sidebar-nav">
+        <nav className="space-y-1 flex-1 overflow-y-auto" data-tour="sidebar-nav">
           {topLevelItems.filter((item) => !item.featureFlag || featureFlags[item.featureFlag]).map((item) => renderNavItem(item))}
 
           {/* Grouped sections */}
