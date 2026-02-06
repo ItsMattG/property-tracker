@@ -489,6 +489,37 @@ export const bankingRouter = router({
         }
       }
 
+      // Run AI categorization on all newly imported uncategorized transactions
+      if (totalTransactions > 0) {
+        const uncategorizedTxns = await ctx.db.query.transactions.findMany({
+          where: and(
+            eq(transactions.userId, ctx.portfolio.ownerId),
+            eq(transactions.category, "uncategorized"),
+            sql`${transactions.suggestionStatus} IS NULL`
+          ),
+          orderBy: [desc(transactions.createdAt)],
+          limit: 100,
+        });
+
+        if (uncategorizedTxns.length > 0) {
+          try {
+            await batchCategorize(
+              ctx.portfolio.ownerId,
+              uncategorizedTxns.map((t) => ({
+                id: t.id,
+                description: t.description,
+                amount: parseFloat(t.amount),
+              }))
+            );
+          } catch (error) {
+            logger.warn("AI categorization failed during initial import", {
+              error: error instanceof Error ? error.message : String(error),
+              transactionCount: uncategorizedTxns.length,
+            });
+          }
+        }
+      }
+
       return { accountsAdded, totalTransactions };
     }),
 
