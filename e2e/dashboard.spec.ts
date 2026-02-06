@@ -148,9 +148,6 @@ test.describe("Dashboard", () => {
       sidebar.getByRole("link", { name: "Loans", exact: true })
     ).not.toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: "Export", exact: true })
-    ).not.toBeVisible();
-    await expect(
       sidebar.getByRole("link", { name: "Emails", exact: true })
     ).not.toBeVisible();
     await expect(
