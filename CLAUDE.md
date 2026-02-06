@@ -89,22 +89,99 @@ git worktree remove ~/worktrees/property-tracker/<feature-name>
 - Main repo stays on `main` for quick checks
 - Parallel feature development without interference
 
-## Development Workflow
-Always follow this workflow for new features:
+## Development Workflow (TDD + E2E Validated)
+Always follow this workflow for new features. **Every feature must be test-driven and E2E validated before PR.**
+
+See `docs/plans/2026-02-06-tdd-e2e-workflow-design.md` for full design rationale.
+
 1. **Pick task**: `bd ready` to find next task, `bd show <id>` for details
 2. **Create worktree**: `git worktree add ~/worktrees/property-tracker/<feature-name> -b feature/<feature-name>`
 3. **Change to worktree**: `cd ~/worktrees/property-tracker/<feature-name>`
 4. **Brainstorm**: Use `superpowers:brainstorming` for design
 5. **Plan**: Use `superpowers:writing-plans` for implementation plan
-6. **Execute**: Use `superpowers:executing-plans` (batch execution - more token efficient than subagent-driven)
-7. **Verify**: Use `superpowers:verification-before-completion` — run tests, lint, build before claiming done
-8. **Create PR**: Push branch and create PR with `gh pr create`
-9. **Wait for CI**: Run `gh pr checks --watch` to wait for GitHub Actions and Vercel preview deploy to pass
-10. **Merge PR**: Only after CI passes, merge with `gh pr merge`
-11. **Cleanup**: `git worktree remove ~/worktrees/property-tracker/<feature-name>`
-12. **Complete task**: `bd done <id>`, then `/clear` for fresh context
+6. **Write tests FIRST (TDD Red Phase)**:
+   - Write **unit tests** (Vitest) for new logic, utils, API routes
+   - Write **E2E tests** (Playwright) for user-facing acceptance criteria
+   - Tests define expected behavior — no implementation code yet
+7. **Spin up environment & confirm tests fail (Red)**:
+   - Run the full environment restart (see "Environment Spin-Up Procedure" below)
+   - Run `npm run test:unit` → confirm new tests fail as expected
+   - Run `npm run test:e2e` → confirm new E2E tests fail as expected
+   - This validates the tests are actually testing something
+8. **Implement (Green Phase)**: Write code until all tests pass
+9. **Full environment validation (Green)**:
+   - Run the full environment restart again (clean slate)
+   - Run `npm run test:unit` → ALL tests must pass
+   - Run `npm run test:e2e` → ALL E2E tests must pass
+   - On failure: follow the "E2E Failure Investigation Protocol" below
+10. **Verify**: Use `superpowers:verification-before-completion` — lint, build, type-check
+11. **Create PR**: Push branch and create PR with `gh pr create`
+12. **Wait for CI**: Run `gh pr checks --watch` to wait for GitHub Actions and Vercel preview deploy to pass
+13. **Merge PR**: Only after CI passes, merge with `gh pr merge`
+14. **Cleanup**: `git worktree remove ~/worktrees/property-tracker/<feature-name>`
+15. **Complete task**: `bd done <id>`, then `/clear` for fresh context
 
 Always use a worktree for feature work. Never commit directly to main.
+
+## Environment Spin-Up Procedure
+**Run this before every test validation (steps 7 and 9 above). Full restart every time — no reuse.**
+
+```bash
+# 1. Stop everything
+docker compose down
+
+# 2. Start fresh DB
+docker compose up -d
+
+# 3. Wait for DB health check
+until docker compose exec db pg_isready -U postgres 2>/dev/null; do sleep 1; done
+
+# 4. Create bricktrack DB (if not exists) + push schema
+docker compose exec db psql -U postgres -c "CREATE DATABASE bricktrack;" 2>/dev/null || true
+npx drizzle-kit push
+
+# 5. Run unit tests
+npm run test:unit
+
+# 6. Run E2E (Playwright auto-starts dev server via webServer config)
+npm run test:e2e
+```
+
+**Notes:**
+- Playwright's `webServer` config automatically starts `npm run dev` — no manual dev server management needed
+- The `bricktrack` DB is what `.env.local` DATABASE_URL points to (not the default `property_tracker`)
+- E2E requires Clerk env vars (`CLERK_PUBLISHABLE_KEY`, `E2E_CLERK_USER_EMAIL`, etc.) in `.env.local`
+
+## E2E Test Standards
+All new E2E tests **must** follow these standards:
+
+1. **Test user-visible behavior** — navigate as a real user would, verify UI renders correctly
+2. **Check for uncaught errors** — use `page.on('pageerror')` to catch uncaught exceptions; test fails on any `pageerror`
+3. **Ignore noise** — `console.warn` and `console.log` from third-party libs are not failures
+4. **Clean up test data** — delete any created entities to avoid polluting subsequent runs
+5. **Add to existing spec files** when the feature fits an existing category (e.g., property features → `properties.spec.ts`). Create new spec only for genuinely new domains
+6. **Capture screenshots on failure** — already handled by Playwright `trace: 'on-first-retry'`
+
+## E2E Failure Investigation Protocol
+When E2E tests fail during step 9 (Green validation):
+
+**Attempt 1 — Automated diagnosis:**
+- Read Playwright HTML report and trace files
+- Check dev server terminal output for errors
+- Check browser console logs captured in the trace
+- Identify root cause and fix the code
+- Re-run the full environment validation (step 9)
+
+**Attempt 2 — Deeper investigation:**
+- Look at network requests in the Playwright trace
+- Check DB state: `docker compose exec db psql -U postgres -d bricktrack`
+- Check for race conditions, timing issues, or data ordering problems
+- Fix and re-run the full environment validation (step 9)
+
+**After 2 failed attempts — Notify user:**
+- Capture all evidence (logs, screenshots, trace)
+- Notify via ntfy: `"E2E tests failing after 2 fix attempts — need your input"`
+- Wait for user guidance before continuing
 
 ## Notifications
 **ALWAYS notify the user via ntfy for these events:**
