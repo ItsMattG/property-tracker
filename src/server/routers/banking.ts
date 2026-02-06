@@ -492,7 +492,9 @@ export const bankingRouter = router({
       return { accountsAdded, totalTransactions };
     }),
 
-  connect: bankProcedure.mutation(async ({ ctx }) => {
+  connect: bankProcedure
+    .input(z.object({ mobile: z.string().regex(/^\+61\d{9}$/, "Must be a valid Australian mobile number (+61...)") }))
+    .mutation(async ({ ctx, input }) => {
       // Look up user's basiqUserId
       const user = await ctx.db.query.users.findFirst({
         where: eq(users.id, ctx.portfolio.ownerId),
@@ -503,10 +505,7 @@ export const bankingRouter = router({
       }
 
       let basiqUserId = user.basiqUserId;
-
-      // Basiq requires a mobile number for auth links.
-      // Use a placeholder for sandbox/dev if user has no phone.
-      const mobile = "+61400000000";
+      const { mobile } = input;
 
       // Create Basiq user if needed
       if (!basiqUserId) {
@@ -518,7 +517,7 @@ export const bankingRouter = router({
           .set({ basiqUserId })
           .where(eq(users.id, user.id));
       } else {
-        // Ensure existing Basiq user has a mobile (required for auth links)
+        // Update mobile on existing Basiq user (required for auth links)
         await basiqService.updateUser(basiqUserId, { mobile });
       }
 
