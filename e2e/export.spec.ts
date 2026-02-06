@@ -1,6 +1,11 @@
 import { test, expect } from "./fixtures/auth";
+import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Export", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.export, "export feature flag is disabled");
+  });
+
   test("should display export page", async ({ authenticatedPage: page }) => {
     await page.goto("/export");
     await expect(page.getByRole("heading", { name: /export/i })).toBeVisible();

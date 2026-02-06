@@ -1,6 +1,11 @@
 import { test, expect } from "./fixtures/auth";
+import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Email Inbox", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.emails, "emails feature flag is disabled");
+  });
+
   test("global inbox page loads", async ({ authenticatedPage: page }) => {
     await page.goto("/emails");
 

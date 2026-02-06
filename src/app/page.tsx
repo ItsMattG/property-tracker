@@ -361,7 +361,7 @@ export default async function HomePage() {
           <h2 className="text-3xl font-bold mb-4">
             Ready to ditch the spreadsheet?
           </h2>
-          <p className="mb-8 opacity-90">
+          <p className="mb-8">
             Join Australian investors who track smarter and stress less at tax time.
           </p>
           <BottomCTA />

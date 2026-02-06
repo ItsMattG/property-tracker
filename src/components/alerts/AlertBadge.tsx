@@ -14,7 +14,7 @@ export function AlertBadge() {
   const hasCritical = (counts?.critical ?? 0) > 0;
 
   return (
-    <Button variant="ghost" size="icon" asChild className="relative">
+    <Button variant="ghost" size="icon" asChild className="relative" aria-label="Alerts">
       <Link href="/alerts">
         <Bell className="h-5 w-5" />
         {total > 0 && (

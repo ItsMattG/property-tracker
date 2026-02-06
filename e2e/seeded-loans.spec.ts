@@ -1,6 +1,11 @@
 import { test, expect } from "./fixtures/auth";
+import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Loans (Seeded Data)", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.loans, "loans feature flag is disabled");
+  });
+
   test.beforeEach(async ({ authenticatedPage: page }) => {
     await page.goto("/loans");
     await page.waitForLoadState("domcontentloaded");

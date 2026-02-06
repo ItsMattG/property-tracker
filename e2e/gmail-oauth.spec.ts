@@ -1,6 +1,11 @@
 import { test, expect } from "./fixtures/auth";
+import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Gmail OAuth Integration", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.emailConnections, "emailConnections feature flag is disabled");
+  });
+
   test("email connections page loads and shows connect button", async ({
     authenticatedPage: page,
   }) => {

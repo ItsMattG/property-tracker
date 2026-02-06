@@ -1,6 +1,10 @@
 import { authenticatedTest as test, expect } from "../fixtures/demo-account";
 
 test.describe("Reports Pages Audit", () => {
+  test.beforeEach(() => {
+    test.fixme(!process.env.E2E_DEMO_USER_EMAIL, "Demo account credentials not configured");
+  });
+
   const reportPages = [
     { path: "/reports", name: "Reports Hub" },
     { path: "/reports/tax", name: "Tax Report" },

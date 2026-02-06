@@ -1,6 +1,10 @@
 import { authenticatedTest as test, expect } from "../fixtures/demo-account";
 
 test.describe("Banking Page Audit", () => {
+  test.beforeEach(() => {
+    test.fixme(!process.env.E2E_DEMO_USER_EMAIL, "Demo account credentials not configured");
+  });
+
   test("captures banking connection states", async ({ audit }) => {
     const { page, addFinding, captureState } = audit;
 

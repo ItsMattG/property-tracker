@@ -1,6 +1,11 @@
 import { test, expect } from "./fixtures/auth";
+import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Compliance (Seeded Data)", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.compliance, "compliance feature flag is disabled");
+  });
+
   test.beforeEach(async ({ authenticatedPage: page }) => {
     await page.goto("/reports/compliance");
     await page.waitForLoadState("domcontentloaded");

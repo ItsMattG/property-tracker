@@ -1,7 +1,12 @@
 import { test, expect } from "./fixtures/auth";
+import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Task Management", () => {
   test.describe.configure({ mode: "serial" });
+
+  test.beforeEach(() => {
+    test.skip(!featureFlags.tasks, "tasks feature flag is disabled");
+  });
 
   test.beforeEach(async ({ authenticatedPage: page }) => {
     // Navigate to tasks page
