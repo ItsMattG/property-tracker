@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Landmark, Shield, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -8,8 +11,31 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc/client";
 import { useTour } from "@/hooks/useTour";
 
+function formatMobileForDisplay(value: string): string {
+  // Strip everything except digits
+  const digits = value.replace(/\D/g, "");
+  // Format as 04XX XXX XXX
+  if (digits.length <= 4) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+  return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7, 10)}`;
+}
+
+function toE164(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (digits.startsWith("0")) return `+61${digits.slice(1)}`;
+  if (digits.startsWith("61")) return `+${digits}`;
+  return `+61${digits}`;
+}
+
+function isValidAuMobile(value: string): boolean {
+  const digits = value.replace(/\D/g, "");
+  // Australian mobile: 04XX XXX XXX (10 digits starting with 04)
+  return /^04\d{8}$/.test(digits);
+}
+
 export default function BankingConnectPage() {
   useTour({ tourId: "banking" });
+  const [mobile, setMobile] = useState("");
 
   const connectMutation = trpc.banking.connect.useMutation({
     onSuccess: (data) => {
@@ -21,7 +47,11 @@ export default function BankingConnectPage() {
   });
 
   const handleConnect = () => {
-    connectMutation.mutate();
+    if (!isValidAuMobile(mobile)) {
+      toast.error("Please enter a valid Australian mobile number (04XX XXX XXX)");
+      return;
+    }
+    connectMutation.mutate({ mobile: toE164(mobile) });
   };
 
   const isConnecting = connectMutation.isPending;
@@ -99,12 +129,27 @@ export default function BankingConnectPage() {
             </div>
           </div>
 
+          <div className="border-t pt-6 space-y-2">
+            <Label htmlFor="mobile">Mobile number</Label>
+            <Input
+              id="mobile"
+              type="tel"
+              placeholder="04XX XXX XXX"
+              value={mobile}
+              onChange={(e) => setMobile(formatMobileForDisplay(e.target.value))}
+              maxLength={12}
+            />
+            <p className="text-xs text-muted-foreground">
+              Basiq will send an SMS code to verify your identity.
+            </p>
+          </div>
+
           <Button
             data-tour="basiq-connect"
             onClick={handleConnect}
             className="w-full"
             size="lg"
-            disabled={isConnecting}
+            disabled={isConnecting || !isValidAuMobile(mobile)}
           >
             {isConnecting ? "Connecting..." : "Connect Bank Account"}
           </Button>
