@@ -65,10 +65,10 @@ export function BatchSuggestionCard({
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 pt-4 px-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base capitalize">{merchantKey}</CardTitle>
+            <CardTitle className="text-base">{merchantKey.replace(/\b\w/g, (c) => c.toUpperCase())}</CardTitle>
             <span className="text-sm text-muted-foreground">
               ({transactions.length} transactions)
             </span>
@@ -94,8 +94,8 @@ export function BatchSuggestionCard({
           </Tooltip>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between mb-4">
+      <CardContent className="pt-0 px-4 pb-4">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <ConfidenceBadge confidence={avgConfidence} showValue />
@@ -137,7 +137,7 @@ export function BatchSuggestionCard({
         </div>
 
         {expanded && (
-          <div className="space-y-2 mt-4 border-t pt-4">
+          <div className="space-y-2 mt-2 border-t pt-3">
             {transactions.map((txn) => (
               <SuggestionCard
                 key={txn.id}
