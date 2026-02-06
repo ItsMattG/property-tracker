@@ -73,12 +73,13 @@ export default function PropertiesPage() {
         <PropertyListSkeleton count={3} />
       ) : properties && properties.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((property) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-              onDelete={handleDelete}
-            />
+          {properties.map((property, i) => (
+            <div key={property.id} className="animate-card-entrance" style={{ '--stagger-index': i } as React.CSSProperties}>
+              <PropertyCard
+                property={property}
+                onDelete={handleDelete}
+              />
+            </div>
           ))}
         </div>
       ) : (

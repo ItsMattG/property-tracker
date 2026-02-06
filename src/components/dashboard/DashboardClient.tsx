@@ -16,6 +16,7 @@ import { TopPerformerMatchesWidget } from "@/components/similar-properties";
 import { useTour } from "@/hooks/useTour";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 import { RentalYieldCard } from "@/components/rental-yield";
+import { PortfolioValueChart } from "./PortfolioValueChart";
 import { ErrorState } from "@/components/ui/error-state";
 import { getErrorMessage } from "@/lib/errors";
 import { TrialPropertyLimitBanner } from "@/components/banners/TrialPropertyLimitBanner";
@@ -157,8 +158,9 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
       ) : (
       <div data-tour="portfolio-summary" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="animate-card-entrance" style={{ '--stagger-index': 0 } as React.CSSProperties}>
         <Link href="/properties">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
+          <Card className="interactive-card hover:border-primary transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Properties</CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -179,9 +181,11 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
             </CardContent>
           </Card>
         </Link>
+        </div>
 
+        <div className="animate-card-entrance" style={{ '--stagger-index': 1 } as React.CSSProperties}>
         <Link href="/transactions">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
+          <Card className="interactive-card hover:border-primary transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
                 Transactions
@@ -204,9 +208,11 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
             </CardContent>
           </Card>
         </Link>
+        </div>
 
+        <div className="animate-card-entrance" style={{ '--stagger-index': 2 } as React.CSSProperties}>
         <Link href="/transactions?category=uncategorized">
-          <Card className="hover:border-primary transition-colors cursor-pointer">
+          <Card className="interactive-card hover:border-primary transition-colors cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">
                 Uncategorized
@@ -229,18 +235,24 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
             </CardContent>
           </Card>
         </Link>
+        </div>
 
+        <div className="animate-card-entrance" style={{ '--stagger-index': 3 } as React.CSSProperties}>
         <TaxPositionCard />
+        </div>
       </div>
       )}
 
-      {properties && properties.length > 0 && (
-        <ClimateRiskSummary properties={properties} />
-      )}
+      <PortfolioValueChart />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {properties && properties.length > 0 && (
+          <ClimateRiskSummary properties={properties} />
+        )}
+        <RentalYieldCard />
+      </div>
 
       <SavingsWidget />
-
-      <RentalYieldCard />
 
       <TopPerformerMatchesWidget />
     </div>

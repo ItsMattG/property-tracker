@@ -66,22 +66,24 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {reportTypes.map((report) => (
-          <Link key={report.href} href={report.href}>
-            <Card className="h-full hover:bg-accent/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <report.icon className="h-6 w-6 text-primary" />
+        {reportTypes.map((report, i) => (
+          <div key={report.href} className="animate-card-entrance" style={{ '--stagger-index': i } as React.CSSProperties}>
+            <Link href={report.href}>
+              <Card className="h-full interactive-card hover:bg-accent/50 transition-colors cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <report.icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <CardTitle className="text-lg">{report.title}</CardTitle>
                   </div>
-                  <CardTitle className="text-lg">{report.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>{report.description}</CardDescription>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>{report.description}</CardDescription>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
         ))}
       </div>
     </div>

@@ -38,6 +38,14 @@
 	--radius-md: 0.5rem;
 	--radius-lg: 0.75rem;
 	--radius-xl: 1rem;
+
+	/* Multi-hue accent palette */
+	--color-secondary-accent: #2563EB;
+	--color-secondary-accent-light: #dbeafe;
+	--color-accent-warm: #D97706;
+	--color-accent-warm-light: #fef3c7;
+	--color-highlight: #7C3AED;
+	--color-highlight-light: #ede9fe;
 }
 
 /* Clean Theme (Blue) */
@@ -55,6 +63,12 @@
 	--text-muted: #9ca3af;
 	--border-light: #e5e7eb;
 	--border-medium: #d1d5db;
+	--color-secondary-accent: #0284C7;
+	--color-secondary-accent-light: #e0f2fe;
+	--color-accent-warm: #D97706;
+	--color-accent-warm-light: #fef3c7;
+	--color-highlight: #7C3AED;
+	--color-highlight-light: #ede9fe;
 }
 
 /* Dark Theme */
@@ -73,6 +87,12 @@
 	--border-light: #334155;
 	--border-medium: #475569;
 	--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+	--color-secondary-accent: #60A5FA;
+	--color-secondary-accent-light: #1e3a5f;
+	--color-accent-warm: #FBBF24;
+	--color-accent-warm-light: #451a03;
+	--color-highlight: #A78BFA;
+	--color-highlight-light: #2e1065;
 }
 
 /* Friendly Theme */
@@ -90,6 +110,12 @@
 	--text-muted: #a8a29e;
 	--border-light: #e7e5e4;
 	--border-medium: #d6d3d1;
+	--color-secondary-accent: #0891B2;
+	--color-secondary-accent-light: #cffafe;
+	--color-accent-warm: #D97706;
+	--color-accent-warm-light: #fef3c7;
+	--color-highlight: #7C3AED;
+	--color-highlight-light: #ede9fe;
 	--radius-sm: 0.5rem;
 	--radius-md: 1rem;
 	--radius-lg: 1.5rem;
@@ -113,4 +139,10 @@
 	--radius-sm: 0.125rem;
 	--radius-md: 0.25rem;
 	--radius-lg: 0.375rem;
+	--color-secondary-accent: #0EA5E9;
+	--color-secondary-accent-light: #e0f2fe;
+	--color-accent-warm: #EA580C;
+	--color-accent-warm-light: #fff7ed;
+	--color-highlight: #7C3AED;
+	--color-highlight-light: #ede9fe;
 }
