@@ -62,9 +62,10 @@ test.describe("Feature Request Submission", () => {
   });
 });
 
-test.describe("Feedback Button in Sidebar", () => {
-  test("should show feedback button in sidebar", async ({ authenticatedPage: page }) => {
-    await expect(page.getByRole("button", { name: /feedback/i })).toBeVisible();
+test.describe("Feedback Button in Header", () => {
+  test("should show feedback button in header", async ({ authenticatedPage: page }) => {
+    const header = page.locator("header");
+    await expect(header.getByRole("button", { name: /feedback/i })).toBeVisible();
   });
 
   test("should open dropdown with options", async ({ authenticatedPage: page }) => {
@@ -119,17 +120,8 @@ test.describe("Settings Navigation", () => {
     await expect(page.getByRole("link", { name: /feature requests/i })).toBeVisible();
   });
 
-  test("should have bug reports link in settings", async ({ authenticatedPage: page }) => {
-    await expect(page.getByRole("link", { name: /bug reports/i })).toBeVisible();
-  });
-
   test("should navigate to feature requests settings", async ({ authenticatedPage: page }) => {
     await page.getByRole("link", { name: /feature requests/i }).click();
     await expect(page).toHaveURL(/settings\/feature-requests/);
-  });
-
-  test("should navigate to bug reports settings", async ({ authenticatedPage: page }) => {
-    await page.getByRole("link", { name: /bug reports/i }).click();
-    await expect(page).toHaveURL(/settings\/bug-reports/);
   });
 });
