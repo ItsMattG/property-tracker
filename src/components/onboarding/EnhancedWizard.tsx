@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -250,17 +251,16 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="wiz-date">Purchase Date</Label>
-                    <Input
-                      id="wiz-date"
-                      type="date"
+                    <Label>Purchase Date</Label>
+                    <DatePicker
                       value={propertyData.purchaseDate}
-                      onChange={(e) =>
+                      onChange={(date) =>
                         setPropertyData({
                           ...propertyData,
-                          purchaseDate: e.target.value,
+                          purchaseDate: date,
                         })
                       }
+                      placeholder="Select purchase date"
                     />
                   </div>
                 </div>

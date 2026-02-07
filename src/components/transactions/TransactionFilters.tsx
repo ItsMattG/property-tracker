@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -117,34 +118,32 @@ export function TransactionFilters({
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="start-date">From</Label>
-        <Input
-          id="start-date"
-          type="date"
+        <Label>From</Label>
+        <DatePicker
           value={filters.startDate ?? ""}
-          onChange={(e) =>
+          onChange={(date) =>
             onFiltersChange({
               ...filters,
-              startDate: e.target.value || undefined,
+              startDate: date || undefined,
             })
           }
-          className="w-[150px]"
+          placeholder="Start date"
+          className="w-[200px]"
         />
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="end-date">To</Label>
-        <Input
-          id="end-date"
-          type="date"
+        <Label>To</Label>
+        <DatePicker
           value={filters.endDate ?? ""}
-          onChange={(e) =>
+          onChange={(date) =>
             onFiltersChange({
               ...filters,
-              endDate: e.target.value || undefined,
+              endDate: date || undefined,
             })
           }
-          className="w-[150px]"
+          placeholder="End date"
+          className="w-[200px]"
         />
       </div>
     </div>

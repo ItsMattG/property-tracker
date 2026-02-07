@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -248,10 +249,9 @@ export function SettlementUpload({
             </div>
             <div className="space-y-2">
               <Label>Settlement Date</Label>
-              <Input
-                type="date"
+              <DatePicker
                 value={settlementDate}
-                onChange={(e) => setSettlementDate(e.target.value)}
+                onChange={setSettlementDate}
               />
             </div>
           </div>

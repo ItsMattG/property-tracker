@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -148,7 +149,7 @@ export function AddTransactionDialog({
                   <FormItem>
                     <FormLabel>Date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
