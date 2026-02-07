@@ -2,8 +2,7 @@ import { testDb, schema } from "./db";
 import { randomUUID } from "crypto";
 
 // Test user constants
-export const TEST_CLERK_ID = "test_clerk_e2e_001";
-export const TEST_USER_EMAIL = "e2e-test@propertytracker.test";
+export const TEST_USER_EMAIL = "test_e2e@bricktrack.au";
 
 // Will be set after seeding the test user
 let testUserId: string | null = null;
@@ -27,9 +26,9 @@ export async function seedTestUser(overrides: Partial<typeof schema.users.$infer
   const id = randomUUID();
   const user = {
     id,
-    clerkId: TEST_CLERK_ID,
     email: TEST_USER_EMAIL,
     name: "E2E Test User",
+    emailVerified: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,

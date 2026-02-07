@@ -18,9 +18,9 @@ async function verify() {
 
   // Check user
   console.log("1. Checking users table...");
-  const users = await sql`SELECT id, clerk_id, email, name FROM users LIMIT 5`;
+  const users = await sql`SELECT id, email, name FROM users LIMIT 5`;
   console.log(`   Found ${users.length} users:`);
-  users.forEach((u: any) => console.log(`   - ${u.email} (id: ${u.id}, clerk_id: ${u.clerk_id})`));
+  users.forEach((u: any) => console.log(`   - ${u.email} (id: ${u.id})`));
 
   // Check subscription
   console.log("\n2. Checking subscriptions...");

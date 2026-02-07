@@ -242,7 +242,7 @@ npm run test:e2e
 **Notes:**
 - Playwright's `webServer` config automatically starts `npm run dev` — no manual dev server management needed
 - The `bricktrack` DB is what `.env.local` DATABASE_URL points to (not the default `property_tracker`)
-- E2E requires Clerk env vars (`CLERK_PUBLISHABLE_KEY`, `E2E_CLERK_USER_EMAIL`, etc.) in `.env.local`
+- E2E requires BetterAuth env vars (`BETTER_AUTH_SECRET`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD`) in `.env.local`
 
 ## Playwright Authenticated Screenshots
 When you need to screenshot or interact with authenticated pages (dashboard, settings, etc.) using Playwright, log in with the test user credentials from `.env.local`:
@@ -253,12 +253,11 @@ const { chromium } = require('@playwright/test');
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 
-  // Log in via Clerk
+  // Log in via BetterAuth form
   await page.goto('http://localhost:3000/sign-in');
-  await page.fill('input[name="identifier"]', process.env.E2E_CLERK_USER_EMAIL);
-  await page.click('button:has-text("Continue")');
-  await page.fill('input[name="password"]', process.env.E2E_CLERK_USER_PASSWORD);
-  await page.click('button:has-text("Continue")');
+  await page.getByLabel('Email').fill(process.env.E2E_USER_EMAIL);
+  await page.getByLabel('Password').fill(process.env.E2E_USER_PASSWORD);
+  await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL('**/dashboard', { timeout: 15000 });
 
   // Now take authenticated screenshots
@@ -267,7 +266,7 @@ const { chromium } = require('@playwright/test');
 })();
 ```
 
-**Credentials:** Read `E2E_CLERK_USER_EMAIL` and `E2E_CLERK_USER_PASSWORD` from `.env.local`. Never hardcode them.
+**Credentials:** Read `E2E_USER_EMAIL` and `E2E_USER_PASSWORD` from `.env.local`. Never hardcode them.
 
 ## E2E Test Standards
 All new E2E tests **must** follow these standards:

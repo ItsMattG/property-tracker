@@ -22,13 +22,13 @@ npm run ui-audit:report
 
 ### 1. Demo Account
 
-A demo account must exist in Clerk with email/password authentication.
+A demo account must exist with email/password authentication.
 
 Set environment variables in `.env.local`:
 
 ```bash
-E2E_DEMO_USER_EMAIL=demo@propertytracker.test
-E2E_DEMO_USER_PASSWORD=Demo123!Property
+E2E_USER_EMAIL=demo@propertytracker.test
+E2E_USER_PASSWORD=Demo123!Property
 ```
 
 ### 2. Seed Data (Optional but Recommended)
@@ -36,7 +36,7 @@ E2E_DEMO_USER_PASSWORD=Demo123!Property
 For comprehensive testing, seed the demo account with edge case data:
 
 ```bash
-npm run seed:demo -- --clerk-id=<demo_user_clerk_id> --clean
+npm run seed:demo -- --email=demo@propertytracker.test --clean
 ```
 
 This creates properties, bank accounts (including error states), transactions, and other test data.
@@ -172,9 +172,9 @@ await captureState("mobile");           // dashboard-mobile.png
 
 ### Tests fail to authenticate
 
-1. Check Clerk test mode is enabled
-2. Verify demo account credentials in `.env.local`
-3. Ensure `@clerk/testing/playwright` is configured
+1. Verify demo account credentials in `.env.local`
+2. Ensure BetterAuth is properly configured
+3. Check that the demo account exists in the database
 
 ### No screenshots generated
 
