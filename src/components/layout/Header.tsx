@@ -2,8 +2,18 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 import { QuickAddButton } from "./QuickAddButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { HelpMenu } from "./HelpMenu";
 import { AlertBadge } from "@/components/alerts/AlertBadge";
 import { WhatsNewDrawer } from "@/components/changelog/WhatsNewDrawer";
@@ -162,6 +172,54 @@ function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
   return [];
 }
 
+function UserMenu() {
+  const { data: session } = authClient.useSession();
+  const router = useRouter();
+
+  if (!session?.user) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full">
+          {session.user.image ? (
+            <img
+              src={session.user.image}
+              alt={session.user.name ?? ""}
+              className="h-8 w-8 rounded-full"
+            />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+              {(session.user.name?.[0] ?? session.user.email[0]).toUpperCase()}
+            </div>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{session.user.name}</span>
+            <span className="text-xs text-muted-foreground">{session.user.email}</span>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/settings")}>
+          Settings
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={async () => {
+            await authClient.signOut();
+            router.push("/");
+          }}
+        >
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
@@ -183,7 +241,7 @@ export function Header() {
             <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />
             <AlertBadge />
             <QuickAddButton />
-            <UserButton afterSignOutUrl="/" />
+            <UserMenu />
           </div>
         </TooltipProvider>
       </header>
