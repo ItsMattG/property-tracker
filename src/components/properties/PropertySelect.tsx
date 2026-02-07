@@ -48,7 +48,7 @@ export function PropertySelect({
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
       )}
-      <SelectContent>
+      <SelectContent position="popper" className="max-h-60">
         {properties?.map((property) => (
           <SelectItem key={property.id} value={property.id}>
             {property.address}, {property.suburb}
