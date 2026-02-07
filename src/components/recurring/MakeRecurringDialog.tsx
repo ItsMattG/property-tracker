@@ -151,7 +151,7 @@ export function MakeRecurringDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Create Recurring Transaction</DialogTitle>
           <DialogDescription>
@@ -201,7 +201,7 @@ export function MakeRecurringDialog({
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-60">
                         {categories.map((cat) => (
                           <SelectItem key={cat.value} value={cat.value}>
                             {cat.label}
@@ -227,7 +227,7 @@ export function MakeRecurringDialog({
                         <SelectValue placeholder="Select frequency" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent position="popper" className="max-h-60">
                       {frequencyOptions.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
                           {opt.label}
@@ -256,7 +256,7 @@ export function MakeRecurringDialog({
                           <SelectValue placeholder="Select day" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-60">
                         {dayOfWeekOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
@@ -399,7 +399,7 @@ export function MakeRecurringDialog({
                           <SelectValue placeholder="Any bank account" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-60">
                         <SelectItem value="">Any bank account</SelectItem>
                         {bankAccounts.map((account) => (
                           <SelectItem key={account.id} value={account.id}>

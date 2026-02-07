@@ -107,7 +107,7 @@ export function AddTransactionDialog({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Add Manual Transaction</DialogTitle>
           <DialogDescription>
@@ -128,7 +128,7 @@ export function AddTransactionDialog({
                         <SelectValue placeholder="Select property" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent position="popper" className="max-h-60">
                       {properties?.map((property) => (
                         <SelectItem key={property.id} value={property.id}>
                           {property.address}, {property.suburb}
@@ -202,7 +202,7 @@ export function AddTransactionDialog({
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent position="popper" className="max-h-60">
                       {categories.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           {cat.label}

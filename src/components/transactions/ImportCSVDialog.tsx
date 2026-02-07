@@ -71,7 +71,7 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
           Import CSV
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Import Transactions from CSV</DialogTitle>
           <DialogDescription>
@@ -86,7 +86,7 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select property" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" className="max-h-60">
                 {properties?.map((property) => (
                   <SelectItem key={property.id} value={property.id}>
                     {property.address}, {property.suburb}
