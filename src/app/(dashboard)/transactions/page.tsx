@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
-import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
 import { ImportCSVDialog } from "@/components/transactions/ImportCSVDialog";
 import { ReconciliationView } from "@/components/recurring/ReconciliationView";
 import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
-import { ArrowLeftRight, List, Calendar } from "lucide-react";
+import { ArrowLeftRight, List, Calendar, Plus } from "lucide-react";
+import Link from "next/link";
 import type { Category, TransactionFilterInput } from "@/types/category";
 import { useTour } from "@/hooks/useTour";
 import { toast } from "sonner";
@@ -198,7 +198,12 @@ export default function TransactionsPage() {
         </div>
         <div className="flex items-center gap-2">
           <ImportCSVDialog onSuccess={() => utils.transaction.list.invalidate()} />
-          <AddTransactionDialog onSuccess={() => utils.transaction.list.invalidate()} />
+          <Button asChild>
+            <Link href="/transactions/new">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Transaction
+            </Link>
+          </Button>
         </div>
       </div>
 
