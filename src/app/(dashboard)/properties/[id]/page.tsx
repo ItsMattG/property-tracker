@@ -202,7 +202,9 @@ export default function PropertyDetailPage() {
       )}
 
       {/* Benchmark Card */}
-      <BenchmarkCard propertyId={propertyId} />
+      {featureFlags.performanceBenchmark && (
+        <BenchmarkCard propertyId={propertyId} />
+      )}
 
       {/* Performance Card */}
       {featureFlags.performanceBenchmark && (
