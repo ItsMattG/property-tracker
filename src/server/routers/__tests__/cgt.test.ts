@@ -4,7 +4,7 @@ import { createMockContext, createTestCaller } from "../../__tests__/test-utils"
 describe("cgt router", () => {
   const mockUser = {
     id: "user-1",
-    clerkId: "clerk_123",
+    userId: "clerk_123",
     email: "test@example.com",
     name: "Test User",
     createdAt: new Date(),
@@ -31,7 +31,7 @@ describe("cgt router", () => {
 
   describe("getCostBase", () => {
     it("returns cost base with capital transactions", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
 
       const mockTransactions = [
         { id: "tx-1", propertyId: "550e8400-e29b-41d4-a716-446655440000", category: "stamp_duty", amount: "-35200", description: "Stamp duty" },
@@ -57,7 +57,7 @@ describe("cgt router", () => {
     });
 
     it("throws NOT_FOUND for non-existent property", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
 
       ctx.db = {
         query: {
@@ -76,7 +76,7 @@ describe("cgt router", () => {
 
   describe("recordSale", () => {
     it("creates sale record and archives property", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
 
       const mockTransactions = [
         { id: "tx-1", propertyId: "550e8400-e29b-41d4-a716-446655440000", category: "stamp_duty", amount: "-35200" },
@@ -129,7 +129,7 @@ describe("cgt router", () => {
     });
 
     it("rejects sale for already sold property", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
 
       const soldProperty = { ...mockProperty, status: "sold" };
 

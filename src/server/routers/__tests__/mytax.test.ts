@@ -9,7 +9,7 @@ import { buildMyTaxReport } from "../../services/mytax";
 
 const mockUser = {
   id: "user-1",
-  clerkId: "clerk_123",
+  userId: "clerk_123",
   email: "test@example.com",
   name: "Test User",
   createdAt: new Date(),
@@ -23,7 +23,7 @@ describe("mytax router", () => {
 
   describe("getReport", () => {
     it("returns MyTax report for given year", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
       ctx.db = {
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
