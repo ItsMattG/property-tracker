@@ -2938,7 +2938,7 @@ export const tasks = pgTable(
     userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
-    assigneeId: uuid("assignee_id").references(() => users.id, {
+    assigneeId: text("assignee_id").references(() => users.id, {
       onDelete: "set null",
     }),
     propertyId: uuid("property_id").references(() => properties.id, {
@@ -3286,10 +3286,10 @@ export const referrals = pgTable(
   "referrals",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    referrerUserId: uuid("referrer_user_id")
+    referrerUserId: text("referrer_user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
-    refereeUserId: uuid("referee_user_id")
+    refereeUserId: text("referee_user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     referralCodeId: uuid("referral_code_id")
