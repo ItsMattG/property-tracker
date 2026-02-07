@@ -16,20 +16,18 @@ import {
   Settings,
   Users,
   Sparkles,
-  ShieldCheck,
+  Plus,
+  Briefcase,
   Calculator,
   Compass,
   MessageSquarePlus,
-  Mail,
-  CheckSquare,
   ChevronsLeft,
   ChevronsRight,
   ChevronDown,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
-import { PortfolioSwitcher } from "./PortfolioSwitcher";
-import { EntitySwitcher } from "@/components/entities";
 import { useSidebar } from "./SidebarProvider";
+import { Button } from "@/components/ui/button";
 import { featureFlags, type FeatureFlag } from "@/config/feature-flags";
 import {
   Tooltip,
@@ -87,13 +85,11 @@ const navGroups: Array<{
     ],
   },
   {
-    label: "Communication",
-    icon: Mail,
-    defaultOpen: true,
+    label: "Manage",
+    icon: Settings,
+    defaultOpen: false,
     items: [
-      { href: "/alerts", label: "Alerts", icon: Bell, featureFlag: "alerts" },
-      { href: "/emails", label: "Emails", icon: Mail, featureFlag: "emails" },
-      { href: "/tasks", label: "Tasks", icon: CheckSquare, featureFlag: "tasks" },
+      { href: "/entities", label: "Entities", icon: Briefcase },
     ],
   },
 ];
@@ -243,9 +239,6 @@ export function Sidebar() {
     refetchOnWindowFocus: false,
     enabled: shouldFetchPendingCount,
   });
-  const { data: activeEntity } = trpc.entity.getActive.useQuery(undefined, {
-    staleTime: Infinity,
-  });
 
   const handlePrefetch = (href: string) => {
     if (href === "/dashboard") {
@@ -306,25 +299,26 @@ export function Sidebar() {
           </Link>
         </div>
 
-        {/* Portfolio Switcher */}
-        {!isCollapsed && <PortfolioSwitcher />}
-
-        {/* Entity Switcher */}
+        {/* Add Property CTA */}
         <div className={cn("mb-4", isCollapsed && "flex justify-center")}>
-          <EntitySwitcher isCollapsed={isCollapsed} />
-          {!isCollapsed && activeEntity && (activeEntity.type === "trust" || activeEntity.type === "smsf") && (
-            <Link
-              href={`/entities/${activeEntity.id}/compliance`}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 mt-2 rounded-md text-sm font-medium transition-colors cursor-pointer",
-                pathname === `/entities/${activeEntity.id}/compliance`
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              )}
-            >
-              <ShieldCheck className="w-5 h-5" />
-              Entity Compliance
-            </Link>
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild size="icon" className="w-10 h-10">
+                  <Link href="/properties/new">
+                    <Plus className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Add Property</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button asChild className="w-full">
+              <Link href="/properties/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Property
+              </Link>
+            </Button>
           )}
         </div>
 
