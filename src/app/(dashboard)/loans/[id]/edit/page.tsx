@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { LoanForm, LoanFormValues } from "@/components/loans/LoanForm";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 export default function EditLoanPage() {
   const params = useParams<{ id: string }>();
@@ -59,6 +60,8 @@ export default function EditLoanPage() {
         <h2 className="text-2xl font-bold">Edit Loan</h2>
         <p className="text-muted-foreground">
           Update details for your {loan.lender} loan
+          {" "}&middot; last updated{" "}
+          {formatDistanceToNow(new Date(loan.updatedAt), { addSuffix: true })}
         </p>
       </div>
 
