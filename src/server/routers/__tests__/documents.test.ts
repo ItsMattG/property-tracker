@@ -42,7 +42,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 describe("documents router", () => {
   const mockUser = {
     id: "user-1",
-    userId: "clerk_123",
+    userId: "user-1",
     email: "test@example.com",
     name: "Test User",
     createdAt: new Date(),
@@ -146,7 +146,7 @@ describe("documents router", () => {
 
   describe("getUploadUrl", () => {
     it("returns signed upload URL for property document", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -177,7 +177,7 @@ describe("documents router", () => {
     });
 
     it("rejects when neither propertyId nor transactionId provided", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -197,7 +197,7 @@ describe("documents router", () => {
     });
 
     it("rejects when both propertyId and transactionId provided", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -219,7 +219,7 @@ describe("documents router", () => {
     });
 
     it("rejects non-existent property", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -243,7 +243,7 @@ describe("documents router", () => {
 
   describe("create", () => {
     it("creates document record for property", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const mockExtraction = {
         id: "880e8400-e29b-41d4-a716-446655440003",
@@ -296,7 +296,7 @@ describe("documents router", () => {
 
   describe("list", () => {
     it("returns documents for property with signed URLs", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -326,7 +326,7 @@ describe("documents router", () => {
 
   describe("delete", () => {
     it("deletes document from storage and database", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const deleteMock = vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue(undefined),
@@ -355,7 +355,7 @@ describe("documents router", () => {
     });
 
     it("rejects non-existent document", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {

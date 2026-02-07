@@ -4,7 +4,7 @@ import { createMockContext, createTestCaller } from "../../__tests__/test-utils"
 describe("propertyValue router", () => {
   const mockUser = {
     id: "user-1",
-    userId: "clerk_123",
+    userId: "user-1",
     email: "test@example.com",
     name: "Test User",
     createdAt: new Date(),
@@ -44,7 +44,7 @@ describe("propertyValue router", () => {
 
   describe("create", () => {
     it("creates a property value entry", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -71,7 +71,7 @@ describe("propertyValue router", () => {
     });
 
     it("throws error if property not found", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -93,7 +93,7 @@ describe("propertyValue router", () => {
 
   describe("list", () => {
     it("returns value history for a property", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -115,7 +115,7 @@ describe("propertyValue router", () => {
     });
 
     it("throws error if property not found", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -135,7 +135,7 @@ describe("propertyValue router", () => {
 
   describe("getLatest", () => {
     it("returns most recent value for a property", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -156,7 +156,7 @@ describe("propertyValue router", () => {
     });
 
     it("returns null if no value exists", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -175,7 +175,7 @@ describe("propertyValue router", () => {
     });
 
     it("throws error if property not found", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -195,7 +195,7 @@ describe("propertyValue router", () => {
 
   describe("delete", () => {
     it("deletes a manual property value entry", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -217,7 +217,7 @@ describe("propertyValue router", () => {
     });
 
     it("throws error when trying to delete non-manual valuation", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
       const automatedValuation = { ...mockPropertyValue, source: "mock" };
 
       ctx.db = {
@@ -234,7 +234,7 @@ describe("propertyValue router", () => {
     });
 
     it("throws error if valuation not found", async () => {
-      const ctx = createMockContext({ userId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
