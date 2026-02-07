@@ -34,6 +34,8 @@ export const featureFlags = {
   // ── Property detail sections ────────────────────────────────────
   valuation: false,
   climateRisk: false,
+  milestones: false,
+  performanceBenchmark: false,
   similarProperties: false,
 
   // ── Other UI ──────────────────────────────────────────────────────

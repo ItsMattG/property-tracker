@@ -172,24 +172,26 @@ export default function PropertyDetailPage() {
       {featureFlags.valuation && <ValuationCard propertyId={propertyId} />}
 
       {/* Quick Links */}
-      <Card>
-        <CardContent className="pt-6 space-y-3">
-          <Link
-            href={`/properties/${propertyId}/valuation`}
-            className="flex items-center gap-2 text-primary hover:underline"
-          >
-            <BarChart3 className="h-4 w-4" />
-            View Full Valuation History & Growth Stats
-          </Link>
-          <Link
-            href={`/properties/${propertyId}/settlement`}
-            className="flex items-center gap-2 text-primary hover:underline"
-          >
-            <FileText className="h-4 w-4" />
-            Upload Settlement Statement for CGT Cost Base
-          </Link>
-        </CardContent>
-      </Card>
+      {featureFlags.valuation && (
+        <Card>
+          <CardContent className="pt-6 space-y-3">
+            <Link
+              href={`/properties/${propertyId}/valuation`}
+              className="flex items-center gap-2 text-primary hover:underline"
+            >
+              <BarChart3 className="h-4 w-4" />
+              View Full Valuation History & Growth Stats
+            </Link>
+            <Link
+              href={`/properties/${propertyId}/settlement`}
+              className="flex items-center gap-2 text-primary hover:underline"
+            >
+              <FileText className="h-4 w-4" />
+              Upload Settlement Statement for CGT Cost Base
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Climate Risk Card */}
       {featureFlags.climateRisk && (
@@ -203,10 +205,12 @@ export default function PropertyDetailPage() {
       <BenchmarkCard propertyId={propertyId} />
 
       {/* Performance Card */}
-      <PerformanceCard propertyId={propertyId} />
+      {featureFlags.performanceBenchmark && (
+        <PerformanceCard propertyId={propertyId} />
+      )}
 
       {/* Milestones Card */}
-      <MilestonesCard propertyId={propertyId} />
+      {featureFlags.milestones && <MilestonesCard propertyId={propertyId} />}
 
       {/* Similar Properties Section */}
       {featureFlags.similarProperties && (
