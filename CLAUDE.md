@@ -307,12 +307,16 @@ When E2E tests fail during step 9 (Green validation):
 4. When waiting for CI to finish
 5. When you've finished a set of changes and are waiting for the user to test
 
-**Notification command (run this, do not ask):**
+**Notification command (run BOTH, do not ask):**
 ```bash
+# iPhone (ntfy)
 curl -s -X POST "https://ntfy.sh/property-tracker-claude" \
   -d "YOUR MESSAGE HERE" \
   -H "Title: Claude Code" \
   -H "Priority: high"
+
+# Mac (native notification)
+osascript -e 'display notification "YOUR MESSAGE HERE" with title "Claude Code"'
 ```
 
 **Examples:**
