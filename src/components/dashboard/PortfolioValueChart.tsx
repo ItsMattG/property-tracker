@@ -103,8 +103,8 @@ export function PortfolioValueChart() {
           <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid
@@ -131,7 +131,7 @@ export function PortfolioValueChart() {
             <Area
               type="monotone"
               dataKey="value"
-              stroke="hsl(var(--primary))"
+              stroke="var(--color-primary)"
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#portfolioGradient)"
