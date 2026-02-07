@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     const summary = await seed({
-      userId: session.user.id,
+      email: session.user.email,
       mode,
       clean,
     });
