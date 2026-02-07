@@ -116,10 +116,11 @@ Use Beads (`bd`) for persistent task tracking across sessions:
 ## Task Completion Workflow
 After completing each task:
 1. Mark complete in Beads: `bd done <id>`
-2. Create a PR for it
-3. Merge the PR
-4. Run `/compact`
-5. Begin the next task (check `bd ready`)
+2. Create a PR targeting `develop`
+3. Merge the PR into `develop`
+4. When ready to release: create PR from `develop` → `main` and merge
+5. Run `/compact`
+6. Begin the next task (check `bd ready`)
 
 ## Git Worktrees (Required for Feature Work)
 Use git worktrees to isolate feature work. This prevents branch conflicts when multiple Claude sessions run in parallel.
@@ -131,8 +132,8 @@ mkdir -p ~/worktrees/property-tracker
 
 **For each feature:**
 ```bash
-# Create worktree with feature branch
-git worktree add ~/worktrees/property-tracker/<feature-name> -b feature/<feature-name>
+# Create worktree with feature branch (branching from develop)
+git worktree add ~/worktrees/property-tracker/<feature-name> -b feature/<feature-name> develop
 
 # Copy .env.local into the worktree (not symlink — avoids accidental edits to shared file)
 cp ~/Documents/property-tracker/.env.local ~/worktrees/property-tracker/<feature-name>/.env.local
@@ -151,6 +152,28 @@ git worktree remove ~/worktrees/property-tracker/<feature-name>
 - No branch switching conflicts between sessions
 - Main repo stays on `main` for quick checks
 - Parallel feature development without interference
+
+## Staging & Production
+
+**Branch model:**
+- `develop` = staging (auto-deploys to `staging.bricktrack.au`)
+- `main` = production (auto-deploys to `bricktrack.au`)
+- Feature branches target `develop`, never `main` directly
+- Exception: `hotfix/*` branches target `main` for emergency fixes
+
+**Promoting to production:**
+1. Verify staging at `staging.bricktrack.au`
+2. Create PR: `develop` → `main`
+3. Merge after CI passes — production auto-deploys
+
+**Emergency hotfix:**
+1. Branch `hotfix/*` from `main`
+2. PR directly to `main`
+3. After merge, also merge `main` back into `develop`
+
+**Rollback:**
+- Vercel dashboard → Deployments → Promote previous deployment to Production (instant, ~5 seconds)
+- Git-level: `git revert -m 1 <sha> && git push origin main`
 
 ## Development Workflow (TDD + E2E Validated)
 Always follow this workflow for new features. **Every feature must be test-driven and E2E validated before PR.**
@@ -183,7 +206,7 @@ See `docs/plans/2026-02-06-tdd-e2e-workflow-design.md` for full design rationale
    - Run `npm run test:e2e` → ALL E2E tests must pass
    - On failure: follow the "E2E Failure Investigation Protocol" below
 10. **Verify**: Use `superpowers:verification-before-completion` — lint, build, type-check
-11. **Create PR**: Push branch and create PR via **github** plugin or `gh pr create`
+11. **Create PR**: Push branch and create PR **targeting `develop`** via `gh pr create --base develop`
 12. **Review**: Run `/code-review` on the PR before requesting merge
 13. **Wait for CI**: Run `gh pr checks --watch` to wait for GitHub Actions and Vercel preview deploy to pass
 14. **Merge PR**: Only after CI passes and code review is clean, merge with `gh pr merge`
