@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Form,
   FormControl,
@@ -242,7 +243,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
                 <FormItem>
                   <FormLabel>Fixed Rate Expiry</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <DatePicker value={field.value} onChange={field.onChange} placeholder="Select expiry date" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

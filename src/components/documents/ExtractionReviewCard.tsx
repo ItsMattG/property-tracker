@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -155,12 +156,10 @@ export function ExtractionReviewCard({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
+            <Label>Date</Label>
+            <DatePicker
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={setDate}
             />
           </div>
           <div className="space-y-2">

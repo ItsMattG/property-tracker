@@ -11,6 +11,7 @@ export default function EditPropertyPage() {
   const propertyId = params?.id as string;
 
   const { data: property, isLoading } = trpc.property.get.useQuery({ id: propertyId });
+  const { data: entities } = trpc.entity.list.useQuery();
   const updateProperty = trpc.property.update.useMutation({
     onSuccess: () => {
       toast.success("Property updated successfully");
@@ -72,6 +73,7 @@ export default function EditPropertyPage() {
           }}
           onSubmit={handleSubmit}
           isLoading={updateProperty.isPending}
+          entities={entities}
         />
       </div>
     </div>

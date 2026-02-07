@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
@@ -167,12 +168,11 @@ export function RecordSaleDialog({
                   <FormItem>
                     <FormLabel>Settlement Date</FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                        onBlur={() => {
-                          field.onBlur();
-                          calculatePreview();
+                      <DatePicker
+                        value={field.value}
+                        onChange={(date) => {
+                          field.onChange(date);
+                          setTimeout(calculatePreview, 0);
                         }}
                       />
                     </FormControl>
@@ -189,7 +189,7 @@ export function RecordSaleDialog({
                 <FormItem>
                   <FormLabel>Contract Date (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <DatePicker value={field.value} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
