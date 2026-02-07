@@ -84,10 +84,10 @@ export default function EntityDetailPage() {
             )}
             {entity.trustDetails && (
               <>
-                {entity.trustDetails.trustType && (
+                {entity.trustDetails.trusteeType && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Trust Type</span>
-                    <span className="capitalize">{entity.trustDetails.trustType}</span>
+                    <span className="text-muted-foreground">Trustee Type</span>
+                    <span className="capitalize">{entity.trustDetails.trusteeType}</span>
                   </div>
                 )}
                 {entity.trustDetails.trusteeName && (
