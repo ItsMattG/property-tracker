@@ -5,13 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { PropertySelect } from "@/components/properties/PropertySelect";
 import { ArrowLeft, Landmark, Shield, RefreshCw, Home } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -104,7 +98,7 @@ export default function BankingConnectPage() {
               Transactions will be linked to your property automatically.
             </p>
             <Button asChild>
-              <Link href="/properties/create">Add Property</Link>
+              <Link href="/properties/new">Add Property</Link>
             </Button>
           </CardContent>
         </Card>
@@ -189,18 +183,12 @@ export default function BankingConnectPage() {
           {hasMultipleProperties && (
             <div className="border-t pt-6 space-y-2">
               <Label htmlFor="property">Property</Label>
-              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-                <SelectTrigger id="property" className="w-full">
-                  <SelectValue placeholder="Which property is this account for?" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties?.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.address}, {property.suburb}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PropertySelect
+                value={selectedPropertyId}
+                onValueChange={setSelectedPropertyId}
+                placeholder="Which property is this account for?"
+                triggerClassName="w-full"
+              />
               <p className="text-xs text-muted-foreground">
                 All connected accounts will be linked to this property. You can reassign individual accounts later.
               </p>

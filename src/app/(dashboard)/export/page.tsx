@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -10,14 +11,16 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc/client";
-import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
+import { FileDown, FileSpreadsheet, FileText, Plus } from "lucide-react";
 import { format, startOfYear, endOfYear, subYears } from "date-fns";
 
 export default function ExportPage() {
+  const router = useRouter();
   const { data: properties } = trpc.property.list.useQuery();
   const currentYear = new Date().getFullYear();
 
@@ -151,7 +154,13 @@ export default function ExportPage() {
 
             <div className="space-y-2">
               <Label htmlFor="property">Property</Label>
-              <Select value={propertyId} onValueChange={setPropertyId}>
+              <Select value={propertyId} onValueChange={(val) => {
+                if (val === "__create_new__") {
+                  router.push("/properties/new");
+                  return;
+                }
+                setPropertyId(val);
+              }}>
                 <SelectTrigger id="property">
                   <SelectValue placeholder="All properties" />
                 </SelectTrigger>
@@ -162,6 +171,11 @@ export default function ExportPage() {
                       {property.address}
                     </SelectItem>
                   ))}
+                  <SelectSeparator />
+                  <SelectItem value="__create_new__" className="text-muted-foreground">
+                    <Plus className="size-4" />
+                    Add property
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

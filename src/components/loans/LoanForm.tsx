@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc/client";
+import { PropertySelect } from "@/components/properties/PropertySelect";
 
 const loanFormSchema = z.object({
   propertyId: z.string().uuid("Please select a property"),
@@ -50,7 +50,6 @@ interface LoanFormProps {
 
 export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) {
   const router = useRouter();
-  const { data: properties } = trpc.property.list.useQuery();
 
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
@@ -82,20 +81,13 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
           render={({ field }) => (
             <FormItem>
               <FormLabel>Property</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <PropertySelect value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select property" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
-                  {properties?.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.address}, {property.suburb}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              </PropertySelect>
               <FormMessage />
             </FormItem>
           )}
