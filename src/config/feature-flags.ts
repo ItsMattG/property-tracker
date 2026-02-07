@@ -31,6 +31,11 @@ export const featureFlags = {
   bugReports: false,
   support: false,
 
+  // ── Property detail sections ────────────────────────────────────
+  valuation: false,
+  climateRisk: false,
+  similarProperties: false,
+
   // ── Other UI ──────────────────────────────────────────────────────
   aiAssistant: false,
   whatsNew: false,

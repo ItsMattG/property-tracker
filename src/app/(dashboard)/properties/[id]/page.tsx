@@ -12,6 +12,7 @@ import { ClimateRiskCard } from "@/components/climate-risk";
 import { BenchmarkCard } from "@/components/benchmarking";
 import { PerformanceCard } from "@/components/performance-benchmarking";
 import { SimilarPropertiesSection } from "@/components/similar-properties";
+import { featureFlags } from "@/config/feature-flags";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign, BarChart3, FileText } from "lucide-react";
 import Link from "next/link";
 
@@ -168,7 +169,7 @@ export default function PropertyDetailPage() {
       </Card>
 
       {/* Valuation Card */}
-      <ValuationCard propertyId={propertyId} />
+      {featureFlags.valuation && <ValuationCard propertyId={propertyId} />}
 
       {/* Quick Links */}
       <Card>
@@ -191,10 +192,12 @@ export default function PropertyDetailPage() {
       </Card>
 
       {/* Climate Risk Card */}
-      <ClimateRiskCard
-        propertyId={propertyId}
-        climateRisk={property.climateRisk}
-      />
+      {featureFlags.climateRisk && (
+        <ClimateRiskCard
+          propertyId={propertyId}
+          climateRisk={property.climateRisk}
+        />
+      )}
 
       {/* Benchmark Card */}
       <BenchmarkCard propertyId={propertyId} />
@@ -206,19 +209,25 @@ export default function PropertyDetailPage() {
       <MilestonesCard propertyId={propertyId} />
 
       {/* Similar Properties Section */}
-      <div className="lg:col-span-2">
-        <SimilarPropertiesSection propertyId={propertyId} />
-      </div>
+      {featureFlags.similarProperties && (
+        <div className="lg:col-span-2">
+          <SimilarPropertiesSection propertyId={propertyId} />
+        </div>
+      )}
 
       {/* Compliance Section */}
-      <div className="lg:col-span-2">
-        <PropertyComplianceSection propertyId={propertyId} />
-      </div>
+      {featureFlags.compliance && (
+        <div className="lg:col-span-2">
+          <PropertyComplianceSection propertyId={propertyId} />
+        </div>
+      )}
 
       {/* Tasks Section */}
-      <div className="lg:col-span-2">
-        <PropertyTasksSection propertyId={propertyId} />
-      </div>
+      {featureFlags.tasks && (
+        <div className="lg:col-span-2">
+          <PropertyTasksSection propertyId={propertyId} />
+        </div>
+      )}
     </div>
   );
 }
