@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Building2,
@@ -286,24 +287,20 @@ export default function NewEntityPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="settlementDate">Settlement Date</Label>
-                <Input
-                  id="settlementDate"
-                  type="date"
+                <Label>Settlement Date</Label>
+                <DatePicker
                   value={formData.settlementDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, settlementDate: e.target.value })
+                  onChange={(date) =>
+                    setFormData({ ...formData, settlementDate: date })
                   }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="trustDeedDate">Trust Deed Date</Label>
-                <Input
-                  id="trustDeedDate"
-                  type="date"
+                <Label>Trust Deed Date</Label>
+                <DatePicker
                   value={formData.trustDeedDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, trustDeedDate: e.target.value })
+                  onChange={(date) =>
+                    setFormData({ ...formData, trustDeedDate: date })
                   }
                 />
               </div>
@@ -357,15 +354,13 @@ export default function NewEntityPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="establishmentDate">Establishment Date</Label>
-                <Input
-                  id="establishmentDate"
-                  type="date"
+                <Label>Establishment Date</Label>
+                <DatePicker
                   value={formData.establishmentDate}
-                  onChange={(e) =>
+                  onChange={(date) =>
                     setFormData({
                       ...formData,
-                      establishmentDate: e.target.value,
+                      establishmentDate: date,
                     })
                   }
                 />

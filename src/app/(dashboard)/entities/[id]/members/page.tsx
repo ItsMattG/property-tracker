@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -100,21 +101,17 @@ export default function MembersPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="dob">Date of Birth</Label>
-                <Input
-                  id="dob"
-                  type="date"
+                <Label>Date of Birth</Label>
+                <DatePicker
                   value={formData.dateOfBirth}
-                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                  onChange={(date) => setFormData({ ...formData, dateOfBirth: date })}
                 />
               </div>
               <div>
-                <Label htmlFor="memberSince">Member Since</Label>
-                <Input
-                  id="memberSince"
-                  type="date"
+                <Label>Member Since</Label>
+                <DatePicker
                   value={formData.memberSince}
-                  onChange={(e) => setFormData({ ...formData, memberSince: e.target.value })}
+                  onChange={(date) => setFormData({ ...formData, memberSince: date })}
                 />
               </div>
               <div>

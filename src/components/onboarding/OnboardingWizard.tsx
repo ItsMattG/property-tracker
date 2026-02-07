@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, ChevronRight, Building2, Landmark, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -206,17 +207,16 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="purchaseDate">Purchase Date</Label>
-                    <Input
-                      id="purchaseDate"
-                      type="date"
+                    <Label>Purchase Date</Label>
+                    <DatePicker
                       value={propertyData.purchaseDate}
-                      onChange={(e) =>
+                      onChange={(date) =>
                         setPropertyData({
                           ...propertyData,
-                          purchaseDate: e.target.value,
+                          purchaseDate: date,
                         })
                       }
+                      placeholder="Select purchase date"
                     />
                   </div>
                 </div>
