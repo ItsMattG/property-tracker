@@ -95,10 +95,10 @@ const navGroups: Array<{
 ];
 
 const settingsItems: NavItemConfig[] = [
-  { href: "/settings/notifications", label: "Notifications", icon: Bell },
+  { href: "/settings/notifications", label: "Notifications", icon: Bell, featureFlag: "notifications" },
   { href: "/settings/team", label: "Team", icon: Users, featureFlag: "team" },
   { href: "/settings/billing", label: "Billing", icon: Wallet },
-  { href: "/settings/feature-requests", label: "Feature Requests", icon: MessageSquarePlus },
+  { href: "/settings/feature-requests", label: "Feature Requests", icon: MessageSquarePlus, featureFlag: "featureRequests" },
 ];
 
 function usePersistedSections() {
