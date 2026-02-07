@@ -1,5 +1,11 @@
 # Claude Code Rules
 
+## Codebase Patterns (READ BEFORE IMPLEMENTING)
+Before writing any feature code, read the relevant pattern docs:
+- **`docs/codebase-patterns.md`** — Full reference: page templates, tRPC, forms, toasts, modals, styling, auth, error handling, anti-patterns for every technology
+- **`src/components/ui/CLAUDE.md`** — UI component quick-reference table (imports, props, usage)
+- **`src/server/CLAUDE.md`** — Server layer quick-reference (procedures, Drizzle patterns, router template, error codes)
+
 ## CRITICAL: Worktree Required Before Any Feature/Task Work
 **NEVER start feature or task work in the main repository directory.** Before writing any implementation code, you MUST:
 1. Create a git worktree: `git worktree add ~/worktrees/property-tracker/<feature-name> -b feature/<feature-name>`
