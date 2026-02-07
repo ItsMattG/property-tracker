@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { LoanCard } from "@/components/loans/LoanCard";
+import { StaleLoansBanner } from "@/components/loans/StaleLoansBanner";
 import { trpc } from "@/lib/trpc/client";
 import { getErrorMessage } from "@/lib/errors";
 import { Plus, Wallet } from "lucide-react";
@@ -66,6 +67,8 @@ export default function LoansPage() {
           </Link>
         </Button>
       </div>
+
+      <StaleLoansBanner />
 
       {isLoading ? (
         <LoanListSkeleton count={2} />

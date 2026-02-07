@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2, Wallet } from "lucide-react";
+import { MoreVertical, Building2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface LoanCardProps {
@@ -19,6 +19,7 @@ interface LoanCardProps {
     loanType: string;
     rateType: string;
     currentBalance: string;
+    originalAmount: string;
     interestRate: string;
     repaymentAmount: string;
     repaymentFrequency: string;
@@ -29,88 +30,115 @@ interface LoanCardProps {
   onDelete: (id: string) => void;
 }
 
+const formatCurrency = (amount: string) =>
+  new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(parseFloat(amount));
+
 export function LoanCard({ loan, onEdit, onDelete }: LoanCardProps) {
-  const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat("en-AU", {
-      style: "currency",
-      currency: "AUD",
-    }).format(parseFloat(amount));
-  };
-
-  const formatLoanType = (type: string) => {
-    return type === "principal_and_interest" ? "P&I" : "Interest Only";
-  };
-
-  const formatRateType = (type: string) => {
-    return type.charAt(0).toUpperCase() + type.slice(1);
-  };
+  const paidOff =
+    parseFloat(loan.originalAmount) > 0
+      ? ((1 - parseFloat(loan.currentBalance) / parseFloat(loan.originalAmount)) * 100)
+      : 0;
+  const paidOffPct = Math.max(0, Math.min(100, paidOff));
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between pb-2">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Wallet className="w-5 h-5 text-primary" />
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-start justify-between gap-2 pb-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <Building2 className="h-4.5 w-4.5 text-primary" />
           </div>
-          <div>
-            <CardTitle className="text-base">{loan.lender}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {loan.property?.address}, {loan.property?.suburb}
-            </p>
+          <div className="min-w-0">
+            <CardTitle className="text-base leading-snug">
+              {loan.lender}
+            </CardTitle>
+            {loan.property && (
+              <p className="text-sm text-muted-foreground truncate">
+                {loan.property.address}, {loan.property.suburb}
+              </p>
+            )}
           </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="w-4 h-4" />
+            <Button variant="ghost" size="sm" className="shrink-0">
+              <MoreVertical className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit(loan.id)}>
-              <Pencil className="w-4 h-4 mr-2" />
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem
+              variant="destructive"
               onClick={() => onDelete(loan.id)}
-              className="text-destructive"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">{formatLoanType(loan.loanType)}</Badge>
-            <Badge variant="outline">{formatRateType(loan.rateType)}</Badge>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="text-muted-foreground">Balance</span>
-              <p className="font-semibold">{formatCurrency(loan.currentBalance)}</p>
+      <CardContent className="space-y-4">
+        {/* Balance + progress */}
+        <div>
+          <p className="text-2xl font-bold tracking-tight">
+            {formatCurrency(loan.currentBalance)}
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${paidOffPct}%` }}
+              />
             </div>
-            <div>
-              <span className="text-muted-foreground">Interest Rate</span>
-              <p className="font-semibold">{loan.interestRate}%</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Repayment</span>
-              <p className="font-semibold">
-                {formatCurrency(loan.repaymentAmount)}/{loan.repaymentFrequency}
-              </p>
-            </div>
-            {loan.fixedRateExpiry && (
-              <div>
-                <span className="text-muted-foreground">Fixed Until</span>
-                <p className="font-semibold">
-                  {format(new Date(loan.fixedRateExpiry), "dd MMM yyyy")}
-                </p>
-              </div>
-            )}
+            <span className="text-xs font-medium text-muted-foreground tabular-nums">
+              {paidOffPct.toFixed(0)}% paid
+            </span>
           </div>
+        </div>
+
+        {/* Details grid */}
+        <div className="grid grid-cols-3 gap-3 pt-3 border-t">
+          <div>
+            <p className="text-xs text-muted-foreground">Rate</p>
+            <p className="text-sm font-semibold tabular-nums">
+              {loan.interestRate}%
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Repayment</p>
+            <p className="text-sm font-semibold tabular-nums">
+              {formatCurrency(loan.repaymentAmount)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Frequency</p>
+            <p className="text-sm font-semibold capitalize">
+              {loan.repaymentFrequency}
+            </p>
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="secondary" className="text-xs">
+            {loan.loanType === "principal_and_interest"
+              ? "P&I"
+              : "Interest Only"}
+          </Badge>
+          <Badge variant="outline" className="text-xs capitalize">
+            {loan.rateType}
+          </Badge>
+          {loan.fixedRateExpiry && (
+            <Badge variant="outline" className="text-xs">
+              Fixed until {format(new Date(loan.fixedRateExpiry), "MMM yyyy")}
+            </Badge>
+          )}
         </div>
       </CardContent>
     </Card>

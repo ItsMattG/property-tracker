@@ -32,6 +32,8 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "warn",
       // React Compiler memoization preservation - warn only
       "react-hooks/preserve-manual-memoization": "warn",
+      // React Compiler purity check - warn only (triggers on global-error.tsx)
+      "react-hooks/purity": "warn",
     },
   },
   // Disable React rules in E2E test files (Playwright uses `use` which conflicts)

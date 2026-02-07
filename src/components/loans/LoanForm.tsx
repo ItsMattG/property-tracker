@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -47,6 +48,7 @@ interface LoanFormProps {
 }
 
 export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) {
+  const router = useRouter();
   const { data: properties } = trpc.property.list.useQuery();
 
   const form = useForm<LoanFormValues>({
@@ -71,7 +73,8 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {/* Property */}
         <FormField
           control={form.control}
           name="propertyId"
@@ -80,7 +83,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
               <FormLabel>Property</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select property" />
                   </SelectTrigger>
                 </FormControl>
@@ -97,7 +100,8 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Lender details */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="lender"
@@ -127,7 +131,8 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Loan structure */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
           <FormField
             control={form.control}
             name="loanType"
@@ -136,7 +141,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
                 <FormLabel>Loan Type</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
@@ -163,7 +168,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
                 <FormLabel>Rate Type</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
@@ -179,7 +184,8 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Amounts */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="originalAmount"
@@ -209,7 +215,8 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Interest rate */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
           <FormField
             control={form.control}
             name="interestRate"
@@ -244,7 +251,8 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Repayments */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="repaymentAmount"
@@ -267,7 +275,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
                 <FormLabel>Repayment Frequency</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
@@ -283,16 +291,25 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
           />
         </div>
 
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            "Save Loan"
-          )}
-        </Button>
+        <div className="flex items-center gap-3 pt-2">
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Loan"
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/loans")}
+          >
+            Cancel
+          </Button>
+        </div>
       </form>
     </Form>
   );

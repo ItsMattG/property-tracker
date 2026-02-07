@@ -20,6 +20,7 @@ import { PortfolioValueChart } from "./PortfolioValueChart";
 import { ErrorState } from "@/components/ui/error-state";
 import { getErrorMessage } from "@/lib/errors";
 import { TrialPropertyLimitBanner } from "@/components/banners/TrialPropertyLimitBanner";
+import { StaleLoansDashboardCard } from "@/components/loans/StaleLoansDashboardCard";
 
 // Server-side data structure from dashboard.getInitialData
 // Note: Dates are Date objects on server but get serialized to strings when passed to client
@@ -242,6 +243,8 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
       </div>
       )}
+
+      <StaleLoansDashboardCard />
 
       <PortfolioValueChart />
 

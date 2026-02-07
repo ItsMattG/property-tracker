@@ -15,7 +15,7 @@ export const featureFlags = {
   compliance: false,
   brokerPortal: false,
   mytaxExport: false,
-  loans: false,
+  loans: true,
   compareLoans: false,
   export: true,
   emails: false,
