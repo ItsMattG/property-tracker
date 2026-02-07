@@ -6,12 +6,12 @@ import type { DevData } from "./profiles/dev";
 import type { SeedSummary } from "./types";
 
 /**
- * Get or create user by Clerk ID
+ * Get or create user by email
  */
-export async function getOrCreateUser(clerkId: string): Promise<string> {
+export async function getOrCreateUser(email: string): Promise<string> {
   // Check if user exists
   const existingUser = await db.query.users.findFirst({
-    where: eq(schema.users.clerkId, clerkId),
+    where: eq(schema.users.email, email),
   });
 
   if (existingUser) {
@@ -22,9 +22,8 @@ export async function getOrCreateUser(clerkId: string): Promise<string> {
   const [newUser] = await db
     .insert(schema.users)
     .values({
-      clerkId,
-      email: `seed-${clerkId}@propertytracker.local`,
-      name: "Seeded User",
+      email,
+      name: "Demo User",
     })
     .returning();
 
