@@ -4,12 +4,11 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { QuickAddButton } from "./QuickAddButton";
+import { HelpMenu } from "./HelpMenu";
 import { AlertBadge } from "@/components/alerts/AlertBadge";
-import { WhatsNewButton } from "@/components/changelog/WhatsNewButton";
 import { WhatsNewDrawer } from "@/components/changelog/WhatsNewDrawer";
-import { HelpButton } from "@/components/onboarding/HelpButton";
-import { FeedbackButton } from "@/components/feedback";
 import { featureFlags } from "@/config/feature-flags";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Breadcrumb, type BreadcrumbItem } from "./Breadcrumb";
 
 const routeTitles: Record<string, string> = {
@@ -179,16 +178,14 @@ export function Header() {
             <h1 className="text-lg font-semibold truncate">{pageTitle}</h1>
           )}
         </div>
-        <div className="flex items-center gap-4 flex-shrink-0" data-tour="quick-actions">
-          <HelpButton />
-          <FeedbackButton />
-          <AlertBadge />
-          {featureFlags.whatsNew && (
-            <WhatsNewButton onClick={() => setDrawerOpen(true)} />
-          )}
-          <QuickAddButton />
-          <UserButton afterSignOutUrl="/" />
-        </div>
+        <TooltipProvider delayDuration={300}>
+          <div className="flex items-center gap-3 flex-shrink-0" data-tour="quick-actions">
+            <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />
+            <AlertBadge />
+            <QuickAddButton />
+            <UserButton afterSignOutUrl="/" />
+          </div>
+        </TooltipProvider>
       </header>
       {featureFlags.whatsNew && (
         <WhatsNewDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />

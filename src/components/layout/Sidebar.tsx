@@ -159,7 +159,7 @@ function NavItem({
       href={href}
       onMouseEnter={onMouseEnter}
       className={cn(
-        "flex items-center gap-3 py-2 rounded-md text-sm font-medium transition-colors relative",
+        "flex items-center gap-3 py-2 rounded-md text-sm font-medium transition-colors relative cursor-pointer",
         isActive
           ? "border-l-2 border-primary bg-primary/5 text-primary font-semibold pl-[10px] pr-3"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground pl-3 pr-3",
@@ -214,7 +214,7 @@ function NavGroup({
 
   return (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <CollapsibleTrigger className="flex items-center gap-2 px-3 py-1.5 w-full text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
+      <CollapsibleTrigger className="flex items-center gap-2 px-3 py-1.5 w-full text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors cursor-pointer">
         <Icon className="w-3.5 h-3.5" />
         <span className="flex-1 text-left">{label}</span>
         <ChevronDown
@@ -316,7 +316,7 @@ export function Sidebar() {
             <Link
               href={`/entities/${activeEntity.id}/compliance`}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 mt-2 rounded-md text-sm font-medium transition-colors",
+                "flex items-center gap-3 px-3 py-2 mt-2 rounded-md text-sm font-medium transition-colors cursor-pointer",
                 pathname === `/entities/${activeEntity.id}/compliance`
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -388,7 +388,7 @@ export function Sidebar() {
               <button
                 onClick={toggle}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full",
+                  "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full cursor-pointer",
                   "text-muted-foreground hover:bg-secondary hover:text-foreground",
                   isCollapsed && "justify-center px-2"
                 )}
