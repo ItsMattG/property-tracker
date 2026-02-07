@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthSession } from "@/lib/auth";
 import { seed } from "@/lib/seed";
 import type { SeedMode } from "@/lib/seed";
 
@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Require authentication
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const session = await getAuthSession();
+  if (!session?.user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     const summary = await seed({
-      clerkId,
+      userId: session.user.id,
       mode,
       clean,
     });

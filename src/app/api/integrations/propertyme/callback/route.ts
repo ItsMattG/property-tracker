@@ -1,16 +1,16 @@
 // src/app/api/integrations/propertyme/callback/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthSession } from "@/lib/auth";
 import { db } from "@/server/db";
 import { propertyManagerConnections, users } from "@/server/db/schema";
 import { getPropertyMeProvider } from "@/server/services/property-manager/propertyme";
 import { eq } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
-  const { userId: clerkId } = await auth();
+  const session = await getAuthSession();
 
-  if (!clerkId) {
+  if (!session?.user) {
     return NextResponse.redirect(
       new URL("/sign-in?error=unauthorized", request.url)
     );
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     // Get the user from our database
     const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, clerkId),
+      where: eq(users.id, session.user.id),
     });
 
     if (!user) {

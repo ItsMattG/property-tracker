@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthSession } from "@/lib/auth";
 import { db } from "@/server/db";
 import { sql } from "drizzle-orm";
 import { users, properties, transactions } from "@/server/db/schema";
@@ -29,31 +29,31 @@ export async function GET(request: Request) {
     results.checks = { ...results.checks as Record<string, unknown>, database: { ok: false, error: String(e), time: `${Date.now() - dbStart}ms` } };
   }
 
-  // Test 2: Clerk auth
+  // Test 2: BetterAuth auth
   const authStart = Date.now();
-  let clerkUserId: string | null = null;
+  let userId: string | null = null;
   try {
-    const authResult = await auth();
-    clerkUserId = authResult.userId;
+    const session = await getAuthSession();
+    userId = session?.user?.id ?? null;
     results.checks = {
       ...results.checks as Record<string, unknown>,
-      clerkAuth: {
+      betterAuth: {
         ok: true,
-        userId: clerkUserId ? "present" : "null",
+        userId: userId ? "present" : "null",
         time: `${Date.now() - authStart}ms`
       }
     };
   } catch (e) {
-    results.checks = { ...results.checks as Record<string, unknown>, clerkAuth: { ok: false, error: String(e), time: `${Date.now() - authStart}ms` } };
+    results.checks = { ...results.checks as Record<string, unknown>, betterAuth: { ok: false, error: String(e), time: `${Date.now() - authStart}ms` } };
   }
 
   // Test 3: Simulate protectedProcedure flow (if requested and authenticated)
-  if (simulate && clerkUserId) {
+  if (simulate && userId) {
     // This mimics what protectedProcedure does
     const userLookupStart = Date.now();
     try {
       const user = await db.query.users.findFirst({
-        where: eq(users.clerkId, clerkUserId),
+        where: eq(users.id, userId),
       });
       results.checks = {
         ...results.checks as Record<string, unknown>,

@@ -6,7 +6,7 @@ import {
   convertToModelMessages,
   type UIMessage,
 } from "ai";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthSession } from "@/lib/auth";
 import { db } from "@/server/db";
 import { users, properties } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -19,13 +19,13 @@ import {
 import { buildSystemPrompt } from "@/server/services/chat-system-prompt";
 
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const session = await getAuthSession();
+  if (!session?.user) {
     return new Response("Unauthorized", { status: 401 });
   }
 
   const user = await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
+    where: eq(users.id, session.user.id),
   });
   if (!user) {
     return new Response("User not found", { status: 404 });

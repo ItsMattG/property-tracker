@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { getAuthSession } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { db } from "@/server/db";
@@ -7,14 +7,14 @@ import { eq, and } from "drizzle-orm";
 
 export async function POST(request: Request) {
   // Require authentication
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const session = await getAuthSession();
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Get user from database
   const user = await db.query.users.findFirst({
-    where: eq(users.clerkId, clerkId),
+    where: eq(users.id, session.user.id),
   });
 
   if (!user) {

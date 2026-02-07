@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthSession } from "@/lib/auth";
 import { db } from "@/server/db";
 import { users } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -10,15 +10,15 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId: clerkId } = await auth();
+    const session = await getAuthSession();
 
-    if (!clerkId) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get user from database
     const user = await db.query.users.findFirst({
-      where: eq(users.clerkId, clerkId),
+      where: eq(users.id, session.user.id),
     });
 
     if (!user) {
