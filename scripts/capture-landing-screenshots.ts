@@ -1,51 +1,32 @@
 import { chromium } from "@playwright/test";
-import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { config } from "dotenv";
 import path from "path";
 
 config({ path: ".env.local" });
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
-const TEST_USER_EMAIL = process.env.E2E_CLERK_USER_EMAIL!;
-const TEST_USER_PASSWORD = process.env.E2E_CLERK_USER_PASSWORD!;
+const TEST_USER_EMAIL = process.env.E2E_USER_EMAIL!;
+const TEST_USER_PASSWORD = process.env.E2E_USER_PASSWORD!;
 
 async function captureScreenshots() {
-  // Initialize Clerk testing environment
-  await clerkSetup();
-
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
   });
   const page = await context.newPage();
 
-  // Set up Clerk testing token
-  await setupClerkTestingToken({ page });
-
   console.log("Logging in...");
 
   // Navigate to sign-in page
   await page.goto(`${BASE_URL}/sign-in`);
 
-  // Wait for Clerk sign-in form to load
-  await page.waitForSelector('[data-clerk-component="SignIn"]', { timeout: 15000 });
-
-  // Fill in the email
+  // Fill in credentials
   await page.getByLabel(/email/i).fill(TEST_USER_EMAIL);
-
-  // Click continue to get password field
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-
-  // Wait for password field and fill it
-  const passwordInput = page.locator('input[type="password"]');
-  await passwordInput.waitFor({ timeout: 5000 });
-  await passwordInput.fill(TEST_USER_PASSWORD);
-
-  // Click continue to sign in
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByLabel(/password/i).fill(TEST_USER_PASSWORD);
+  await page.getByRole("button", { name: /sign in/i }).click();
 
   // Wait for sign-in to complete
-  await page.waitForURL((url) => !url.pathname.includes("/sign-in"), { timeout: 15000 });
+  await page.waitForURL("**/dashboard", { timeout: 15000 });
 
   console.log("Logged in successfully!");
 

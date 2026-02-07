@@ -1,12 +1,11 @@
 import { chromium, Page } from "@playwright/test";
-import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { config } from "dotenv";
 
 config({ path: ".env.local" });
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "https://property-tracker-seven.vercel.app";
-const TEST_USER_EMAIL = process.env.E2E_CLERK_USER_EMAIL!;
-const TEST_USER_PASSWORD = process.env.E2E_CLERK_USER_PASSWORD!;
+const TEST_USER_EMAIL = process.env.E2E_USER_EMAIL!;
+const TEST_USER_PASSWORD = process.env.E2E_USER_PASSWORD!;
 
 interface TestResult {
   page: string;
@@ -94,15 +93,11 @@ async function runManualQA() {
   console.log("=== BrickTrack Manual QA Test ===\n");
   console.log(`Testing against: ${BASE_URL}\n`);
 
-  await clerkSetup();
-
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 },
   });
   const page = await context.newPage();
-
-  await setupClerkTestingToken({ page });
 
   // ========== PUBLIC PAGES ==========
   console.log("\n--- PUBLIC PAGES ---\n");
@@ -129,18 +124,15 @@ async function runManualQA() {
   console.log("\n--- AUTHENTICATION ---\n");
 
   await page.goto(`${BASE_URL}/sign-in`);
-  await page.waitForSelector('[data-clerk-component="SignIn"]', { timeout: 15000 });
-  await log({ page: "Sign-in Page", status: "pass", message: "Clerk sign-in loaded" });
+  await page.waitForLoadState("networkidle");
+  await log({ page: "Sign-in Page", status: "pass", message: "Sign-in page loaded" });
 
   // Login
   console.log("\nLogging in...");
   await page.getByLabel(/email/i).fill(TEST_USER_EMAIL);
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-  const passwordInput = page.locator('input[type="password"]');
-  await passwordInput.waitFor({ timeout: 5000 });
-  await passwordInput.fill(TEST_USER_PASSWORD);
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await page.waitForURL((url) => !url.pathname.includes("/sign-in"), { timeout: 15000 });
+  await page.getByLabel(/password/i).fill(TEST_USER_PASSWORD);
+  await page.getByRole("button", { name: /sign in/i }).click();
+  await page.waitForURL("**/dashboard", { timeout: 15000 });
   console.log("Logged in successfully!\n");
 
   // ========== DASHBOARD PAGES ==========
