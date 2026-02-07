@@ -21,12 +21,12 @@ export { generateUIAuditData, type UIAuditData } from "./profiles/ui-audit";
  * Main seed function - seeds data based on mode
  */
 export async function seed(options: SeedOptions): Promise<SeedSummary> {
-  const { clerkId, mode, clean = false } = options;
+  const { email, mode, clean = false } = options;
 
-  console.log(`Starting seed in ${mode} mode for Clerk ID: ${clerkId}`);
+  console.log(`Starting seed in ${mode} mode for email: ${email}`);
 
   // Get or create user
-  const userId = await getOrCreateUser(clerkId);
+  const userId = await getOrCreateUser(email);
   console.log(`User ID: ${userId}`);
 
   // Clean existing data if requested
@@ -59,8 +59,8 @@ export async function seed(options: SeedOptions): Promise<SeedSummary> {
 /**
  * Clean up all seeded data for a user
  */
-export async function clean(clerkId: string): Promise<void> {
-  const userId = await getOrCreateUser(clerkId);
+export async function clean(email: string): Promise<void> {
+  const userId = await getOrCreateUser(email);
   await cleanupUserData(userId);
   console.log(`Cleaned all data for user: ${userId}`);
 }

@@ -1,16 +1,19 @@
 import { appRouter } from "@/server/routers/_app";
 import { createCallerFactory } from "@/server/trpc";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { db } from "@/server/db";
 
 const createCaller = createCallerFactory(appRouter);
 
 export async function getServerTRPC() {
-  const { userId } = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   return createCaller({
     db,
-    clerkId: userId,
+    userId: session?.user?.id ?? null,
     portfolioOwnerId: undefined,
     headers: undefined,
     requestId: undefined,

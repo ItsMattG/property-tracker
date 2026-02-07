@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { TRPCProvider } from "@/lib/trpc/Provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
@@ -18,7 +17,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Skip static generation - app uses Clerk auth which validates key at build time
+// Skip static generation - app uses auth which requires dynamic rendering
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -58,19 +57,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <TRPCProvider>
-            <PostHogProvider>{children}</PostHogProvider>
-          </TRPCProvider>
-          <Toaster richColors position="top-right" />
-          <Analytics />
-          <SpeedInsights />
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <TRPCProvider>
+          <PostHogProvider>{children}</PostHogProvider>
+        </TRPCProvider>
+        <Toaster richColors position="top-right" />
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
   );
 }

@@ -2,19 +2,22 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { SignIn, useAuth } from "@clerk/nextjs";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
+import Link from "next/link";
 
 export function AcceptInviteContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams?.get("token");
-  const { isSignedIn, isLoaded } = useAuth();
+  const { data: session, isPending } = authClient.useSession();
+  const isSignedIn = !!session?.user;
+  const isLoaded = !isPending;
 
   const [mutationStatus, setMutationStatus] = useState<"idle" | "success" | "error">("idle");
 
@@ -72,17 +75,22 @@ export function AcceptInviteContent() {
   if (!isSignedIn) {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="w-full max-w-md">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Sign in to accept invitation</CardTitle>
-              <CardDescription>
-                Create an account or sign in to accept this portfolio invitation.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-          <SignIn afterSignInUrl={`/invite/accept?token=${token}`} />
-        </div>
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Sign in to accept invitation</CardTitle>
+            <CardDescription>
+              Create an account or sign in to accept this portfolio invitation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link href={`/sign-in?redirect=${encodeURIComponent(`/invite/accept?token=${token}`)}`}>
+              <Button className="w-full">Sign In</Button>
+            </Link>
+            <Link href={`/sign-up?redirect=${encodeURIComponent(`/invite/accept?token=${token}`)}`}>
+              <Button variant="outline" className="w-full">Create Account</Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }

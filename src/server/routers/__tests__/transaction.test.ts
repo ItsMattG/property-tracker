@@ -21,7 +21,7 @@ describe("transaction router", () => {
     });
 
     it("throws UNAUTHORIZED when user not found in database", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123" });
+      const ctx = createMockContext({ userId: "user-1" });
       ctx.db = {
         query: {
           users: {
@@ -125,7 +125,7 @@ describe("transaction router", () => {
 
   describe("list pagination", () => {
     it("returns paginated results with total count", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const allTransactions = Array.from({ length: 150 }, (_, i) => ({
         id: `tx-${i}`,
@@ -160,7 +160,7 @@ describe("transaction router", () => {
     });
 
     it("returns hasMore: false on last page", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -188,7 +188,7 @@ describe("transaction router", () => {
     });
 
     it("defaults to limit 50 and offset 0", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const findManyMock = vi.fn().mockResolvedValue([]);
       ctx.db = {

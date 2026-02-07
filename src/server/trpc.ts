@@ -1,6 +1,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import { cookies } from "next/headers";
+import { auth } from "@/lib/auth";
+import { headers, cookies } from "next/headers";
 import { db } from "./db";
 import { users, portfolioMembers, subscriptions } from "./db/schema";
 import { eq, and } from "drizzle-orm";
@@ -20,28 +20,30 @@ export interface PortfolioContext {
 }
 
 export const createTRPCContext = async (opts?: { headers?: Headers }) => {
-  let clerkId: string | null = null;
+  let userId: string | null = null;
   let portfolioOwnerId: string | undefined;
 
   // Extract request ID from headers for correlation
   const requestId = opts?.headers?.get("x-request-id") || undefined;
 
-  // Try Clerk auth - this will fail for routes excluded from clerkMiddleware
+  // Try BetterAuth session - this will fail for routes excluded from middleware
   // (like mobile auth routes), which is expected
   try {
-    const authResult = await auth();
-    clerkId = authResult.userId;
+    const session = await auth.api.getSession({
+      headers: opts?.headers ?? (await headers()),
+    });
+    userId = session?.user?.id ?? null;
     const cookieStore = await cookies();
     portfolioOwnerId = cookieStore.get("portfolio_owner_id")?.value;
   } catch {
-    // Clerk middleware didn't run - expected for mobile auth routes
+    // BetterAuth session not available - expected for mobile auth routes
     // These routes use JWT auth handled in protectedProcedure instead
-    clerkId = null;
+    userId = null;
   }
 
   return {
     db,
-    clerkId,
+    userId,
     portfolioOwnerId,
     headers: opts?.headers,
     requestId,
@@ -112,7 +114,7 @@ const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
   }
 
   const userId =
-    ctx.clerkId ?? ctx.headers?.get("x-forwarded-for") ?? "anonymous";
+    ctx.userId ?? ctx.headers?.get("x-forwarded-for") ?? "anonymous";
   const result = apiRateLimiter.check(userId);
 
   if (!result.allowed) {
@@ -126,45 +128,11 @@ const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
 });
 
 export const protectedProcedure = t.procedure.use(observabilityMiddleware).use(rateLimitMiddleware).use(async ({ ctx, next }) => {
-  // Try Clerk auth first (web)
-  if (ctx.clerkId) {
-    let user = await ctx.db.query.users.findFirst({
-      where: eq(users.clerkId, ctx.clerkId),
+  // Try BetterAuth session (web)
+  if (ctx.userId) {
+    const user = await ctx.db.query.users.findFirst({
+      where: eq(users.id, ctx.userId),
     });
-
-    // Auto-create user if they exist in Clerk but not in our database
-    // This handles cases where the webhook didn't fire (e.g., local development)
-    if (!user) {
-      logger.info("User not found in DB, attempting auto-create", { clerkId: ctx.clerkId });
-      try {
-        const clerk = await clerkClient();
-        const clerkUser = await clerk.users.getUser(ctx.clerkId);
-        logger.debug("Got Clerk user", { emails: clerkUser.emailAddresses.map(e => e.emailAddress) });
-        const primaryEmail = clerkUser.emailAddresses.find(
-          (e) => e.id === clerkUser.primaryEmailAddressId
-        );
-
-        if (primaryEmail) {
-          const name = [clerkUser.firstName, clerkUser.lastName]
-            .filter(Boolean)
-            .join(" ") || null;
-
-          const [newUser] = await ctx.db
-            .insert(users)
-            .values({
-              clerkId: ctx.clerkId,
-              email: primaryEmail.emailAddress.toLowerCase(),
-              name,
-            })
-            .returning();
-
-          user = newUser;
-          logger.info("Auto-created user", { email: primaryEmail.emailAddress });
-        }
-      } catch (error) {
-        logger.error("Failed to auto-create user", error);
-      }
-    }
 
     // Add userId to log context once we have the user
     if (user) {

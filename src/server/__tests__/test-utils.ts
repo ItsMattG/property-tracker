@@ -3,9 +3,9 @@ import { vi } from "vitest";
 
 type MockUser = {
   id: string;
-  clerkId: string;
   email: string;
-  name: string | null;
+  name: string;
+  emailVerified?: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -13,9 +13,9 @@ type MockUser = {
 // Standard mock user for tests
 export const mockUser: MockUser = {
   id: "user-1",
-  clerkId: "clerk_123",
   email: "test@example.com",
   name: "Test User",
+  emailVerified: true,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -23,21 +23,21 @@ export const mockUser: MockUser = {
 // Different user for isolation tests
 export const otherUser: MockUser = {
   id: "user-2",
-  clerkId: "clerk_456",
   email: "other@example.com",
   name: "Other User",
+  emailVerified: true,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
 
 export function createMockContext(overrides: {
-  clerkId?: string | null;
+  userId?: string | null;
   user?: MockUser | null;
 } = {}) {
   const user = overrides.user ?? null;
   return {
     db: {} as any, // Will be mocked per test
-    clerkId: overrides.clerkId ?? null,
+    userId: overrides.userId ?? null,
     user,
     portfolio: {
       ownerId: user?.id ?? "user-1",
@@ -57,7 +57,7 @@ export function createTestCaller(ctx: ReturnType<typeof createMockContext>) {
 
 // Create context with user lookup mock
 export function createAuthenticatedContext(user = mockUser) {
-  const ctx = createMockContext({ clerkId: user.clerkId, user });
+  const ctx = createMockContext({ userId: user.id, user });
   ctx.db = {
     query: {
       users: {
@@ -70,5 +70,5 @@ export function createAuthenticatedContext(user = mockUser) {
 
 // Create unauthenticated context
 export function createUnauthenticatedContext() {
-  return createMockContext({ clerkId: null });
+  return createMockContext({ userId: null });
 }

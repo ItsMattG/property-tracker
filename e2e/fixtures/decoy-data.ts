@@ -45,7 +45,6 @@ export async function seedDecoyData() {
     decoyUserId = randomUUID();
     await testDb.insert(schema.users).values({
       id: decoyUserId,
-      clerkId: `decoy_clerk_${Date.now()}`,
       email: `decoy-${Date.now()}@test.com`,
       name: "Decoy User",
       createdAt: new Date(),

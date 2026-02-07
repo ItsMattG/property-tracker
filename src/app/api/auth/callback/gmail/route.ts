@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthSession } from "@/lib/auth";
 import { db } from "@/server/db";
 import { users, emailConnections } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -34,17 +34,17 @@ export async function GET(request: NextRequest) {
   }
 
   // Verify user is authenticated
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const session = await getAuthSession();
+  if (!session?.user) {
     return NextResponse.redirect(new URL("/sign-in", baseUrl));
   }
 
   // Verify state matches current user (CSRF protection)
   try {
     const decodedState = Buffer.from(state, "base64url").toString();
-    const [stateClerkId] = decodedState.split(":");
-    if (stateClerkId !== clerkId) {
-      console.error("State mismatch:", { stateClerkId, clerkId });
+    const [stateUserId] = decodedState.split(":");
+    if (stateUserId !== session.user.id) {
+      console.error("State mismatch:", { stateUserId, userId: session.user.id });
       return NextResponse.redirect(
         new URL(`${settingsUrl}?error=invalid_state`, baseUrl)
       );
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     const [user] = await db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.clerkId, clerkId));
+      .where(eq(users.id, session.user.id));
 
     if (!user) {
       throw new Error("User not found in database");

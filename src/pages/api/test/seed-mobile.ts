@@ -35,7 +35,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await db.insert(users).values({
       id: userId,
-      clerkId: `test_clerk_${userId.slice(0, 8)}`,
       email,
       name,
       mobilePasswordHash: passwordHash,

@@ -14,7 +14,7 @@
 | Data fetching | React Query (TanStack) | v5 |
 | ORM | Drizzle ORM | 0.45 |
 | Database | PostgreSQL (pgvector) | 16 |
-| Auth | Clerk | v6 |
+| Auth | BetterAuth | v1 |
 | Styling | Tailwind CSS | v4 |
 | UI primitives | shadcn/ui (new-york style) | latest |
 | Icons | Lucide React | latest |
@@ -577,23 +577,41 @@ In `src/app/api/trpc/[trpc]/route.ts`:
 
 ### Middleware (`src/middleware.ts`)
 ```tsx
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-const isPublicRoute = createRouteMatcher(["/", "/blog(.*)", "/sign-in(.*)", ...]);
-export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) await auth.protect();
-});
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
+
+const publicRoutes = ["/", "/blog", "/sign-in", "/sign-up"];
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
+
+  if (isPublic) return NextResponse.next();
+
+  const session = await getSessionCookie();
+  if (!session) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
+  }
+
+  return NextResponse.next();
+}
 ```
 
 ### Server-side auth (tRPC context)
 ```tsx
-const authResult = await auth(); // Clerk async — MUST await in v6
-const clerkId = authResult.userId;
+import { getAuthSession } from "@/lib/auth";
+const session = await getAuthSession();
+const userId = session?.user.id;
 ```
 
 ### Client-side
 ```tsx
-import { UserButton } from "@clerk/nextjs";
-<UserButton afterSignOutUrl="/" />
+import { authClient } from "@/lib/auth-client";
+// Sign out
+await authClient.signOut();
+// Current session
+const session = authClient.useSession();
 ```
 
 ### Protected routes
@@ -814,13 +832,13 @@ const blob = await generateTaxReportPDF(data);
 | `sql<number>\`count(*)::int\`` for aggregations | `sql\`count(*)\`` (returns string without cast) |
 | `eq(properties.userId, ctx.portfolio.ownerId)` (always scope by user) | Query without user ID filter |
 
-### Clerk v6
+### BetterAuth v1
 
 | DO | DON'T |
 |----|-------|
-| `const { userId } = await auth()` | `const { userId } = auth()` (must await) |
-| `createRouteMatcher(["/", "/blog(.*)"])` | Manual pathname checks in middleware |
-| `<UserButton afterSignOutUrl="/" />` | Custom sign-out logic |
+| `const session = await getAuthSession()` | `const session = getAuthSession()` (must await) |
+| `await authClient.signOut()` | Manual session deletion |
+| `authClient.useSession()` hook for client state | Direct cookie access |
 
 ### Tailwind CSS v4
 

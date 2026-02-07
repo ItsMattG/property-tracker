@@ -19,9 +19,9 @@ import {
 describe("reports router", () => {
   const mockUser = {
     id: "user-1",
-    clerkId: "clerk_123",
     email: "test@example.com",
     name: "Test User",
+    emailVerified: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -32,7 +32,7 @@ describe("reports router", () => {
 
   describe("getAvailableYears", () => {
     it("returns empty array when no transactions", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -52,7 +52,7 @@ describe("reports router", () => {
     });
 
     it("returns financial years when transactions exist", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -77,7 +77,7 @@ describe("reports router", () => {
 
   describe("taxReport", () => {
     it("returns report structure with properties and totals", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const mockProperties = [
         {
@@ -127,7 +127,7 @@ describe("reports router", () => {
     });
 
     it("filters by propertyId when provided", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
       const propertyId = "550e8400-e29b-41d4-a716-446655440000";
 
       const mockProperty = {
@@ -167,7 +167,7 @@ describe("reports router", () => {
 
   describe("portfolioSummary", () => {
     it("returns portfolio data with properties and monthly breakdown", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const mockProperties = [
         {

@@ -4,7 +4,7 @@ import { createMockContext, createTestCaller } from "../../__tests__/test-utils"
 describe("portfolio router", () => {
   const mockUser = {
     id: "user-1",
-    clerkId: "clerk_123",
+    userId: "user-1",
     email: "test@example.com",
     name: "Test User",
     createdAt: new Date(),
@@ -61,7 +61,7 @@ describe("portfolio router", () => {
 
   describe("getSummary", () => {
     it("returns aggregated portfolio totals", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         execute: vi.fn().mockResolvedValue([
@@ -86,7 +86,7 @@ describe("portfolio router", () => {
     });
 
     it("returns empty summary when no properties", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -105,7 +105,7 @@ describe("portfolio router", () => {
     });
 
     it("filters by state", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         execute: vi.fn().mockResolvedValue([
@@ -131,7 +131,7 @@ describe("portfolio router", () => {
 
   describe("getPropertyMetrics", () => {
     it("returns metrics for each property", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         execute: vi.fn().mockResolvedValue([
@@ -162,7 +162,7 @@ describe("portfolio router", () => {
     });
 
     it("sorts by cash flow", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         execute: vi.fn().mockResolvedValue([
@@ -190,7 +190,7 @@ describe("portfolio router", () => {
     });
 
     it("returns empty array when no properties", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
