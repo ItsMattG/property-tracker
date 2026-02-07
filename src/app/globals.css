@@ -183,6 +183,7 @@
   body {
     @apply bg-background text-foreground;
   }
+
 }
 
 /* Sonner toast type colors — must match specificity of sonner/dist/styles.css */
