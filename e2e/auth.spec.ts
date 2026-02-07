@@ -54,7 +54,7 @@ test.describe("Authentication", () => {
       await expect(page.getByLabel("Name")).toBeVisible();
       await expect(page.getByLabel("Email")).toBeVisible();
       await expect(page.getByLabel("Password")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Sign up" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
     });
 
     test("should have link to sign in", async ({ page }) => {
