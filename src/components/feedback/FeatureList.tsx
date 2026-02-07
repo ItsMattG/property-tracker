@@ -12,14 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUser } from "@clerk/nextjs";
+import { authClient } from "@/lib/auth-client";
 import { FeatureRequestModal } from "./FeatureRequestModal";
 
 type StatusFilter = "all" | "open" | "planned" | "in_progress" | "shipped";
 type SortBy = "votes" | "newest" | "oldest";
 
 export function FeatureList() {
-  const { isSignedIn } = useUser();
+  const { data: session } = authClient.useSession();
+  const isSignedIn = !!session?.user;
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("votes");
   const [modalOpen, setModalOpen] = useState(false);

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc/client";
-import { useUser } from "@clerk/nextjs";
+import { authClient } from "@/lib/auth-client";
 
 type FeatureCardProps = {
   id: string;
@@ -47,7 +47,8 @@ export function FeatureCard({
   createdAt,
   hasVoted,
 }: FeatureCardProps) {
-  const { isSignedIn } = useUser();
+  const { data: session } = authClient.useSession();
+  const isSignedIn = !!session?.user;
   const utils = trpc.useUtils();
 
   const voteMutation = trpc.feedback.voteFeature.useMutation({
