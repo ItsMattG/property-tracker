@@ -5,7 +5,7 @@ type MockUser = {
   id: string;
   email: string;
   name: string;
-  emailVerified: boolean;
+  emailVerified?: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
