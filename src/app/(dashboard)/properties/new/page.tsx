@@ -21,6 +21,7 @@ export default function NewPropertyPage() {
   const [pendingValues, setPendingValues] = useState<PropertyFormValues | null>(null);
 
   const { data: trialStatus } = trpc.billing.getTrialStatus.useQuery();
+  const { data: entities } = trpc.entity.list.useQuery();
 
   const createProperty = trpc.property.create.useMutation({
     onSuccess: (property) => {
@@ -80,6 +81,7 @@ export default function NewPropertyPage() {
           <PropertyForm
             onSubmit={handleSubmit}
             isLoading={createProperty.isPending}
+            entities={entities}
           />
         </CardContent>
       </Card>

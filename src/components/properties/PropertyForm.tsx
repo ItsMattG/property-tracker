@@ -36,16 +36,24 @@ const propertyFormSchema = z.object({
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;
 
+interface EntityOption {
+  id: string;
+  name: string;
+  type: string;
+}
+
 interface PropertyFormProps {
   defaultValues?: Partial<PropertyFormValues>;
   onSubmit: (values: PropertyFormValues) => void;
   isLoading?: boolean;
+  entities?: EntityOption[];
 }
 
 export function PropertyForm({
   defaultValues,
   onSubmit,
   isLoading,
+  entities = [],
 }: PropertyFormProps) {
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
@@ -140,9 +148,21 @@ export function PropertyForm({
             render={({ field }) => (
               <FormItem data-tour="property-type">
                 <FormLabel>Entity</FormLabel>
-                <FormControl>
-                  <Input placeholder="Personal" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value || "Personal"}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select entity" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Personal">Personal</SelectItem>
+                    {entities.map((entity) => (
+                      <SelectItem key={entity.id} value={entity.name}>
+                        {entity.name} ({entity.type})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
