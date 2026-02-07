@@ -43,16 +43,11 @@ async function main() {
     // Sign in
     console.log("Signing in...");
     await page.goto(`${BASE_URL}/sign-in`);
-    await page.waitForSelector('[data-clerk-component="SignIn"]', { timeout: 30000 });
+    await page.getByLabel("Email").waitFor({ timeout: 30000 });
 
-    await page.getByLabel(/email/i).fill(DEMO_USER_EMAIL);
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
-
-    const passwordInput = page.locator('input[type="password"]');
-    await passwordInput.waitFor({ timeout: 5000 });
-    await passwordInput.fill(DEMO_USER_PASSWORD);
-
-    await page.getByRole("button", { name: "Continue", exact: true }).click();
+    await page.getByLabel("Email").fill(DEMO_USER_EMAIL);
+    await page.getByLabel("Password").fill(DEMO_USER_PASSWORD);
+    await page.getByRole("button", { name: "Sign in" }).click();
     await page.waitForURL((url) => !url.pathname.includes("/sign-in"), { timeout: 15000 });
 
     console.log("Signed in successfully!");

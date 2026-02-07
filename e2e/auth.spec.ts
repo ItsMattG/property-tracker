@@ -29,33 +29,38 @@ test.describe("Authentication", () => {
   });
 
   test.describe("Sign In Page", () => {
-    test("should display Clerk sign-in component", async ({ page }) => {
+    test("should display sign-in form", async ({ page }) => {
       await page.goto("/sign-in");
       await expect(page).toHaveURL(/sign-in/);
-      // Wait for Clerk to load
-      await page.waitForSelector('[data-clerk-component="SignIn"], .cl-signIn-root', { timeout: 10000 });
+      // Wait for form to load
+      await expect(page.getByLabel("Email")).toBeVisible();
+      await expect(page.getByLabel("Password")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
     });
 
     test("should have link to sign up", async ({ page }) => {
       await page.goto("/sign-in");
-      await page.waitForSelector('[data-clerk-component="SignIn"], .cl-signIn-root', { timeout: 10000 });
-      // Clerk's sign-in component includes a sign-up link
+      await expect(page.getByLabel("Email")).toBeVisible();
+      // Custom sign-in page includes a sign-up link
       await expect(page.getByText(/sign up/i)).toBeVisible();
     });
   });
 
   test.describe("Sign Up Page", () => {
-    test("should display Clerk sign-up component", async ({ page }) => {
+    test("should display sign-up form", async ({ page }) => {
       await page.goto("/sign-up");
       await expect(page).toHaveURL(/sign-up/);
-      // Wait for Clerk to load
-      await page.waitForSelector('[data-clerk-component="SignUp"], .cl-signUp-root', { timeout: 10000 });
+      // Wait for form to load
+      await expect(page.getByLabel("Name")).toBeVisible();
+      await expect(page.getByLabel("Email")).toBeVisible();
+      await expect(page.getByLabel("Password")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Sign up" })).toBeVisible();
     });
 
     test("should have link to sign in", async ({ page }) => {
       await page.goto("/sign-up");
-      await page.waitForSelector('[data-clerk-component="SignUp"], .cl-signUp-root', { timeout: 10000 });
-      // Clerk's sign-up component includes a sign-in link
+      await expect(page.getByLabel("Email")).toBeVisible();
+      // Custom sign-up page includes a sign-in link
       await expect(page.getByText(/sign in/i)).toBeVisible();
     });
   });
