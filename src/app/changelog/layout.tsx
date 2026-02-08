@@ -56,6 +56,9 @@ export default function ChangelogLayout({
             <Link href="/blog" className="hover:text-foreground">
               Blog
             </Link>
+            <Link href="/changelog" className="hover:text-foreground">
+              Changelog
+            </Link>
             <Link href="/privacy" className="hover:text-foreground">
               Privacy Policy
             </Link>

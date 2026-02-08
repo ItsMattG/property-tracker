@@ -76,8 +76,8 @@ export default function EntitiesPage() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No entities yet</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Create your first entity to organize your properties.
+            <p className="text-muted-foreground text-center mb-4 max-w-md">
+              Properties default to your personal name. Create an entity here if you hold properties through a trust, company, or SMSF.
             </p>
             <Link href="/entities/new">
               <Button>

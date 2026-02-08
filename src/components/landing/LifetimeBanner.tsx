@@ -35,7 +35,7 @@ export async function LifetimeBanner() {
         </div>
         <p className="text-sm text-muted-foreground text-center sm:text-left flex-1">
           Get lifetime Pro access for a one-time payment of $249.
-          No subscription ever. <strong>{remaining} of {LIFETIME_LIMIT} spots remaining.</strong>
+          No subscription ever. <strong>Limited to {LIFETIME_LIMIT} founding members.</strong>
         </p>
         <Button size="sm" asChild>
           <Link href="/sign-up?plan=lifetime">Claim Lifetime Deal</Link>
