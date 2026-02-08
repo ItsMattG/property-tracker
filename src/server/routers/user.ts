@@ -29,7 +29,7 @@ export const userRouter = router({
   // Set user theme preference
   setTheme: protectedProcedure
     .input(z.object({
-      theme: z.enum(["forest", "clean", "dark", "friendly", "bold", "ocean"]),
+      theme: z.enum(["forest", "dark"]),
     }))
     .mutation(async ({ ctx, input }) => {
       const [updated] = await ctx.db

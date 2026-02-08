@@ -11,22 +11,17 @@ import {
   BarChart3,
   Landmark,
   Wallet,
-  Bell,
   TrendingUp,
-  Settings,
-  Users,
   Sparkles,
   Briefcase,
   Calculator,
   Compass,
-  MessageSquarePlus,
   ChevronsLeft,
   ChevronsRight,
   ChevronDown,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useSidebar } from "./SidebarProvider";
-import { Button } from "@/components/ui/button";
 import { featureFlags, type FeatureFlag } from "@/config/feature-flags";
 import {
   Tooltip,
@@ -86,12 +81,6 @@ const navGroups: Array<{
   },
 ];
 
-const settingsItems: NavItemConfig[] = [
-  { href: "/settings/notifications", label: "Notifications", icon: Bell, featureFlag: "notifications" },
-  { href: "/settings/team", label: "Team", icon: Users, featureFlag: "team" },
-  { href: "/settings/billing", label: "Billing", icon: Wallet },
-  { href: "/settings/feature-requests", label: "Feature Requests", icon: MessageSquarePlus, featureFlag: "featureRequests" },
-];
 
 function usePersistedSections() {
   const [sections, setSections] = useState<Record<string, boolean>>({});
@@ -246,9 +235,27 @@ export function Sidebar() {
     }
   };
 
+  // Collect all nav hrefs for "best match" logic so sub-routes highlight parent
+  const allNavHrefs = [
+    ...topLevelItems.map((i) => i.href),
+    ...navGroups.flatMap((g) => g.items.map((i) => i.href)),
+  ];
+
+  const isItemActive = (href: string) => {
+    if (pathname === href) return true;
+    // Check if pathname is a sub-route of this item (e.g. /loans/new → /loans)
+    if (pathname?.startsWith(href + "/")) {
+      // Only highlight if no other nav item is a more specific match
+      return !allNavHrefs.some(
+        (h) => h !== href && h.length > href.length && (pathname === h || pathname?.startsWith(h + "/"))
+      );
+    }
+    return false;
+  };
+
   const renderNavItem = (item: NavItemConfig) => {
     if (item.featureFlag && !featureFlags[item.featureFlag]) return null;
-    const itemIsActive = pathname === item.href;
+    const itemIsActive = isItemActive(item.href);
     const showBadge = item.showBadge && pendingCount?.count && pendingCount.count > 0;
 
     return (
@@ -319,41 +326,6 @@ export function Sidebar() {
             })}
           </div>
         </nav>
-
-        {/* Settings Section */}
-        <div className="mt-4 pt-4 border-t border-border">
-          {isCollapsed ? (
-            <NavItem
-              href="/settings"
-              label="Settings"
-              icon={Settings}
-              isActive={pathname?.startsWith("/settings") ?? false}
-              isCollapsed={isCollapsed}
-            />
-          ) : (
-            <NavGroup
-              label="Settings"
-              icon={Settings}
-              isOpen={isOpen("Settings", false)}
-              onToggle={() => toggleSection("Settings", false)}
-              isCollapsed={isCollapsed}
-            >
-              {settingsItems.filter((item) => !item.featureFlag || featureFlags[item.featureFlag]).map((item) => {
-                const itemIsActive = pathname === item.href;
-                return (
-                  <NavItem
-                    key={item.href}
-                    href={item.href}
-                    label={item.label}
-                    icon={item.icon}
-                    isActive={itemIsActive}
-                    isCollapsed={isCollapsed}
-                  />
-                );
-              })}
-            </NavGroup>
-          )}
-        </div>
 
         {/* Collapse Toggle Button */}
         <div className="mt-4 pt-4 border-t border-border">

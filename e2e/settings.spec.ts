@@ -1,7 +1,7 @@
 import { test, expect } from "./fixtures/auth";
 
-test.describe("Settings - Theme Selector", () => {
-  test("can select a theme and it persists after reload", async ({
+test.describe("Settings - Theme Toggle", () => {
+  test("can toggle dark mode and it persists after reload", async ({
     authenticatedPage: page,
   }) => {
     const errors: string[] = [];
@@ -14,14 +14,14 @@ test.describe("Settings - Theme Selector", () => {
     // Verify Appearance section is visible
     await expect(page.getByText("Appearance")).toBeVisible();
 
-    // Click the Ocean theme card
-    await page.getByRole("button", { name: /Ocean/i }).click();
+    // Click the dark mode toggle
+    await page.getByRole("button", { name: /switch to dark mode/i }).click();
 
     // Verify data-theme attribute is set on <html>
     const theme = await page.evaluate(() =>
       document.documentElement.getAttribute("data-theme")
     );
-    expect(theme).toBe("ocean");
+    expect(theme).toBe("dark");
 
     // Reload and verify theme persists (from DB via SSR)
     await page.reload();
@@ -30,17 +30,17 @@ test.describe("Settings - Theme Selector", () => {
     const themeAfterReload = await page.evaluate(() =>
       document.documentElement.getAttribute("data-theme")
     );
-    expect(themeAfterReload).toBe("ocean");
+    expect(themeAfterReload).toBe("dark");
 
-    // Reset back to forest (default) to clean up
+    // Toggle back to light mode to clean up
     await page.goto("/settings");
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: /Forest/i }).click();
+    await page.getByRole("button", { name: /switch to light mode/i }).click();
 
     const resetTheme = await page.evaluate(() =>
       document.documentElement.getAttribute("data-theme")
     );
-    // Forest is default — data-theme should be removed
+    // Forest (light) is default — data-theme should be removed
     expect(resetTheme).toBeNull();
 
     // No page errors

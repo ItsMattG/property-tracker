@@ -54,11 +54,15 @@ export function PropertySelect({
             {property.address}, {property.suburb}
           </SelectItem>
         ))}
-        {(properties?.length ?? 0) > 0 && <SelectSeparator />}
-        <SelectItem value={CREATE_NEW_VALUE} className="text-muted-foreground">
-          <Plus className="size-4" />
-          Add property
-        </SelectItem>
+        {(properties?.length ?? 0) === 0 && (
+          <>
+            <SelectSeparator />
+            <SelectItem value={CREATE_NEW_VALUE} className="text-muted-foreground">
+              <Plus className="size-4" />
+              Add property
+            </SelectItem>
+          </>
+        )}
       </SelectContent>
     </Select>
   );

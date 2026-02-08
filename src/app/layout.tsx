@@ -22,12 +22,12 @@ const geistMono = Geist_Mono({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "BrickTrack - Australian Property Investment Tracking",
+  title: "BrickTrack | Australian Property Investment Tracking",
   description:
     "Track your investment properties, automate bank feeds, and generate tax reports. Built for Australian property investors.",
   metadataBase: new URL("https://www.propertytracker.com.au"),
   openGraph: {
-    title: "BrickTrack - Australian Property Investment Tracking",
+    title: "BrickTrack | Australian Property Investment Tracking",
     description:
       "Track your investment properties, automate bank feeds, and generate tax reports. Built for Australian property investors.",
     siteName: "BrickTrack",
@@ -39,13 +39,13 @@ export const metadata: Metadata = {
         url: "/og-image.svg",
         width: 1200,
         height: 630,
-        alt: "BrickTrack - Australian Property Investment Tracking",
+        alt: "BrickTrack | Australian Property Investment Tracking",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BrickTrack - Australian Property Investment Tracking",
+    title: "BrickTrack | Australian Property Investment Tracking",
     description:
       "Track your investment properties, automate bank feeds, and generate tax reports.",
     images: ["/og-image.svg"],

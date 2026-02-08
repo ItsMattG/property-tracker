@@ -82,13 +82,6 @@
   --input: var(--border-light);
   --ring: var(--color-primary);
 
-  /* Chart colors - multi-hue semantic palette */
-  --chart-1: #16A34A;
-  --chart-2: #2563EB;
-  --chart-3: #D97706;
-  --chart-4: #7C3AED;
-  --chart-5: #EC4899;
-
   /* Sidebar using Forest theme */
   --sidebar: var(--bg-card);
   --sidebar-foreground: var(--text-primary);
@@ -116,15 +109,10 @@
   --muted-foreground: var(--text-muted);
   --accent: var(--color-primary-light);
   --accent-foreground: var(--text-primary);
-  --destructive: #EF4444;
+  --destructive: var(--color-danger);
   --border: var(--border-light);
-  --input: var(--border-light);
+  --input: var(--border-medium);
   --ring: var(--color-primary);
-  --chart-1: #4ADE80;
-  --chart-2: #60A5FA;
-  --chart-3: #FBBF24;
-  --chart-4: #A78BFA;
-  --chart-5: #F472B6;
   --sidebar: var(--bg-card);
   --sidebar-foreground: var(--text-primary);
   --sidebar-primary: var(--color-primary);
@@ -182,6 +170,16 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Override browser autofill background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--card) inset !important;
+    -webkit-text-fill-color: var(--foreground) !important;
+    caret-color: var(--foreground);
   }
 
   /* Hide native number input spinners */

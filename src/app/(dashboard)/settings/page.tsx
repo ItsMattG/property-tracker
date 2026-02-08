@@ -14,7 +14,8 @@ import {
   UserPlus,
   ClipboardList,
   HeadphonesIcon,
-  Check,
+  Sun,
+  Moon,
 } from "lucide-react";
 import Link from "next/link";
 import { featureFlags } from "@/config/feature-flags";
@@ -22,84 +23,28 @@ import { authClient } from "@/lib/auth-client";
 import { applyTheme, type Theme } from "@/components/theme/ThemeProvider";
 import { trpc } from "@/lib/trpc/client";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
-// ── Theme Picker ──────────────────────────────────────────────────────
+// ── Theme Toggle ──────────────────────────────────────────────────────
 
-const THEMES: {
-  id: Theme;
-  name: string;
-  label: string;
-  primary: string;
-  bg: string;
-  swatch: string[];
-}[] = [
-  {
-    id: "forest",
-    name: "Forest",
-    label: "Green",
-    primary: "#15803d",
-    bg: "#ffffff",
-    swatch: ["#15803d", "#dcfce7", "#2563EB"],
-  },
-  {
-    id: "clean",
-    name: "Clean",
-    label: "Blue",
-    primary: "#0066cc",
-    bg: "#ffffff",
-    swatch: ["#0066cc", "#e6f0ff", "#0284C7"],
-  },
-  {
-    id: "dark",
-    name: "Dark",
-    label: "Night",
-    primary: "#2563eb",
-    bg: "#0f172a",
-    swatch: ["#2563eb", "#1e3a5f", "#60A5FA"],
-  },
-  {
-    id: "friendly",
-    name: "Friendly",
-    label: "Warm",
-    primary: "#047857",
-    bg: "#fafaf9",
-    swatch: ["#047857", "#d1fae5", "#0891B2"],
-  },
-  {
-    id: "bold",
-    name: "Bold",
-    label: "Strong",
-    primary: "#1d4ed8",
-    bg: "#f8fafc",
-    swatch: ["#1d4ed8", "#dbeafe", "#0EA5E9"],
-  },
-  {
-    id: "ocean",
-    name: "Ocean",
-    label: "Teal",
-    primary: "#0e7490",
-    bg: "#ffffff",
-    swatch: ["#0e7490", "#cffafe", "#0284c7"],
-  },
-];
-
-function ThemePicker() {
+function ThemeToggle() {
   const [activeTheme, setActiveTheme] = useState<Theme>("forest");
   const setThemeMutation = trpc.user.setTheme.useMutation();
 
   useEffect(() => {
     const stored = localStorage.getItem("bricktrack-theme") as Theme | null;
-    if (stored && THEMES.some((t) => t.id === stored)) {
-      setActiveTheme(stored);
-    }
+    if (stored === "dark") setActiveTheme("dark");
   }, []);
 
-  const handleSelect = (theme: Theme) => {
+  const isDark = activeTheme === "dark";
+
+  const handleToggle = () => {
+    const next: Theme = isDark ? "forest" : "dark";
     const previous = activeTheme;
-    setActiveTheme(theme);
-    applyTheme(theme);
+    setActiveTheme(next);
+    applyTheme(next);
     setThemeMutation.mutate(
-      { theme },
+      { theme: next },
       {
         onError: () => {
           setActiveTheme(previous);
@@ -110,74 +55,35 @@ function ThemePicker() {
   };
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {THEMES.map((t) => {
-        const isActive = activeTheme === t.id;
-        const isDark = t.id === "dark";
-
-        return (
-          <button
-            key={t.id}
-            onClick={() => handleSelect(t.id)}
-            className="group relative text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-xl"
-            style={{
-              focusVisibleRingColor: t.primary,
-            } as React.CSSProperties}
-          >
-            <div
-              className={`
-                relative overflow-hidden rounded-xl border-2 transition-all duration-200
-                ${isActive
-                  ? "shadow-md"
-                  : "border-[var(--border-light)] hover:border-[var(--border-medium)] hover:shadow-sm"
-                }
-              `}
-              style={{
-                borderColor: isActive ? t.primary : undefined,
-              }}
-            >
-              {/* Mini preview area */}
-              <div
-                className="relative h-16 p-3 flex items-end gap-1.5"
-                style={{ backgroundColor: t.bg }}
-              >
-                {/* Swatch dots showing the palette */}
-                <div className="flex gap-1.5">
-                  {t.swatch.map((color, i) => (
-                    <div
-                      key={i}
-                      className="w-5 h-5 rounded-full ring-1 ring-black/5"
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-
-                {/* Active indicator */}
-                {isActive && (
-                  <div
-                    className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: t.primary }}
-                  >
-                    <Check
-                      className="w-3 h-3"
-                      style={{ color: isDark ? "#0f172a" : "#ffffff" }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Label area */}
-              <div className="px-3 py-2.5 border-t border-[var(--border-light)]">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{t.name}</span>
-                  <span className="text-xs text-muted-foreground">{t.label}</span>
-                </div>
-              </div>
-            </div>
-          </button>
-        );
-      })}
-    </div>
+    <button
+      onClick={handleToggle}
+      className="relative inline-flex h-8 w-[132px] items-center rounded-full border border-border bg-muted transition-colors cursor-pointer"
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {/* Sliding indicator */}
+      <span
+        className={cn(
+          "absolute h-6 w-[60px] rounded-full transition-all duration-200 shadow-sm bg-card",
+          isDark ? "translate-x-[68px]" : "translate-x-1"
+        )}
+      />
+      {/* Light label */}
+      <span className={cn(
+        "relative z-10 flex items-center justify-center gap-1.5 w-[66px] text-xs font-medium transition-colors",
+        isDark ? "text-muted-foreground" : "text-foreground"
+      )}>
+        <Sun className="h-3.5 w-3.5" />
+        Light
+      </span>
+      {/* Dark label */}
+      <span className={cn(
+        "relative z-10 flex items-center justify-center gap-1.5 w-[66px] text-xs font-medium transition-colors",
+        isDark ? "text-foreground" : "text-muted-foreground"
+      )}>
+        <Moon className="h-3.5 w-3.5" />
+        Dark
+      </span>
+    </button>
   );
 }
 
@@ -250,7 +156,7 @@ export default function SettingsPage() {
   const { data: session } = authClient.useSession();
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-2xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your account, integrations, and preferences</p>
@@ -280,7 +186,7 @@ export default function SettingsPage() {
             Appearance
           </CardTitle>
         </CardHeader>
-        <ThemePicker />
+        <ThemeToggle />
       </div>
 
       {settingsSections.map((section) => {

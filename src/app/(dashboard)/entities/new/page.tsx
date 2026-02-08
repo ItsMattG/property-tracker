@@ -145,7 +145,7 @@ export default function NewEntityPage() {
                   setStep(2);
                 }}
                 className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors",
+                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors cursor-pointer",
                   "hover:border-primary hover:bg-primary/5",
                   entityType === et.type && "border-primary bg-primary/5"
                 )}
@@ -185,28 +185,32 @@ export default function NewEntityPage() {
                 }
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="abn">ABN (optional)</Label>
-              <Input
-                id="abn"
-                placeholder="12 345 678 901"
-                value={formData.abn}
-                onChange={(e) =>
-                  setFormData({ ...formData, abn: e.target.value })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tfn">TFN (optional)</Label>
-              <Input
-                id="tfn"
-                placeholder="123 456 789"
-                value={formData.tfn}
-                onChange={(e) =>
-                  setFormData({ ...formData, tfn: e.target.value })
-                }
-              />
-            </div>
+            {entityType !== "personal" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="abn">ABN (optional)</Label>
+                  <Input
+                    id="abn"
+                    placeholder="12 345 678 901"
+                    value={formData.abn}
+                    onChange={(e) =>
+                      setFormData({ ...formData, abn: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tfn">TFN (optional)</Label>
+                  <Input
+                    id="tfn"
+                    placeholder="123 456 789"
+                    value={formData.tfn}
+                    onChange={(e) =>
+                      setFormData({ ...formData, tfn: e.target.value })
+                    }
+                  />
+                </div>
+              </>
+            )}
             <div className="flex gap-2 pt-4">
               <Button variant="outline" onClick={() => setStep(1)}>
                 <ArrowLeft className="h-4 w-4 mr-2" />

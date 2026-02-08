@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export type Theme = "forest" | "clean" | "dark" | "friendly" | "bold" | "ocean";
+export type Theme = "forest" | "dark";
 
 const STORAGE_KEY = "bricktrack-theme";
 

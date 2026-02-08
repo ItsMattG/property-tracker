@@ -9,18 +9,18 @@ describe("user router", () => {
     it("updates the user theme in the database", async () => {
       const ctx = createAuthenticatedContext();
       const whereMock = vi.fn().mockReturnValue({
-        returning: vi.fn().mockResolvedValue([{ theme: "ocean" }]),
+        returning: vi.fn().mockResolvedValue([{ theme: "dark" }]),
       });
       const setMock = vi.fn().mockReturnValue({ where: whereMock });
       ctx.db.update = vi.fn().mockReturnValue({ set: setMock });
 
       const caller = createTestCaller(ctx);
-      const result = await caller.user.setTheme({ theme: "ocean" });
+      const result = await caller.user.setTheme({ theme: "dark" });
 
-      expect(result).toEqual({ theme: "ocean" });
+      expect(result).toEqual({ theme: "dark" });
       expect(ctx.db.update).toHaveBeenCalled();
       expect(setMock).toHaveBeenCalledWith(
-        expect.objectContaining({ theme: "ocean" })
+        expect.objectContaining({ theme: "dark" })
       );
     });
 

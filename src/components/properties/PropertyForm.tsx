@@ -51,6 +51,10 @@ interface PropertyFormProps {
   entities?: EntityOption[];
 }
 
+function RequiredMark() {
+  return <span className="text-destructive ml-0.5" aria-hidden="true">*</span>;
+}
+
 export function PropertyForm({
   defaultValues,
   onSubmit,
@@ -74,13 +78,14 @@ export function PropertyForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {/* Address */}
         <FormField
           control={form.control}
           name="address"
           render={({ field }) => (
             <FormItem data-tour="address-field">
-              <FormLabel>Street Address <span className="text-destructive">*</span></FormLabel>
+              <FormLabel>Street Address<RequiredMark /></FormLabel>
               <FormControl>
                 <Input placeholder="123 Smith Street" {...field} />
               </FormControl>
@@ -89,13 +94,14 @@ export function PropertyForm({
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Location row: Suburb, State, Postcode */}
+        <div className="grid grid-cols-4 gap-4">
           <FormField
             control={form.control}
             name="suburb"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Suburb <span className="text-destructive">*</span></FormLabel>
+              <FormItem className="col-span-2">
+                <FormLabel>Suburb<RequiredMark /></FormLabel>
                 <FormControl>
                   <Input placeholder="Sydney" {...field} />
                 </FormControl>
@@ -109,11 +115,11 @@ export function PropertyForm({
             name="state"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>State <span className="text-destructive">*</span></FormLabel>
+                <FormLabel>State<RequiredMark /></FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? ""}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -128,17 +134,32 @@ export function PropertyForm({
               </FormItem>
             )}
           />
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="postcode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Postcode <span className="text-destructive">*</span></FormLabel>
+                <FormLabel>Postcode<RequiredMark /></FormLabel>
                 <FormControl>
                   <NumericFormat customInput={Input} placeholder="2000" allowNegative={false} decimalScale={0} maxLength={4} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Purchase details row: Price + Entity */}
+        <div className="grid grid-cols-2 gap-4" data-tour="purchase-details">
+          <FormField
+            control={form.control}
+            name="purchasePrice"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Purchase Price ($)<RequiredMark /></FormLabel>
+                <FormControl>
+                  <NumericFormat customInput={Input} placeholder="500,000" thousandSeparator="," allowNegative={false} decimalScale={0} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -172,30 +193,14 @@ export function PropertyForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4" data-tour="purchase-details">
-          <FormField
-            control={form.control}
-            name="purchasePrice"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Purchase Price ($) <span className="text-destructive">*</span></FormLabel>
-                <FormControl>
-                  <NumericFormat customInput={Input} placeholder="500000" allowNegative={false} decimalScale={0} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-        </div>
-
+        {/* Dates row: Contract Date + Settlement Date */}
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="contractDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Contract Date <span className="text-destructive">*</span></FormLabel>
+                <FormLabel>Contract Date<RequiredMark /></FormLabel>
                 <FormControl>
                   <DatePicker value={field.value} onChange={field.onChange} />
                 </FormControl>

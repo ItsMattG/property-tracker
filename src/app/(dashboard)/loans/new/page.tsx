@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { LoanForm, LoanFormValues } from "@/components/loans/LoanForm";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
 
@@ -22,17 +23,18 @@ export default function NewLoanPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Add Loan</h2>
-        <p className="text-muted-foreground">
-          Add a loan for one of your investment properties
-        </p>
-      </div>
-
-      <div className="max-w-2xl">
-        <LoanForm onSubmit={handleSubmit} isLoading={createLoan.isPending} />
-      </div>
+    <div className="max-w-2xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Add Loan</CardTitle>
+          <CardDescription>
+            Add a loan for one of your investment properties
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LoanForm onSubmit={handleSubmit} isLoading={createLoan.isPending} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
