@@ -25,7 +25,7 @@ const PLANS = [
   {
     id: "pro" as const,
     name: "Pro",
-    price: "$19/mo",
+    price: "$14/mo",
     features: [
       "Unlimited properties",
       "Bank feeds & auto-categorization",
@@ -38,7 +38,7 @@ const PLANS = [
   {
     id: "team" as const,
     name: "Team",
-    price: "$39/mo",
+    price: "$29/mo",
     features: [
       "Everything in Pro",
       "Team members & advisors",
