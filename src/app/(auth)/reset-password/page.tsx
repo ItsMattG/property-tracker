@@ -19,8 +19,8 @@ import {
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
-  const urlError = searchParams.get("error");
+  const token = searchParams?.get("token") ?? null;
+  const urlError = searchParams?.get("error") ?? null;
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
