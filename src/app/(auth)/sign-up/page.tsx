@@ -51,7 +51,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary">
+    <div className="flex min-h-screen items-start sm:items-center justify-center bg-secondary pt-16 sm:pt-0">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Create your account</CardTitle>
@@ -104,6 +104,7 @@ export default function SignUpPage() {
                 id="name"
                 type="text"
                 placeholder="Your name"
+                autoComplete="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -115,6 +116,7 @@ export default function SignUpPage() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -125,6 +127,7 @@ export default function SignUpPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

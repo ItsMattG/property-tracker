@@ -37,6 +37,7 @@ export default function PropertiesPage() {
     {
       staleTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
+      retry: false,
     }
   );
   const deletePropertyMutation = trpc.property.delete.useMutation({

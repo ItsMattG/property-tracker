@@ -69,7 +69,7 @@ export function TaxPositionCard() {
           <CardContent>
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                See your estimated refund
+                Estimate your tax refund for this financial year based on your property income and expenses.
               </p>
               <Button size="sm" variant="outline" className="w-full">
                 Set up in 2 min

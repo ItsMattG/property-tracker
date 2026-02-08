@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
+import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -61,6 +62,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <NextTopLoader
+          color="hsl(var(--primary))"
+          showSpinner={false}
+          height={2}
+          shadow={false}
+        />
         <TRPCProvider>
           <PostHogProvider>{children}</PostHogProvider>
         </TRPCProvider>
