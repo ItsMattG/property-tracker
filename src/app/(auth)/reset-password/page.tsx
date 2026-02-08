@@ -8,13 +8,6 @@ import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -31,25 +24,21 @@ function ResetPasswordForm() {
   // Show error state for invalid/expired token
   if (urlError === "INVALID_TOKEN" || !token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-secondary">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Invalid reset link</CardTitle>
-            <CardDescription>
-              This password reset link is invalid or has expired.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Link href="/forgot-password" className="block">
-              <Button className="w-full">Request a new reset link</Button>
-            </Link>
-            <p className="text-center text-sm text-muted-foreground">
-              <Link href="/sign-in" className="text-primary hover:underline">
-                Back to sign in
-              </Link>
-            </p>
-          </CardContent>
-        </Card>
+      <div className="space-y-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold">Invalid reset link</h1>
+          <p className="text-sm text-muted-foreground">
+            This password reset link is invalid or has expired.
+          </p>
+        </div>
+        <Link href="/forgot-password" className="block">
+          <Button className="w-full">Request a new reset link</Button>
+        </Link>
+        <p className="text-center text-sm text-muted-foreground">
+          <Link href="/sign-in" className="text-primary hover:underline">
+            Back to sign in
+          </Link>
+        </p>
       </div>
     );
   }
@@ -97,63 +86,60 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Set new password</CardTitle>
-          <CardDescription>
-            Enter your new password below
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">New password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
-                }}
-                required
-                minLength={8}
-              />
-              <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
-              {fieldErrors.password && <p className="text-sm text-destructive">{fieldErrors.password}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => {
-                  setConfirmPassword(e.target.value);
-                  if (fieldErrors.confirmPassword) setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
-                }}
-                required
-              />
-              {fieldErrors.confirmPassword && <p className="text-sm text-destructive">{fieldErrors.confirmPassword}</p>}
-            </div>
+    <div className="space-y-4">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold">Set new password</h1>
+        <p className="text-sm text-muted-foreground">
+          Enter your new password below
+        </p>
+      </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="password">New password</Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+            }}
+            required
+            minLength={8}
+          />
+          <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
+          {fieldErrors.password && <p className="text-sm text-destructive">{fieldErrors.password}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm password</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              if (fieldErrors.confirmPassword) setFieldErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+            }}
+            required
+          />
+          {fieldErrors.confirmPassword && <p className="text-sm text-destructive">{fieldErrors.confirmPassword}</p>}
+        </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Resetting..." : "Reset password"}
-            </Button>
-          </form>
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <p className="text-center text-sm text-muted-foreground">
-            <Link href="/sign-in" className="text-primary hover:underline">
-              Back to sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Resetting..." : "Reset password"}
+        </Button>
+      </form>
+
+      <p className="text-center text-sm text-muted-foreground">
+        <Link href="/sign-in" className="text-primary hover:underline">
+          Back to sign in
+        </Link>
+      </p>
     </div>
   );
 }
@@ -162,13 +148,11 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-secondary">
-          <Card className="w-full max-w-md shadow-lg">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Set new password</CardTitle>
-              <CardDescription>Loading...</CardDescription>
-            </CardHeader>
-          </Card>
+        <div className="space-y-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold">Set new password</h1>
+            <p className="text-sm text-muted-foreground">Loading...</p>
+          </div>
         </div>
       }
     >

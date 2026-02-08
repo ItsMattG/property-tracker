@@ -7,13 +7,6 @@ import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 function validateSignUpForm(name: string, email: string, password: string) {
   const errors: { name?: string; email?: string; password?: string } = {};
@@ -79,16 +72,13 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-start sm:items-center justify-center bg-secondary pt-16 sm:pt-0">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create your account</CardTitle>
-          <CardDescription>
-            Start tracking your property portfolio
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button
+    <div className="space-y-4">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold">Create your account</h1>
+        <p className="text-sm text-muted-foreground">Start tracking your property portfolio</p>
+      </div>
+
+      <Button
             variant="outline"
             className="w-full"
             onClick={handleGoogleSignUp}
@@ -119,7 +109,7 @@ export default function SignUpPage() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
+              <span className="bg-white/90 max-sm:bg-white px-2 text-muted-foreground">
                 or continue with email
               </span>
             </div>
@@ -183,14 +173,23 @@ export default function SignUpPage() {
             </Button>
           </form>
 
+          <p className="text-center text-xs text-muted-foreground">
+            By signing up, you agree to our{" "}
+            <Link href="/terms" className="text-primary hover:underline">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-primary hover:underline">
+              Privacy Policy
+            </Link>
+          </p>
+
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link href="/sign-in" className="text-primary hover:underline">
               Sign in
             </Link>
           </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
