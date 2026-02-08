@@ -6,6 +6,7 @@ import { SidebarProvider } from "@/components/layout/SidebarProvider";
 import { ClientSidebar } from "@/components/layout/ClientSidebar";
 import { featureFlags } from "@/config/feature-flags";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { FinancialYearProvider } from "@/providers/FinancialYearProvider";
 import { getAuthSession } from "@/lib/auth";
 
 // All dashboard pages require auth - skip static generation
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
           __html: `(function(){try{var t=localStorage.getItem("bricktrack-theme");if(t&&t!=="forest")document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`,
         }}
       />
+      <FinancialYearProvider>
       <ChatProvider>
         <SidebarProvider>
           <div className="flex min-h-screen">
@@ -39,6 +41,7 @@ export default async function DashboardLayout({
         {featureFlags.aiAssistant && <ChatButton />}
         {featureFlags.aiAssistant && <LazyChatPanel />}
       </ChatProvider>
+      </FinancialYearProvider>
     </ThemeProvider>
   );
 }

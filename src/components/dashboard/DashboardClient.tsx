@@ -23,6 +23,8 @@ import { getErrorMessage } from "@/lib/errors";
 import { TrialPropertyLimitBanner } from "@/components/banners/TrialPropertyLimitBanner";
 import { StaleLoansDashboardCard } from "@/components/loans/StaleLoansDashboardCard";
 import { PortfolioSummaryTable } from "./PortfolioSummaryTable";
+import { LvrGaugeCard } from "./LvrGaugeCard";
+import { EquityProjectionCard } from "./EquityProjectionCard";
 
 // Server-side data structure from dashboard.getInitialData
 // Note: Dates are Date objects on server but get serialized to strings when passed to client
@@ -250,6 +252,15 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       <StaleLoansDashboardCard />
 
       <PortfolioSummaryTable />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="animate-card-entrance" style={{ '--stagger-index': 0 } as React.CSSProperties}>
+          <LvrGaugeCard />
+        </div>
+        <div className="animate-card-entrance" style={{ '--stagger-index': 1 } as React.CSSProperties}>
+          <EquityProjectionCard />
+        </div>
+      </div>
 
       <PortfolioValueChart />
 

@@ -20,6 +20,7 @@ import { WhatsNewDrawer } from "@/components/changelog/WhatsNewDrawer";
 import { featureFlags } from "@/config/feature-flags";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Breadcrumb, type BreadcrumbItem } from "./Breadcrumb";
+import { FYSelector } from "./FYSelector";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -245,6 +246,7 @@ export function Header() {
         </div>
         <TooltipProvider delayDuration={300}>
           <div className="flex items-center gap-3 flex-shrink-0" data-tour="quick-actions">
+            <FYSelector />
             {featureFlags.helpMenu && <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />}
             <AlertBadge />
             {featureFlags.quickAdd && <QuickAddButton />}
