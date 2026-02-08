@@ -15,12 +15,35 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+function validateSignUpForm(name: string, email: string, password: string) {
+  const errors: { name?: string; email?: string; password?: string } = {};
+
+  if (!name.trim()) {
+    errors.name = "Name is required";
+  }
+
+  if (!email.trim()) {
+    errors.email = "Email is required";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.email = "Please enter a valid email address";
+  }
+
+  if (!password) {
+    errors.password = "Password is required";
+  } else if (password.length < 8) {
+    errors.password = "Password must be at least 8 characters";
+  }
+
+  return errors;
+}
+
 export default function SignUpPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
   async function handleGoogleSignUp() {
@@ -33,6 +56,11 @@ export default function SignUpPage() {
   async function handleEmailSignUp(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    const errors = validateSignUpForm(name, email, password);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     setLoading(true);
 
     const { error } = await authClient.signUp.email({
@@ -105,9 +133,13 @@ export default function SignUpPage() {
                 type="text"
                 placeholder="Your name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                }}
                 required
               />
+              {fieldErrors.name && <p className="text-sm text-destructive">{fieldErrors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -116,20 +148,30 @@ export default function SignUpPage() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                }}
                 required
               />
+              {fieldErrors.email && <p className="text-sm text-destructive">{fieldErrors.email}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                }}
                 required
                 minLength={8}
               />
+              <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
+              {fieldErrors.password && <p className="text-sm text-destructive">{fieldErrors.password}</p>}
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}

@@ -15,11 +15,28 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+function validateSignInForm(email: string, password: string) {
+  const errors: { email?: string; password?: string } = {};
+
+  if (!email.trim()) {
+    errors.email = "Email is required";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.email = "Please enter a valid email address";
+  }
+
+  if (!password) {
+    errors.password = "Password is required";
+  }
+
+  return errors;
+}
+
 export default function SignInPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
   async function handleGoogleSignIn() {
@@ -32,6 +49,11 @@ export default function SignInPage() {
   async function handleEmailSignIn(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    const errors = validateSignInForm(email, password);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     setLoading(true);
 
     const { error } = await authClient.signIn.email({
@@ -101,19 +123,34 @@ export default function SignInPage() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
+                }}
                 required
               />
+              {fieldErrors.email && <p className="text-sm text-destructive">{fieldErrors.email}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+                }}
                 required
               />
+              {fieldErrors.password && <p className="text-sm text-destructive">{fieldErrors.password}</p>}
+            </div>
+
+            <div className="flex justify-end">
+              <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                Forgot your password?
+              </Link>
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
