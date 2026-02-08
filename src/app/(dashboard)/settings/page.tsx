@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { featureFlags } from "@/config/feature-flags";
+import { authClient } from "@/lib/auth-client";
 
 interface SettingsCardProps {
   href: string;
@@ -80,12 +81,31 @@ const settingsSections = [
 ];
 
 export default function SettingsPage() {
+  const { data: session } = authClient.useSession();
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your account, integrations, and preferences</p>
       </div>
+
+      {/* Profile Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Profile</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Name</span>
+            <span className="text-sm font-medium">{session?.user?.name ?? "-"}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Email</span>
+            <span className="text-sm font-medium">{session?.user?.email ?? "-"}</span>
+          </div>
+        </CardContent>
+      </Card>
 
       {settingsSections.map((section) => {
         const visibleItems = section.items.filter(

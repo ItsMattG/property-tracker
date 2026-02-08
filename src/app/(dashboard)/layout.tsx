@@ -1,9 +1,9 @@
-import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { ChatProvider } from "@/components/chat/ChatProvider";
 import { ChatButton } from "@/components/chat/ChatButton";
 import { LazyChatPanel } from "@/components/chat/LazyChatPanel";
 import { SidebarProvider } from "@/components/layout/SidebarProvider";
+import { ClientSidebar } from "@/components/layout/ClientSidebar";
 import { featureFlags } from "@/config/feature-flags";
 
 // All dashboard pages require auth - skip static generation
@@ -18,7 +18,7 @@ export default function DashboardLayout({
     <ChatProvider>
       <SidebarProvider>
         <div className="flex min-h-screen">
-          <Sidebar />
+          <ClientSidebar />
           <div className="flex-1 flex flex-col">
             <Header />
             <main className="flex-1 p-6 bg-secondary">{children}</main>

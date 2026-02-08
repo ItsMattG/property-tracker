@@ -17,30 +17,7 @@ import {
   BottomCTA,
   StatsBar,
 } from "@/components/landing";
-import { db } from "@/server/db";
-import { users, properties } from "@/server/db/schema";
-import { sql } from "drizzle-orm";
-
-// Revalidate stats every 24 hours
-export const revalidate = 86400;
-
-async function getStats() {
-  try {
-    const [[userCountResult], [propertyCountResult]] = await Promise.all([
-      db.select({ count: sql<number>`count(*)::int` }).from(users),
-      db.select({ count: sql<number>`count(*)::int` }).from(properties),
-    ]);
-    return {
-      userCount: userCountResult?.count ?? 0,
-      propertyCount: propertyCountResult?.count ?? 0,
-    };
-  } catch {
-    return { userCount: 0, propertyCount: 0 };
-  }
-}
-
 export default async function HomePage() {
-  const { userCount, propertyCount } = await getStats();
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <script
@@ -100,7 +77,7 @@ export default async function HomePage() {
       </section>
 
       {/* Social Proof Bar - stats baked in at build time */}
-      <StatsBar propertyCount={propertyCount} userCount={userCount} />
+      <StatsBar />
 
       {/* Features */}
       <section className="py-12 md:py-20 px-4 bg-secondary">
@@ -378,12 +355,6 @@ export default async function HomePage() {
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">
-            <Link href="/blog" className="hover:text-foreground">
-              Blog
-            </Link>
-            <Link href="/changelog" className="hover:text-foreground">
-              Changelog
-            </Link>
             <Link href="/privacy" className="hover:text-foreground">
               Privacy Policy
             </Link>

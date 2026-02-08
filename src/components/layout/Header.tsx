@@ -29,6 +29,7 @@ const routeTitles: Record<string, string> = {
   "/properties": "Properties",
   "/properties/new": "Add Property",
   "/transactions": "Transactions",
+  "/transactions/new": "Add Transaction",
   "/transactions/review": "Review Transactions",
   "/reports": "Reports",
   "/reports/tax": "Tax Report",
@@ -72,6 +73,7 @@ const routeTitles: Record<string, string> = {
 
 const parentRoutes: Record<string, string> = {
   "/properties/new": "/properties",
+  "/transactions/new": "/transactions",
   "/transactions/review": "/transactions",
   "/reports/tax": "/reports",
   "/reports/tax-position": "/reports",
@@ -103,6 +105,7 @@ function getPageTitle(pathname: string): string {
   if (/^\/properties\/[^/]+\/compliance$/.test(pathname)) return "Compliance";
   if (/^\/properties\/[^/]+\/valuation$/.test(pathname)) return "Valuation";
   if (/^\/properties\/[^/]+\/settlement$/.test(pathname)) return "Settlement";
+  if (/^\/transactions\/[^/]+\/edit$/.test(pathname)) return "Edit Transaction";
   if (/^\/loans\/[^/]+/.test(pathname)) return "Loan";
   if (/^\/entities\/[^/]+/.test(pathname)) return "Entity";
   if (/^\/emails\/[^/]+$/.test(pathname)) return "Email";
@@ -135,6 +138,10 @@ function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
       }
     }
     return items;
+  }
+
+  if (pathname.startsWith("/transactions/") && pathname !== "/transactions/new" && pathname !== "/transactions/review") {
+    return [{ label: "Transactions", href: "/transactions" }, { label: title }];
   }
 
   if (pathname.startsWith("/loans/") && pathname !== "/loans/new" && pathname !== "/loans/compare") {

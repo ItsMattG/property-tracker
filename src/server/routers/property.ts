@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { properties, equityMilestones, referrals, referralCredits, subscriptions } from "../db/schema";
+import { properties, equityMilestones, referrals, referralCredits, subscriptions, users } from "../db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getClimateRisk } from "../services/climate-risk";
-import { getPlanFromSubscription, PLAN_LIMITS } from "../services/subscription";
+import { getPlanFromSubscription, PLAN_LIMITS, type Plan } from "../services/subscription";
 
 const propertySchema = z.object({
   address: z.string().min(1, "Address is required"),
@@ -92,13 +92,24 @@ export const propertyRouter = router({
   create: writeProcedure
     .input(propertySchema)
     .mutation(async ({ ctx, input }) => {
-      // Check property limit for current plan
-      const sub = await ctx.db.query.subscriptions.findFirst({
-        where: eq(subscriptions.userId, ctx.portfolio.ownerId),
+      // Check if user is on trial — trial users get pro limits
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.portfolio.ownerId),
+        columns: { trialEndsAt: true, trialPlan: true },
       });
-      const currentPlan = getPlanFromSubscription(
-        sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
-      );
+      const isOnTrial = user?.trialEndsAt && user.trialEndsAt > new Date();
+
+      let currentPlan: Plan;
+      if (isOnTrial) {
+        currentPlan = (user.trialPlan as Plan) ?? "pro";
+      } else {
+        const sub = await ctx.db.query.subscriptions.findFirst({
+          where: eq(subscriptions.userId, ctx.portfolio.ownerId),
+        });
+        currentPlan = getPlanFromSubscription(
+          sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
+        );
+      }
       const limit = PLAN_LIMITS[currentPlan].maxProperties;
 
       if (limit !== Infinity) {

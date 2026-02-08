@@ -1,12 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { ImportCSVDialog } from "@/components/transactions/ImportCSVDialog";
 import { ReconciliationView } from "@/components/recurring/ReconciliationView";
 import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc/client";
 import { ArrowLeftRight, List, Calendar, Plus } from "lucide-react";
 import Link from "next/link";
@@ -22,9 +33,11 @@ type ViewMode = "transactions" | "reconciliation";
 const PAGE_SIZE = 50;
 
 export default function TransactionsPage() {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("transactions");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<TransactionFilterInput>({});
+  const [deleteTransaction, setDeleteTransaction] = useState<{ id: string; description: string } | null>(null);
   useTour({ tourId: "transactions" });
 
   const offset = (page - 1) * PAGE_SIZE;
@@ -171,6 +184,32 @@ export default function TransactionsPage() {
     toggleVerified.mutate({ id });
   };
 
+  const deleteTransactionMutation = trpc.transaction.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Transaction deleted");
+      utils.transaction.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+
+  const handleEdit = (id: string) => {
+    router.push(`/transactions/${id}/edit`);
+  };
+
+  const handleDelete = (id: string) => {
+    const txn = transactions?.transactions.find((t) => t.id === id);
+    setDeleteTransaction(txn ? { id: txn.id, description: txn.description } : { id, description: "" });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteTransaction) {
+      await deleteTransactionMutation.mutateAsync({ id: deleteTransaction.id });
+      setDeleteTransaction(null);
+    }
+  };
+
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
   };
@@ -246,6 +285,8 @@ export default function TransactionsPage() {
                 onCategoryChange={handleCategoryChange}
                 onToggleVerified={handleToggleVerified}
                 onBulkCategoryChange={handleBulkCategoryChange}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
               />
               {totalPages > 1 && (
                 <Pagination
@@ -272,6 +313,28 @@ export default function TransactionsPage() {
       ) : (
         <ReconciliationView propertyId={filters.propertyId} />
       )}
+
+      <AlertDialog
+        open={!!deleteTransaction}
+        onOpenChange={(open) => !open && setDeleteTransaction(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium">{deleteTransaction?.description}</span>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
