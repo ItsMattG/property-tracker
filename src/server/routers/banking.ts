@@ -538,7 +538,6 @@ export const bankingRouter = router({
 
   connect: bankProcedure
     .input(z.object({
-      mobile: z.string().regex(/^\+61\d{9}$/, "Must be a valid Australian mobile number (+61...)"),
       propertyId: z.string().uuid().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -552,13 +551,12 @@ export const bankingRouter = router({
       }
 
       let basiqUserId = user.basiqUserId;
-      const { mobile, propertyId } = input;
 
       // Store the pre-selected property for auto-assignment after Basiq callback
-      if (propertyId) {
+      if (input.propertyId) {
         const property = await ctx.db.query.properties.findFirst({
           where: and(
-            eq(properties.id, propertyId),
+            eq(properties.id, input.propertyId),
             eq(properties.userId, ctx.portfolio.ownerId)
           ),
         });
@@ -567,22 +565,19 @@ export const bankingRouter = router({
         }
         await ctx.db
           .update(users)
-          .set({ pendingBankPropertyId: propertyId })
+          .set({ pendingBankPropertyId: input.propertyId })
           .where(eq(users.id, user.id));
       }
 
-      // Create Basiq user if needed
+      // Create Basiq user if needed (email only — no mobile avoids SMS verification step)
       if (!basiqUserId) {
-        const basiqUser = await basiqService.createUser(user.email, mobile);
+        const basiqUser = await basiqService.createUser(user.email);
         basiqUserId = basiqUser.id;
 
         await ctx.db
           .update(users)
           .set({ basiqUserId })
           .where(eq(users.id, user.id));
-      } else {
-        // Update mobile on existing Basiq user (required for auth links)
-        await basiqService.updateUser(basiqUserId, { mobile });
       }
 
       // Create auth link for consent flow
