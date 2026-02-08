@@ -517,6 +517,7 @@ export const users = pgTable("users", {
   trialStartedAt: timestamp("trial_started_at"),
   trialEndsAt: timestamp("trial_ends_at"),
   trialPlan: varchar("trial_plan", { length: 20 }).default("pro"),
+  theme: varchar("theme", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
