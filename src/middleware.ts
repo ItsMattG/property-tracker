@@ -12,6 +12,8 @@ const PUBLIC_ROUTES = [
   /^\/terms(\/.*)?$/,
   /^\/sign-in(\/.*)?$/,
   /^\/sign-up(\/.*)?$/,
+  /^\/forgot-password(\/.*)?$/,
+  /^\/reset-password(\/.*)?$/,
   /^\/api\/webhooks(\/.*)?$/,
   /^\/api\/trpc\/mobileAuth(\/.*)?$/,
   /^\/api\/health(\/.*)?$/,
