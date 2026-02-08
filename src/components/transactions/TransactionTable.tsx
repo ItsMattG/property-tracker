@@ -22,7 +22,7 @@ import { CategorySelect } from "./CategorySelect";
 import { MakeRecurringDialog } from "@/components/recurring/MakeRecurringDialog";
 import { getCategoryLabel, getCategoryInfo } from "@/lib/categories";
 import { format } from "date-fns";
-import { Check, X, MoreHorizontal, Repeat } from "lucide-react";
+import { Check, X, MoreHorizontal, Pencil, Repeat, Trash2 } from "lucide-react";
 import type { Transaction, Property, BankAccount } from "@/server/db/schema";
 
 // When serialized through tRPC, Date fields become strings
@@ -52,6 +52,8 @@ interface TransactionTableProps {
   onCategoryChange: (id: string, category: string, propertyId?: string) => void;
   onToggleVerified: (id: string) => void;
   onBulkCategoryChange: (ids: string[], category: string) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function TransactionTable({
@@ -60,6 +62,8 @@ export function TransactionTable({
   onCategoryChange,
   onToggleVerified,
   onBulkCategoryChange,
+  onEdit,
+  onDelete,
 }: TransactionTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
@@ -224,11 +228,24 @@ export function TransactionTable({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
+                            onClick={() => onEdit?.(transaction.id)}
+                          >
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             onClick={() => handleMakeRecurring(transaction)}
                             disabled={!transaction.propertyId}
                           >
                             <Repeat className="w-4 h-4 mr-2" />
                             Make Recurring
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => onDelete?.(transaction.id)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

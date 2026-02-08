@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { transactions } from "../db/schema";
 import { eq, and, desc, gte, lte, inArray, sql, count } from "drizzle-orm";
@@ -94,6 +95,86 @@ export const transactionRouter = router({
         total,
         hasMore,
       };
+    }),
+
+  get: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const transaction = await ctx.db.query.transactions.findFirst({
+        where: and(
+          eq(transactions.id, input.id),
+          eq(transactions.userId, ctx.portfolio.ownerId)
+        ),
+      });
+      if (!transaction) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+      }
+      return transaction;
+    }),
+
+  update: writeProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        propertyId: z.string().uuid(),
+        date: z.string(),
+        description: z.string().min(1, "Description is required"),
+        amount: z.string().regex(/^-?\d+\.?\d*$/, "Invalid amount"),
+        category: z.enum(categoryValues).default("uncategorized"),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      const numericAmount = parseFloat(data.amount);
+
+      const incomeCategories = ["rental_income", "other_rental_income"];
+      const capitalCategories = [
+        "stamp_duty",
+        "conveyancing",
+        "buyers_agent_fees",
+        "initial_repairs",
+      ];
+      const nonDeductibleCategories = [
+        ...capitalCategories,
+        "transfer",
+        "personal",
+        "uncategorized",
+      ];
+
+      let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
+        "expense";
+      if (incomeCategories.includes(data.category)) {
+        transactionType = "income";
+      } else if (capitalCategories.includes(data.category)) {
+        transactionType = "capital";
+      } else if (data.category === "transfer") {
+        transactionType = "transfer";
+      } else if (data.category === "personal") {
+        transactionType = "personal";
+      }
+
+      const isDeductible = !nonDeductibleCategories.includes(data.category);
+
+      const [transaction] = await ctx.db
+        .update(transactions)
+        .set({
+          propertyId: data.propertyId,
+          date: data.date,
+          description: data.description,
+          amount: String(numericAmount),
+          category: data.category,
+          transactionType,
+          isDeductible,
+          notes: data.notes,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(eq(transactions.id, id), eq(transactions.userId, ctx.portfolio.ownerId))
+        )
+        .returning();
+
+      return transaction;
     }),
 
   updateCategory: writeProcedure
