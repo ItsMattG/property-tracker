@@ -16,7 +16,6 @@ import {
   Settings,
   Users,
   Sparkles,
-  Plus,
   Briefcase,
   Calculator,
   Compass,
@@ -292,28 +291,6 @@ export function Sidebar() {
           </Link>
         </div>
 
-        {/* Add Property CTA */}
-        <div className={cn("mb-4", isCollapsed && "flex justify-center")}>
-          {isCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button asChild size="icon" className="w-10 h-10">
-                  <Link href="/properties/new">
-                    <Plus className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Add Property</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Button asChild className="w-full">
-              <Link href="/properties/new">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Property
-              </Link>
-            </Button>
-          )}
-        </div>
 
         {/* Top-level Navigation */}
         <nav className="space-y-1 flex-1 overflow-y-auto" data-tour="sidebar-nav">

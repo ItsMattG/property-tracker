@@ -245,9 +245,9 @@ export function Header() {
         </div>
         <TooltipProvider delayDuration={300}>
           <div className="flex items-center gap-3 flex-shrink-0" data-tour="quick-actions">
-            <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />
+            {featureFlags.helpMenu && <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />}
             <AlertBadge />
-            <QuickAddButton />
+            {featureFlags.quickAdd && <QuickAddButton />}
             <UserMenu />
           </div>
         </TooltipProvider>

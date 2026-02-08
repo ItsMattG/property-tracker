@@ -50,6 +50,8 @@ export const featureFlags = {
   // ── Other UI ──────────────────────────────────────────────────────
   aiAssistant: false,
   whatsNew: false,
+  helpMenu: false,
+  quickAdd: false,
 } as const;
 
 export type FeatureFlag = keyof typeof featureFlags;
