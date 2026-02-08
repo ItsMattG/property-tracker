@@ -10,6 +10,7 @@ import {
   Circle,
   Minus,
 } from "lucide-react";
+import { NumericFormat } from "react-number-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -88,6 +89,9 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
     }
     if (propertyData.postcode && !/^\d{4}$/.test(propertyData.postcode)) {
       errors.postcode = "Postcode must be 4 digits";
+    }
+    if (propertyData.purchasePrice && !/^\d+\.?\d*$/.test(propertyData.purchasePrice)) {
+      errors.purchasePrice = "Must be a valid number";
     }
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -263,12 +267,16 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="wiz-postcode">Postcode</Label>
-                  <Input
+                  <NumericFormat
+                    customInput={Input}
                     id="wiz-postcode"
                     placeholder="2000"
+                    allowNegative={false}
+                    decimalScale={0}
+                    maxLength={4}
                     value={propertyData.postcode}
-                    onChange={(e) => {
-                      setPropertyData({ ...propertyData, postcode: e.target.value });
+                    onValueChange={(values) => {
+                      setPropertyData({ ...propertyData, postcode: values.value });
                       if (fieldErrors.postcode) setFieldErrors((prev) => ({ ...prev, postcode: "" }));
                     }}
                   />
@@ -279,15 +287,17 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="wiz-price">Purchase Price</Label>
-                    <Input
+                    <NumericFormat
+                      customInput={Input}
                       id="wiz-price"
-                      type="number"
                       placeholder="500000"
+                      allowNegative={false}
+                      decimalScale={0}
                       value={propertyData.purchasePrice}
-                      onChange={(e) =>
+                      onValueChange={(values) =>
                         setPropertyData({
                           ...propertyData,
-                          purchasePrice: e.target.value,
+                          purchasePrice: values.value,
                         })
                       }
                     />

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, ChevronRight, Building2, Landmark, CheckCircle2 } from "lucide-react";
+import { NumericFormat } from "react-number-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -217,12 +218,16 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="postcode">Postcode</Label>
-                  <Input
+                  <NumericFormat
+                    customInput={Input}
                     id="postcode"
                     placeholder="2000"
+                    allowNegative={false}
+                    decimalScale={0}
+                    maxLength={4}
                     value={propertyData.postcode}
-                    onChange={(e) => {
-                      setPropertyData({ ...propertyData, postcode: e.target.value });
+                    onValueChange={(values) => {
+                      setPropertyData({ ...propertyData, postcode: values.value });
                       if (fieldErrors.postcode) setFieldErrors((prev) => ({ ...prev, postcode: "" }));
                     }}
                   />
@@ -233,15 +238,17 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="purchasePrice">Purchase Price</Label>
-                    <Input
+                    <NumericFormat
+                      customInput={Input}
                       id="purchasePrice"
-                      type="number"
                       placeholder="500000"
+                      allowNegative={false}
+                      decimalScale={0}
                       value={propertyData.purchasePrice}
-                      onChange={(e) =>
+                      onValueChange={(values) =>
                         setPropertyData({
                           ...propertyData,
-                          purchasePrice: e.target.value,
+                          purchasePrice: values.value,
                         })
                       }
                     />
