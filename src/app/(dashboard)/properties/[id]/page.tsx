@@ -1,9 +1,21 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ValuationCard } from "@/components/valuation";
 import { PropertyComplianceSection } from "@/components/compliance/PropertyComplianceSection";
 import { PropertyTasksSection } from "@/components/tasks/PropertyTasksSection";
@@ -15,6 +27,9 @@ import { SimilarPropertiesSection } from "@/components/similar-properties";
 import { featureFlags } from "@/config/feature-flags";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign, BarChart3, FileText } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/errors";
 
 const formatCurrency = (value: string | number) => {
   const num = typeof value === "string" ? parseFloat(value) : value;
@@ -36,12 +51,39 @@ const formatDate = (dateString: string) => {
 
 export default function PropertyDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const propertyId = params?.id as string;
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: property, isLoading, error } = trpc.property.get.useQuery(
     { id: propertyId },
     { enabled: !!propertyId }
   );
+
+  const { data: linkedTransactions } = trpc.transaction.list.useQuery(
+    { propertyId, limit: 5 },
+    { enabled: !!propertyId }
+  );
+
+  const { data: allLoans } = trpc.loan.list.useQuery(
+    { propertyId },
+    { enabled: !!propertyId }
+  );
+
+  const deletePropertyMutation = trpc.property.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Property deleted");
+      router.push("/properties");
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+
+  const confirmDelete = async () => {
+    await deletePropertyMutation.mutateAsync({ id: propertyId });
+    setDeleteOpen(false);
+  };
 
   // Loading state
   if (isLoading) {
@@ -121,10 +163,23 @@ export default function PropertyDetailPage() {
                 <Building2 className="w-5 h-5 text-primary" />
               </div>
               <CardTitle className="text-lg">Property Details</CardTitle>
+              <Badge variant={property.status === "active" ? "default" : "secondary"}>
+                {property.status === "active" ? "Active" : "Sold"}
+              </Badge>
             </div>
-            <Badge variant={property.status === "active" ? "default" : "secondary"}>
-              {property.status === "active" ? "Active" : "Sold"}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/properties/${property.id}/edit`}>Edit</Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setDeleteOpen(true)}
+              >
+                Delete
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -234,6 +289,88 @@ export default function PropertyDetailPage() {
           <PropertyTasksSection propertyId={propertyId} />
         </div>
       )}
+
+      {/* Recent Transactions */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Recent Transactions</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href={`/transactions?propertyId=${property.id}`}>View all</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {linkedTransactions?.transactions.length ? (
+            <div className="space-y-2">
+              {linkedTransactions.transactions.map((txn) => (
+                <div key={txn.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{txn.description}</p>
+                    <p className="text-xs text-muted-foreground">{txn.date}</p>
+                  </div>
+                  <p className={cn("text-sm font-medium", Number(txn.amount) >= 0 ? "text-green-600" : "text-red-600")}>
+                    {formatCurrency(txn.amount)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No transactions yet</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Linked Loans */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Loans</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/loans">View all</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {allLoans && allLoans.length > 0 ? (
+            <div className="space-y-2">
+              {allLoans.map((loan) => (
+                <div key={loan.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{loan.lender}</p>
+                    <p className="text-xs text-muted-foreground">{loan.loanType} · {loan.rateType}</p>
+                  </div>
+                  <p className="text-sm font-medium">
+                    {formatCurrency(loan.currentBalance)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No loans linked to this property</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Property</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium">{property.address}</span>?
+              This action cannot be undone and will remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
