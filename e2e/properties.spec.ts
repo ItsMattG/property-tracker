@@ -16,6 +16,29 @@ test.describe("Properties", () => {
     await expect(page).toHaveURL(/properties\/new/);
   });
 
+  test("should show valuation card on property detail page", async ({ authenticatedPage: page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (err) => errors.push(err.message));
+
+    await page.goto("/properties");
+    await expect(page.getByRole("heading", { name: /properties/i }).first()).toBeVisible();
+
+    // Check if any property cards exist
+    const hasProperties = await page.locator("[data-testid='property-card']").count().then(c => c > 0).catch(() => false);
+
+    if (hasProperties) {
+      // Click first property card to go to detail page
+      await page.locator("[data-testid='property-card']").first().click();
+      await page.waitForURL(/\/properties\/[a-z0-9-]+/, { timeout: 10000 });
+
+      // Valuation section should be visible (feature flag is now enabled)
+      await expect(page.getByText("Current Valuation")).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/valuation history.*growth/i)).toBeVisible({ timeout: 5000 });
+    }
+
+    expect(errors).toHaveLength(0);
+  });
+
   test("should display financial metrics on property cards when data exists", async ({ authenticatedPage: page }) => {
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
