@@ -39,6 +39,9 @@ export function useTour({ tourId, autoStart = true }: UseTourOptions) {
     onSuccess: () => {
       utils.onboarding.getProgress.invalidate();
     },
+    onError: (error) => {
+      console.error("Failed to save tour completion:", error);
+    },
   });
 
   const disableTours = trpc.onboarding.disableTours.useMutation({

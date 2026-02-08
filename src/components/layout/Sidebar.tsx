@@ -53,6 +53,7 @@ interface NavItemConfig {
 const topLevelItems: NavItemConfig[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/discover", label: "Discover", icon: Compass, featureFlag: "discover" },
+  { href: "/entities", label: "Entities", icon: Briefcase },
 ];
 
 // Grouped navigation sections
@@ -82,14 +83,6 @@ const navGroups: Array<{
       { href: "/reports", label: "Reports", icon: BarChart3 },
       { href: "/reports/tax-position", label: "Tax Position", icon: Calculator },
       { href: "/reports/forecast", label: "Forecast", icon: TrendingUp, featureFlag: "forecast" },
-    ],
-  },
-  {
-    label: "Manage",
-    icon: Settings,
-    defaultOpen: false,
-    items: [
-      { href: "/entities", label: "Entities", icon: Briefcase },
     ],
   },
 ];
@@ -352,27 +345,37 @@ export function Sidebar() {
 
         {/* Settings Section */}
         <div className="mt-4 pt-4 border-t border-border">
-          <NavGroup
-            label="Settings"
-            icon={Settings}
-            isOpen={isOpen("Settings", false)}
-            onToggle={() => toggleSection("Settings", false)}
-            isCollapsed={isCollapsed}
-          >
-            {settingsItems.filter((item) => !item.featureFlag || featureFlags[item.featureFlag]).map((item) => {
-              const itemIsActive = pathname === item.href;
-              return (
-                <NavItem
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  icon={item.icon}
-                  isActive={itemIsActive}
-                  isCollapsed={isCollapsed}
-                />
-              );
-            })}
-          </NavGroup>
+          {isCollapsed ? (
+            <NavItem
+              href="/settings"
+              label="Settings"
+              icon={Settings}
+              isActive={pathname?.startsWith("/settings") ?? false}
+              isCollapsed={isCollapsed}
+            />
+          ) : (
+            <NavGroup
+              label="Settings"
+              icon={Settings}
+              isOpen={isOpen("Settings", false)}
+              onToggle={() => toggleSection("Settings", false)}
+              isCollapsed={isCollapsed}
+            >
+              {settingsItems.filter((item) => !item.featureFlag || featureFlags[item.featureFlag]).map((item) => {
+                const itemIsActive = pathname === item.href;
+                return (
+                  <NavItem
+                    key={item.href}
+                    href={item.href}
+                    label={item.label}
+                    icon={item.icon}
+                    isActive={itemIsActive}
+                    isCollapsed={isCollapsed}
+                  />
+                );
+              })}
+            </NavGroup>
+          )}
         </div>
 
         {/* Collapse Toggle Button */}

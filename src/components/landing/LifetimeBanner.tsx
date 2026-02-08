@@ -21,10 +21,9 @@ async function getLifetimeCount(): Promise<number> {
 
 export async function LifetimeBanner() {
   const count = await getLifetimeCount();
-  const remaining = LIFETIME_LIMIT - count;
 
   // Hide if sold out
-  if (remaining <= 0) return null;
+  if (count >= LIFETIME_LIMIT) return null;
 
   return (
     <div className="relative mb-8 rounded-xl border border-primary/20 bg-primary/5 p-6">
@@ -35,7 +34,7 @@ export async function LifetimeBanner() {
         </div>
         <p className="text-sm text-muted-foreground text-center sm:text-left flex-1">
           Get lifetime Pro access for a one-time payment of $249.
-          No subscription ever. <strong>{remaining} of {LIFETIME_LIMIT} spots remaining.</strong>
+          No subscription ever. <strong>Limited to {LIFETIME_LIMIT} founding members.</strong>
         </p>
         <Button size="sm" asChild>
           <Link href="/sign-up?plan=lifetime">Claim Lifetime Deal</Link>
