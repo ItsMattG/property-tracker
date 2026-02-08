@@ -9,10 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataSkeleton } from "@/components/ui/data-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { cn, formatCurrency } from "@/lib/utils";
 import { TableProperties } from "lucide-react";
+import { getErrorMessage } from "@/lib/errors";
 
 function formatPercent(value: number | null): string {
   if (value === null || value === undefined) return "—";
@@ -20,10 +24,11 @@ function formatPercent(value: number | null): string {
 }
 
 export function PortfolioSummaryTable() {
-  const { data: metrics, isLoading } = trpc.portfolio.getPropertyMetrics.useQuery(
-    { period: "annual", sortBy: "alphabetical", sortOrder: "asc" },
-    { staleTime: 60_000 }
-  );
+  const { data: metrics, isLoading, isError, error, refetch } =
+    trpc.portfolio.getPropertyMetrics.useQuery(
+      { period: "annual", sortBy: "alphabetical", sortOrder: "asc" },
+      { staleTime: 60_000 }
+    );
 
   if (isLoading) {
     return (
@@ -33,17 +38,43 @@ export function PortfolioSummaryTable() {
           <TableProperties className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-8 bg-muted animate-pulse rounded" />
-            ))}
-          </div>
+          <DataSkeleton variant="table" count={3} />
         </CardContent>
       </Card>
     );
   }
 
-  if (!metrics || metrics.length === 0) return null;
+  if (isError) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium">Portfolio Summary</CardTitle>
+          <TableProperties className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!metrics || metrics.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-sm font-medium">Portfolio Summary</CardTitle>
+          <TableProperties className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <EmptyState
+            icon={TableProperties}
+            title="No properties yet"
+            description="Add properties to see your portfolio summary"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Compute totals from the metrics array
   const totals = metrics.reduce(

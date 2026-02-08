@@ -21,4 +21,26 @@ test.describe("Dashboard (Seeded Data)", () => {
     const hasNavigation = await page.getByRole("link", { name: /propert/i }).first().isVisible().catch(() => false);
     expect(hasDollar || hasAlert || hasRecent || hasPortfolio || hasNavigation).toBe(true);
   });
+
+  test("should display portfolio summary table with property data", async ({ authenticatedPage: page }) => {
+    // Portfolio Summary card should be visible
+    const summaryCard = page.getByRole("heading", { name: "Portfolio Summary" });
+    await expect(summaryCard).toBeVisible({ timeout: 10000 });
+
+    // Table should have expected column headers
+    await expect(page.getByRole("columnheader", { name: "Property" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Value" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Loan" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Equity" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "LVR" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Cash" })).toBeVisible();
+
+    // Should have a totals row
+    await expect(page.getByRole("cell", { name: "Total" })).toBeVisible();
+
+    // Property rows should link to property detail pages
+    const propertyLinks = page.locator("table a[href^='/properties/']");
+    const linkCount = await propertyLinks.count();
+    expect(linkCount).toBeGreaterThan(0);
+  });
 });
