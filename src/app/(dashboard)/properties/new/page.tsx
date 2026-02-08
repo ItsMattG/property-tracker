@@ -51,14 +51,23 @@ export default function NewPropertyPage() {
       return;
     }
 
-    await createProperty.mutateAsync(values);
+    try {
+      await createProperty.mutateAsync(values);
+    } catch {
+      toast.error("Failed to create property. Please check your details and try again.");
+    }
   };
 
   const handleModalConfirm = async () => {
     if (pendingValues) {
-      await createProperty.mutateAsync(pendingValues);
-      setShowTrialModal(false);
-      setPendingValues(null);
+      try {
+        await createProperty.mutateAsync(pendingValues);
+        setShowTrialModal(false);
+        setPendingValues(null);
+      } catch {
+        toast.error("Failed to create property. Please check your details and try again.");
+        setShowTrialModal(false);
+      }
     }
   };
 

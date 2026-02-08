@@ -35,6 +35,7 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
     purchasePrice: "",
     purchaseDate: "",
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const router = useRouter();
   const utils = trpc.useUtils();
 
@@ -54,14 +55,35 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
 
   const handlePropertySubmit = async () => {
     if (!propertyData.address || !propertyData.state) return;
-    await createProperty.mutateAsync({
-      address: propertyData.address,
-      suburb: propertyData.suburb,
-      state: propertyData.state,
-      postcode: propertyData.postcode,
-      purchasePrice: propertyData.purchasePrice || "0",
-      purchaseDate: propertyData.purchaseDate || new Date().toISOString().split("T")[0],
-    });
+    setFieldErrors({});
+
+    if (propertyData.postcode && !/^\d{4}$/.test(propertyData.postcode)) {
+      setFieldErrors({ postcode: "Postcode must be 4 digits" });
+      return;
+    }
+
+    try {
+      await createProperty.mutateAsync({
+        address: propertyData.address,
+        suburb: propertyData.suburb,
+        state: propertyData.state,
+        postcode: propertyData.postcode,
+        purchasePrice: propertyData.purchasePrice || "0",
+        purchaseDate: propertyData.purchaseDate || new Date().toISOString().split("T")[0],
+      });
+    } catch (err: unknown) {
+      const error = err as { data?: { zodError?: { fieldErrors?: Record<string, string[]> } }; message?: string };
+      const zodErrors = error.data?.zodError?.fieldErrors;
+      if (zodErrors) {
+        const mapped: Record<string, string> = {};
+        for (const [key, msgs] of Object.entries(zodErrors)) {
+          if (msgs?.[0]) mapped[key] = msgs[0];
+        }
+        setFieldErrors(mapped);
+      } else {
+        setFieldErrors({ _form: error.message || "Something went wrong" });
+      }
+    }
   };
 
   const handleSkip = () => {
@@ -131,6 +153,9 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
                   Enter the basic details. You can add more information later.
                 </p>
               </div>
+              {fieldErrors._form && (
+                <p className="text-sm text-destructive">{fieldErrors._form}</p>
+              )}
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="address">Street Address</Label>
@@ -185,10 +210,14 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
                     id="postcode"
                     placeholder="2000"
                     value={propertyData.postcode}
-                    onChange={(e) =>
-                      setPropertyData({ ...propertyData, postcode: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setPropertyData({ ...propertyData, postcode: e.target.value });
+                      if (fieldErrors.postcode) setFieldErrors((prev) => ({ ...prev, postcode: "" }));
+                    }}
                   />
+                  {fieldErrors.postcode && (
+                    <p className="text-xs text-destructive">{fieldErrors.postcode}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
