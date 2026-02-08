@@ -367,6 +367,48 @@ Transaction attachments uploaded via the allocation popup's "Attachment" link su
 
 ---
 
+## 4c. Bank Connection Notifications
+
+TaxTank sends in-app notifications at key stages of the bank connection and transaction import pipeline.
+
+### Notification Types (bank-related)
+
+| Notification | When triggered |
+|-------------|----------------|
+| **"Bank accounts are ready to select"** | After connecting a bank via CDR/OAuth — accounts have been fetched and the user can now choose which to import |
+| **"Transactions for the selected accounts have been uploaded"** | After selecting accounts and submitting — transaction data has been pulled from the bank and is ready for reconciliation |
+
+### Notification UI — Two Views
+
+**1. Dropdown preview (bell icon in header):**
+- Bell icon in the top-right nav bar (with red badge count when unread)
+- Clicking opens a **dropdown panel** showing recent notifications
+- Each notification shows: bell icon + message text + date (e.g. "Feb 9, 2026")
+- "See all notifications" link at the bottom → navigates to full notifications page
+- Notifications appear in reverse chronological order
+
+**2. Full notifications page (`/client/notifications`):**
+- Dedicated page listing all notifications
+- Same format: bell icon + message + date per row
+- Full list without truncation
+- Includes non-bank notifications too (e.g. "Your email address has been verified")
+
+### Notification Flow for Bank Connection
+
+The notifications reveal the async pipeline:
+1. User connects a bank → redirect back to TaxTank
+2. **Notification 1:** "Bank accounts are ready to select" — CDR fetch is complete, accounts are available
+3. User selects accounts, assigns Tank types, clicks Submit
+4. **Notification 2:** "Transactions for the selected accounts have been uploaded" — transaction import is complete, reconciliation can begin
+
+This pattern repeats each time the user reconnects to add more accounts (visible in screenshot: two pairs of notifications from the same session).
+
+### Key Design Insight
+
+The two-step notification flow indicates that **bank data fetching is asynchronous** — the user doesn't wait in a loading spinner. They connect, go about their business, and get notified when accounts are ready to select and again when transactions are ready to reconcile. This is important for UX because CDR/bank data fetches can take seconds to minutes depending on the institution.
+
+---
+
 ## 5. "Transfer to Different Bank" — Analysis
 
 This feature likely handles scenarios where:
