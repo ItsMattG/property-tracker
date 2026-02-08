@@ -2,7 +2,7 @@ import { Building2, Shield, Server, Lock } from "lucide-react";
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-[#1e40af] via-[#3730a3] to-[#7c3aed] px-4 py-8">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-(--auth-gradient-from) via-(--auth-gradient-via) to-(--auth-gradient-to) px-4 py-8">
       {/* Geometric dot pattern overlay */}
       <div
         className="pointer-events-none absolute inset-0"
