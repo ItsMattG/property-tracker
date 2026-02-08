@@ -78,7 +78,7 @@ export default function PrivacyPage() {
         <h2>9. Contact Us</h2>
         <p>
           If you have questions about this privacy policy, please contact us at{" "}
-          <a href="mailto:privacy@propertytracker.com.au">privacy@propertytracker.com.au</a>.
+          <a href="mailto:privacy@bricktrack.au">privacy@bricktrack.au</a>.
         </p>
       </div>
     </main>

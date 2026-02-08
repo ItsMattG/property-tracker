@@ -99,7 +99,7 @@ export default function TermsPage() {
         <h2>13. Contact</h2>
         <p>
           For questions about these terms, contact us at{" "}
-          <a href="mailto:legal@propertytracker.com.au">legal@propertytracker.com.au</a>.
+          <a href="mailto:legal@bricktrack.au">legal@bricktrack.au</a>.
         </p>
       </div>
     </main>
