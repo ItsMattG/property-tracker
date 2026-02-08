@@ -57,8 +57,15 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
     if (!propertyData.address || !propertyData.state) return;
     setFieldErrors({});
 
+    const errors: Record<string, string> = {};
+    if (propertyData.suburb && !/^[a-zA-Z\s\-']+$/.test(propertyData.suburb)) {
+      errors.suburb = "Suburb must only contain letters";
+    }
     if (propertyData.postcode && !/^\d{4}$/.test(propertyData.postcode)) {
-      setFieldErrors({ postcode: "Postcode must be 4 digits" });
+      errors.postcode = "Postcode must be 4 digits";
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -175,10 +182,14 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
                       id="suburb"
                       placeholder="Sydney"
                       value={propertyData.suburb}
-                      onChange={(e) =>
-                        setPropertyData({ ...propertyData, suburb: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setPropertyData({ ...propertyData, suburb: e.target.value });
+                        if (fieldErrors.suburb) setFieldErrors((prev) => ({ ...prev, suburb: "" }));
+                      }}
                     />
+                    {fieldErrors.suburb && (
+                      <p className="text-xs text-destructive">{fieldErrors.suburb}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="state">State</Label>

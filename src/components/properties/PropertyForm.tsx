@@ -26,7 +26,7 @@ const states = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
 
 const propertyFormSchema = z.object({
   address: z.string().min(1, "Address is required"),
-  suburb: z.string().min(1, "Suburb is required"),
+  suburb: z.string().min(1, "Suburb is required").regex(/^[a-zA-Z\s\-']+$/, "Suburb must only contain letters"),
   state: z.enum(states, { error: "State is required" }),
   postcode: z.string().regex(/^\d{4}$/, "Invalid postcode (must be 4 digits)"),
   purchasePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid price"),
@@ -107,7 +107,7 @@ export function PropertyForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>State</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select state" />
@@ -148,7 +148,7 @@ export function PropertyForm({
             render={({ field }) => (
               <FormItem data-tour="property-type">
                 <FormLabel>Entity</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value || "Personal"}>
+                <Select onValueChange={field.onChange} value={field.value || "Personal"}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select entity" />
