@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Building2, MapPin, Calendar, DollarSign, MoreVertical, FileText, TrendingUp, TrendingDown } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ import { format } from "date-fns";
 import type { Property } from "@/server/db/schema";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
+import { featureFlags } from "@/config/feature-flags";
 
 // When serialized through tRPC, Date fields become strings
 type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
@@ -40,6 +42,7 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property, metrics, onEdit, onDelete }: PropertyCardProps) {
+  const router = useRouter();
   const utils = trpc.useUtils();
 
   const handlePrefetch = () => {
@@ -90,15 +93,15 @@ export function PropertyCard({ property, metrics, onEdit, onDelete }: PropertyCa
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => { e.preventDefault(); onEdit?.(property.id); }}>
+            <DropdownMenuItem onClick={(e) => { e.preventDefault(); if (onEdit) { onEdit(property.id); } else { router.push(`/properties/${property.id}/edit`); } }}>
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem asChild onClick={(e) => e.preventDefault()}>
-              <Link href={`/properties/${property.id}/documents`}>
+            {featureFlags.documents && (
+              <DropdownMenuItem onClick={(e) => { e.preventDefault(); router.push(`/properties/${property.id}/documents`); }}>
                 <FileText className="w-4 h-4 mr-2" />
                 Documents
-              </Link>
-            </DropdownMenuItem>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               className="text-destructive"
               onClick={(e) => { e.preventDefault(); onDelete?.(property.id); }}

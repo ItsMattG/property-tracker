@@ -22,6 +22,12 @@ export const featureFlags = {
   tasks: false,
 
   // ── Settings ──────────────────────────────────────────────────────
+  notifications: false,
+  integrations: false,
+  loanPacks: false,
+  featureRequests: false,
+  advisors: false,
+  referrals: false,
   refinanceAlerts: false,
   emailConnections: false,
   mobileApp: false,
@@ -37,6 +43,9 @@ export const featureFlags = {
   milestones: false,
   performanceBenchmark: false,
   similarProperties: false,
+
+  // ── Property features ──────────────────────────────────────────────
+  documents: false,
 
   // ── Other UI ──────────────────────────────────────────────────────
   aiAssistant: false,
@@ -59,6 +68,12 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/export": "export",
   "/emails": "emails",
   "/tasks": "tasks",
+  "/settings/notifications": "notifications",
+  "/settings/integrations": "integrations",
+  "/settings/loan-packs": "loanPacks",
+  "/settings/feature-requests": "featureRequests",
+  "/settings/advisors": "advisors",
+  "/settings/referrals": "referrals",
   "/settings/refinance-alerts": "refinanceAlerts",
   "/settings/email-connections": "emailConnections",
   "/settings/mobile": "mobileApp",

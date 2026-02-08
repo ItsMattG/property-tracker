@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { NumericFormat } from "react-number-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -26,7 +27,7 @@ const states = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
 
 const propertyFormSchema = z.object({
   address: z.string().min(1, "Address is required"),
-  suburb: z.string().min(1, "Suburb is required"),
+  suburb: z.string().min(1, "Suburb is required").regex(/^[a-zA-Z\s\-']+$/, "Suburb must only contain letters"),
   state: z.enum(states, { error: "State is required" }),
   postcode: z.string().regex(/^\d{4}$/, "Invalid postcode (must be 4 digits)"),
   purchasePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid price"),
@@ -107,7 +108,7 @@ export function PropertyForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>State</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select state" />
@@ -135,7 +136,7 @@ export function PropertyForm({
               <FormItem>
                 <FormLabel>Postcode</FormLabel>
                 <FormControl>
-                  <Input placeholder="2000" {...field} />
+                  <NumericFormat customInput={Input} placeholder="2000" allowNegative={false} decimalScale={0} maxLength={4} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -148,7 +149,7 @@ export function PropertyForm({
             render={({ field }) => (
               <FormItem data-tour="property-type">
                 <FormLabel>Entity</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value || "Personal"}>
+                <Select onValueChange={field.onChange} value={field.value || "Personal"}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select entity" />
@@ -177,7 +178,7 @@ export function PropertyForm({
               <FormItem>
                 <FormLabel>Purchase Price ($)</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="500000" {...field} />
+                  <NumericFormat customInput={Input} placeholder="500000" allowNegative={false} decimalScale={0} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

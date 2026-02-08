@@ -10,6 +10,7 @@ import {
   Circle,
   Minus,
 } from "lucide-react";
+import { NumericFormat } from "react-number-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -54,6 +55,7 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
     purchaseDate: "",
   });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const router = useRouter();
   const utils = trpc.useUtils();
 
@@ -78,15 +80,48 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
 
   const handlePropertySubmit = async () => {
     if (!propertyData.address || !propertyData.state) return;
-    await createProperty.mutateAsync({
-      address: propertyData.address,
-      suburb: propertyData.suburb,
-      state: propertyData.state,
-      postcode: propertyData.postcode,
-      purchasePrice: propertyData.purchasePrice || "0",
-      purchaseDate:
-        propertyData.purchaseDate || new Date().toISOString().split("T")[0],
-    });
+    setFieldErrors({});
+
+    // Client-side validation
+    const errors: Record<string, string> = {};
+    if (propertyData.suburb && !/^[a-zA-Z\s\-']+$/.test(propertyData.suburb)) {
+      errors.suburb = "Suburb must only contain letters";
+    }
+    if (propertyData.postcode && !/^\d{4}$/.test(propertyData.postcode)) {
+      errors.postcode = "Postcode must be 4 digits";
+    }
+    if (propertyData.purchasePrice && !/^\d+\.?\d*$/.test(propertyData.purchasePrice)) {
+      errors.purchasePrice = "Must be a valid number";
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    try {
+      await createProperty.mutateAsync({
+        address: propertyData.address,
+        suburb: propertyData.suburb,
+        state: propertyData.state,
+        postcode: propertyData.postcode,
+        purchasePrice: propertyData.purchasePrice || "0",
+        purchaseDate:
+          propertyData.purchaseDate || new Date().toISOString().split("T")[0],
+      });
+    } catch (err: unknown) {
+      // Parse tRPC/Zod validation errors into field-level messages
+      const error = err as { data?: { zodError?: { fieldErrors?: Record<string, string[]> } }; message?: string };
+      const zodErrors = error.data?.zodError?.fieldErrors;
+      if (zodErrors) {
+        const mapped: Record<string, string> = {};
+        for (const [key, msgs] of Object.entries(zodErrors)) {
+          if (msgs?.[0]) mapped[key] = msgs[0];
+        }
+        setFieldErrors(mapped);
+      } else {
+        setFieldErrors({ _form: error.message || "Something went wrong" });
+      }
+    }
   };
 
   const handleSkip = () => {
@@ -175,6 +210,9 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                   Enter the basic details. You can add more information later.
                 </p>
               </div>
+              {fieldErrors._form && (
+                <p className="text-sm text-destructive">{fieldErrors._form}</p>
+              )}
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="wiz-address">Street Address</Label>
@@ -194,10 +232,14 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                       id="wiz-suburb"
                       placeholder="Sydney"
                       value={propertyData.suburb}
-                      onChange={(e) =>
-                        setPropertyData({ ...propertyData, suburb: e.target.value })
-                      }
+                      onChange={(e) => {
+                        setPropertyData({ ...propertyData, suburb: e.target.value });
+                        if (fieldErrors.suburb) setFieldErrors((prev) => ({ ...prev, suburb: "" }));
+                      }}
                     />
+                    {fieldErrors.suburb && (
+                      <p className="text-xs text-destructive">{fieldErrors.suburb}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="wiz-state">State</Label>
@@ -225,27 +267,37 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="wiz-postcode">Postcode</Label>
-                  <Input
+                  <NumericFormat
+                    customInput={Input}
                     id="wiz-postcode"
                     placeholder="2000"
+                    allowNegative={false}
+                    decimalScale={0}
+                    maxLength={4}
                     value={propertyData.postcode}
-                    onChange={(e) =>
-                      setPropertyData({ ...propertyData, postcode: e.target.value })
-                    }
+                    onValueChange={(values) => {
+                      setPropertyData({ ...propertyData, postcode: values.value });
+                      if (fieldErrors.postcode) setFieldErrors((prev) => ({ ...prev, postcode: "" }));
+                    }}
                   />
+                  {fieldErrors.postcode && (
+                    <p className="text-xs text-destructive">{fieldErrors.postcode}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="wiz-price">Purchase Price</Label>
-                    <Input
+                    <NumericFormat
+                      customInput={Input}
                       id="wiz-price"
-                      type="number"
                       placeholder="500000"
+                      allowNegative={false}
+                      decimalScale={0}
                       value={propertyData.purchasePrice}
-                      onChange={(e) =>
+                      onValueChange={(values) =>
                         setPropertyData({
                           ...propertyData,
-                          purchasePrice: e.target.value,
+                          purchasePrice: values.value,
                         })
                       }
                     />
