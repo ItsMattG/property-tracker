@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, Calendar, DollarSign, MoreVertical, FileText } from "lucide-react";
+import { Building2, MapPin, Calendar, DollarSign, MoreVertical, FileText, TrendingUp, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import {
 import { format } from "date-fns";
 import type { Property } from "@/server/db/schema";
 import { trpc } from "@/lib/trpc/client";
+import { cn } from "@/lib/utils";
 
 // When serialized through tRPC, Date fields become strings
 type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
@@ -21,24 +22,46 @@ type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
   updatedAt: Date | string;
 };
 
+interface PropertyMetrics {
+  currentValue: number;
+  totalLoans: number;
+  equity: number;
+  lvr: number | null;
+  cashFlow: number;
+  hasValue: boolean;
+  grossYield: number | null;
+}
+
 interface PropertyCardProps {
   property: SerializedProperty;
+  metrics?: PropertyMetrics;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
-export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) {
+export function PropertyCard({ property, metrics, onEdit, onDelete }: PropertyCardProps) {
   const utils = trpc.useUtils();
 
   const handlePrefetch = () => {
     utils.property.get.prefetch({ id: property.id });
   };
 
-  const formattedPrice = new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(Number(property.purchasePrice));
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency: "AUD",
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  const formatPercent = (value: number | null) =>
+    value !== null ? `${value.toFixed(1)}%` : "-";
+
+  const getLVRColor = (lvr: number | null) => {
+    if (lvr === null) return "text-muted-foreground";
+    if (lvr < 60) return "text-green-600";
+    if (lvr < 80) return "text-yellow-600";
+    return "text-red-600";
+  };
 
   return (
     <Link
@@ -46,7 +69,7 @@ export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) 
       onMouseEnter={handlePrefetch}
       className="block"
     >
-      <Card className="hover:border-primary transition-colors">
+      <Card className="hover:border-primary transition-colors" data-testid="property-card">
       <CardHeader className="flex flex-row items-start justify-between pb-2">
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -86,18 +109,78 @@ export function PropertyCard({ property, onEdit, onDelete }: PropertyCardProps) 
         </DropdownMenu>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4 mt-2">
-          <div className="flex items-center gap-2 text-sm">
-            <DollarSign className="w-4 h-4 text-muted-foreground" />
-            <span>{formattedPrice}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span>{format(new Date(property.purchaseDate), "MMM yyyy")}</span>
-          </div>
-        </div>
-        <div className="mt-3">
+        {metrics ? (
+          <>
+            {/* 2x2 financial metrics grid */}
+            <div className="grid grid-cols-2 gap-3 mt-1">
+              <div>
+                <p className="text-xs text-muted-foreground">Value</p>
+                <p className="text-base font-semibold">
+                  {metrics.hasValue ? formatCurrency(metrics.currentValue) : formatCurrency(Number(property.purchasePrice))}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Loan</p>
+                <p className="text-base font-semibold">
+                  {metrics.totalLoans > 0 ? formatCurrency(metrics.totalLoans) : "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Equity</p>
+                <p className="text-base font-semibold">
+                  {metrics.hasValue ? formatCurrency(metrics.equity) : "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">LVR</p>
+                <p className={cn("text-base font-semibold", getLVRColor(metrics.lvr))}>
+                  {formatPercent(metrics.lvr)}
+                </p>
+              </div>
+            </div>
+
+            {/* Cash flow footer */}
+            <div className="mt-3 pt-3 border-t flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Monthly Cash Flow</span>
+              <div className="flex items-center gap-1">
+                {metrics.cashFlow >= 0 ? (
+                  <TrendingUp className="w-3.5 h-3.5 text-green-600" />
+                ) : (
+                  <TrendingDown className="w-3.5 h-3.5 text-red-600" />
+                )}
+                <span
+                  className={cn(
+                    "text-sm font-semibold",
+                    metrics.cashFlow >= 0 ? "text-green-600" : "text-red-600"
+                  )}
+                >
+                  {formatCurrency(metrics.cashFlow)}
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Fallback: basic info while metrics load */}
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <div className="flex items-center gap-2 text-sm">
+                <DollarSign className="w-4 h-4 text-muted-foreground" />
+                <span>{formatCurrency(Number(property.purchasePrice))}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span>{format(new Date(property.purchaseDate), "MMM yyyy")}</span>
+              </div>
+            </div>
+          </>
+        )}
+        <div className="mt-3 flex items-center justify-between">
           <Badge variant="secondary">{property.entityName}</Badge>
+          {metrics?.grossYield !== null && metrics?.grossYield !== undefined && (
+            <span className="text-xs text-muted-foreground">
+              {formatPercent(metrics.grossYield)} yield
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>
