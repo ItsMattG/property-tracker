@@ -257,7 +257,7 @@ Clicking "Allocate" on a transaction row opens an **inline popup/panel** (not a 
   - Document icon (possibly other/misc)
 - These determine the type of allocation
 
-**Attachment link:** Top-right corner — "Attachment" with paperclip icon. Opens file upload for receipt/document attachment to this transaction.
+**Attachment link:** Top-right corner — "Attachment" with paperclip icon. Opens file upload for receipt/document attachment to this transaction. Uploaded attachments appear in the **Spare Tank → Receipts** list (see section 4b below).
 
 **Allocation form:**
 | Field | Detail |
@@ -317,6 +317,53 @@ Separate tab for managing auto-categorisation rules:
 6. **Three-tab structure** (Reconcile / Account Transactions / Bank Rules) keeps everything for one account in one place
 7. **Create Rule is inline** — one click from seeing a transaction to creating a rule for all future similar transactions
 8. **Attachment per transaction** — receipt/document trail at the individual transaction level
+
+---
+
+## 4b. Spare Tank — Receipts List
+
+Transaction attachments uploaded via the allocation popup's "Attachment" link surface in the **Spare Tank** section under the **Receipts** tab. This provides a centralised view of all receipt documentation across all transactions.
+
+### Spare Tank Page Layout
+
+**Page title:** "Spare Tank"
+
+**Three-tab navigation:**
+| Tab | Purpose |
+|-----|---------|
+| **Documents** | General document storage |
+| **Receipts** (active, blue fill) | Transaction receipt attachments — auto-populated from allocation attachments |
+| **Properties** | Property-related documents |
+
+### Receipts Table
+
+**Search bar:** Full-width search input with magnifying glass icon
+
+**Table columns:**
+
+| Column | Detail |
+|--------|--------|
+| **File icon** | Document icon indicating file type |
+| **File Name** | Truncated filename with ellipsis (e.g. "hendrik-cornelissen--qrcOR33ErA-unspla...") |
+| **Uploaded Date** | Format: DD.MM.YY (e.g. "01.07.24") |
+| **Tank** | Icon badge showing which "tank" the receipt belongs to (property icon = property tank, dollar icon = spare) |
+| **Category** | The expense category from the transaction allocation (e.g. "Interest on loan(s)") |
+| **Properties** | Which property the receipt is linked to (e.g. "123 A'BECKETT STREET") |
+| **Amount** | The transaction amount (e.g. "-$40.00") |
+| **View** | Eye icon — preview the receipt |
+| **Download** | Download icon — download the file |
+
+**Pagination:**
+- "Items per page" dropdown (default 50)
+- Page navigation: first, prev, next, last buttons
+- Shows "1–1 of 1" count
+
+### Key Design Insights
+
+1. **Receipts are auto-linked** — uploading an attachment during transaction allocation automatically populates the Spare Tank receipts list with the transaction's metadata (category, property, amount)
+2. **Centralised receipt management** — users don't have to remember which transaction has which receipt. All receipts are browsable from one place
+3. **Tax-ready documentation** — the receipts list essentially builds an audit trail: every deductible expense can have a receipt attached, searchable by property and category
+4. **Separate from Documents** — general documents (e.g. contracts, valuations) live in the Documents tab; receipts specifically for transaction evidence live in Receipts
 
 ---
 
