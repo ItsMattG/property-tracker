@@ -21,6 +21,10 @@ export function ThemeProvider({
       document.documentElement.setAttribute("data-theme", resolved);
     }
     localStorage.setItem(STORAGE_KEY, resolved);
+
+    return () => {
+      document.documentElement.removeAttribute("data-theme");
+    };
   }, [theme]);
 
   return <>{children}</>;

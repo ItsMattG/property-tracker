@@ -21,6 +21,11 @@ export default async function DashboardLayout({
 
   return (
     <ThemeProvider theme={theme}>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem("bricktrack-theme");if(t&&t!=="forest")document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`,
+        }}
+      />
       <ChatProvider>
         <SidebarProvider>
           <div className="flex min-h-screen">
