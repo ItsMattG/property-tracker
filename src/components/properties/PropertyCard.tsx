@@ -17,6 +17,7 @@ import type { Property } from "@/server/db/schema";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { featureFlags } from "@/config/feature-flags";
+import { PerformanceBadge } from "./PerformanceBadge";
 
 // When serialized through tRPC, Date fields become strings
 type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
@@ -32,6 +33,8 @@ interface PropertyMetrics {
   cashFlow: number;
   hasValue: boolean;
   grossYield: number | null;
+  capitalGrowthPercent: number;
+  annualIncome: number;
 }
 
 interface PropertyCardProps {
@@ -178,7 +181,21 @@ export function PropertyCard({ property, metrics, onEdit, onDelete }: PropertyCa
           </>
         )}
         <div className="mt-3 flex items-center justify-between">
-          <Badge variant="secondary">{property.entityName}</Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge variant="secondary">{property.entityName}</Badge>
+            {metrics && (
+              <PerformanceBadge
+                metrics={{
+                  grossYield: metrics.grossYield,
+                  cashFlow: metrics.cashFlow,
+                  capitalGrowthPercent: metrics.capitalGrowthPercent,
+                  lvr: metrics.lvr,
+                  hasValue: metrics.hasValue,
+                  annualIncome: metrics.annualIncome,
+                }}
+              />
+            )}
+          </div>
           {metrics?.grossYield !== null && metrics?.grossYield !== undefined && (
             <span className="text-xs text-muted-foreground">
               {formatPercent(metrics.grossYield)} yield
