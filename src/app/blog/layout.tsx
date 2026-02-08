@@ -28,12 +28,6 @@ export default function BlogLayout({
           {/* Desktop navigation */}
           <div className="hidden md:flex items-center gap-4">
             <Button variant="ghost" asChild>
-              <Link href="/blog">Blog</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/changelog">Changelog</Link>
-            </Button>
-            <Button variant="ghost" asChild>
               <Link href="/sign-in">Sign In</Link>
             </Button>
             <Button asChild>
@@ -57,12 +51,6 @@ export default function BlogLayout({
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">
-            <Link href="/blog" className="hover:text-foreground">
-              Blog
-            </Link>
-            <Link href="/changelog" className="hover:text-foreground">
-              Changelog
-            </Link>
             <Link href="/privacy" className="hover:text-foreground">
               Privacy Policy
             </Link>
