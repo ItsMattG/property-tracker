@@ -21,10 +21,9 @@ async function getLifetimeCount(): Promise<number> {
 
 export async function LifetimeBanner() {
   const count = await getLifetimeCount();
-  const remaining = LIFETIME_LIMIT - count;
 
   // Hide if sold out
-  if (remaining <= 0) return null;
+  if (count >= LIFETIME_LIMIT) return null;
 
   return (
     <div className="relative mb-8 rounded-xl border border-primary/20 bg-primary/5 p-6">

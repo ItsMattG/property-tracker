@@ -62,7 +62,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <NextTopLoader color="hsl(var(--primary))" showSpinner={false} height={2} shadow={false} />
+        <NextTopLoader
+          color="hsl(var(--primary))"
+          showSpinner={false}
+          height={2}
+          shadow={false}
+        />
         <TRPCProvider>
           <PostHogProvider>{children}</PostHogProvider>
         </TRPCProvider>
