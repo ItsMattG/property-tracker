@@ -35,6 +35,7 @@ export const auth = betterAuth({
       trialStartedAt: { type: "date", required: false, input: false },
       trialEndsAt: { type: "date", required: false, input: false },
       trialPlan: { type: "string", required: false, input: false },
+      theme: { type: "string", required: false, input: false },
     },
   },
   databaseHooks: {
