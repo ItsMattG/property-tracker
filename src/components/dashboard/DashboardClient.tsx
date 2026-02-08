@@ -17,6 +17,7 @@ import { useTour } from "@/hooks/useTour";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 import { RentalYieldCard } from "@/components/rental-yield";
 import { PortfolioValueChart } from "./PortfolioValueChart";
+import { CashFlowWidget } from "./CashFlowWidget";
 import { ErrorState } from "@/components/ui/error-state";
 import { getErrorMessage } from "@/lib/errors";
 import { TrialPropertyLimitBanner } from "@/components/banners/TrialPropertyLimitBanner";
@@ -247,6 +248,8 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       <StaleLoansDashboardCard />
 
       <PortfolioValueChart />
+
+      <CashFlowWidget />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {properties && properties.length > 0 && (
