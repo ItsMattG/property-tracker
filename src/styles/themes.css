@@ -39,6 +39,11 @@
 	--radius-lg: 0.75rem;
 	--radius-xl: 1rem;
 
+	/* Auth page gradient */
+	--auth-gradient-from: #14532d;
+	--auth-gradient-via: #15803d;
+	--auth-gradient-to: #166534;
+
 	/* Multi-hue accent palette */
 	--color-secondary-accent: #2563EB;
 	--color-secondary-accent-light: #dbeafe;
@@ -50,6 +55,9 @@
 
 /* Clean Theme (Blue) */
 [data-theme="clean"] {
+	--auth-gradient-from: #1e3a5f;
+	--auth-gradient-via: #0066cc;
+	--auth-gradient-to: #0052a3;
 	--color-primary: #0066cc;
 	--color-primary-hover: #0052a3;
 	--color-primary-light: #e6f0ff;
@@ -73,6 +81,9 @@
 
 /* Dark Theme */
 [data-theme="dark"] {
+	--auth-gradient-from: #0f172a;
+	--auth-gradient-via: #1e3a5f;
+	--auth-gradient-to: #172554;
 	--color-primary: #2563eb;
 	--color-primary-hover: #1d4ed8;
 	--color-primary-light: #1e3a5f;
@@ -97,6 +108,9 @@
 
 /* Friendly Theme */
 [data-theme="friendly"] {
+	--auth-gradient-from: #064e3b;
+	--auth-gradient-via: #047857;
+	--auth-gradient-to: #065f46;
 	--color-primary: #047857;
 	--color-primary-hover: #065f46;
 	--color-primary-light: #d1fae5;
@@ -123,6 +137,9 @@
 
 /* Bold Theme */
 [data-theme="bold"] {
+	--auth-gradient-from: #172554;
+	--auth-gradient-via: #1d4ed8;
+	--auth-gradient-to: #1e40af;
 	--color-primary: #1d4ed8;
 	--color-primary-hover: #1e40af;
 	--color-primary-light: #dbeafe;
@@ -149,6 +166,9 @@
 
 /* Ocean Theme (Teal/Cyan) */
 [data-theme="ocean"] {
+	--auth-gradient-from: #134e4a;
+	--auth-gradient-via: #0e7490;
+	--auth-gradient-to: #155e75;
 	--color-primary: #0e7490;
 	--color-primary-hover: #155e75;
 	--color-primary-light: #cffafe;
