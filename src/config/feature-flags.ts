@@ -44,6 +44,9 @@ export const featureFlags = {
   performanceBenchmark: false,
   similarProperties: false,
 
+  // ── Property features ──────────────────────────────────────────────
+  documents: false,
+
   // ── Other UI ──────────────────────────────────────────────────────
   aiAssistant: false,
   whatsNew: false,
