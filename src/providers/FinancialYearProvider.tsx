@@ -20,16 +20,16 @@ const FinancialYearContext = createContext<FinancialYearContextValue | null>(nul
 const STORAGE_KEY = "bricktrack-fy";
 
 export function FinancialYearProvider({ children }: { children: React.ReactNode }) {
-  const [selectedYear, setSelectedYear] = useState(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = parseInt(stored, 10);
-        if (!isNaN(parsed)) return parsed;
-      }
+  const [selectedYear, setSelectedYear] = useState(getCurrentFinancialYear);
+
+  // Hydrate from localStorage after mount to avoid SSR mismatch
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed)) setSelectedYear(parsed);
     }
-    return getCurrentFinancialYear();
-  });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, String(selectedYear));

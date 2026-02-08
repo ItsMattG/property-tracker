@@ -254,8 +254,12 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       <PortfolioSummaryTable />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <LvrGaugeCard />
-        <EquityProjectionCard />
+        <div className="animate-card-entrance" style={{ '--stagger-index': 0 } as React.CSSProperties}>
+          <LvrGaugeCard />
+        </div>
+        <div className="animate-card-entrance" style={{ '--stagger-index': 1 } as React.CSSProperties}>
+          <EquityProjectionCard />
+        </div>
       </div>
 
       <PortfolioValueChart />
