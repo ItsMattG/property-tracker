@@ -808,6 +808,8 @@ export const properties = pgTable("properties", {
   postcode: text("postcode").notNull(),
   purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }).notNull(),
   purchaseDate: date("purchase_date").notNull(),
+  contractDate: date("contract_date"),
+  settlementDate: date("settlement_date"),
   entityName: text("entity_name").default("Personal").notNull(),
   status: propertyStatusEnum("status").default("active").notNull(),
   soldAt: date("sold_at"),

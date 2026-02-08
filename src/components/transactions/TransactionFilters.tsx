@@ -1,19 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { categories } from "@/lib/categories";
-import { Plus } from "lucide-react";
 import type { Property } from "@/server/db/schema";
 
 // When serialized through tRPC, Date fields become strings
@@ -39,24 +35,18 @@ export function TransactionFilters({
   filters,
   onFiltersChange,
 }: TransactionFiltersProps) {
-  const router = useRouter();
-
   return (
     <div className="flex flex-wrap gap-4 p-4 bg-card rounded-lg border">
       <div className="space-y-1">
         <Label htmlFor="property-filter">Property</Label>
         <Select
           value={filters.propertyId ?? "all"}
-          onValueChange={(value) => {
-            if (value === "__create_new__") {
-              router.push("/properties/new");
-              return;
-            }
+          onValueChange={(value) =>
             onFiltersChange({
               ...filters,
               propertyId: value === "all" ? undefined : value,
-            });
-          }}
+            })
+          }
         >
           <SelectTrigger id="property-filter" className="w-[200px]">
             <SelectValue placeholder="All properties" />
@@ -68,11 +58,6 @@ export function TransactionFilters({
                 {property.address}
               </SelectItem>
             ))}
-            <SelectSeparator />
-            <SelectItem value="__create_new__" className="text-muted-foreground">
-              <Plus className="size-4" />
-              Add property
-            </SelectItem>
           </SelectContent>
         </Select>
       </div>

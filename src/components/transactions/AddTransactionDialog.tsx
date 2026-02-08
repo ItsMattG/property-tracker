@@ -106,7 +106,7 @@ export function AddTransactionDialog({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Manual Transaction</DialogTitle>
           <DialogDescription>
@@ -158,7 +158,7 @@ export function AddTransactionDialog({
                       <Input
                         type="number"
                         step="0.01"
-                        placeholder="-150.00"
+                        placeholder="0.00"
                         {...field}
                       />
                     </FormControl>

@@ -34,7 +34,7 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
     state: "" as (typeof STATES)[number] | "",
     postcode: "",
     purchasePrice: "",
-    purchaseDate: "",
+    contractDate: "",
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const router = useRouter();
@@ -77,7 +77,7 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
         state: propertyData.state,
         postcode: propertyData.postcode,
         purchasePrice: propertyData.purchasePrice || "0",
-        purchaseDate: propertyData.purchaseDate || new Date().toISOString().split("T")[0],
+        contractDate: propertyData.contractDate || new Date().toISOString().split("T")[0],
       });
     } catch (err: unknown) {
       const error = err as { data?: { zodError?: { fieldErrors?: Record<string, string[]> } }; message?: string };
@@ -254,13 +254,13 @@ export function OnboardingWizard({ onClose }: OnboardingWizardProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Purchase Date</Label>
+                    <Label>Contract Date</Label>
                     <DatePicker
-                      value={propertyData.purchaseDate}
+                      value={propertyData.contractDate}
                       onChange={(date) =>
                         setPropertyData({
                           ...propertyData,
-                          purchaseDate: date,
+                          contractDate: date,
                         })
                       }
                       placeholder="Select purchase date"

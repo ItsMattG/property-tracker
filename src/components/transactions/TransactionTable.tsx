@@ -22,7 +22,7 @@ import { CategorySelect } from "./CategorySelect";
 import { MakeRecurringDialog } from "@/components/recurring/MakeRecurringDialog";
 import { getCategoryLabel, getCategoryInfo } from "@/lib/categories";
 import { format } from "date-fns";
-import { Check, X, MoreHorizontal, Pencil, Repeat, Trash2 } from "lucide-react";
+import { Check, X, MoreHorizontal } from "lucide-react";
 import type { Transaction, Property, BankAccount } from "@/server/db/schema";
 
 // When serialized through tRPC, Date fields become strings
@@ -109,7 +109,7 @@ export function TransactionTable({
   return (
     <div className="space-y-4" data-tour="transaction-list">
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-4 p-4 bg-primary/10 rounded-lg" data-tour="bulk-actions">
+        <div className="flex items-center gap-4 p-4 bg-muted rounded-lg" data-tour="bulk-actions">
           <span className="text-sm font-medium">
             {selectedIds.size} selected
           </span>
@@ -168,8 +168,13 @@ export function TransactionTable({
                     <TableCell className="whitespace-nowrap">
                       {format(new Date(transaction.date), "dd MMM yyyy")}
                     </TableCell>
-                    <TableCell className="max-w-[300px] truncate">
-                      {transaction.description}
+                    <TableCell className="max-w-[300px]">
+                      <div className="truncate">{transaction.description}</div>
+                      {transaction.notes && (
+                        <div className="text-xs text-muted-foreground truncate mt-0.5">
+                          {transaction.notes}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell
                       className={
@@ -193,7 +198,7 @@ export function TransactionTable({
                     <TableCell>
                       {transaction.property ? (
                         <Badge variant="outline">
-                          {transaction.property.suburb}
+                          {transaction.property.address}
                         </Badge>
                       ) : (
                         <span className="text-muted-foreground text-sm">
@@ -230,21 +235,18 @@ export function TransactionTable({
                           <DropdownMenuItem
                             onClick={() => onEdit?.(transaction.id)}
                           >
-                            <Pencil className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleMakeRecurring(transaction)}
                             disabled={!transaction.propertyId}
                           >
-                            <Repeat className="w-4 h-4 mr-2" />
                             Make Recurring
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => onDelete?.(transaction.id)}
                           >
-                            <Trash2 className="w-4 h-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>

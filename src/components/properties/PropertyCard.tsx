@@ -172,7 +172,7 @@ export function PropertyCard({ property, metrics, onEdit, onDelete }: PropertyCa
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span>{format(new Date(property.purchaseDate), "MMM yyyy")}</span>
+                <span>{format(new Date(property.contractDate ?? property.purchaseDate), "MMM yyyy")}</span>
               </div>
             </div>
           </>

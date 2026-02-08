@@ -22,6 +22,7 @@ export default function NewPropertyPage() {
 
   const { data: trialStatus } = trpc.billing.getTrialStatus.useQuery();
   const { data: entities } = trpc.entity.list.useQuery();
+  const { data: properties } = trpc.property.list.useQuery();
 
   const createProperty = trpc.property.create.useMutation({
     onSuccess: (property) => {
@@ -102,6 +103,7 @@ export default function NewPropertyPage() {
           onConfirm={handleModalConfirm}
           trialEndsAt={new Date(trialStatus.trialEndsAt)}
           isLoading={createProperty.isPending}
+          firstPropertyAddress={properties?.[0]?.address}
         />
       )}
     </div>

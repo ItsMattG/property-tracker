@@ -203,12 +203,12 @@ export default function PropertyDetailPage() {
             </div>
           </div>
 
-          {/* Purchase Date */}
+          {/* Contract Date */}
           <div className="flex items-start gap-3">
             <Calendar className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm text-muted-foreground">Purchase Date</p>
-              <p className="font-medium">{formatDate(property.purchaseDate)}</p>
+              <p className="text-sm text-muted-foreground">Contract Date</p>
+              <p className="font-medium">{formatDate(property.contractDate ?? property.purchaseDate)}</p>
             </div>
           </div>
 

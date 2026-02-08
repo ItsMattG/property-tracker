@@ -9,11 +9,13 @@ import Link from "next/link";
 interface TrialPropertyLimitBannerProps {
   propertyCount: number;
   trialEndsAt: Date;
+  firstPropertyAddress?: string;
 }
 
 export function TrialPropertyLimitBanner({
   propertyCount,
   trialEndsAt,
+  firstPropertyAddress,
 }: TrialPropertyLimitBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
@@ -30,7 +32,8 @@ export function TrialPropertyLimitBanner({
         <div className="flex-1 min-w-0">
           <p className="text-sm text-amber-800">
             You have <strong>{propertyCount} properties</strong> on your trial.
-            After <strong>{trialEndDate}</strong>, only your first property stays
+            After <strong>{trialEndDate}</strong>, only{" "}
+            <strong>{firstPropertyAddress ?? "your first property"}</strong> stays
             active. Upgrade to keep them all.
           </p>
         </div>
@@ -40,7 +43,7 @@ export function TrialPropertyLimitBanner({
           </Button>
           <button
             onClick={() => setDismissed(true)}
-            className="text-amber-600 hover:text-amber-800 p-1"
+            className="text-amber-600 hover:text-amber-800 p-1 cursor-pointer"
             aria-label="Dismiss"
           >
             <X className="h-4 w-4" />

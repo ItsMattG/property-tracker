@@ -138,6 +138,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         <TrialPropertyLimitBanner
           propertyCount={trialStatus.propertyCount}
           trialEndsAt={new Date(trialStatus.trialEndsAt)}
+          firstPropertyAddress={properties?.[0]?.address}
         />
       )}
 

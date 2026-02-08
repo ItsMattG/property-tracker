@@ -12,7 +12,8 @@ const propertySchema = z.object({
   state: z.enum(["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"]),
   postcode: z.string().regex(/^\d{4}$/, "Invalid postcode"),
   purchasePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid price"),
-  purchaseDate: z.string(),
+  contractDate: z.string().min(1, "Contract date is required"),
+  settlementDate: z.string().optional(),
   entityName: z.string().optional(),
 });
 
@@ -137,7 +138,9 @@ export const propertyRouter = router({
           state: input.state,
           postcode: input.postcode,
           purchasePrice: input.purchasePrice,
-          purchaseDate: input.purchaseDate,
+          purchaseDate: input.contractDate,
+          contractDate: input.contractDate,
+          settlementDate: input.settlementDate || null,
           entityName: input.entityName || "Personal",
           climateRisk,
         })
@@ -199,11 +202,15 @@ export const propertyRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 
-      // If postcode is being updated, refresh climate risk
+      // If contract date changes, keep purchaseDate in sync
       const updateData: Record<string, unknown> = {
         ...data,
         updatedAt: new Date(),
       };
+
+      if (data.contractDate) {
+        updateData.purchaseDate = data.contractDate;
+      }
 
       if (data.postcode) {
         updateData.climateRisk = getClimateRisk(data.postcode);

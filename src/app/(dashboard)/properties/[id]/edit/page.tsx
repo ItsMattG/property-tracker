@@ -68,7 +68,8 @@ export default function EditPropertyPage() {
             state: property.state,
             postcode: property.postcode,
             purchasePrice: property.purchasePrice,
-            purchaseDate: property.purchaseDate,
+            contractDate: property.contractDate ?? property.purchaseDate,
+            settlementDate: property.settlementDate ?? "",
             entityName: property.entityName,
           }}
           onSubmit={handleSubmit}

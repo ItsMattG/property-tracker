@@ -31,7 +31,8 @@ const propertyFormSchema = z.object({
   state: z.enum(states, { error: "State is required" }),
   postcode: z.string().regex(/^\d{4}$/, "Invalid postcode (must be 4 digits)"),
   purchasePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid price"),
-  purchaseDate: z.string().min(1, "Purchase date is required"),
+  contractDate: z.string().min(1, "Contract date is required"),
+  settlementDate: z.string().optional(),
   entityName: z.string().optional(),
 });
 
@@ -64,7 +65,8 @@ export function PropertyForm({
       state: undefined,
       postcode: "",
       purchasePrice: "",
-      purchaseDate: "",
+      contractDate: "",
+      settlementDate: "",
       entityName: "Personal",
       ...defaultValues,
     },
@@ -78,7 +80,7 @@ export function PropertyForm({
           name="address"
           render={({ field }) => (
             <FormItem data-tour="address-field">
-              <FormLabel>Street Address</FormLabel>
+              <FormLabel>Street Address <span className="text-destructive">*</span></FormLabel>
               <FormControl>
                 <Input placeholder="123 Smith Street" {...field} />
               </FormControl>
@@ -93,7 +95,7 @@ export function PropertyForm({
             name="suburb"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Suburb</FormLabel>
+                <FormLabel>Suburb <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
                   <Input placeholder="Sydney" {...field} />
                 </FormControl>
@@ -107,7 +109,7 @@ export function PropertyForm({
             name="state"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>State</FormLabel>
+                <FormLabel>State <span className="text-destructive">*</span></FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? ""}>
                   <FormControl>
                     <SelectTrigger>
@@ -134,7 +136,7 @@ export function PropertyForm({
             name="postcode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Postcode</FormLabel>
+                <FormLabel>Postcode <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
                   <NumericFormat customInput={Input} placeholder="2000" allowNegative={false} decimalScale={0} maxLength={4} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
                 </FormControl>
@@ -176,7 +178,7 @@ export function PropertyForm({
             name="purchasePrice"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Purchase Price ($)</FormLabel>
+                <FormLabel>Purchase Price ($) <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
                   <NumericFormat customInput={Input} placeholder="500000" allowNegative={false} decimalScale={0} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
                 </FormControl>
@@ -185,14 +187,31 @@ export function PropertyForm({
             )}
           />
 
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="purchaseDate"
+            name="contractDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Purchase Date</FormLabel>
+                <FormLabel>Contract Date <span className="text-destructive">*</span></FormLabel>
                 <FormControl>
-                  <DatePicker value={field.value} onChange={field.onChange} placeholder="Select purchase date" />
+                  <DatePicker value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="settlementDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Settlement Date</FormLabel>
+                <FormControl>
+                  <DatePicker value={field.value ?? ""} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

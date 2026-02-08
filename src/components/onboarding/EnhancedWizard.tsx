@@ -52,7 +52,7 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
     state: "" as (typeof STATES)[number] | "",
     postcode: "",
     purchasePrice: "",
-    purchaseDate: "",
+    contractDate: "",
   });
   const [showSuccess, setShowSuccess] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -105,8 +105,8 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
         state: propertyData.state,
         postcode: propertyData.postcode,
         purchasePrice: propertyData.purchasePrice || "0",
-        purchaseDate:
-          propertyData.purchaseDate || new Date().toISOString().split("T")[0],
+        contractDate:
+          propertyData.contractDate || new Date().toISOString().split("T")[0],
       });
     } catch (err: unknown) {
       // Parse tRPC/Zod validation errors into field-level messages
@@ -303,13 +303,13 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Purchase Date</Label>
+                    <Label>Contract Date</Label>
                     <DatePicker
-                      value={propertyData.purchaseDate}
+                      value={propertyData.contractDate}
                       onChange={(date) =>
                         setPropertyData({
                           ...propertyData,
-                          purchaseDate: date,
+                          contractDate: date,
                         })
                       }
                       placeholder="Select purchase date"
