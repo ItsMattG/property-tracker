@@ -38,4 +38,26 @@ test.describe("Properties", () => {
 
     expect(errors).toHaveLength(0);
   });
+
+  test("should display performance badge on property cards when metrics loaded", async ({ authenticatedPage: page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (err) => errors.push(err.message));
+
+    await page.goto("/properties");
+    await expect(page.getByRole("heading", { name: /properties/i })).toBeVisible();
+
+    const hasProperties = await page.locator("[data-testid='property-card']").count().then(c => c > 0).catch(() => false);
+
+    if (hasProperties) {
+      const firstCard = page.locator("[data-testid='property-card']").first();
+      // Wait for metrics to load (Value label appears when metrics resolve)
+      await expect(firstCard.getByText("Value")).toBeVisible({ timeout: 10000 });
+
+      // Performance badge should be visible (data-testid="performance-badge")
+      const badge = firstCard.locator("[data-testid='performance-badge']");
+      await expect(badge).toBeVisible({ timeout: 5000 });
+    }
+
+    expect(errors).toHaveLength(0);
+  });
 });

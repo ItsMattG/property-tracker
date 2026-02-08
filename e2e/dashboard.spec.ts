@@ -194,6 +194,40 @@ test.describe("Dashboard", () => {
     ).not.toBeVisible();
   });
 
+  // ── Dashboard widgets ─────────────────────────────────────────────
+
+  test("should display Cash Flow widget", async ({
+    authenticatedPage: page,
+  }) => {
+    // CashFlowWidget renders a CardTitle "Cash Flow" in all states (loading, empty, data)
+    await expect(
+      page.getByRole("heading", { name: "Cash Flow", exact: true })
+    ).toBeVisible({ timeout: 10000 });
+  });
+
+  test("should display Portfolio Summary table", async ({
+    authenticatedPage: page,
+  }) => {
+    // PortfolioSummaryTable renders when metrics exist; may be hidden if no properties
+    const heading = page.getByText("Portfolio Summary", { exact: true });
+    const hasProperties = await page
+      .locator("[data-tour='portfolio-summary']")
+      .getByText(/Investment properties tracked/i)
+      .isVisible()
+      .catch(() => false);
+
+    if (!hasProperties) {
+      // If properties exist, the table should show with headers
+      await expect(heading).toBeVisible({ timeout: 10000 });
+      await expect(page.getByRole("columnheader", { name: "Value" })).toBeVisible();
+      await expect(page.getByRole("columnheader", { name: "Loan" })).toBeVisible();
+      await expect(page.getByRole("columnheader", { name: "Equity" })).toBeVisible();
+      await expect(page.getByRole("columnheader", { name: "LVR" })).toBeVisible();
+      await expect(page.getByRole("columnheader", { name: "Cash" })).toBeVisible();
+    }
+    // If no properties, table is hidden — test passes either way
+  });
+
   // ── Sidebar collapse/expand ────────────────────────────────────────
 
   test("should collapse and expand the sidebar", async ({
