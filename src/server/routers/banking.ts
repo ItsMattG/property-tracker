@@ -580,10 +580,27 @@ export const bankingRouter = router({
           .where(eq(users.id, user.id));
       }
 
-      // Create auth link for consent flow
-      const { links } = await basiqService.createAuthLink(basiqUserId);
+      // Create auth link for consent flow — if the stored basiqUserId is stale
+      // (e.g. API key changed, user deleted from Basiq), recreate the user and retry
+      try {
+        const { links } = await basiqService.createAuthLink(basiqUserId);
+        return { url: links.public };
+      } catch (error) {
+        const isNotFound = error instanceof Error && error.message.includes("resource-not-found");
+        if (!isNotFound) throw error;
 
-      return { url: links.public };
+        // Stale basiqUserId — create a new Basiq user and retry
+        const basiqUser = await basiqService.createUser(user.email);
+        basiqUserId = basiqUser.id;
+
+        await ctx.db
+          .update(users)
+          .set({ basiqUserId })
+          .where(eq(users.id, user.id));
+
+        const { links } = await basiqService.createAuthLink(basiqUserId);
+        return { url: links.public };
+      }
     }),
 
   reconnect: bankProcedure

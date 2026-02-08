@@ -159,7 +159,7 @@ export function PropertyForm({
               <FormItem>
                 <FormLabel>Purchase Price ($)<RequiredMark /></FormLabel>
                 <FormControl>
-                  <NumericFormat customInput={Input} placeholder="500,000" thousandSeparator="," allowNegative={false} decimalScale={0} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
+                  <NumericFormat customInput={Input} placeholder="0" thousandSeparator="," allowNegative={false} decimalScale={0} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

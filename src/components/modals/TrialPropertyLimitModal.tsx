@@ -51,7 +51,7 @@ export function TrialPropertyLimitModal({
             </div>
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-3">
           <Button variant="outline" asChild>
             <Link href="/settings/billing" target="_blank">
               View Pro pricing
