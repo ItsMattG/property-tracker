@@ -123,6 +123,134 @@ describe("transaction router", () => {
     });
   });
 
+  describe("get", () => {
+    it("returns a transaction by id", async () => {
+      const ctx = createAuthenticatedContext();
+      const mockTx = {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        userId: mockUser.id,
+        description: "Test tx",
+        amount: "100",
+      };
+
+      ctx.db.query.transactions = {
+        findFirst: vi.fn().mockResolvedValue(mockTx),
+      };
+
+      const caller = createTestCaller(ctx);
+      const result = await caller.transaction.get({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+      });
+
+      expect(result).toEqual(mockTx);
+    });
+
+    it("throws NOT_FOUND when transaction does not exist", async () => {
+      const ctx = createAuthenticatedContext();
+      ctx.db.query.transactions = {
+        findFirst: vi.fn().mockResolvedValue(null),
+      };
+
+      const caller = createTestCaller(ctx);
+      await expect(
+        caller.transaction.get({
+          id: "550e8400-e29b-41d4-a716-446655440000",
+        })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    });
+  });
+
+  describe("update", () => {
+    it("updates a transaction and derives transactionType", async () => {
+      const ctx = createAuthenticatedContext();
+      const updatedTx = {
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        category: "insurance",
+        transactionType: "expense",
+        isDeductible: true,
+      };
+
+      const updateMock = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([updatedTx]),
+          }),
+        }),
+      });
+
+      ctx.db.update = updateMock;
+
+      const caller = createTestCaller(ctx);
+      const result = await caller.transaction.update({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        propertyId: "660e8400-e29b-41d4-a716-446655440000",
+        date: "2025-06-01",
+        description: "Updated insurance",
+        amount: "250.50",
+        category: "insurance",
+      });
+
+      expect(updateMock).toHaveBeenCalled();
+      expect(result).toEqual(updatedTx);
+    });
+
+    it("derives income type for rental_income category", async () => {
+      const ctx = createAuthenticatedContext();
+
+      const setMock = vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ transactionType: "income" }]),
+        }),
+      });
+      ctx.db.update = vi.fn().mockReturnValue({ set: setMock });
+
+      const caller = createTestCaller(ctx);
+      await caller.transaction.update({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        propertyId: "660e8400-e29b-41d4-a716-446655440000",
+        date: "2025-06-01",
+        description: "Rent",
+        amount: "2000",
+        category: "rental_income",
+      });
+
+      expect(setMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transactionType: "income",
+          isDeductible: false,
+        })
+      );
+    });
+
+    it("derives capital type for stamp_duty category", async () => {
+      const ctx = createAuthenticatedContext();
+
+      const setMock = vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ transactionType: "capital" }]),
+        }),
+      });
+      ctx.db.update = vi.fn().mockReturnValue({ set: setMock });
+
+      const caller = createTestCaller(ctx);
+      await caller.transaction.update({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        propertyId: "660e8400-e29b-41d4-a716-446655440000",
+        date: "2025-06-01",
+        description: "Stamp duty",
+        amount: "15000",
+        category: "stamp_duty",
+      });
+
+      expect(setMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transactionType: "capital",
+          isDeductible: false,
+        })
+      );
+    });
+  });
+
   describe("list pagination", () => {
     it("returns paginated results with total count", async () => {
       const ctx = createMockContext({ userId: "user-1", user: mockUser });
