@@ -907,6 +907,7 @@ export const bankAccounts = pgTable("bank_accounts", {
   connectionStatus: connectionStatusEnum("connection_status").default("connected").notNull(),
   lastSyncStatus: syncStatusEnum("last_sync_status"),
   lastSyncError: text("last_sync_error"),
+  balance: decimal("balance", { precision: 12, scale: 2 }),
   lastManualSyncAt: timestamp("last_manual_sync_at"),
   lastSyncedAt: timestamp("last_synced_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

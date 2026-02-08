@@ -18,11 +18,17 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { CategorySelect } from "./CategorySelect";
 import { MakeRecurringDialog } from "@/components/recurring/MakeRecurringDialog";
 import { getCategoryLabel, getCategoryInfo } from "@/lib/categories";
 import { format } from "date-fns";
-import { Check, X, MoreHorizontal } from "lucide-react";
+import { Check, X, MoreHorizontal, Sparkles } from "lucide-react";
 import type { Transaction, Property, BankAccount } from "@/server/db/schema";
 
 // When serialized through tRPC, Date fields become strings
@@ -107,6 +113,7 @@ export function TransactionTable({
   };
 
   return (
+    <TooltipProvider>
     <div className="space-y-4" data-tour="transaction-list">
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-4 p-4 bg-muted rounded-lg" data-tour="bulk-actions">
@@ -169,31 +176,81 @@ export function TransactionTable({
                       {format(new Date(transaction.date), "dd MMM yyyy")}
                     </TableCell>
                     <TableCell className="max-w-[300px]">
-                      <div className="truncate">{transaction.description}</div>
+                      {transaction.description.length > 40 ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="truncate cursor-default">
+                              {transaction.description}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-sm">
+                            <p>{transaction.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <div className="truncate">{transaction.description}</div>
+                      )}
                       {transaction.notes && (
                         <div className="text-xs text-muted-foreground truncate mt-0.5">
                           {transaction.notes}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell
-                      className={
-                        isIncome ? "text-success font-medium" : "font-medium"
-                      }
-                    >
-                      {formatAmount(transaction.amount)}
+                    <TableCell className="font-medium">
+                      <div className={isIncome ? "text-success" : ""}>
+                        {formatAmount(transaction.amount)}
+                      </div>
+                      {transaction.category === "uncategorized" ? (
+                        <div className="text-xs mt-0.5">
+                          <span className="text-muted-foreground">$0.00</span>
+                          <span className="text-muted-foreground/60"> of {formatAmount(transaction.amount)} allocated</span>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-success/80 mt-0.5">
+                          Allocated
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <CategorySelect
-                        value={transaction.category}
-                        onValueChange={(category) =>
-                          onCategoryChange(
-                            transaction.id,
-                            category,
-                            transaction.propertyId ?? undefined
-                          )
-                        }
-                      />
+                      <div className="flex items-center gap-2">
+                        <CategorySelect
+                          value={transaction.category}
+                          onValueChange={(category) =>
+                            onCategoryChange(
+                              transaction.id,
+                              category,
+                              transaction.propertyId ?? undefined
+                            )
+                          }
+                        />
+                        {transaction.category === "uncategorized" &&
+                          transaction.suggestedCategory &&
+                          transaction.suggestionConfidence &&
+                          parseFloat(transaction.suggestionConfidence) >= 85 && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 gap-1 text-xs border-primary/30 text-primary hover:bg-primary/10"
+                                  onClick={() =>
+                                    onCategoryChange(
+                                      transaction.id,
+                                      transaction.suggestedCategory!,
+                                      transaction.propertyId ?? undefined
+                                    )
+                                  }
+                                >
+                                  <Sparkles className="w-3 h-3" />
+                                  {getCategoryLabel(transaction.suggestedCategory)}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                AI suggests this category ({Math.round(parseFloat(transaction.suggestionConfidence))}% confident). Click to accept.
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {transaction.property ? (
@@ -268,5 +325,6 @@ export function TransactionTable({
         />
       )}
     </div>
+    </TooltipProvider>
   );
 }
