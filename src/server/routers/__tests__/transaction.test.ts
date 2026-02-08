@@ -217,7 +217,7 @@ describe("transaction router", () => {
       expect(setMock).toHaveBeenCalledWith(
         expect.objectContaining({
           transactionType: "income",
-          isDeductible: false,
+          isDeductible: true,
         })
       );
     });
