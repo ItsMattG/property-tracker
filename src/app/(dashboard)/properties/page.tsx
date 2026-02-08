@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/properties/PropertyCard";
@@ -27,6 +27,13 @@ export default function PropertiesPage() {
 
   const { data: properties, isLoading, refetch } = trpc.property.list.useQuery(
     undefined,
+    {
+      staleTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
+    }
+  );
+  const { data: metrics } = trpc.portfolio.getPropertyMetrics.useQuery(
+    { period: "monthly", sortBy: "alphabetical", sortOrder: "asc" },
     {
       staleTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
@@ -70,6 +77,11 @@ export default function PropertiesPage() {
       return next;
     });
   };
+
+  const metricsMap = useMemo(() => {
+    if (!metrics) return new Map();
+    return new Map(metrics.map((m) => [m.propertyId, m]));
+  }, [metrics]);
 
   const filteredProperties = properties?.filter(
     (p) => !excludedEntities.has(p.entityName)
@@ -139,6 +151,7 @@ export default function PropertiesPage() {
             <div key={property.id} className="animate-card-entrance" style={{ '--stagger-index': i } as React.CSSProperties}>
               <PropertyCard
                 property={property}
+                metrics={metricsMap.get(property.id)}
                 onDelete={handleDelete}
               />
             </div>
