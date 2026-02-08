@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, AlertTriangle } from "lucide-react";
+import { featureFlags } from "@/config/feature-flags";
 import type { ClimateRisk } from "@/types/climate-risk";
 
 interface PropertyWithRisk {
@@ -15,6 +16,8 @@ interface ClimateRiskSummaryProps {
 }
 
 export function ClimateRiskSummary({ properties }: ClimateRiskSummaryProps) {
+  if (!featureFlags.climateRisk) return null;
+
   const propertiesWithRisk = properties.filter((p) => p.climateRisk);
 
   const elevatedRiskCount = propertiesWithRisk.filter(
