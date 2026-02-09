@@ -28,6 +28,9 @@ export const auth = betterAuth({
       );
     },
   },
+  account: {
+    encryptOAuthTokens: true,
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
