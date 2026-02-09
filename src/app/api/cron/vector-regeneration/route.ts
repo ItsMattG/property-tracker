@@ -3,11 +3,11 @@ import { db } from "@/server/db";
 import { properties, propertyVectors, propertyValues, transactions, suburbBenchmarks } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { generatePropertyVector } from "@/server/services/vector-generation";
+import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!verifyCronRequest(request.headers)) {
+    return unauthorizedResponse();
   }
 
   try {

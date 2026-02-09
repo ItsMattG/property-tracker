@@ -6,6 +6,7 @@ import { db } from "@/server/db";
 import { propertyManagerConnections, users } from "@/server/db/schema";
 import { getPropertyMeProvider } from "@/server/services/property-manager/propertyme";
 import { eq } from "drizzle-orm";
+import { encrypt } from "@/lib/encryption";
 
 export async function GET(request: NextRequest) {
   const session = await getAuthSession();
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
+  const state = searchParams.get("state");
   const error = searchParams.get("error");
 
   if (error) {
@@ -26,9 +28,24 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!code) {
+  if (!code || !state) {
     return NextResponse.redirect(
-      new URL("/settings/integrations?error=no_code", request.url)
+      new URL("/settings/integrations?error=missing_params", request.url)
+    );
+  }
+
+  // Verify state matches current user (CSRF protection)
+  try {
+    const decodedState = Buffer.from(state, "base64url").toString();
+    const [stateUserId] = decodedState.split(":");
+    if (stateUserId !== session.user.id) {
+      return NextResponse.redirect(
+        new URL("/settings/integrations?error=invalid_state", request.url)
+      );
+    }
+  } catch {
+    return NextResponse.redirect(
+      new URL("/settings/integrations?error=invalid_state", request.url)
     );
   }
 
@@ -56,8 +73,8 @@ export async function GET(request: NextRequest) {
         userId: user.id,
         provider: "propertyme",
         providerUserId: tokens.userId,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
+        accessToken: encrypt(tokens.accessToken),
+        refreshToken: tokens.refreshToken ? encrypt(tokens.refreshToken) : null,
         tokenExpiresAt: tokens.expiresIn
           ? new Date(Date.now() + tokens.expiresIn * 1000)
           : null,

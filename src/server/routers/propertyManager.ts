@@ -13,13 +13,14 @@ import { eq, and, desc } from "drizzle-orm";
 import { getPropertyMeProvider } from "../services/property-manager/propertyme";
 import { PropertyManagerSyncService } from "../services/property-manager/sync";
 import { randomUUID } from "crypto";
+import { decrypt } from "@/lib/encryption";
 
 const providerSchema = z.enum(["propertyme", "different"]);
 
 export const propertyManagerRouter = router({
   getAuthUrl: protectedProcedure
     .input(z.object({ provider: providerSchema }))
-    .mutation(({ input }) => {
+    .mutation(({ ctx, input }) => {
       if (input.provider !== "propertyme") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -28,7 +29,9 @@ export const propertyManagerRouter = router({
       }
 
       const provider = getPropertyMeProvider();
-      const state = randomUUID();
+      // Encode user ID + nonce in state for CSRF protection
+      const nonce = randomUUID();
+      const state = Buffer.from(`${ctx.user.id}:${nonce}`).toString("base64url");
       const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/propertyme/callback`;
       const url = provider.getAuthUrl(redirectUri, state);
 
@@ -109,7 +112,7 @@ export const propertyManagerRouter = router({
       }
 
       const provider = getPropertyMeProvider();
-      const pmProperties = await provider.getProperties(connection.accessToken);
+      const pmProperties = await provider.getProperties(decrypt(connection.accessToken));
 
       // Upsert mappings
       for (const pmProp of pmProperties) {
@@ -216,7 +219,7 @@ export const propertyManagerRouter = router({
         const syncService = new PropertyManagerSyncService(provider, ctx.db as any);
 
         const result = await syncService.runFullSync(
-          connection.accessToken,
+          decrypt(connection.accessToken),
           connection.id,
           ctx.portfolio.ownerId,
           connection.lastSyncAt || undefined
