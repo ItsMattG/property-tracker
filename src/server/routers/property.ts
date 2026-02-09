@@ -15,6 +15,8 @@ const propertySchema = z.object({
   contractDate: z.string().min(1, "Contract date is required"),
   settlementDate: z.string().optional(),
   entityName: z.string().optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
 });
 
 export const propertyRouter = router({
@@ -142,6 +144,8 @@ export const propertyRouter = router({
           contractDate: input.contractDate,
           settlementDate: input.settlementDate || null,
           entityName: input.entityName || "Personal",
+          latitude: input.latitude || null,
+          longitude: input.longitude || null,
           climateRisk,
         })
         .returning();
@@ -214,6 +218,14 @@ export const propertyRouter = router({
 
       if (data.postcode) {
         updateData.climateRisk = getClimateRisk(data.postcode);
+      }
+
+      // Convert empty lat/lng strings to null for decimal column
+      if ("latitude" in updateData) {
+        updateData.latitude = updateData.latitude || null;
+      }
+      if ("longitude" in updateData) {
+        updateData.longitude = updateData.longitude || null;
       }
 
       const [property] = await ctx.db

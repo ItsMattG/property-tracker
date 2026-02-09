@@ -814,6 +814,8 @@ export const properties = pgTable("properties", {
   status: propertyStatusEnum("status").default("active").notNull(),
   soldAt: date("sold_at"),
   climateRisk: jsonb("climate_risk").$type<import("@/types/climate-risk").ClimateRisk>(),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
   forwardingAddress: text("forwarding_address").unique(),
   locked: boolean("locked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
