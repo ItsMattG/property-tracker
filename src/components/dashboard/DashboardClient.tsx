@@ -188,7 +188,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       <div data-tour="portfolio-summary" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Row 1: Properties, Portfolio Value, Total Equity */}
         <div className="animate-card-entrance" style={{ '--stagger-index': 0 } as React.CSSProperties}>
-          <Link href="/properties">
+          <Link href="/properties" prefetch={false}>
             <Card className={cn(
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.propertyCount.current ?? 0, trends?.propertyCount.previous ?? null)
@@ -223,7 +223,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
 
         <div className="animate-card-entrance" style={{ '--stagger-index': 1 } as React.CSSProperties}>
-          <Link href="/properties">
+          <Link href="/properties" prefetch={false}>
             <Card className={cn(
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.portfolioValue.current ?? 0, trends?.portfolioValue.previous ?? null)
@@ -256,7 +256,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
 
         <div className="animate-card-entrance" style={{ '--stagger-index': 2 } as React.CSSProperties}>
-          <Link href="/properties">
+          <Link href="/properties" prefetch={false}>
             <Card className={cn(
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.totalEquity.current ?? 0, trends?.totalEquity.previous ?? null)
@@ -290,7 +290,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
 
         {/* Row 2: Transactions, Uncategorized, Tax Position */}
         <div className="animate-card-entrance" style={{ '--stagger-index': 3 } as React.CSSProperties}>
-          <Link href="/transactions">
+          <Link href="/transactions" prefetch={false}>
             <Card className={cn(
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.transactionCount.current ?? 0, trends?.transactionCount.previous ?? null)
@@ -325,7 +325,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
 
         <div className="animate-card-entrance" style={{ '--stagger-index': 4 } as React.CSSProperties}>
-          <Link href="/transactions?category=uncategorized">
+          <Link href="/transactions?category=uncategorized" prefetch={false}>
             <Card className={cn(
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.uncategorizedCount.current ?? 0, trends?.uncategorizedCount.previous ?? null, true)

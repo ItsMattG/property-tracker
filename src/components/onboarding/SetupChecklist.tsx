@@ -64,6 +64,7 @@ function ChecklistItem({ step }: { step: StepStatus }) {
   return (
     <Link
       href={step.actionLink}
+      prefetch={false}
       className={cn(
         "flex items-center justify-between p-2 rounded-md hover:bg-muted transition-colors",
         step.isComplete && "opacity-60"
