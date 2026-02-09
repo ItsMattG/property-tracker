@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc/client";
-import { ArrowLeftRight, List, Calendar, Plus } from "lucide-react";
+import { ArrowLeftRight, List, Calendar, Plus, Download } from "lucide-react";
 import Link from "next/link";
 import type { Category, TransactionFilterInput } from "@/types/category";
 import { useTour } from "@/hooks/useTour";
@@ -184,6 +184,25 @@ export default function TransactionsPage() {
     toggleVerified.mutate({ id });
   };
 
+  const allocate = trpc.transaction.allocate.useMutation({
+    onSuccess: () => {
+      toast.success("Transaction allocated");
+      utils.transaction.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+
+  const handleAllocate = (data: { id: string; category: string; propertyId?: string; claimPercent: number }) => {
+    allocate.mutate({
+      id: data.id,
+      category: data.category as any,
+      propertyId: data.propertyId,
+      claimPercent: data.claimPercent,
+    });
+  };
+
   const deleteTransactionMutation = trpc.transaction.delete.useMutation({
     onSuccess: () => {
       toast.success("Transaction deleted");
@@ -193,6 +212,35 @@ export default function TransactionsPage() {
       toast.error(getErrorMessage(error));
     },
   });
+
+  const exportCSV = trpc.transaction.exportCSV.useQuery(
+    {
+      propertyId: filters.propertyId,
+      category: filters.category,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      isVerified: filters.isVerified,
+    },
+    { enabled: false }
+  );
+
+  const handleExportCSV = async () => {
+    try {
+      const result = await exportCSV.refetch();
+      if (result.data) {
+        const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = result.data.filename;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success("CSV exported successfully");
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
 
   const handleEdit = (id: string) => {
     router.push(`/transactions/${id}/edit`);
@@ -236,6 +284,15 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            disabled={exportCSV.isFetching}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
           <ImportCSVDialog onSuccess={() => utils.transaction.list.invalidate()} />
           <Button asChild>
             <Link href="/transactions/new">
@@ -285,6 +342,7 @@ export default function TransactionsPage() {
                 onCategoryChange={handleCategoryChange}
                 onToggleVerified={handleToggleVerified}
                 onBulkCategoryChange={handleBulkCategoryChange}
+                onAllocate={handleAllocate}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />

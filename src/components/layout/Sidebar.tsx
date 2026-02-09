@@ -65,7 +65,7 @@ const navGroups: Array<{
       { href: "/properties", label: "Properties", icon: Building2 },
       { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
       { href: "/transactions/review", label: "Review", icon: Sparkles, showBadge: true },
-      { href: "/banking", label: "Banking", icon: Landmark },
+      { href: "/banking", label: "Bank Feeds", icon: Landmark },
       { href: "/loans", label: "Loans", icon: Wallet, featureFlag: "loans" },
     ],
   },

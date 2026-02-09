@@ -3,7 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -43,6 +43,10 @@ import {
   Building2,
   Pencil,
   Trash2,
+  CheckCircle2,
+  ArrowDownRight,
+  ArrowUpRight,
+  Wallet,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
@@ -121,9 +125,18 @@ const alertTypeMessages: Record<string, string> = {
   sync_failed: "Sync failed — try again or reconnect your account",
 };
 
+function formatCurrency(amount: string | number) {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD",
+  }).format(num);
+}
+
 export default function BankingPage() {
   const utils = trpc.useUtils();
   const { data: accounts, isLoading } = trpc.banking.listAccounts.useQuery();
+  const { data: summaries } = trpc.banking.getAccountSummaries.useQuery();
   const { data: alerts } = trpc.banking.listAlerts.useQuery();
   const { data: properties } = trpc.property.list.useQuery();
 
@@ -131,6 +144,7 @@ export default function BankingPage() {
     onSuccess: (data) => {
       toast.success(`Synced ${data.transactionsAdded} new transactions`);
       utils.banking.listAccounts.invalidate();
+      utils.banking.getAccountSummaries.invalidate();
       utils.banking.listAlerts.invalidate();
     },
     onError: (error) => {
@@ -169,6 +183,7 @@ export default function BankingPage() {
     onSuccess: () => {
       toast.success("Account renamed");
       utils.banking.listAccounts.invalidate();
+      utils.banking.getAccountSummaries.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -179,6 +194,7 @@ export default function BankingPage() {
     onSuccess: () => {
       toast.success("Property updated");
       utils.banking.listAccounts.invalidate();
+      utils.banking.getAccountSummaries.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -189,6 +205,7 @@ export default function BankingPage() {
     onSuccess: () => {
       toast.success("Account removed");
       utils.banking.listAccounts.invalidate();
+      utils.banking.getAccountSummaries.invalidate();
       utils.banking.listAlerts.invalidate();
     },
     onError: (error) => {
@@ -205,6 +222,32 @@ export default function BankingPage() {
 
   const hasAuthError =
     alerts?.some((a) => a.alertType === "requires_reauth") ?? false;
+
+  // Compute totals from summaries
+  const totals = useMemo(() => {
+    if (!summaries) return null;
+    const totalReconciled = summaries.reduce(
+      (sum, s) => sum + parseFloat(s.reconciledBalance),
+      0
+    );
+    const totalBankBalance = summaries.reduce(
+      (sum, s) => sum + (s.bankBalance ? parseFloat(s.bankBalance) : 0),
+      0
+    );
+    const totalCashIn = summaries.reduce(
+      (sum, s) => sum + parseFloat(s.cashIn),
+      0
+    );
+    const totalCashOut = summaries.reduce(
+      (sum, s) => sum + parseFloat(s.cashOut),
+      0
+    );
+    const totalUnreconciled = summaries.reduce(
+      (sum, s) => sum + s.unreconciledCount,
+      0
+    );
+    return { totalReconciled, totalBankBalance, totalCashIn, totalCashOut, totalUnreconciled };
+  }, [summaries]);
 
   // Group accounts by institution
   const groupedAccounts = useMemo(() => {
@@ -227,12 +270,18 @@ export default function BankingPage() {
     }));
   }, [accounts]);
 
+  // Build a map from account ID to summary for quick lookup
+  const summaryMap = useMemo(() => {
+    if (!summaries) return new Map<string, NonNullable<typeof summaries>[0]>();
+    return new Map(summaries.map((s) => [s.id, s]));
+  }, [summaries]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold">Banking</h2>
+            <h2 className="text-2xl font-bold">Bank Feeds</h2>
             <p className="text-muted-foreground">
               Manage your connected bank accounts
             </p>
@@ -259,7 +308,7 @@ export default function BankingPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Banking</h2>
+          <h2 className="text-2xl font-bold">Bank Feeds</h2>
           <p className="text-muted-foreground">
             {accounts?.length ?? 0} account{accounts?.length !== 1 ? "s" : ""}{" "}
             across {groupedAccounts.length} institution
@@ -273,6 +322,58 @@ export default function BankingPage() {
           </Link>
         </Button>
       </div>
+
+      {/* Summary stats */}
+      {totals && accounts && accounts.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                <Wallet className="w-4 h-4" />
+                BrickTrack Balance
+              </div>
+              <div className="text-xl font-semibold">
+                {formatCurrency(totals.totalReconciled)}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                <Landmark className="w-4 h-4" />
+                Bank Balance
+              </div>
+              <div className="text-xl font-semibold">
+                {totals.totalBankBalance > 0
+                  ? formatCurrency(totals.totalBankBalance)
+                  : <span className="text-muted-foreground text-sm">Not available</span>}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                <ArrowUpRight className="w-4 h-4 text-success" />
+                Cash In (This Month)
+              </div>
+              <div className="text-xl font-semibold text-success">
+                {formatCurrency(totals.totalCashIn)}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 pb-3 px-4">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+                <ArrowDownRight className="w-4 h-4 text-destructive" />
+                Cash Out (This Month)
+              </div>
+              <div className="text-xl font-semibold text-destructive">
+                {formatCurrency(Math.abs(totals.totalCashOut))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {groupedAccounts.length > 0 ? (
         <div className="space-y-4">
@@ -320,165 +421,217 @@ export default function BankingPage() {
                       const needsReauth = accountAlerts?.some(
                         (a) => a.alertType === "requires_reauth"
                       );
+                      const summary = summaryMap.get(account.id);
 
                       return (
                         <div
                           key={account.id}
-                          className="p-4 flex items-center gap-4"
+                          className="p-4 space-y-3"
                         >
-                          <div className="flex-1 min-w-0">
+                          {/* Top row: name + status + actions */}
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <EditableName
+                                  accountId={account.id}
+                                  nickname={account.nickname ?? null}
+                                  accountName={account.accountName}
+                                  onSave={(id, nick) =>
+                                    renameAccount.mutate({
+                                      accountId: id,
+                                      nickname: nick,
+                                    })
+                                  }
+                                />
+                                <AccountStatusIndicator
+                                  status={
+                                    account.connectionStatus as
+                                      | "connected"
+                                      | "disconnected"
+                                      | "error"
+                                  }
+                                />
+                                <Badge variant="outline" className="text-xs">
+                                  {account.accountType}
+                                </Badge>
+                                {accountAlerts && accountAlerts.length > 0 && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge
+                                          variant="destructive"
+                                          className="gap-1 text-xs"
+                                        >
+                                          <AlertTriangle className="w-3 h-3" />
+                                          {accountAlerts.length}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs bg-red-900 text-white">
+                                        {accountAlerts.map((alert, i) => (
+                                          <p key={alert.id ?? i}>
+                                            {alertTypeMessages[alert.alertType] ??
+                                              "This account has an issue that needs attention"}
+                                          </p>
+                                        ))}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                                {account.accountNumberMasked && (
+                                  <span>{account.accountNumberMasked}</span>
+                                )}
+                                <span>
+                                  {account.lastSyncedAt
+                                    ? `Synced ${formatDistanceToNow(new Date(account.lastSyncedAt), { addSuffix: true })}`
+                                    : "Never synced"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Property assignment */}
                             <div className="flex items-center gap-2">
-                              <EditableName
-                                accountId={account.id}
-                                nickname={account.nickname ?? null}
-                                accountName={account.accountName}
-                                onSave={(id, nick) =>
-                                  renameAccount.mutate({
-                                    accountId: id,
-                                    nickname: nick,
-                                  })
-                                }
-                              />
-                              <AccountStatusIndicator
-                                status={
-                                  account.connectionStatus as
-                                    | "connected"
-                                    | "disconnected"
-                                    | "error"
-                                }
-                              />
-                              <Badge variant="outline" className="text-xs">
-                                {account.accountType}
-                              </Badge>
-                              {accountAlerts && accountAlerts.length > 0 && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge
-                                        variant="destructive"
-                                        className="gap-1 text-xs"
-                                      >
-                                        <AlertTriangle className="w-3 h-3" />
-                                        {accountAlerts.length}
-                                      </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="max-w-xs bg-red-900 text-white">
-                                      {accountAlerts.map((alert, i) => (
-                                        <p key={alert.id ?? i}>
-                                          {alertTypeMessages[alert.alertType] ??
-                                            "This account has an issue that needs attention"}
-                                        </p>
-                                      ))}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                              {account.accountNumberMasked && (
-                                <span>{account.accountNumberMasked}</span>
-                              )}
-                              <span>
-                                {account.lastSyncedAt
-                                  ? `Synced ${formatDistanceToNow(new Date(account.lastSyncedAt), { addSuffix: true })}`
-                                  : "Never synced"}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Property assignment */}
-                          <div className="flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-muted-foreground" />
-                            <Select
-                              value={account.defaultPropertyId ?? "none"}
-                              onValueChange={(value) =>
-                                linkAccount.mutate({
-                                  accountId: account.id,
-                                  propertyId:
-                                    value === "none" ? null : value,
-                                })
-                              }
-                            >
-                              <SelectTrigger className="w-[180px]" size="sm">
-                                <SelectValue placeholder="Assign property" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">
-                                  Unassigned
-                                </SelectItem>
-                                {properties?.map((property) => (
-                                  <SelectItem
-                                    key={property.id}
-                                    value={property.id}
-                                  >
-                                    {property.suburb}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {needsReauth ? (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() =>
-                                  reconnect.mutate({
+                              <Building2 className="w-4 h-4 text-muted-foreground" />
+                              <Select
+                                value={account.defaultPropertyId ?? "none"}
+                                onValueChange={(value) =>
+                                  linkAccount.mutate({
                                     accountId: account.id,
+                                    propertyId:
+                                      value === "none" ? null : value,
                                   })
                                 }
                               >
-                                Reconnect
-                              </Button>
-                            ) : (
-                              <SyncButton
-                                onSync={() =>
-                                  syncAccount.mutateAsync({
-                                    accountId: account.id,
-                                  })
-                                }
-                                lastManualSyncAt={account.lastManualSyncAt}
-                              />
-                            )}
-                            <AlertDialog>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <AlertDialogTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-muted-foreground hover:text-destructive"
-                                        disabled={removeAccount.isPending}
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Remove account</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Remove account</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Remove &ldquo;{account.nickname || account.accountName}&rdquo;? This will also delete all imported transactions for this account.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    variant="destructive"
-                                    onClick={() => removeAccount.mutate({ accountId: account.id })}
-                                  >
-                                    Remove
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                                <SelectTrigger className="w-[180px]" size="sm">
+                                  <SelectValue placeholder="Assign property" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">
+                                    Unassigned
+                                  </SelectItem>
+                                  {properties?.map((property) => (
+                                    <SelectItem
+                                      key={property.id}
+                                      value={property.id}
+                                    >
+                                      {property.suburb}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {needsReauth ? (
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() =>
+                                    reconnect.mutate({
+                                      accountId: account.id,
+                                    })
+                                  }
+                                >
+                                  Reconnect
+                                </Button>
+                              ) : (
+                                <SyncButton
+                                  onSync={() =>
+                                    syncAccount.mutateAsync({
+                                      accountId: account.id,
+                                    })
+                                  }
+                                  lastManualSyncAt={account.lastManualSyncAt}
+                                />
+                              )}
+                              <AlertDialog>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-muted-foreground hover:text-destructive"
+                                          disabled={removeAccount.isPending}
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Remove account</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Remove account</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Remove &ldquo;{account.nickname || account.accountName}&rdquo;? This will also delete all imported transactions for this account.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      variant="destructive"
+                                      onClick={() => removeAccount.mutate({ accountId: account.id })}
+                                    >
+                                      Remove
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </div>
+
+                          {/* Bottom row: balance summary + reconcile CTA */}
+                          {summary && (
+                            <div className="flex items-center justify-between bg-muted/50 rounded-lg px-4 py-2.5">
+                              <div className="flex items-center gap-6 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">BrickTrack: </span>
+                                  <span className="font-medium">
+                                    {formatCurrency(summary.reconciledBalance)}
+                                  </span>
+                                </div>
+                                {summary.bankBalance && (
+                                  <div>
+                                    <span className="text-muted-foreground">Bank: </span>
+                                    <span className="font-medium">
+                                      {formatCurrency(summary.bankBalance)}
+                                    </span>
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="text-muted-foreground">In: </span>
+                                  <span className="font-medium text-success">
+                                    {formatCurrency(summary.cashIn)}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Out: </span>
+                                  <span className="font-medium text-destructive">
+                                    {formatCurrency(Math.abs(parseFloat(summary.cashOut)))}
+                                  </span>
+                                </div>
+                              </div>
+                              <div>
+                                {summary.unreconciledCount > 0 ? (
+                                  <Button size="sm" asChild>
+                                    <Link href={`/banking/${account.id}/reconcile`}>
+                                      Reconcile {summary.unreconciledCount} Item{summary.unreconciledCount !== 1 ? "s" : ""}
+                                    </Link>
+                                  </Button>
+                                ) : (
+                                  <div className="flex items-center gap-1.5 text-sm text-success">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    All reconciled
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}

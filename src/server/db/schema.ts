@@ -907,6 +907,7 @@ export const bankAccounts = pgTable("bank_accounts", {
   connectionStatus: connectionStatusEnum("connection_status").default("connected").notNull(),
   lastSyncStatus: syncStatusEnum("last_sync_status"),
   lastSyncError: text("last_sync_error"),
+  balance: decimal("balance", { precision: 12, scale: 2 }),
   lastManualSyncAt: timestamp("last_manual_sync_at"),
   lastSyncedAt: timestamp("last_synced_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -942,6 +943,7 @@ export const transactions = pgTable(
     suggestionStatus: suggestionStatusEnum("suggestion_status"),
     providerTransactionId: text("provider_transaction_id"),
     provider: text("provider"),
+    claimPercent: decimal("claim_percent", { precision: 5, scale: 2 }).default("100"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -954,6 +956,26 @@ export const transactions = pgTable(
     index("transactions_user_date_idx").on(table.userId, table.date),
     index("transactions_user_property_date_idx").on(table.userId, table.propertyId, table.date),
     index("transactions_provider_tx_id_idx").on(table.providerTransactionId),
+  ]
+);
+
+export const transactionNotes = pgTable(
+  "transaction_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    transactionId: uuid("transaction_id")
+      .references(() => transactions.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: text("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("transaction_notes_transaction_id_idx").on(table.transactionId),
+    index("transaction_notes_user_id_idx").on(table.userId),
   ]
 );
 
@@ -1862,6 +1884,18 @@ export const transactionsRelations = relations(transactions, ({ one, many }) => 
     references: [properties.id],
   }),
   documents: many(documents),
+  transactionNotes: many(transactionNotes),
+}));
+
+export const transactionNotesRelations = relations(transactionNotes, ({ one }) => ({
+  transaction: one(transactions, {
+    fields: [transactionNotes.transactionId],
+    references: [transactions.id],
+  }),
+  user: one(users, {
+    fields: [transactionNotes.userId],
+    references: [users.id],
+  }),
 }));
 
 export const loansRelations = relations(loans, ({ one, many }) => ({

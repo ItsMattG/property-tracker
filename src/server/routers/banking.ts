@@ -31,6 +31,82 @@ export const bankingRouter = router({
     });
   }),
 
+  getAccountSummaries: protectedProcedure.query(async ({ ctx }) => {
+    const accounts = await ctx.db.query.bankAccounts.findMany({
+      where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
+      with: {
+        defaultProperty: true,
+      },
+    });
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      .toISOString()
+      .split("T")[0];
+
+    const summaries = await Promise.all(
+      accounts.map(async (account) => {
+        // Get unreconciled count
+        const [unreconciledResult] = await ctx.db
+          .select({ count: sql<number>`count(*)` })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.bankAccountId, account.id),
+              eq(transactions.userId, ctx.portfolio.ownerId),
+              eq(transactions.category, "uncategorized")
+            )
+          );
+
+        // Get reconciled balance
+        const [reconciledResult] = await ctx.db
+          .select({ total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)` })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.bankAccountId, account.id),
+              eq(transactions.userId, ctx.portfolio.ownerId),
+              sql`${transactions.category} != 'uncategorized'`
+            )
+          );
+
+        // Get this month's cash in/out
+        const [monthlyResult] = await ctx.db
+          .select({
+            cashIn: sql<string>`COALESCE(SUM(CASE WHEN CAST(amount AS NUMERIC) > 0 THEN CAST(amount AS NUMERIC) ELSE 0 END), 0)`,
+            cashOut: sql<string>`COALESCE(SUM(CASE WHEN CAST(amount AS NUMERIC) < 0 THEN CAST(amount AS NUMERIC) ELSE 0 END), 0)`,
+          })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.bankAccountId, account.id),
+              eq(transactions.userId, ctx.portfolio.ownerId),
+              sql`${transactions.date} >= ${monthStart}`
+            )
+          );
+
+        return {
+          id: account.id,
+          accountName: account.nickname || account.accountName,
+          institution: account.institution,
+          institutionNickname: account.institutionNickname,
+          accountType: account.accountType,
+          accountNumberMasked: account.accountNumberMasked,
+          connectionStatus: account.connectionStatus,
+          lastSyncedAt: account.lastSyncedAt,
+          bankBalance: account.balance,
+          property: account.defaultProperty,
+          unreconciledCount: Number(unreconciledResult?.count ?? 0),
+          reconciledBalance: reconciledResult?.total ?? "0",
+          cashIn: monthlyResult?.cashIn ?? "0",
+          cashOut: monthlyResult?.cashOut ?? "0",
+        };
+      })
+    );
+
+    return summaries;
+  }),
+
   getConnectionStatus: protectedProcedure.query(async ({ ctx }) => {
     const accounts = await ctx.db.query.bankAccounts.findMany({
       where: eq(bankAccounts.userId, ctx.portfolio.ownerId),

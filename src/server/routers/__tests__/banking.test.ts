@@ -40,6 +40,71 @@ describe("banking router", () => {
     });
   });
 
+  describe("getAccountSummaries", () => {
+    it("throws UNAUTHORIZED when not authenticated", async () => {
+      const ctx = createUnauthenticatedContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(caller.banking.getAccountSummaries()).rejects.toMatchObject({
+        code: "UNAUTHORIZED",
+      });
+    });
+
+    it("returns summaries for each account", async () => {
+      const ctx = createAuthenticatedContext();
+      const mockAccount = {
+        id: "acct-1",
+        nickname: "My Account",
+        accountName: "Transaction Account",
+        institution: "Test Bank",
+        institutionNickname: null,
+        accountType: "transaction",
+        accountNumberMasked: "****1234",
+        connectionStatus: "connected",
+        lastSyncedAt: new Date().toISOString(),
+        balance: "5000.00",
+        defaultProperty: null,
+      };
+
+      ctx.db.query.bankAccounts = {
+        findMany: vi.fn().mockResolvedValue([mockAccount]),
+      };
+      ctx.db.select = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn()
+            .mockResolvedValueOnce([{ count: 5 }])      // unreconciled count
+            .mockResolvedValueOnce([{ total: "3200.50" }]) // reconciled balance
+            .mockResolvedValueOnce([{ cashIn: "2000", cashOut: "-800" }]), // monthly
+        }),
+      });
+
+      const caller = createTestCaller(ctx);
+      const result = await caller.banking.getAccountSummaries();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        id: "acct-1",
+        accountName: "My Account",
+        unreconciledCount: 5,
+        reconciledBalance: "3200.50",
+        cashIn: "2000",
+        cashOut: "-800",
+      });
+    });
+
+    it("returns empty array when no accounts", async () => {
+      const ctx = createAuthenticatedContext();
+      ctx.db.query.bankAccounts = {
+        findMany: vi.fn().mockResolvedValue([]),
+      };
+
+      const caller = createTestCaller(ctx);
+      const result = await caller.banking.getAccountSummaries();
+
+      expect(result).toEqual([]);
+    });
+  });
+
   describe("data isolation", () => {
     it("listAccounts only returns user's accounts", async () => {
       const ctx = createAuthenticatedContext();
