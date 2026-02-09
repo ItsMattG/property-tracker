@@ -9,7 +9,7 @@ export const featureFlags = {
   // ── Main navigation ───────────────────────────────────────────────
   discover: false,
   alerts: false,
-  portfolio: false,
+  portfolio: true,
   forecast: false,
   portfolioShares: false,
   compliance: false,
@@ -38,7 +38,7 @@ export const featureFlags = {
   support: false,
 
   // ── Property detail sections ────────────────────────────────────
-  valuation: false,
+  valuation: true,
   climateRisk: false,
   milestones: false,
   performanceBenchmark: false,

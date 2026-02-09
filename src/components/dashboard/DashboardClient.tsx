@@ -23,6 +23,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { TrialPropertyLimitBanner } from "@/components/banners/TrialPropertyLimitBanner";
 import { StaleLoansDashboardCard } from "@/components/loans/StaleLoansDashboardCard";
 import { PortfolioSummaryTable } from "./PortfolioSummaryTable";
+import { AustraliaPropertiesMap } from "./AustraliaPropertiesMap";
 import { LvrGaugeCard } from "./LvrGaugeCard";
 import { EquityProjectionCard } from "./EquityProjectionCard";
 
@@ -268,9 +269,15 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {properties && properties.length > 0 && (
-          <ClimateRiskSummary properties={properties} />
+          <AustraliaPropertiesMap properties={properties} />
         )}
         <RentalYieldCard />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {properties && properties.length > 0 && (
+          <ClimateRiskSummary properties={properties} />
+        )}
       </div>
 
       <SavingsWidget />

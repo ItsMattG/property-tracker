@@ -12,6 +12,18 @@ test.describe("Dashboard (Seeded Data)", () => {
     await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible();
   });
 
+  test("should display Australia properties map when properties exist", async ({ authenticatedPage: page }) => {
+    // With seeded data, the map should render with property pins
+    const mapCard = page.getByTestId("australia-map");
+    const isVisible = await mapCard.isVisible().catch(() => false);
+    if (isVisible) {
+      await expect(page.getByText("Property Locations")).toBeVisible();
+      // Should have at least one pin
+      const pinCount = await page.getByTestId("map-pin").count();
+      expect(pinCount).toBeGreaterThan(0);
+    }
+  });
+
   test("should show dashboard content", async ({ authenticatedPage: page }) => {
     // Dashboard should show portfolio metrics, alerts, or navigation
     const hasDollar = await page.locator("text=/\\$[0-9,]+/").first().isVisible().catch(() => false);

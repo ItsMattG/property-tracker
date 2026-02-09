@@ -16,6 +16,7 @@ import {
   Briefcase,
   Calculator,
   Compass,
+  PieChart,
   ChevronsLeft,
   ChevronsRight,
   ChevronDown,
@@ -46,6 +47,7 @@ interface NavItemConfig {
 // Top-level items (always visible, no group)
 const topLevelItems: NavItemConfig[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/portfolio", label: "Portfolio", icon: PieChart, featureFlag: "portfolio" },
   { href: "/discover", label: "Discover", icon: Compass, featureFlag: "discover" },
   { href: "/entities", label: "Entities", icon: Briefcase },
 ];

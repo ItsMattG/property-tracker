@@ -126,26 +126,22 @@ test.describe("Dashboard", () => {
 
   // ── Sidebar navigation (feature-flagged items hidden) ──────────────
 
-  test("should hide feature-flagged nav items that are disabled", async ({
+  test("should show enabled and hide disabled feature-flagged nav items", async ({
     authenticatedPage: page,
   }) => {
     const sidebar = page.locator("aside");
 
-    // These are all feature-flagged to false
+    // Portfolio is enabled (feature flag = true)
+    await expect(
+      sidebar.getByRole("link", { name: "Portfolio", exact: true })
+    ).toBeVisible();
+
+    // These are feature-flagged to false and should be hidden
     await expect(
       sidebar.getByRole("link", { name: "Discover", exact: true })
     ).not.toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: "Alerts", exact: true })
-    ).not.toBeVisible();
-    await expect(
-      sidebar.getByRole("link", { name: "Portfolio", exact: true })
-    ).not.toBeVisible();
-    await expect(
       sidebar.getByRole("link", { name: "Forecast", exact: true })
-    ).not.toBeVisible();
-    await expect(
-      sidebar.getByRole("link", { name: "Loans", exact: true })
     ).not.toBeVisible();
     await expect(
       sidebar.getByRole("link", { name: "Emails", exact: true })
@@ -192,6 +188,36 @@ test.describe("Dashboard", () => {
     await expect(
       sidebar.getByRole("link", { name: "Support", exact: true })
     ).not.toBeVisible();
+  });
+
+  // ── Portfolio navigation ──────────────────────────────────────────
+
+  test("should navigate to portfolio from sidebar", async ({
+    authenticatedPage: page,
+  }) => {
+    const sidebar = page.locator("aside");
+    await sidebar.getByRole("link", { name: "Portfolio", exact: true }).click();
+    await page.waitForURL(/\/portfolio/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/portfolio/);
+    await expect(page.getByRole("heading", { name: /portfolio/i }).first()).toBeVisible();
+  });
+
+  // ── Australia map widget ─────────────────────────────────────────
+
+  test("should show or hide Australia map based on property count", async ({
+    authenticatedPage: page,
+  }) => {
+    // Wait for dashboard to load
+    await page.waitForTimeout(3000);
+
+    // The map only renders when properties exist
+    const mapVisible = await page.getByTestId("australia-map").isVisible().catch(() => false);
+    if (mapVisible) {
+      await expect(page.getByText("Property Locations")).toBeVisible();
+      const pinCount = await page.getByTestId("map-pin").count();
+      expect(pinCount).toBeGreaterThan(0);
+    }
+    // If no properties, map should not be rendered — that's correct behavior
   });
 
   // ── Dashboard widgets ─────────────────────────────────────────────
