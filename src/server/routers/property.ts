@@ -220,6 +220,14 @@ export const propertyRouter = router({
         updateData.climateRisk = getClimateRisk(data.postcode);
       }
 
+      // Convert empty lat/lng strings to null for decimal column
+      if ("latitude" in updateData) {
+        updateData.latitude = updateData.latitude || null;
+      }
+      if ("longitude" in updateData) {
+        updateData.longitude = updateData.longitude || null;
+      }
+
       const [property] = await ctx.db
         .update(properties)
         .set(updateData)
