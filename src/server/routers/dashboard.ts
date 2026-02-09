@@ -7,15 +7,16 @@ import {
   bankAccounts,
   recurringTransactions,
   propertyValues,
+  loans,
 } from "../db/schema";
-import { eq, and, ne, sql } from "drizzle-orm";
+import { eq, and, ne, sql, gte, lt, inArray } from "drizzle-orm";
 import { calculateProgress, type OnboardingCounts } from "../services/onboarding";
 
 export const dashboardRouter = router({
   getInitialData: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.portfolio.ownerId;
 
-    const [statsResult, alertsResult, onboardingResult, propertiesResult] =
+    const [statsResult, alertsResult, onboardingResult, propertiesResult, trendsResult] =
       await Promise.all([
         // Stats - same as stats.dashboard
         Promise.all([
@@ -131,6 +132,172 @@ export const dashboardRouter = router({
           where: eq(properties.userId, userId),
           orderBy: (properties, { desc }) => [desc(properties.createdAt)],
         }),
+
+        // Trends - month-over-month comparisons
+        (async () => {
+          const now = new Date();
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+          // Format as YYYY-MM-DD strings for text date comparisons
+          const currentMonthStr = startOfMonth.toISOString().slice(0, 10);
+          const prevMonthStr = startOfPrevMonth.toISOString().slice(0, 10);
+
+          // Property count trend: current active vs active before start of current month
+          const activeProperties = await ctx.db
+            .select({ id: properties.id, createdAt: properties.createdAt })
+            .from(properties)
+            .where(
+              and(
+                eq(properties.userId, userId),
+                eq(properties.status, "active")
+              )
+            );
+
+          const currentPropertyCount = activeProperties.length;
+          const previousPropertyCount = activeProperties.filter(
+            (p) => p.createdAt < startOfMonth
+          ).length;
+
+          // Transaction count trend: current month vs previous month
+          const [currentTxns, prevTxns] = await Promise.all([
+            ctx.db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(transactions)
+              .where(
+                and(
+                  eq(transactions.userId, userId),
+                  gte(transactions.date, currentMonthStr)
+                )
+              ),
+            ctx.db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(transactions)
+              .where(
+                and(
+                  eq(transactions.userId, userId),
+                  gte(transactions.date, prevMonthStr),
+                  lt(transactions.date, currentMonthStr)
+                )
+              ),
+          ]);
+
+          // Uncategorized count trend: current month vs previous month
+          const [currentUncat, prevUncat] = await Promise.all([
+            ctx.db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(transactions)
+              .where(
+                and(
+                  eq(transactions.userId, userId),
+                  eq(transactions.category, "uncategorized"),
+                  gte(transactions.date, currentMonthStr)
+                )
+              ),
+            ctx.db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(transactions)
+              .where(
+                and(
+                  eq(transactions.userId, userId),
+                  eq(transactions.category, "uncategorized"),
+                  gte(transactions.date, prevMonthStr),
+                  lt(transactions.date, currentMonthStr)
+                )
+              ),
+          ]);
+
+          // Portfolio value and equity
+          const activePropertyIds = activeProperties.map((p) => p.id);
+
+          let currentPortfolioValue = 0;
+          let previousPortfolioValue: number | null = null;
+
+          if (activePropertyIds.length > 0) {
+            // Current: latest estimated_value per active property (DISTINCT ON)
+            const currentValues = (await ctx.db.execute(sql`
+              SELECT DISTINCT ON (property_id) property_id, estimated_value
+              FROM property_values
+              WHERE user_id = ${userId}
+                AND property_id = ANY(${activePropertyIds})
+              ORDER BY property_id, value_date DESC, created_at DESC
+            `)) as unknown as Array<{
+              property_id: string;
+              estimated_value: string;
+            }>;
+
+            currentPortfolioValue = currentValues.reduce(
+              (sum: number, row) => sum + parseFloat(row.estimated_value || "0"),
+              0
+            );
+
+            // Previous: latest value per property before start of current month
+            const prevValues = (await ctx.db.execute(sql`
+              SELECT DISTINCT ON (property_id) property_id, estimated_value
+              FROM property_values
+              WHERE user_id = ${userId}
+                AND property_id = ANY(${activePropertyIds})
+                AND value_date < ${currentMonthStr}
+              ORDER BY property_id, value_date DESC, created_at DESC
+            `)) as unknown as Array<{
+              property_id: string;
+              estimated_value: string;
+            }>;
+
+            if (prevValues.length > 0) {
+              previousPortfolioValue = prevValues.reduce(
+                (sum: number, row) => sum + parseFloat(row.estimated_value || "0"),
+                0
+              );
+            }
+          }
+
+          // Total debt from loans on active properties
+          let totalDebt = 0;
+          if (activePropertyIds.length > 0) {
+            const debtResult = await ctx.db
+              .select({
+                total: sql<string>`coalesce(sum(${loans.currentBalance}), 0)`,
+              })
+              .from(loans)
+              .where(
+                and(
+                  eq(loans.userId, userId),
+                  inArray(loans.propertyId, activePropertyIds)
+                )
+              );
+            totalDebt = parseFloat(debtResult[0]?.total || "0");
+          }
+
+          const currentEquity = currentPortfolioValue - totalDebt;
+          const previousEquity =
+            previousPortfolioValue !== null
+              ? previousPortfolioValue - totalDebt
+              : null;
+
+          return {
+            propertyCount: {
+              current: currentPropertyCount,
+              previous: previousPropertyCount,
+            },
+            transactionCount: {
+              current: currentTxns[0]?.count ?? 0,
+              previous: prevTxns[0]?.count ?? 0,
+            },
+            uncategorizedCount: {
+              current: currentUncat[0]?.count ?? 0,
+              previous: prevUncat[0]?.count ?? 0,
+            },
+            portfolioValue: {
+              current: currentPortfolioValue,
+              previous: previousPortfolioValue,
+            },
+            totalEquity: {
+              current: currentEquity,
+              previous: previousEquity,
+            },
+          };
+        })(),
       ]);
 
     return {
@@ -138,6 +305,7 @@ export const dashboardRouter = router({
       alerts: alertsResult,
       onboarding: onboardingResult,
       properties: propertiesResult,
+      trends: trendsResult,
     };
   }),
 });
