@@ -83,17 +83,18 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
           </div>
 
           <div>
-            <label className="text-sm font-medium">CSV File</label>
-            <div
-              className="mt-1 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
-              onClick={() => fileInputRef.current?.click()}
+            <span className="text-sm font-medium">CSV File</span>
+            <label
+              htmlFor="csv-file-upload"
+              className="mt-1 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors block"
             >
               <input
+                id="csv-file-upload"
                 ref={fileInputRef}
                 type="file"
                 accept=".csv"
                 onChange={handleFileChange}
-                className="hidden"
+                className="sr-only"
               />
               {file ? (
                 <div className="flex items-center justify-center gap-2">
@@ -108,7 +109,7 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
                   </p>
                 </>
               )}
-            </div>
+            </label>
           </div>
 
           <div className="text-xs text-muted-foreground">
