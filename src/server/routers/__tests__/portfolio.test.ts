@@ -64,10 +64,16 @@ describe("portfolio router", () => {
       const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
-        execute: vi.fn().mockResolvedValue([
-          { property_id: "prop-1", estimated_value: "650000" },
-          { property_id: "prop-2", estimated_value: "700000" },
-        ]),
+        selectDistinctOn: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              orderBy: vi.fn().mockResolvedValue([
+                { propertyId: "prop-1", estimatedValue: "650000" },
+                { propertyId: "prop-2", estimatedValue: "700000" },
+              ]),
+            }),
+          }),
+        }),
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findMany: vi.fn().mockResolvedValue(mockProperties) },
@@ -108,9 +114,15 @@ describe("portfolio router", () => {
       const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
-        execute: vi.fn().mockResolvedValue([
-          { property_id: "prop-1", estimated_value: "650000" },
-        ]),
+        selectDistinctOn: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              orderBy: vi.fn().mockResolvedValue([
+                { propertyId: "prop-1", estimatedValue: "650000" },
+              ]),
+            }),
+          }),
+        }),
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findMany: vi.fn().mockResolvedValue(mockProperties) },
@@ -134,10 +146,16 @@ describe("portfolio router", () => {
       const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
-        execute: vi.fn().mockResolvedValue([
-          { property_id: "prop-1", estimated_value: "650000" },
-          { property_id: "prop-2", estimated_value: "700000" },
-        ]),
+        selectDistinctOn: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              orderBy: vi.fn().mockResolvedValue([
+                { propertyId: "prop-1", estimatedValue: "650000" },
+                { propertyId: "prop-2", estimatedValue: "700000" },
+              ]),
+            }),
+          }),
+        }),
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findMany: vi.fn().mockResolvedValue(mockProperties) },
@@ -165,10 +183,16 @@ describe("portfolio router", () => {
       const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
-        execute: vi.fn().mockResolvedValue([
-          { property_id: "prop-1", estimated_value: "650000" },
-          { property_id: "prop-2", estimated_value: "700000" },
-        ]),
+        selectDistinctOn: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              orderBy: vi.fn().mockResolvedValue([
+                { propertyId: "prop-1", estimatedValue: "650000" },
+                { propertyId: "prop-2", estimatedValue: "700000" },
+              ]),
+            }),
+          }),
+        }),
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findMany: vi.fn().mockResolvedValue(mockProperties) },
