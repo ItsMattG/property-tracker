@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Landmark, Shield, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +13,7 @@ import { useTour } from "@/hooks/useTour";
 
 export default function BankingConnectPage() {
   useTour({ tourId: "banking" });
+  const [mobile, setMobile] = useState("");
 
   const connectMutation = trpc.banking.connect.useMutation({
     onSuccess: (data) => {
@@ -21,7 +25,12 @@ export default function BankingConnectPage() {
   });
 
   const handleConnect = () => {
-    connectMutation.mutate({});
+    const cleaned = mobile.replace(/\s/g, "");
+    if (!cleaned) {
+      toast.error("Please enter your mobile number for bank verification");
+      return;
+    }
+    connectMutation.mutate({ mobile: cleaned });
   };
 
   const isConnecting = connectMutation.isPending;
@@ -99,12 +108,26 @@ export default function BankingConnectPage() {
             </div>
           </div>
 
+          <div className="border-t pt-6 space-y-2">
+            <Label htmlFor="mobile">Mobile number</Label>
+            <Input
+              id="mobile"
+              type="tel"
+              placeholder="04XX XXX XXX"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Required by your bank for identity verification via SMS.
+            </p>
+          </div>
+
           <Button
             data-tour="basiq-connect"
             onClick={handleConnect}
             className="w-full"
             size="lg"
-            disabled={isConnecting}
+            disabled={isConnecting || !mobile.replace(/\s/g, "")}
           >
             {isConnecting ? "Connecting..." : "Connect Bank Account"}
           </Button>

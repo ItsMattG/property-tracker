@@ -615,6 +615,7 @@ export const bankingRouter = router({
   connect: bankProcedure
     .input(z.object({
       propertyId: z.string().uuid().optional(),
+      mobile: z.string().min(1).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Look up user's basiqUserId
@@ -651,10 +652,10 @@ export const bankingRouter = router({
           .where(eq(users.id, user.id));
       }
 
-      // Create Basiq user if needed (email only — no mobile avoids SMS verification step)
+      // Create or update Basiq user with mobile (required for auth link / SMS verification)
       if (!basiqUserId) {
         try {
-          const basiqUser = await basiqService.createUser(user.email);
+          const basiqUser = await basiqService.createUser(user.email, input.mobile);
           basiqUserId = basiqUser.id;
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
@@ -670,6 +671,13 @@ export const bankingRouter = router({
           .update(users)
           .set({ basiqUserId })
           .where(eq(users.id, user.id));
+      } else if (input.mobile) {
+        // Existing Basiq user — update mobile in case it changed or wasn't set
+        try {
+          await basiqService.updateUser(basiqUserId, { mobile: input.mobile });
+        } catch {
+          // Non-fatal — mobile may already be set from a previous connection
+        }
       }
 
       // Create auth link for consent flow — if the stored basiqUserId is stale
@@ -691,7 +699,7 @@ export const bankingRouter = router({
 
         // Stale basiqUserId — create a new Basiq user and retry
         try {
-          const basiqUser = await basiqService.createUser(user.email);
+          const basiqUser = await basiqService.createUser(user.email, input.mobile);
           basiqUserId = basiqUser.id;
 
           await ctx.db
