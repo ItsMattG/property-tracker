@@ -230,7 +230,7 @@ export const portfolioRouter = router({
       const multiplier = input.period === "monthly" ? 12 : input.period === "quarterly" ? 4 : 1;
 
       const metrics = propertyList.map((property) => {
-        const value = latestValues.get(property.id) || 0;
+        const value = latestValues.get(property.id) || Number(property.purchasePrice);
         const totalLoans = loansByProperty.get(property.id) || 0;
         const propertyTransactions = transactionsByProperty.get(property.id) || [];
 
