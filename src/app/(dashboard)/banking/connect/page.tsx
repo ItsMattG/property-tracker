@@ -1,26 +1,81 @@
 "use client";
 
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Landmark, Shield, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { ArrowLeft, Landmark, Shield, RefreshCw, Smartphone } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc/client";
 import { useTour } from "@/hooks/useTour";
 
+const mobileSchema = z.object({
+  mobile: z
+    .string()
+    .min(1, "Mobile number is required")
+    .transform((val) => val.replace(/[\s\-()]/g, ""))
+    .refine(
+      (val) => /^(\+?61|0)4\d{8}$/.test(val),
+      "Enter a valid Australian mobile number (e.g. 0412 345 678)"
+    )
+    .transform((val) =>
+      val.startsWith("0")
+        ? `+61${val.slice(1)}`
+        : val.startsWith("614")
+          ? `+${val}`
+          : val
+    ),
+});
+
+type MobileForm = z.infer<typeof mobileSchema>;
+
 export default function BankingConnectPage() {
   useTour({ tourId: "banking" });
+  const searchParams = useSearchParams();
+  const propertyId = searchParams?.get("propertyId") ?? undefined;
+
+  const [showMobileInput, setShowMobileInput] = useState(false);
+
+  const form = useForm<MobileForm>({
+    resolver: zodResolver(mobileSchema),
+    defaultValues: { mobile: "" },
+  });
 
   const connectMutation = trpc.banking.connect.useMutation({
     onSuccess: (data) => {
       window.location.href = data.url;
     },
     onError: (error) => {
+      if (error.message === "MOBILE_REQUIRED") {
+        setShowMobileInput(true);
+        return;
+      }
       toast.error(`Failed to start connection: ${error.message}`);
     },
   });
 
   const isConnecting = connectMutation.isPending;
+
+  function handleConnect() {
+    connectMutation.mutate({ propertyId });
+  }
+
+  function handleMobileSubmit(data: MobileForm) {
+    connectMutation.mutate({ propertyId, mobile: data.mobile });
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -95,15 +150,63 @@ export default function BankingConnectPage() {
             </div>
           </div>
 
-          <Button
-            data-tour="basiq-connect"
-            onClick={() => connectMutation.mutate({})}
-            className="w-full"
-            size="lg"
-            disabled={isConnecting}
-          >
-            {isConnecting ? "Connecting..." : "Connect Bank Account"}
-          </Button>
+          {showMobileInput ? (
+            <div className="animate-slide-down-reveal">
+              <div className="rounded-lg border bg-card p-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Smartphone className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm">Mobile verification required</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Your bank requires SMS verification. Enter your Australian mobile number to continue.
+                    </p>
+                  </div>
+                </div>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleMobileSubmit)} className="space-y-3">
+                    <FormField
+                      control={form.control}
+                      name="mobile"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mobile number</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="0412 345 678"
+                              type="tel"
+                              autoFocus
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      size="lg"
+                      disabled={isConnecting}
+                    >
+                      {isConnecting ? "Connecting..." : "Continue"}
+                    </Button>
+                  </form>
+                </Form>
+              </div>
+            </div>
+          ) : (
+            <Button
+              data-tour="basiq-connect"
+              onClick={handleConnect}
+              className="w-full"
+              size="lg"
+              disabled={isConnecting}
+            >
+              {isConnecting ? "Connecting..." : "Connect Bank Account"}
+            </Button>
+          )}
 
           <p className="text-xs text-center text-muted-foreground" data-tour="sender-allowlist">
             By connecting your account, you agree to our{" "}

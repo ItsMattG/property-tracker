@@ -148,6 +148,19 @@
   }
 }
 
+/* Slide-down reveal for inline form reveals */
+@keyframes slide-down-reveal {
+  from { opacity: 0; max-height: 0; transform: translateY(-8px); }
+  to { opacity: 1; max-height: 200px; transform: translateY(0); }
+}
+.animate-slide-down-reveal {
+  animation: slide-down-reveal 0.3s ease-out both;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-down-reveal { animation: none; opacity: 1; max-height: none; transform: none; }
+}
+
 /* Interactive card hover */
 .interactive-card {
   transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
