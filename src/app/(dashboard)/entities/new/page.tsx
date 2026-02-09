@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
-  Building2,
   Users,
   Landmark,
   Briefcase,
@@ -24,15 +23,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type EntityType = "personal" | "trust" | "smsf" | "company";
+type EntityType = "trust" | "smsf" | "company";
 
 const entityTypes = [
-  {
-    type: "personal" as const,
-    label: "Personal",
-    description: "Properties held in your own name",
-    icon: Building2,
-  },
   {
     type: "trust" as const,
     label: "Trust",
@@ -112,7 +105,7 @@ export default function NewEntityPage() {
     createEntity.mutate(payload);
   };
 
-  const totalSteps = entityType === "personal" || entityType === "company" ? 2 : 3;
+  const totalSteps = entityType === "company" ? 2 : 3;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -136,7 +129,7 @@ export default function NewEntityPage() {
               Choose the type of legal entity that will hold your properties.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
+          <CardContent className="grid gap-4 md:grid-cols-3">
             {entityTypes.map((et) => (
               <button
                 key={et.type}
@@ -174,43 +167,35 @@ export default function NewEntityPage() {
               <Label htmlFor="name">Entity Name *</Label>
               <Input
                 id="name"
-                placeholder={
-                  entityType === "personal"
-                    ? "Personal"
-                    : "Smith Family Trust"
-                }
+                placeholder="Smith Family Trust"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
               />
             </div>
-            {entityType !== "personal" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="abn">ABN (optional)</Label>
-                  <Input
-                    id="abn"
-                    placeholder="12 345 678 901"
-                    value={formData.abn}
-                    onChange={(e) =>
-                      setFormData({ ...formData, abn: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tfn">TFN (optional)</Label>
-                  <Input
-                    id="tfn"
-                    placeholder="123 456 789"
-                    value={formData.tfn}
-                    onChange={(e) =>
-                      setFormData({ ...formData, tfn: e.target.value })
-                    }
-                  />
-                </div>
-              </>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="abn">ABN (optional)</Label>
+              <Input
+                id="abn"
+                placeholder="12 345 678 901"
+                value={formData.abn}
+                onChange={(e) =>
+                  setFormData({ ...formData, abn: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tfn">TFN (optional)</Label>
+              <Input
+                id="tfn"
+                placeholder="123 456 789"
+                value={formData.tfn}
+                onChange={(e) =>
+                  setFormData({ ...formData, tfn: e.target.value })
+                }
+              />
+            </div>
             <div className="flex gap-2 pt-4">
               <Button variant="outline" onClick={() => setStep(1)}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
