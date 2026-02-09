@@ -7,6 +7,7 @@ import { NumericFormat } from "react-number-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 import {
   Form,
   FormControl,
@@ -34,6 +35,8 @@ const propertyFormSchema = z.object({
   contractDate: z.string().min(1, "Contract date is required"),
   settlementDate: z.string().optional(),
   entityName: z.string().optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
 });
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -72,6 +75,8 @@ export function PropertyForm({
       contractDate: "",
       settlementDate: "",
       entityName: "Personal",
+      latitude: "",
+      longitude: "",
       ...defaultValues,
     },
   });
@@ -87,7 +92,22 @@ export function PropertyForm({
             <FormItem data-tour="address-field">
               <FormLabel>Street Address<RequiredMark /></FormLabel>
               <FormControl>
-                <Input placeholder="123 Smith Street" {...field} />
+                <AddressAutocomplete
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  onAddressSelected={(result) => {
+                    form.setValue("address", result.address, { shouldValidate: true });
+                    form.setValue("suburb", result.suburb, { shouldValidate: true });
+                    if (result.state) {
+                      form.setValue("state", result.state as typeof states[number], { shouldValidate: true });
+                    }
+                    form.setValue("postcode", result.postcode, { shouldValidate: true });
+                    form.setValue("latitude", result.latitude);
+                    form.setValue("longitude", result.longitude);
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

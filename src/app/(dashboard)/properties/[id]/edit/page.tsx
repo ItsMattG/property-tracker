@@ -78,6 +78,8 @@ export default function EditPropertyPage() {
               contractDate: property.contractDate ?? property.purchaseDate,
               settlementDate: property.settlementDate ?? "",
               entityName: property.entityName,
+              latitude: property.latitude ?? "",
+              longitude: property.longitude ?? "",
             }}
             onSubmit={handleSubmit}
             isLoading={updateProperty.isPending}
