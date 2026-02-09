@@ -6,7 +6,7 @@ import { Building2, ArrowLeftRight, AlertCircle, DollarSign, PiggyBank } from "l
 import { trpc } from "@/lib/trpc/client";
 import Link from "next/link";
 import { TrendIndicator } from "@/components/ui/trend-indicator";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
 import { EnhancedWizard } from "@/components/onboarding/EnhancedWizard";
 import { SetupChecklist } from "@/components/onboarding/SetupChecklist";
@@ -51,15 +51,6 @@ interface DashboardInitialData {
 
 interface DashboardClientProps {
   initialData: DashboardInitialData | null;
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 function getTrendBorderClass(current: number, previous: number | null, invert = false): string {
@@ -107,7 +98,10 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
     staleTime: 60_000,
   });
 
-  const trends = initialData?.trends ?? null;
+  const { data: dashboardData } = trpc.dashboard.getInitialData.useQuery(undefined, {
+    staleTime: 60_000,
+  });
+  const trends = dashboardData?.trends ?? initialData?.trends ?? null;
 
   const dismissAlert = trpc.banking.dismissAlert.useMutation({
     onMutate: async (newData) => {
@@ -287,7 +281,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                   />
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  Market value minus loan balances
+                  Value minus current loan balances
                 </p>
               </CardContent>
             </Card>
