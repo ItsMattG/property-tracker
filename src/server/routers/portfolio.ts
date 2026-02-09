@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { properties, loans, transactions } from "../db/schema";
-import { eq, and, gte, lte, inArray, sql } from "drizzle-orm";
+import { properties, propertyValues, loans, transactions } from "../db/schema";
+import { eq, and, gte, lte, inArray, desc } from "drizzle-orm";
 import {
   calculateEquity,
   calculateLVR,
@@ -19,20 +19,23 @@ async function getLatestPropertyValues(
 ): Promise<Map<string, number>> {
   if (propertyIds.length === 0) return new Map();
 
-  const rows = await db.execute(sql`
-    SELECT DISTINCT ON (property_id) property_id, estimated_value
-    FROM property_values
-    WHERE user_id = ${userId}
-      AND property_id = ANY(${propertyIds})
-    ORDER BY property_id, value_date DESC
-  `);
+  const rows = await db
+    .selectDistinctOn([propertyValues.propertyId], {
+      propertyId: propertyValues.propertyId,
+      estimatedValue: propertyValues.estimatedValue,
+    })
+    .from(propertyValues)
+    .where(
+      and(
+        eq(propertyValues.userId, userId),
+        inArray(propertyValues.propertyId, propertyIds)
+      )
+    )
+    .orderBy(propertyValues.propertyId, desc(propertyValues.valueDate));
 
   const latestValues = new Map<string, number>();
   for (const row of rows) {
-    latestValues.set(
-      row.property_id as string,
-      Number(row.estimated_value)
-    );
+    latestValues.set(row.propertyId, Number(row.estimatedValue));
   }
   return latestValues;
 }
