@@ -39,7 +39,7 @@ export function TrialPropertyLimitBanner({
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <Button size="sm" asChild>
-            <Link href="/settings/billing">Upgrade to Pro</Link>
+            <Link href="/settings/billing" prefetch={false}>Upgrade to Pro</Link>
           </Button>
           <button
             onClick={() => setDismissed(true)}

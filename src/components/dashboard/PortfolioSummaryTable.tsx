@@ -82,6 +82,7 @@ export function PortfolioSummaryTable() {
                   <TableCell className="pl-6 font-medium">
                     <Link
                       href={`/properties/${m.propertyId}`}
+                      prefetch={false}
                       className="hover:underline"
                     >
                       {m.suburb}, {m.state}
