@@ -115,6 +115,41 @@ test.describe("Bank Reconciliation", () => {
     });
   });
 
+  test.describe("Allocation & Property Column", () => {
+    test("should show property column in transaction table", async ({ authenticatedPage: page }) => {
+      await page.goto("/transactions");
+      await page.waitForLoadState("domcontentloaded");
+      await page.waitForTimeout(3000);
+
+      const hasTable = await page.getByRole("table").first().isVisible().catch(() => false);
+      if (!hasTable) return;
+
+      // Property column header should be visible
+      await expect(page.getByRole("columnheader", { name: /property/i })).toBeVisible();
+
+      // Transactions should show property badges, Allocate buttons, or "Unassigned" text
+      const hasPropertyBadge = await page.locator("table span").filter({ hasText: /st|rd|ave|dr/i }).first().isVisible().catch(() => false);
+      const hasAllocateBtn = await page.getByRole("button", { name: /allocate/i }).first().isVisible().catch(() => false);
+      const hasUnassigned = await page.getByText(/unassigned/i).first().isVisible().catch(() => false);
+
+      expect(hasPropertyBadge || hasAllocateBtn || hasUnassigned).toBe(true);
+    });
+  });
+
+  test.describe("Discussion Notes", () => {
+    test("should show notes icon button in transaction table", async ({ authenticatedPage: page }) => {
+      await page.goto("/transactions");
+      await page.waitForLoadState("domcontentloaded");
+      await page.waitForTimeout(3000);
+
+      const hasTable = await page.getByRole("table").first().isVisible().catch(() => false);
+      if (!hasTable) return;
+
+      // The Notes column header should be visible
+      await expect(page.getByRole("columnheader", { name: /notes/i })).toBeVisible();
+    });
+  });
+
   test.describe("Sidebar Navigation", () => {
     test("sidebar should link to Bank Feeds", async ({ authenticatedPage: page }) => {
       await page.goto("/dashboard");

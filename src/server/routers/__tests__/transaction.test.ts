@@ -463,7 +463,7 @@ describe("transaction router", () => {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           transactions: {
             findMany: vi.fn().mockResolvedValue([
-              { id: "tx-1", userId: "user-1" },
+              { id: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", userId: "user-1" },
               { id: "tx-2", userId: "user-1" },
             ]),
           },
@@ -531,6 +531,161 @@ describe("transaction router", () => {
       expect(findManyMock).toHaveBeenCalledWith(
         expect.objectContaining({ limit: 50, offset: 0 })
       );
+    });
+  });
+
+  describe("allocate", () => {
+    it("requires authentication", async () => {
+      const ctx = createUnauthenticatedContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(
+        caller.transaction.allocate({
+          id: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          category: "rental_income",
+          claimPercent: 100,
+        })
+      ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    });
+
+    it("allocates a transaction with category and claim percent", async () => {
+      const ctx = createAuthenticatedContext();
+      const mockTransaction = {
+        id: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        userId: mockUser.id,
+        category: "rental_income",
+        claimPercent: "100",
+      };
+
+      ctx.db.update = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([mockTransaction]),
+          }),
+        }),
+      });
+
+      const caller = createTestCaller(ctx);
+      const result = await caller.transaction.allocate({
+        id: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        category: "rental_income",
+        claimPercent: 100,
+      });
+
+      expect(result).toEqual(mockTransaction);
+    });
+
+    it("throws NOT_FOUND for non-existent transaction", async () => {
+      const ctx = createAuthenticatedContext();
+
+      ctx.db.update = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+
+      const caller = createTestCaller(ctx);
+      await expect(
+        caller.transaction.allocate({
+          id: "f1e2d3c4-b5a6-4978-8a1b-2c3d4e5f6a7b",
+          category: "rental_income",
+          claimPercent: 100,
+        })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    });
+  });
+
+  describe("addNote", () => {
+    it("requires authentication", async () => {
+      const ctx = createUnauthenticatedContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(
+        caller.transaction.addNote({
+          transactionId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          content: "Test note",
+        })
+      ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    });
+
+    it("adds a note to a transaction owned by user", async () => {
+      const ctx = createAuthenticatedContext();
+      const mockNote = {
+        id: "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+        transactionId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        userId: mockUser.id,
+        content: "Test note",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Mock finding the transaction (owned by user)
+      ctx.db.query.transactions = {
+        findFirst: vi.fn().mockResolvedValue({ id: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", userId: mockUser.id }),
+      };
+      ctx.db.insert = vi.fn().mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([mockNote]),
+        }),
+      });
+
+      const caller = createTestCaller(ctx);
+      const result = await caller.transaction.addNote({
+        transactionId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        content: "Test note",
+      });
+
+      expect(result).toEqual(mockNote);
+    });
+  });
+
+  describe("listNotes", () => {
+    it("requires authentication", async () => {
+      const ctx = createUnauthenticatedContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(
+        caller.transaction.listNotes({ transactionId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d" })
+      ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    });
+
+    it("returns notes for a transaction", async () => {
+      const ctx = createAuthenticatedContext();
+      const mockNotes = [
+        {
+          id: "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+          transactionId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+          userId: mockUser.id,
+          content: "First note",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          user: { name: "Test User" },
+        },
+      ];
+
+      ctx.db.query.transactionNotes = {
+        findMany: vi.fn().mockResolvedValue(mockNotes),
+      };
+
+      const caller = createTestCaller(ctx);
+      const result = await caller.transaction.listNotes({
+        transactionId: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      });
+
+      expect(result).toEqual(mockNotes);
+    });
+  });
+
+  describe("deleteNote", () => {
+    it("requires authentication", async () => {
+      const ctx = createUnauthenticatedContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(
+        caller.transaction.deleteNote({ noteId: "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e" })
+      ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     });
   });
 });

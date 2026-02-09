@@ -184,6 +184,25 @@ export default function TransactionsPage() {
     toggleVerified.mutate({ id });
   };
 
+  const allocate = trpc.transaction.allocate.useMutation({
+    onSuccess: () => {
+      toast.success("Transaction allocated");
+      utils.transaction.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+
+  const handleAllocate = (data: { id: string; category: string; propertyId?: string; claimPercent: number }) => {
+    allocate.mutate({
+      id: data.id,
+      category: data.category as any,
+      propertyId: data.propertyId,
+      claimPercent: data.claimPercent,
+    });
+  };
+
   const deleteTransactionMutation = trpc.transaction.delete.useMutation({
     onSuccess: () => {
       toast.success("Transaction deleted");
@@ -323,6 +342,7 @@ export default function TransactionsPage() {
                 onCategoryChange={handleCategoryChange}
                 onToggleVerified={handleToggleVerified}
                 onBulkCategoryChange={handleBulkCategoryChange}
+                onAllocate={handleAllocate}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />

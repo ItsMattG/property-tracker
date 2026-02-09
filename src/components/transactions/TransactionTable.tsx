@@ -25,10 +25,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CategorySelect } from "./CategorySelect";
+import { AllocationPopup } from "./AllocationPopup";
+import { DiscussionNotesModal } from "./DiscussionNotesModal";
 import { MakeRecurringDialog } from "@/components/recurring/MakeRecurringDialog";
 import { getCategoryLabel, getCategoryInfo } from "@/lib/categories";
 import { format } from "date-fns";
-import { Check, X, MoreHorizontal, Sparkles } from "lucide-react";
+import { Check, X, MoreHorizontal, Sparkles, MessageSquare } from "lucide-react";
 import type { Transaction, Property, BankAccount } from "@/server/db/schema";
 
 // When serialized through tRPC, Date fields become strings
@@ -58,6 +60,7 @@ interface TransactionTableProps {
   onCategoryChange: (id: string, category: string, propertyId?: string) => void;
   onToggleVerified: (id: string) => void;
   onBulkCategoryChange: (ids: string[], category: string) => void;
+  onAllocate?: (data: { id: string; category: string; propertyId?: string; claimPercent: number }) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
@@ -68,12 +71,15 @@ export function TransactionTable({
   onCategoryChange,
   onToggleVerified,
   onBulkCategoryChange,
+  onAllocate,
   onEdit,
   onDelete,
 }: TransactionTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithRelations | null>(null);
+  const [notesTransactionId, setNotesTransactionId] = useState<string | null>(null);
+  const [notesTransactionDesc, setNotesTransactionDesc] = useState("");
 
   const handleMakeRecurring = (transaction: TransactionWithRelations) => {
     setSelectedTransaction(transaction);
@@ -148,6 +154,7 @@ export function TransactionTable({
               <TableHead>Amount</TableHead>
               <TableHead data-tour="category-dropdown">Category</TableHead>
               <TableHead>Property</TableHead>
+              <TableHead className="w-12">Notes</TableHead>
               <TableHead className="w-20">Verified</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
@@ -155,7 +162,7 @@ export function TransactionTable({
           <TableBody>
             {transactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   No transactions found
                 </TableCell>
               </TableRow>
@@ -257,11 +264,36 @@ export function TransactionTable({
                         <Badge variant="outline">
                           {transaction.property.address}
                         </Badge>
+                      ) : onAllocate && transaction.category === "uncategorized" ? (
+                        <AllocationPopup
+                          transactionId={transaction.id}
+                          amount={transaction.amount}
+                          description={transaction.description}
+                          properties={properties.map((p) => ({ id: p.id, address: p.address, suburb: p.suburb }))}
+                          onAllocate={onAllocate}
+                        >
+                          <Button variant="outline" size="sm" className="h-7 text-xs">
+                            Allocate
+                          </Button>
+                        </AllocationPopup>
                       ) : (
                         <span className="text-muted-foreground text-sm">
                           Unassigned
                         </span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => {
+                          setNotesTransactionId(transaction.id);
+                          setNotesTransactionDesc(transaction.description);
+                        }}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                      </Button>
                     </TableCell>
                     <TableCell>
                       <Button
@@ -322,6 +354,20 @@ export function TransactionTable({
           transaction={selectedTransaction as unknown as Transaction}
           open={recurringDialogOpen}
           onOpenChange={setRecurringDialogOpen}
+        />
+      )}
+
+      {notesTransactionId && (
+        <DiscussionNotesModal
+          transactionId={notesTransactionId}
+          transactionDescription={notesTransactionDesc}
+          open={!!notesTransactionId}
+          onOpenChange={(open) => {
+            if (!open) {
+              setNotesTransactionId(null);
+              setNotesTransactionDesc("");
+            }
+          }}
         />
       )}
     </div>
