@@ -271,7 +271,7 @@ export const propertyRouter = router({
       const [updated] = await ctx.db
         .update(properties)
         .set({ climateRisk, updatedAt: new Date() })
-        .where(eq(properties.id, input.id))
+        .where(and(eq(properties.id, input.id), eq(properties.userId, ctx.portfolio.ownerId)))
         .returning();
 
       return updated;

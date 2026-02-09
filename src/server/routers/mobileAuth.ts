@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import {
   verifyMobileToken,
   signMobileToken,
+  getPasswordVersion,
   type MobileJwtPayload,
 } from "../lib/mobile-jwt";
 import { authRateLimiter } from "../middleware/rate-limit";
@@ -54,7 +55,11 @@ export const mobileAuthRouter = router({
         });
       }
 
-      const token = signMobileToken({ userId: user.id, email: user.email });
+      const token = signMobileToken({
+        userId: user.id,
+        email: user.email,
+        pwv: getPasswordVersion(user.mobilePasswordHash),
+      });
 
       return {
         token,
@@ -154,6 +159,14 @@ export const mobileAuthRouter = router({
 
         if (!user) {
           return { valid: false, user: null };
+        }
+
+        // Check password version — reject if password was changed since token was issued
+        if (payload.pwv && user.mobilePasswordHash) {
+          const currentPwv = getPasswordVersion(user.mobilePasswordHash);
+          if (payload.pwv !== currentPwv) {
+            return { valid: false, user: null };
+          }
         }
 
         return {

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure, publicProcedure } from "../trpc";
 import { portfolioShares, properties, propertyValues, loans, transactions } from "../db/schema";
-import { eq, and, desc, gte, lte, inArray } from "drizzle-orm";
+import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
 import {
   generateShareToken,
   transformForPrivacy,
@@ -274,11 +274,11 @@ export const shareRouter = router({
         });
       }
 
-      // Increment view count and update last viewed
+      // Increment view count atomically and update last viewed
       await ctx.db
         .update(portfolioShares)
         .set({
-          viewCount: share.viewCount + 1,
+          viewCount: sql`${portfolioShares.viewCount} + 1`,
           lastViewedAt: new Date(),
         })
         .where(eq(portfolioShares.id, share.id));

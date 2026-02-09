@@ -46,14 +46,20 @@ export async function POST(request: NextRequest) {
     const payload = await request.text();
     const signature = request.headers.get("x-basiq-signature");
 
-    // Verify signature in production or when secret is configured
-    if (process.env.NODE_ENV === "production" || WEBHOOK_SECRET) {
+    // Verify signature when secret is configured (required in production)
+    if (WEBHOOK_SECRET) {
       if (!verifyWebhookSignature(payload, signature)) {
         return NextResponse.json(
           { error: "Invalid signature" },
           { status: 401 }
         );
       }
+    } else if (process.env.NODE_ENV === "production") {
+      console.error("BASIQ_WEBHOOK_SECRET not configured in production");
+      return NextResponse.json(
+        { error: "Webhook not configured" },
+        { status: 500 }
+      );
     }
 
     const event: BasiqWebhookEvent = JSON.parse(payload);

@@ -63,7 +63,7 @@ export default function SignUpPage() {
     });
 
     if (error) {
-      setError(error.message ?? "Failed to create account");
+      setError("Unable to create account. Please try a different email or sign in.");
       setLoading(false);
       return;
     }

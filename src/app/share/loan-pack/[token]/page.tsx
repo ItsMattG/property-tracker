@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { loanPacks } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { LoanPackReport } from "@/components/loanPack/LoanPackReport";
 import { DownloadLoanPackPDFButton } from "@/components/loanPack/DownloadLoanPackPDFButton";
@@ -45,7 +45,7 @@ export default async function LoanPackViewPage({ params }: PageProps) {
   }
 
   // Update access tracking
-  db.update(loanPacks).set({ accessCount: pack.accessCount + 1, accessedAt: now }).where(eq(loanPacks.id, pack.id)).execute().catch(() => {});
+  db.update(loanPacks).set({ accessCount: sql`${loanPacks.accessCount} + 1`, accessedAt: now }).where(eq(loanPacks.id, pack.id)).execute().catch(() => {});
 
   const snapshot = pack.snapshotData as LoanPackSnapshot;
   const daysUntilExpiry = differenceInDays(new Date(pack.expiresAt), now);
