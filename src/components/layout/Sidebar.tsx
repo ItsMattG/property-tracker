@@ -136,6 +136,7 @@ function NavItem({
   const content = (
     <Link
       href={href}
+      prefetch={false}
       onMouseEnter={onMouseEnter}
       className={cn(
         "flex items-center gap-3 py-2 rounded-md text-sm font-medium transition-colors relative cursor-pointer",
@@ -290,7 +291,7 @@ export function Sidebar() {
       >
         {/* Logo */}
         <div className={cn("mb-8", isCollapsed && "flex justify-center")}>
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/dashboard" prefetch={false} className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
               <Building2 className="w-5 h-5 text-primary-foreground" />
             </div>
