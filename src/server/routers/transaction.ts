@@ -598,11 +598,24 @@ export const transactionRouter = router({
   listNotes: protectedProcedure
     .input(z.object({ transactionId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
+      // Verify the transaction belongs to this user
+      const tx = await ctx.db.query.transactions.findFirst({
+        where: and(
+          eq(transactions.id, input.transactionId),
+          eq(transactions.userId, ctx.portfolio.ownerId)
+        ),
+      });
+      if (!tx) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+      }
+
       const notes = await ctx.db.query.transactionNotes.findMany({
         where: eq(transactionNotes.transactionId, input.transactionId),
         orderBy: [desc(transactionNotes.createdAt)],
         with: {
-          user: true,
+          user: {
+            columns: { id: true, name: true },
+          },
         },
       });
       return notes;

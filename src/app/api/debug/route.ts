@@ -9,6 +9,17 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  // Block in production — use /api/health for production monitoring
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not available" }, { status: 404 });
+  }
+
+  // Require authentication
+  const session = await getAuthSession();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const url = new URL(request.url);
   const simulate = url.searchParams.get("simulate") === "true";
 
@@ -26,7 +37,7 @@ export async function GET(request: Request) {
     await db.execute(sql`SELECT 1`);
     results.checks = { ...results.checks as Record<string, unknown>, database: { ok: true, time: `${Date.now() - dbStart}ms` } };
   } catch (e) {
-    results.checks = { ...results.checks as Record<string, unknown>, database: { ok: false, error: String(e), time: `${Date.now() - dbStart}ms` } };
+    results.checks = { ...results.checks as Record<string, unknown>, database: { ok: false, error: "Database check failed", time: `${Date.now() - dbStart}ms` } };
   }
 
   // Test 2: BetterAuth auth
@@ -44,7 +55,7 @@ export async function GET(request: Request) {
       }
     };
   } catch (e) {
-    results.checks = { ...results.checks as Record<string, unknown>, betterAuth: { ok: false, error: String(e), time: `${Date.now() - authStart}ms` } };
+    results.checks = { ...results.checks as Record<string, unknown>, betterAuth: { ok: false, error: "Auth check failed", time: `${Date.now() - authStart}ms` } };
   }
 
   // Test 3: Simulate protectedProcedure flow (if requested and authenticated)
@@ -83,7 +94,7 @@ export async function GET(request: Request) {
         };
       }
     } catch (e) {
-      results.checks = { ...results.checks as Record<string, unknown>, userLookup: { ok: false, error: String(e), time: `${Date.now() - userLookupStart}ms` } };
+      results.checks = { ...results.checks as Record<string, unknown>, userLookup: { ok: false, error: "User lookup failed", time: `${Date.now() - userLookupStart}ms` } };
     }
   } else if (simulate) {
     results.checks = { ...results.checks as Record<string, unknown>, simulate: { skipped: "not authenticated" } };

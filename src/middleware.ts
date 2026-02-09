@@ -17,7 +17,6 @@ const PUBLIC_ROUTES = [
   /^\/api\/webhooks(\/.*)?$/,
   /^\/api\/trpc\/mobileAuth(\/.*)?$/,
   /^\/api\/health(\/.*)?$/,
-  /^\/api\/debug(\/.*)?$/,
   /^\/api\/cron(\/.*)?$/,
   /^\/api\/auth(\/.*)?$/,
   /^\/sitemap\.xml$/,
