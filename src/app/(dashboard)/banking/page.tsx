@@ -315,12 +315,14 @@ export default function BankingPage() {
             {groupedAccounts.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/banking/connect">
-            <Plus className="w-4 h-4 mr-2" />
-            Connect Bank
-          </Link>
-        </Button>
+        {accounts && accounts.length > 0 && (
+          <Button asChild>
+            <Link href="/banking/connect">
+              <Plus className="w-4 h-4 mr-2" />
+              Connect Bank
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* Summary stats */}

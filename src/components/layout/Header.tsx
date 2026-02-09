@@ -246,7 +246,7 @@ export function Header() {
         </div>
         <TooltipProvider delayDuration={300}>
           <div className="flex items-center gap-3 flex-shrink-0" data-tour="quick-actions">
-            <FYSelector />
+            {featureFlags.fySelector && <FYSelector />}
             {featureFlags.helpMenu && <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />}
             <AlertBadge />
             {featureFlags.quickAdd && <QuickAddButton />}

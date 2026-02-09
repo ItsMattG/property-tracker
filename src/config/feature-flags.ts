@@ -9,7 +9,7 @@ export const featureFlags = {
   // ── Main navigation ───────────────────────────────────────────────
   discover: false,
   alerts: false,
-  portfolio: true,
+  portfolio: false,
   forecast: false,
   portfolioShares: false,
   compliance: false,
@@ -48,6 +48,7 @@ export const featureFlags = {
   documents: false,
 
   // ── Other UI ──────────────────────────────────────────────────────
+  fySelector: false,
   aiAssistant: false,
   whatsNew: false,
   helpMenu: false,
