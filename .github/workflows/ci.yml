@@ -191,6 +191,7 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     needs: [build]
+    timeout-minutes: 15
     environment: production
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     steps:
@@ -226,13 +227,28 @@ jobs:
         run: pnpm exec playwright install-deps chromium
         if: steps.playwright-cache.outputs.cache-hit == 'true'
 
+      - name: Wait for staging deploy
+        run: |
+          echo "Waiting for staging to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf https://staging.bricktrack.au > /dev/null 2>&1; then
+              echo "Staging is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting 10s..."
+            sleep 10
+          done
+          echo "Staging not ready after 5 minutes"
+          exit 1
+
       - name: Run E2E tests
         run: pnpm run test:e2e
         env:
+          PLAYWRIGHT_BASE_URL: https://staging.bricktrack.au
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          BETTER_AUTH_URL: http://localhost:3000
+          BETTER_AUTH_URL: https://staging.bricktrack.au
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: https://staging.bricktrack.au
           E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
           E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
           BASIQ_API_KEY: ${{ secrets.BASIQ_API_KEY }}
