@@ -124,7 +124,7 @@ export const portfolioRouter = router({
       );
 
       // Calculate totals
-      const totalValue = Array.from(latestValues.values()).reduce((a, b) => a + b, 0);
+      const totalValue = propertyList.reduce((sum, p) => sum + (latestValues.get(p.id) || Number(p.purchasePrice)), 0);
       const totalDebt = Array.from(loansByProperty.values()).reduce((a, b) => a + b, 0);
       const totalEquity = calculateEquity(totalValue, totalDebt);
       const portfolioLVR = calculateLVR(totalDebt, totalValue);

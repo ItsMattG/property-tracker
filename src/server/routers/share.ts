@@ -100,7 +100,7 @@ export const shareRouter = router({
       let totalIncome = 0;
 
       const propertySnapshots: PropertySnapshot[] = userProperties.map((property) => {
-        const value = latestValues.get(property.id) || 0;
+        const value = latestValues.get(property.id) || Number(property.purchasePrice);
         const propertyLoans = loansByProperty.get(property.id) || 0;
         const propertyTransactions = transactionsByProperty.get(property.id) || [];
 
