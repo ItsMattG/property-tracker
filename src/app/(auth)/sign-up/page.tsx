@@ -109,7 +109,7 @@ export default function SignUpPage() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white/90 max-sm:bg-white px-2 text-muted-foreground">
+              <span className="bg-white px-2 text-muted-foreground">
                 or continue with email
               </span>
             </div>

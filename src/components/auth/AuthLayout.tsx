@@ -14,7 +14,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       />
 
       {/* Glassmorphic card */}
-      <div className="relative w-full max-w-[420px] rounded-2xl border border-white/20 bg-white/90 p-8 shadow-2xl backdrop-blur-xl max-sm:bg-white max-sm:backdrop-blur-none">
+      <div className="relative w-full max-w-[420px] rounded-2xl border border-white/20 bg-white p-8 shadow-2xl">
         {/* Logo + tagline */}
         <div className="mb-6 flex flex-col items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
