@@ -629,6 +629,23 @@ export const bankingRouter = router({
 
       let basiqUserId = user.basiqUserId;
 
+      // Determine effective mobile: prefer freshly-submitted, fall back to stored
+      const effectiveMobile = input.mobile || user.mobile;
+      if (!effectiveMobile) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "MOBILE_REQUIRED",
+        });
+      }
+
+      // Persist mobile on user record if new or changed
+      if (input.mobile && input.mobile !== user.mobile) {
+        await ctx.db
+          .update(users)
+          .set({ mobile: input.mobile })
+          .where(eq(users.id, user.id));
+      }
+
       // Store the pre-selected property for auto-assignment after Basiq callback,
       // or clear any stale value so the callback routes to the assign page
       if (input.propertyId) {
@@ -655,7 +672,7 @@ export const bankingRouter = router({
       // Create or update Basiq user with mobile (required for auth link / SMS verification)
       if (!basiqUserId) {
         try {
-          const basiqUser = await basiqService.createUser(user.email, input.mobile);
+          const basiqUser = await basiqService.createUser(user.email, effectiveMobile);
           basiqUserId = basiqUser.id;
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
@@ -671,10 +688,10 @@ export const bankingRouter = router({
           .update(users)
           .set({ basiqUserId })
           .where(eq(users.id, user.id));
-      } else if (input.mobile) {
+      } else {
         // Existing Basiq user — update mobile in case it changed or wasn't set
         try {
-          await basiqService.updateUser(basiqUserId, { mobile: input.mobile });
+          await basiqService.updateUser(basiqUserId, { mobile: effectiveMobile });
         } catch {
           // Non-fatal — mobile may already be set from a previous connection
         }
@@ -699,7 +716,7 @@ export const bankingRouter = router({
 
         // Stale basiqUserId — create a new Basiq user and retry
         try {
-          const basiqUser = await basiqService.createUser(user.email, input.mobile);
+          const basiqUser = await basiqService.createUser(user.email, effectiveMobile);
           basiqUserId = basiqUser.id;
 
           await ctx.db

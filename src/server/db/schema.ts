@@ -511,6 +511,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  mobile: text("mobile"),
   mobilePasswordHash: text("mobile_password_hash"),
   basiqUserId: text("basiq_user_id"),
   pendingBankPropertyId: uuid("pending_bank_property_id").references((): AnyPgColumn => properties.id, { onDelete: "set null" }),
