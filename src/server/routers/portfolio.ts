@@ -124,7 +124,7 @@ export const portfolioRouter = router({
       );
 
       // Calculate totals
-      const totalValue = Array.from(latestValues.values()).reduce((a, b) => a + b, 0);
+      const totalValue = propertyList.reduce((sum, p) => sum + (latestValues.get(p.id) || Number(p.purchasePrice)), 0);
       const totalDebt = Array.from(loansByProperty.values()).reduce((a, b) => a + b, 0);
       const totalEquity = calculateEquity(totalValue, totalDebt);
       const portfolioLVR = calculateLVR(totalDebt, totalValue);
@@ -230,7 +230,7 @@ export const portfolioRouter = router({
       const multiplier = input.period === "monthly" ? 12 : input.period === "quarterly" ? 4 : 1;
 
       const metrics = propertyList.map((property) => {
-        const value = latestValues.get(property.id) || 0;
+        const value = latestValues.get(property.id) || Number(property.purchasePrice);
         const totalLoans = loansByProperty.get(property.id) || 0;
         const propertyTransactions = transactionsByProperty.get(property.id) || [];
 
