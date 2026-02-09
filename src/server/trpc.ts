@@ -115,7 +115,7 @@ const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
 
   const userId =
     ctx.userId ?? ctx.headers?.get("x-forwarded-for") ?? "anonymous";
-  const result = apiRateLimiter.check(userId);
+  const result = await apiRateLimiter.check(userId);
 
   if (!result.allowed) {
     throw new TRPCError({

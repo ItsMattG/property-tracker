@@ -24,7 +24,7 @@ export const mobileAuthRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Rate limit login attempts by email to prevent brute-force
       const rateLimitKey = `login:${input.email.toLowerCase().trim()}`;
-      const rateCheck = authRateLimiter.check(rateLimitKey);
+      const rateCheck = await authRateLimiter.check(rateLimitKey);
       if (!rateCheck.allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
