@@ -47,22 +47,35 @@ interface DistributedRateLimiter {
 
 /**
  * Upstash Redis-backed rate limiter for production (works across serverless instances).
+ * Lazily initializes the Redis connection on first check() to avoid crashing at build time.
  */
 class UpstashRateLimiter implements DistributedRateLimiter {
-  private ratelimit: Ratelimit;
+  private ratelimit: Ratelimit | null = null;
+  private maxRequests: number;
+  private windowSeconds: number;
+  private prefix: string;
 
   constructor(maxRequests: number, windowSeconds: number, prefix: string) {
-    this.ratelimit = new Ratelimit({
-      redis: Redis.fromEnv(),
-      limiter: Ratelimit.slidingWindow(maxRequests, `${windowSeconds} s`),
-      prefix: `@bricktrack/ratelimit:${prefix}`,
-      ephemeralCache: new Map(),
-      timeout: 3000,
-    });
+    this.maxRequests = maxRequests;
+    this.windowSeconds = windowSeconds;
+    this.prefix = prefix;
+  }
+
+  private getInstance(): Ratelimit {
+    if (!this.ratelimit) {
+      this.ratelimit = new Ratelimit({
+        redis: Redis.fromEnv(),
+        limiter: Ratelimit.slidingWindow(this.maxRequests, `${this.windowSeconds} s`),
+        prefix: `@bricktrack/ratelimit:${this.prefix}`,
+        ephemeralCache: new Map(),
+        timeout: 3000,
+      });
+    }
+    return this.ratelimit;
   }
 
   async check(key: string): Promise<RateLimitResult> {
-    const { success, remaining } = await this.ratelimit.limit(key);
+    const { success, remaining } = await this.getInstance().limit(key);
     return { allowed: success, remaining };
   }
 }
