@@ -88,6 +88,7 @@
     "date-fns": "^4.1.0",
     "driver.js": "^1.4.0",
     "drizzle-orm": "^0.45.1",
+    "exceljs": "^4.4.0",
     "googleapis": "^171.0.0",
     "gray-matter": "^4.0.3",
     "isomorphic-dompurify": "^2.35.0",
@@ -115,7 +116,6 @@
     "svix": "^1.84.1",
     "tailwind-merge": "^3.4.0",
     "web-push": "^3.6.7",
-    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
