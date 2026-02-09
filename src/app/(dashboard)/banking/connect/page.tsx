@@ -1,11 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PropertySelect } from "@/components/properties/PropertySelect";
-import { ArrowLeft, Landmark, Shield, RefreshCw, Home } from "lucide-react";
+import { ArrowLeft, Landmark, Shield, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc/client";
@@ -13,16 +10,6 @@ import { useTour } from "@/hooks/useTour";
 
 export default function BankingConnectPage() {
   useTour({ tourId: "banking" });
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
-
-  const { data: properties, isLoading: propertiesLoading } = trpc.property.list.useQuery();
-
-  // Auto-select if only one property
-  useEffect(() => {
-    if (properties?.length === 1 && !selectedPropertyId) {
-      setSelectedPropertyId(properties[0].id);
-    }
-  }, [properties, selectedPropertyId]);
 
   const connectMutation = trpc.banking.connect.useMutation({
     onSuccess: (data) => {
@@ -34,48 +21,10 @@ export default function BankingConnectPage() {
   });
 
   const handleConnect = () => {
-    if (!selectedPropertyId) {
-      toast.error("Please select a property for this bank account");
-      return;
-    }
-    connectMutation.mutate({
-      propertyId: selectedPropertyId,
-    });
+    connectMutation.mutate({});
   };
 
   const isConnecting = connectMutation.isPending;
-  const hasMultipleProperties = (properties?.length ?? 0) > 1;
-  const hasNoProperties = !propertiesLoading && properties?.length === 0;
-  const canConnect = !!selectedPropertyId && !isConnecting;
-
-  // Redirect to create property if none exist
-  if (hasNoProperties) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/banking">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Link>
-          </Button>
-        </div>
-        <Card>
-          <CardContent className="py-12 text-center space-y-4">
-            <Home className="w-12 h-12 text-muted-foreground mx-auto" />
-            <h2 className="text-lg font-semibold">Add a property first</h2>
-            <p className="text-muted-foreground">
-              You need at least one property before connecting a bank account.
-              Transactions will be linked to your property automatically.
-            </p>
-            <Button asChild>
-              <Link href="/properties/new">Add Property</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -150,28 +99,12 @@ export default function BankingConnectPage() {
             </div>
           </div>
 
-          {/* Property selection - shown for multi-property users */}
-          {hasMultipleProperties && (
-            <div className="border-t pt-6 space-y-2">
-              <Label htmlFor="property">Property</Label>
-              <PropertySelect
-                value={selectedPropertyId}
-                onValueChange={setSelectedPropertyId}
-                placeholder="Which property is this account for?"
-                triggerClassName="w-full"
-              />
-              <p className="text-xs text-muted-foreground">
-                All connected accounts will be linked to this property. You can reassign individual accounts later.
-              </p>
-            </div>
-          )}
-
           <Button
             data-tour="basiq-connect"
             onClick={handleConnect}
             className="w-full"
             size="lg"
-            disabled={!canConnect}
+            disabled={isConnecting}
           >
             {isConnecting ? "Connecting..." : "Connect Bank Account"}
           </Button>

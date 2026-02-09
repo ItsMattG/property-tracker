@@ -628,7 +628,8 @@ export const bankingRouter = router({
 
       let basiqUserId = user.basiqUserId;
 
-      // Store the pre-selected property for auto-assignment after Basiq callback
+      // Store the pre-selected property for auto-assignment after Basiq callback,
+      // or clear any stale value so the callback routes to the assign page
       if (input.propertyId) {
         const property = await ctx.db.query.properties.findFirst({
           where: and(
@@ -643,12 +644,27 @@ export const bankingRouter = router({
           .update(users)
           .set({ pendingBankPropertyId: input.propertyId })
           .where(eq(users.id, user.id));
+      } else {
+        await ctx.db
+          .update(users)
+          .set({ pendingBankPropertyId: null })
+          .where(eq(users.id, user.id));
       }
 
       // Create Basiq user if needed (email only — no mobile avoids SMS verification step)
       if (!basiqUserId) {
-        const basiqUser = await basiqService.createUser(user.email);
-        basiqUserId = basiqUser.id;
+        try {
+          const basiqUser = await basiqService.createUser(user.email);
+          basiqUserId = basiqUser.id;
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: msg.includes("not configured")
+              ? "Bank connections are not available at this time. Please try again later."
+              : `Unable to initialize bank connection: ${msg}`,
+          });
+        }
 
         await ctx.db
           .update(users)
@@ -662,20 +678,36 @@ export const bankingRouter = router({
         const { links } = await basiqService.createAuthLink(basiqUserId);
         return { url: links.public };
       } catch (error) {
-        const isNotFound = error instanceof Error && error.message.includes("resource-not-found");
-        if (!isNotFound) throw error;
+        const msg = error instanceof Error ? error.message : String(error);
+        const isNotFound = msg.includes("resource-not-found");
+        if (!isNotFound) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: msg.includes("not configured")
+              ? "Bank connections are not available at this time. Please try again later."
+              : `Unable to connect to banking provider: ${msg}`,
+          });
+        }
 
         // Stale basiqUserId — create a new Basiq user and retry
-        const basiqUser = await basiqService.createUser(user.email);
-        basiqUserId = basiqUser.id;
+        try {
+          const basiqUser = await basiqService.createUser(user.email);
+          basiqUserId = basiqUser.id;
 
-        await ctx.db
-          .update(users)
-          .set({ basiqUserId })
-          .where(eq(users.id, user.id));
+          await ctx.db
+            .update(users)
+            .set({ basiqUserId })
+            .where(eq(users.id, user.id));
 
-        const { links } = await basiqService.createAuthLink(basiqUserId);
-        return { url: links.public };
+          const { links } = await basiqService.createAuthLink(basiqUserId);
+          return { url: links.public };
+        } catch (retryError) {
+          const retryMsg = retryError instanceof Error ? retryError.message : String(retryError);
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `Unable to connect to banking provider: ${retryMsg}`,
+          });
+        }
       }
     }),
 
