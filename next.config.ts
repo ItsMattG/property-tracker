@@ -20,26 +20,44 @@ const securityHeaders = [
 // Standard CSP for most pages
 const standardCSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.posthog.com https://*.clerk.accounts.dev https://clerk.bricktrack.au https://challenges.cloudflare.com https://*.cloudflare.com https://maps.googleapis.com https://va.vercel-scripts.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.clerk.accounts.dev https://clerk.bricktrack.au",
-  "img-src 'self' data: blob: https: http:",
+  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.posthog.com https://challenges.cloudflare.com https://*.cloudflare.com https://maps.googleapis.com https://va.vercel-scripts.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https://*.supabase.co https://img.logo.dev https://fonts.gstatic.com https://*.posthog.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.posthog.com https://*.clerk.accounts.dev https://*.clerk.dev wss://*.clerk.accounts.dev https://*.bricktrack.au wss://*.bricktrack.au https://api.basiq.io https://sentry.io https://*.ingest.sentry.io https://img.logo.dev https://*.cloudflare.com https://maps.googleapis.com https://va.vercel-scripts.com https://vitals.vercel-insights.com",
-  "frame-src 'self' https://js.stripe.com https://*.clerk.accounts.dev https://*.bricktrack.au https://challenges.cloudflare.com https://*.cloudflare.com",
+  "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.posthog.com https://*.bricktrack.au wss://*.bricktrack.au https://api.basiq.io https://sentry.io https://*.ingest.sentry.io https://img.logo.dev https://*.cloudflare.com https://maps.googleapis.com https://va.vercel-scripts.com https://vitals.vercel-insights.com",
+  "frame-src 'self' https://js.stripe.com https://*.bricktrack.au https://challenges.cloudflare.com https://*.cloudflare.com",
   "worker-src 'self' blob:",
+].join("; ");
+
+// Restrictive CSP for auth pages (login/signup handle credentials)
+const authCSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://*.cloudflare.com https://va.vercel-scripts.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data:",
+  "font-src 'self' https://fonts.gstatic.com",
+  "connect-src 'self' https://*.supabase.co https://*.bricktrack.au https://sentry.io https://*.ingest.sentry.io https://va.vercel-scripts.com https://vitals.vercel-insights.com",
+  "frame-src 'self' https://challenges.cloudflare.com https://*.cloudflare.com",
+  "worker-src 'self'",
 ].join("; ");
 
 const nextConfig: NextConfig = {
   async headers() {
     return [
-      // Auth pages - no CSP (let Clerk handle it to avoid conflicts with Turnstile)
+      // Auth pages - restrictive CSP (credentials handling)
       {
         source: "/sign-in/:path*",
-        headers: securityHeaders,
+        headers: [
+          ...securityHeaders,
+          { key: "Content-Security-Policy", value: authCSP },
+        ],
       },
       {
         source: "/sign-up/:path*",
-        headers: securityHeaders,
+        headers: [
+          ...securityHeaders,
+          { key: "Content-Security-Policy", value: authCSP },
+        ],
       },
       // All other pages - standard CSP
       {

@@ -9,6 +9,7 @@ import {
   signMobileToken,
   type MobileJwtPayload,
 } from "../lib/mobile-jwt";
+import { authRateLimiter } from "../middleware/rate-limit";
 
 export const mobileAuthRouter = router({
   // Login with email/password
@@ -20,6 +21,16 @@ export const mobileAuthRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Rate limit login attempts by email to prevent brute-force
+      const rateLimitKey = `login:${input.email.toLowerCase().trim()}`;
+      const rateCheck = authRateLimiter.check(rateLimitKey);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many login attempts. Please try again later.",
+        });
+      }
+
       const user = await ctx.db.query.users.findFirst({
         where: eq(users.email, input.email.toLowerCase().trim()),
       });
