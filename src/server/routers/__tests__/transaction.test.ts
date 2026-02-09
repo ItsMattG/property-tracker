@@ -665,6 +665,10 @@ describe("transaction router", () => {
         },
       ];
 
+      // listNotes first verifies transaction ownership via transactions.findFirst
+      ctx.db.query.transactions = {
+        findFirst: vi.fn().mockResolvedValue({ id: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", userId: mockUser.id }),
+      };
       ctx.db.query.transactionNotes = {
         findMany: vi.fn().mockResolvedValue(mockNotes),
       };
