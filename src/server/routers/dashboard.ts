@@ -9,7 +9,7 @@ import {
   propertyValues,
   loans,
 } from "../db/schema";
-import { eq, and, ne, sql, gte, lt, inArray } from "drizzle-orm";
+import { eq, and, ne, sql, gte, lt, inArray, desc } from "drizzle-orm";
 import { calculateProgress, type OnboardingCounts } from "../services/onboarding";
 
 export const dashboardRouter = router({
@@ -215,38 +215,52 @@ export const dashboardRouter = router({
 
           if (activePropertyIds.length > 0) {
             // Current: latest estimated_value per active property (DISTINCT ON)
-            const currentValues = (await ctx.db.execute(sql`
-              SELECT DISTINCT ON (property_id) property_id, estimated_value
-              FROM property_values
-              WHERE user_id = ${userId}
-                AND property_id = ANY(${activePropertyIds})
-              ORDER BY property_id, value_date DESC, created_at DESC
-            `)) as unknown as Array<{
-              property_id: string;
-              estimated_value: string;
-            }>;
+            const currentValues = await ctx.db
+              .selectDistinctOn([propertyValues.propertyId], {
+                propertyId: propertyValues.propertyId,
+                estimatedValue: propertyValues.estimatedValue,
+              })
+              .from(propertyValues)
+              .where(
+                and(
+                  eq(propertyValues.userId, userId),
+                  inArray(propertyValues.propertyId, activePropertyIds)
+                )
+              )
+              .orderBy(
+                propertyValues.propertyId,
+                desc(propertyValues.valueDate),
+                desc(propertyValues.createdAt)
+              );
 
             currentPortfolioValue = currentValues.reduce(
-              (sum: number, row) => sum + parseFloat(row.estimated_value || "0"),
+              (sum: number, row) => sum + parseFloat(row.estimatedValue || "0"),
               0
             );
 
             // Previous: latest value per property before start of current month
-            const prevValues = (await ctx.db.execute(sql`
-              SELECT DISTINCT ON (property_id) property_id, estimated_value
-              FROM property_values
-              WHERE user_id = ${userId}
-                AND property_id = ANY(${activePropertyIds})
-                AND value_date < ${currentMonthStr}
-              ORDER BY property_id, value_date DESC, created_at DESC
-            `)) as unknown as Array<{
-              property_id: string;
-              estimated_value: string;
-            }>;
+            const prevValues = await ctx.db
+              .selectDistinctOn([propertyValues.propertyId], {
+                propertyId: propertyValues.propertyId,
+                estimatedValue: propertyValues.estimatedValue,
+              })
+              .from(propertyValues)
+              .where(
+                and(
+                  eq(propertyValues.userId, userId),
+                  inArray(propertyValues.propertyId, activePropertyIds),
+                  lt(propertyValues.valueDate, currentMonthStr)
+                )
+              )
+              .orderBy(
+                propertyValues.propertyId,
+                desc(propertyValues.valueDate),
+                desc(propertyValues.createdAt)
+              );
 
             if (prevValues.length > 0) {
               previousPortfolioValue = prevValues.reduce(
-                (sum: number, row) => sum + parseFloat(row.estimated_value || "0"),
+                (sum: number, row) => sum + parseFloat(row.estimatedValue || "0"),
                 0
               );
             }
