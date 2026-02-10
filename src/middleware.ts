@@ -19,6 +19,7 @@ const PUBLIC_ROUTES = [
   /^\/api\/health(\/.*)?$/,
   /^\/api\/cron(\/.*)?$/,
   /^\/api\/auth(\/.*)?$/,
+  /^\/api\/auth-debug$/,
   /^\/sitemap\.xml$/,
   /^\/robots\.txt$/,
 ];
