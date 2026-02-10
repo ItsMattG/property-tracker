@@ -1,18 +1,18 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 
 test.describe("Dashboard (Seeded Data)", () => {
-  test.beforeEach(async ({ authenticatedPage: page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto("/dashboard");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
   });
 
-  test("should display dashboard page", async ({ authenticatedPage: page }) => {
+  test("should display dashboard page", async ({ page }) => {
     // Check for dashboard heading
     await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible();
   });
 
-  test("should display Australia properties map when properties exist", async ({ authenticatedPage: page }) => {
+  test("should display Australia properties map when properties exist", async ({ page }) => {
     // With seeded data, the map should render with property pins
     const mapCard = page.getByTestId("australia-map");
     const isVisible = await mapCard.isVisible().catch(() => false);
@@ -24,7 +24,7 @@ test.describe("Dashboard (Seeded Data)", () => {
     }
   });
 
-  test("should show dashboard content", async ({ authenticatedPage: page }) => {
+  test("should show dashboard content", async ({ page }) => {
     // Dashboard should show portfolio metrics, alerts, or navigation
     const hasDollar = await page.locator("text=/\\$[0-9,]+/").first().isVisible().catch(() => false);
     const hasAlert = await page.getByText(/alert/i).first().isVisible().catch(() => false);

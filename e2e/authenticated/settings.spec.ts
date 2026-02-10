@@ -1,8 +1,8 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 
 test.describe("Settings - Theme Toggle", () => {
   test("can toggle dark mode and it persists after reload", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));

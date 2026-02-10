@@ -1,11 +1,12 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 
 test.describe("Dashboard", () => {
   let pageErrors: Error[];
 
-  test.beforeEach(async ({ authenticatedPage: page }) => {
+  test.beforeEach(async ({ page }) => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
+    await page.goto("/dashboard");
   });
 
   test.afterEach(() => {
@@ -15,7 +16,7 @@ test.describe("Dashboard", () => {
   // ── Page structure ─────────────────────────────────────────────────
 
   test("should display welcome heading and description", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     await expect(
       page.getByRole("heading", { name: /welcome to bricktrack/i })
@@ -26,18 +27,18 @@ test.describe("Dashboard", () => {
   });
 
   test("should display the BrickTrack logo in sidebar", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     await expect(sidebar.getByText("BrickTrack")).toBeVisible();
   });
 
-  test("should display the header", async ({ authenticatedPage: page }) => {
+  test("should display the header", async ({ page }) => {
     await expect(page.locator("header")).toBeVisible();
   });
 
   test("should display feedback button in header", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const header = page.locator("header");
     await expect(
@@ -48,7 +49,7 @@ test.describe("Dashboard", () => {
   // ── Stats cards ────────────────────────────────────────────────────
 
   test("should display all three stats cards", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const statsGrid = page.locator("[data-tour='portfolio-summary']");
     await expect(statsGrid.getByText("Properties", { exact: true })).toBeVisible();
@@ -57,13 +58,13 @@ test.describe("Dashboard", () => {
   });
 
   test("should display tax position card", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     await expect(page.getByText(/tax position/i).first()).toBeVisible();
   });
 
   test("properties card links to /properties", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const statsGrid = page.locator("[data-tour='portfolio-summary']");
     const propertiesCard = statsGrid.locator('a[href="/properties"]');
@@ -73,7 +74,7 @@ test.describe("Dashboard", () => {
   });
 
   test("transactions card links to /transactions", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const statsGrid = page.locator("[data-tour='portfolio-summary']");
     const transactionsCard = statsGrid.locator('a[href="/transactions"]');
@@ -83,7 +84,7 @@ test.describe("Dashboard", () => {
   });
 
   test("uncategorized card links to /transactions?category=uncategorized", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const uncategorizedCard = page.locator(
       'a[href="/transactions?category=uncategorized"]'
@@ -96,7 +97,7 @@ test.describe("Dashboard", () => {
   // ── Sidebar navigation (enabled items) ─────────────────────────────
 
   test("should display core sidebar nav items", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     await expect(
@@ -117,7 +118,7 @@ test.describe("Dashboard", () => {
   });
 
   test("dashboard link should be active on /dashboard", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     const dashboardLink = sidebar.getByRole("link", { name: /dashboard/i });
@@ -127,7 +128,7 @@ test.describe("Dashboard", () => {
   // ── Sidebar navigation (feature-flagged items hidden) ──────────────
 
   test("should show enabled and hide disabled feature-flagged nav items", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
 
@@ -154,7 +155,7 @@ test.describe("Dashboard", () => {
   // ── Sidebar settings section ───────────────────────────────────────
 
   test("should display settings section with core items", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     await expect(sidebar.getByText("Settings")).toBeVisible();
@@ -167,7 +168,7 @@ test.describe("Dashboard", () => {
   });
 
   test("should hide feature-flagged settings items", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     await expect(
@@ -193,7 +194,7 @@ test.describe("Dashboard", () => {
   // ── Portfolio navigation ──────────────────────────────────────────
 
   test("should navigate to portfolio from sidebar", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     await sidebar.getByRole("link", { name: "Portfolio", exact: true }).click();
@@ -205,7 +206,7 @@ test.describe("Dashboard", () => {
   // ── Australia map widget ─────────────────────────────────────────
 
   test("should show or hide Australia map based on property count", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     // Wait for dashboard to load
     await page.waitForTimeout(3000);
@@ -223,7 +224,7 @@ test.describe("Dashboard", () => {
   // ── Dashboard widgets ─────────────────────────────────────────────
 
   test("should display Cash Flow widget", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     // CashFlowWidget renders a CardTitle "Cash Flow" in all states (loading, empty, data)
     await expect(
@@ -232,7 +233,7 @@ test.describe("Dashboard", () => {
   });
 
   test("should display Portfolio Summary table", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     // PortfolioSummaryTable renders when metrics exist; may be hidden if no properties
     const heading = page.getByText("Portfolio Summary", { exact: true });
@@ -257,7 +258,7 @@ test.describe("Dashboard", () => {
   // ── Sidebar collapse/expand ────────────────────────────────────────
 
   test("should collapse and expand the sidebar", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
 
@@ -287,7 +288,7 @@ test.describe("Dashboard", () => {
   // ── Sidebar navigation (click-through) ─────────────────────────────
 
   test("should navigate to properties from sidebar", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     await sidebar.getByRole("link", { name: /properties/i }).click();
@@ -295,7 +296,7 @@ test.describe("Dashboard", () => {
   });
 
   test("should navigate to transactions from sidebar", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     await sidebar.getByRole("link", { name: /transactions/i }).click();
@@ -304,7 +305,7 @@ test.describe("Dashboard", () => {
   });
 
   test("should navigate to reports from sidebar", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     await sidebar.getByRole("link", { name: "Reports", exact: true }).click();
@@ -313,7 +314,7 @@ test.describe("Dashboard", () => {
   });
 
   test("should navigate to banking from sidebar", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const sidebar = page.locator("aside");
     await sidebar.getByRole("link", { name: /banking/i }).click();

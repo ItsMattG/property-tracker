@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Task Management", () => {
@@ -8,18 +8,18 @@ test.describe("Task Management", () => {
     test.skip(!featureFlags.tasks, "tasks feature flag is disabled");
   });
 
-  test.beforeEach(async ({ authenticatedPage: page }) => {
+  test.beforeEach(async ({ page }) => {
     // Navigate to tasks page
     await page.goto("/tasks");
   });
 
-  test("shows tasks page with new task button", async ({ authenticatedPage: page }) => {
+  test("shows tasks page with new task button", async ({ page }) => {
     // Verify the tasks page loads and has the new task button
     // Don't check for "No tasks yet" as the user may have existing tasks
     await expect(page.getByRole("button", { name: /new task/i }).first()).toBeVisible();
   });
 
-  test("opens task form and validates inputs", async ({ authenticatedPage: page }) => {
+  test("opens task form and validates inputs", async ({ page }) => {
     await page.getByRole("button", { name: /new task/i }).first().click();
 
     // Wait for the slide-over form to appear
@@ -43,7 +43,7 @@ test.describe("Task Management", () => {
     await expect(page.getByRole("dialog")).not.toBeVisible();
   });
 
-  test("toggles between list and kanban views", async ({ authenticatedPage: page }) => {
+  test("toggles between list and kanban views", async ({ page }) => {
     // Look for view toggle buttons
     const kanbanButton = page.getByRole("button", { name: /kanban|board/i });
 
@@ -58,7 +58,7 @@ test.describe("Task Management", () => {
     }
   });
 
-  test("shows filter dropdowns", async ({ authenticatedPage: page }) => {
+  test("shows filter dropdowns", async ({ page }) => {
     // Verify filter dropdowns are present
     const comboboxes = page.getByRole("combobox");
     const count = await comboboxes.count();

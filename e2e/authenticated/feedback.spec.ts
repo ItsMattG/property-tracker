@@ -1,38 +1,13 @@
-import { test, expect } from "./fixtures/auth";
-import { test as publicTest, expect as publicExpect } from "@playwright/test";
-
-publicTest.describe("Feature Request Board (Public)", () => {
-  publicTest("should display feature list on public page", async ({ page }) => {
-    await page.goto("/feedback");
-
-    await publicExpect(page.getByRole("heading", { name: /feature requests/i })).toBeVisible();
-    await publicExpect(page.getByText(/vote on features/i)).toBeVisible();
-  });
-
-  publicTest("should have filter controls", async ({ page }) => {
-    await page.goto("/feedback");
-
-    // Status filter should be present
-    await publicExpect(page.getByRole("combobox").first()).toBeVisible();
-  });
-
-  publicTest("should have sort controls", async ({ page }) => {
-    await page.goto("/feedback");
-
-    // Sort dropdown should be present (second combobox)
-    const comboboxes = page.getByRole("combobox");
-    await publicExpect(comboboxes).toHaveCount(2);
-  });
-});
+import { test, expect } from "@playwright/test";
 
 test.describe("Feature Request Submission", () => {
-  test("should show Request Feature button when logged in", async ({ authenticatedPage: page }) => {
+  test("should show Request Feature button when logged in", async ({ page }) => {
     await page.goto("/feedback");
 
     await expect(page.getByRole("button", { name: /request feature/i })).toBeVisible();
   });
 
-  test("should open feature request modal", async ({ authenticatedPage: page }) => {
+  test("should open feature request modal", async ({ page }) => {
     await page.goto("/feedback");
 
     await page.getByRole("button", { name: /request feature/i }).click();
@@ -41,7 +16,7 @@ test.describe("Feature Request Submission", () => {
     await expect(page.getByText(/request a feature/i)).toBeVisible();
   });
 
-  test("should have form fields in feature modal", async ({ authenticatedPage: page }) => {
+  test("should have form fields in feature modal", async ({ page }) => {
     await page.goto("/feedback");
 
     await page.getByRole("button", { name: /request feature/i }).click();
@@ -51,7 +26,7 @@ test.describe("Feature Request Submission", () => {
     await expect(page.getByLabel(/category/i)).toBeVisible();
   });
 
-  test("should close modal on cancel", async ({ authenticatedPage: page }) => {
+  test("should close modal on cancel", async ({ page }) => {
     await page.goto("/feedback");
 
     await page.getByRole("button", { name: /request feature/i }).click();
@@ -63,19 +38,19 @@ test.describe("Feature Request Submission", () => {
 });
 
 test.describe("Feedback Button in Header", () => {
-  test("should show feedback button in header", async ({ authenticatedPage: page }) => {
+  test("should show feedback button in header", async ({ page }) => {
     const header = page.locator("header");
     await expect(header.getByRole("button", { name: /feedback/i })).toBeVisible();
   });
 
-  test("should open dropdown with options", async ({ authenticatedPage: page }) => {
+  test("should open dropdown with options", async ({ page }) => {
     await page.getByRole("button", { name: /feedback/i }).click();
 
     await expect(page.getByRole("menuitem", { name: /request feature/i })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: /report bug/i })).toBeVisible();
   });
 
-  test("should open feature request modal from sidebar", async ({ authenticatedPage: page }) => {
+  test("should open feature request modal from sidebar", async ({ page }) => {
     await page.getByRole("button", { name: /feedback/i }).click();
     await page.getByRole("menuitem", { name: /request feature/i }).click();
 
@@ -83,7 +58,7 @@ test.describe("Feedback Button in Header", () => {
     await expect(page.getByText(/request a feature/i)).toBeVisible();
   });
 
-  test("should open bug report modal from sidebar", async ({ authenticatedPage: page }) => {
+  test("should open bug report modal from sidebar", async ({ page }) => {
     await page.getByRole("button", { name: /feedback/i }).click();
     await page.getByRole("menuitem", { name: /report bug/i }).click();
 
@@ -93,21 +68,21 @@ test.describe("Feedback Button in Header", () => {
 });
 
 test.describe("Bug Report Modal", () => {
-  test("should have severity dropdown", async ({ authenticatedPage: page }) => {
+  test("should have severity dropdown", async ({ page }) => {
     await page.getByRole("button", { name: /feedback/i }).click();
     await page.getByRole("menuitem", { name: /report bug/i }).click();
 
     await expect(page.getByLabel(/severity/i)).toBeVisible();
   });
 
-  test("should have description field", async ({ authenticatedPage: page }) => {
+  test("should have description field", async ({ page }) => {
     await page.getByRole("button", { name: /feedback/i }).click();
     await page.getByRole("menuitem", { name: /report bug/i }).click();
 
     await expect(page.getByLabel(/what happened/i)).toBeVisible();
   });
 
-  test("should have steps to reproduce field", async ({ authenticatedPage: page }) => {
+  test("should have steps to reproduce field", async ({ page }) => {
     await page.getByRole("button", { name: /feedback/i }).click();
     await page.getByRole("menuitem", { name: /report bug/i }).click();
 
@@ -116,11 +91,11 @@ test.describe("Bug Report Modal", () => {
 });
 
 test.describe("Settings Navigation", () => {
-  test("should have feature requests link in settings", async ({ authenticatedPage: page }) => {
+  test("should have feature requests link in settings", async ({ page }) => {
     await expect(page.getByRole("link", { name: /feature requests/i })).toBeVisible();
   });
 
-  test("should navigate to feature requests settings", async ({ authenticatedPage: page }) => {
+  test("should navigate to feature requests settings", async ({ page }) => {
     await page.getByRole("link", { name: /feature requests/i }).click();
     await expect(page).toHaveURL(/settings\/feature-requests/);
   });

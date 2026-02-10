@@ -22,7 +22,7 @@ setup("authenticate", async ({ page }) => {
   await page.getByRole("button", { name: /sign in/i }).click();
   await page.waitForURL("**/dashboard", { timeout: 15000 });
 
-  // Save signed-in state to file for reuse by all authenticated tests
+  // Save signed-in state for reuse by authenticated/core-loop projects
   mkdirSync(path.dirname(authFile), { recursive: true });
   await page.context().storageState({ path: authFile });
 });

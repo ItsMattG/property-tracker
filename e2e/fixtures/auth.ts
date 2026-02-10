@@ -1,3 +1,13 @@
+/**
+ * Legacy auth fixture — kept for backward compatibility.
+ *
+ * With the new project-based auth (auth.setup.ts + storageState),
+ * authenticated projects load cookies automatically. Tests should
+ * use standard `{ page }` from @playwright/test instead.
+ *
+ * This fixture is only needed if a test is run outside the
+ * "authenticated" or "core-loop" projects.
+ */
 import { test as base, Page } from "@playwright/test";
 
 const TEST_USER_EMAIL = process.env.E2E_USER_EMAIL;

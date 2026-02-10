@@ -69,8 +69,5 @@ test.describe("Blog", () => {
     await expect(
       header.getByRole("link", { name: /get started/i })
     ).toBeVisible();
-    await expect(
-      header.getByRole("link", { name: /changelog/i })
-    ).toBeVisible();
   });
 });

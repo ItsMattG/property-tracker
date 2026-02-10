@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Changelog", () => {
   test("public changelog page loads and shows entries", async ({ page }) => {
-    await page.goto("/changelog");
+    await page.goto("/changelog", { waitUntil: "domcontentloaded" });
 
     // Verify page title
     await expect(page.locator("h1")).toContainText("Changelog");
@@ -15,7 +15,7 @@ test.describe("Changelog", () => {
   });
 
   test("changelog entry detail page loads", async ({ page }) => {
-    await page.goto("/changelog");
+    await page.goto("/changelog", { waitUntil: "domcontentloaded" });
 
     // Click on an entry (if exists)
     const entry = page.locator("a[href^='/changelog/']").first();
@@ -28,7 +28,7 @@ test.describe("Changelog", () => {
   });
 
   test("category filters work", async ({ page }) => {
-    await page.goto("/changelog");
+    await page.goto("/changelog", { waitUntil: "domcontentloaded" });
 
     // Wait for tabs to be rendered
     const featuresTab = page.getByRole("tab", { name: "Features" });

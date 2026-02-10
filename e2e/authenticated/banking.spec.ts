@@ -1,9 +1,9 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 
 test.describe("Bank Feeds", () => {
   let pageErrors: Error[];
 
-  test.beforeEach(async ({ authenticatedPage: page }) => {
+  test.beforeEach(async ({ page }) => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
   });
@@ -12,12 +12,12 @@ test.describe("Bank Feeds", () => {
     expect(pageErrors, "No uncaught page errors").toHaveLength(0);
   });
 
-  test("should display Bank Feeds page with heading", async ({ authenticatedPage: page }) => {
+  test("should display Bank Feeds page with heading", async ({ page }) => {
     await page.goto("/banking");
     await expect(page.getByRole("heading", { name: /bank feeds/i })).toBeVisible();
   });
 
-  test("should show account count or empty state", async ({ authenticatedPage: page }) => {
+  test("should show account count or empty state", async ({ page }) => {
     await page.goto("/banking");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
@@ -30,19 +30,19 @@ test.describe("Bank Feeds", () => {
     expect(hasAccountCount || hasEmptyState || hasHeading).toBe(true);
   });
 
-  test("should show Connect Bank button", async ({ authenticatedPage: page }) => {
+  test("should show Connect Bank button", async ({ page }) => {
     await page.goto("/banking");
     await expect(
       page.getByRole("link", { name: /connect bank/i })
     ).toBeVisible();
   });
 
-  test("should navigate to connect page directly", async ({ authenticatedPage: page }) => {
+  test("should navigate to connect page directly", async ({ page }) => {
     await page.goto("/banking/connect");
     await expect(page).toHaveURL(/banking\/connect/);
   });
 
-  test("sidebar should show Bank Feeds label", async ({ authenticatedPage: page }) => {
+  test("sidebar should show Bank Feeds label", async ({ page }) => {
     await page.goto("/banking");
     // The sidebar link should say "Bank Feeds" not "Banking"
     await expect(

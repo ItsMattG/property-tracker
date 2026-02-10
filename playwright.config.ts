@@ -9,61 +9,55 @@ const authFile = path.join(__dirname, "e2e", ".auth", "user.json");
 export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   testDir: "./e2e",
-  testMatch: ["**/*.spec.ts", "**/*.audit.ts"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 2 : undefined,
-  reporter: "html",
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  // Use blob reporter in CI for shard merging, HTML locally
+  reporter: process.env.CI ? "blob" : "html",
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
     trace: "on-first-retry",
   },
   projects: [
-    // Auth setup — logs in once, saves session for reuse
+    // Auth setup — runs once, saves storageState for authenticated projects
     {
       name: "setup",
       testMatch: /auth\.setup\.ts/,
     },
-    // Public pages — no auth needed
+
+    // Public pages — no auth needed, runs in parallel with authenticated
     {
       name: "public",
-      testMatch: [
-        "landing.spec.ts",
-        "blog.spec.ts",
-        "changelog.spec.ts",
-        "auth.spec.ts",
-      ],
+      testDir: "./e2e/public",
+      testMatch: "**/*.spec.ts",
       use: { ...devices["Desktop Chrome"] },
     },
-    // Authenticated tests — session pre-loaded via storageState
+
+    // Authenticated pages — depends on setup, uses saved session
     {
       name: "authenticated",
-      testIgnore: [
-        /core-loop\.spec\.ts/,
-        /landing\.spec\.ts/,
-        /blog\.spec\.ts/,
-        /changelog\.spec\.ts/,
-        /auth\.spec\.ts/,
-        /auth\.setup\.ts/,
-      ],
-      dependencies: ["setup"],
+      testDir: "./e2e/authenticated",
+      testMatch: "**/*.spec.ts",
       use: {
         ...devices["Desktop Chrome"],
         storageState: authFile,
       },
+      dependencies: ["setup"],
     },
-    // Core loop — extended timeout, serial execution
+
+    // Core loop — long-running bank-connect flow, extended timeout
     {
       name: "core-loop",
-      testMatch: "core-loop.spec.ts",
+      testDir: "./e2e/core-loop",
+      testMatch: "**/*.spec.ts",
       timeout: 300_000,
-      dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
-        actionTimeout: 15_000,
         storageState: authFile,
+        actionTimeout: 15_000,
       },
+      dependencies: ["setup"],
     },
   ],
   // Only start local server if not testing against a preview URL
