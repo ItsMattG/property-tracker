@@ -127,7 +127,7 @@ export function detectUnexpectedExpense(
     alertType: "unexpected_expense",
     severity: "info",
     description: `New expense of $${absAmount.toFixed(2)} from "${transaction.description}"`,
-    suggestedAction: "Categorize and verify this transaction",
+    suggestedAction: "Categorise and verify this transaction",
     metadata: JSON.stringify({
       amount: absAmount,
       merchant,

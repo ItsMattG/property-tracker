@@ -1,5 +1,5 @@
 export function eofySuggestionsSubject(): string {
-  return "EOFY Tax Optimization Suggestions";
+  return "EOFY Tax Optimisation Suggestions";
 }
 
 export function eofySuggestionsTemplate(data: {
@@ -17,8 +17,8 @@ export function eofySuggestionsTemplate(data: {
   <h1 style="color: #1a1a1a;">EOFY is approaching!</h1>
 
   <p style="color: #666; font-size: 16px; line-height: 1.5;">
-    We've found <strong>${data.suggestionCount}</strong> tax optimization suggestion${data.suggestionCount !== 1 ? "s" : ""}
-    for ${data.financialYear} that could help you maximize your deductions.
+    We've found <strong>${data.suggestionCount}</strong> tax optimisation suggestion${data.suggestionCount !== 1 ? "s" : ""}
+    for ${data.financialYear} that could help you maximise your deductions.
   </p>
 
   <div style="background: #f5f5f5; border-radius: 8px; padding: 20px; margin: 20px 0;">

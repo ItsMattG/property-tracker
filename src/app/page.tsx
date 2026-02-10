@@ -68,7 +68,7 @@ export default async function HomePage() {
             <span className="text-primary">Tax time sorted.</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            BrickTrack connects to your bank, categorizes every transaction
+            BrickTrack connects to your bank, categorises every transaction
             for tax, and generates ATO-ready reports automatically. No more
             spreadsheets. No more stress at EOFY.
           </p>
@@ -194,10 +194,10 @@ export default async function HomePage() {
               <div className="flex-1">
                 <span className="text-sm font-medium text-primary">Banking</span>
                 <h3 className="text-2xl font-bold mt-1 mb-3">
-                  Transactions that categorize themselves
+                  Transactions that categorise themselves
                 </h3>
                 <p className="text-muted-foreground">
-                  Connect your bank once. Transactions import daily and categorize
+                  Connect your bank once. Transactions import daily and categorise
                   automatically using smart rules. Just review and approve.
                 </p>
               </div>
@@ -214,7 +214,7 @@ export default async function HomePage() {
           </h2>
           <div className="space-y-4">
             {[
-              "Bank transactions import and categorize automatically",
+              "Bank transactions import and categorise automatically",
               "ATO expense codes applied without manual entry",
               "Export-ready reports for your accountant or MyTax",
               "Unlimited properties across multiple entities",

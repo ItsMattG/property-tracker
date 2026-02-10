@@ -192,7 +192,7 @@ export default async function ShareViewPage({ params }: PageProps) {
                 </Link>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Track, analyze, and share your property investment portfolio
+                Track, analyse, and share your property investment portfolio
               </p>
             </div>
             <Link href="/sign-up">

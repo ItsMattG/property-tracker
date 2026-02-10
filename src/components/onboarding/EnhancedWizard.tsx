@@ -190,7 +190,7 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
               <div className="space-y-2">
                 <h2 className="text-2xl font-semibold">Welcome to BrickTrack</h2>
                 <p className="text-muted-foreground">
-                  Track your properties, automate expenses, and optimize your tax
+                  Track your properties, automate expenses, and optimise your tax
                   position.
                 </p>
               </div>
@@ -378,7 +378,7 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                 <CompletionItem label="Connect your bank" status="skipped" />
                 <div className="pt-2 border-t mt-3">
                   <p className="text-xs text-muted-foreground mb-2">Still to do:</p>
-                  <CompletionItem label="Categorize 10 transactions" status="pending" />
+                  <CompletionItem label="Categorise 10 transactions" status="pending" />
                   <CompletionItem label="Set up recurring transaction" status="pending" />
                   <CompletionItem label="Add property value estimate" status="pending" />
                 </div>

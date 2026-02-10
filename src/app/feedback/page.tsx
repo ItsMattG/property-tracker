@@ -12,7 +12,7 @@ export default function FeedbackPage() {
         <h1 className="text-3xl font-bold mb-2">Feature Requests</h1>
         <p className="text-muted-foreground">
           Vote on features you&apos;d like to see, or suggest your own ideas.
-          We use your feedback to prioritize our roadmap.
+          We use your feedback to prioritise our roadmap.
         </p>
       </div>
 

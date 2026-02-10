@@ -28,7 +28,7 @@ const PLANS = [
     price: "$14/mo",
     features: [
       "Unlimited properties",
-      "Bank feeds & auto-categorization",
+      "Bank feeds & auto-categorisation",
       "Tax reports & MyTax export",
       "Email forwarding",
       "AI chat assistant",
@@ -74,7 +74,7 @@ export default function BillingPage() {
       utils.billing.getSubscription.invalidate();
     }
     if (searchParams?.get("canceled") === "true") {
-      toast.info("Checkout canceled.");
+      toast.info("Checkout cancelled.");
     }
   }, [searchParams, utils]);
 

@@ -49,7 +49,7 @@ export function SuggestionList() {
         <Sparkles className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-medium">No suggestions</h3>
         <p className="text-muted-foreground mb-4">
-          You're all caught up on tax optimization opportunities.
+          You're all caught up on tax optimisation opportunities.
         </p>
         <Button
           variant="outline"
@@ -67,7 +67,7 @@ export function SuggestionList() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-medium">
-          {suggestions.length} Optimization{suggestions.length !== 1 ? "s" : ""} Found
+          {suggestions.length} Optimisation{suggestions.length !== 1 ? "s" : ""} Found
         </h3>
         <Button
           variant="ghost"

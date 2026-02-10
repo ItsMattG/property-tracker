@@ -44,7 +44,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     id: "categorize_10",
-    label: "Categorize 10 transactions",
+    label: "Categorise 10 transactions",
     actionLink: "/transactions",
     threshold: 10,
     countKey: "categorizedCount",

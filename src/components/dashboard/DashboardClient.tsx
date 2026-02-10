@@ -331,7 +331,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               getTrendBorderClass(trends?.uncategorizedCount.current ?? 0, trends?.uncategorizedCount.previous ?? null, true)
             )}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Uncategorized</CardTitle>
+                <CardTitle className="text-sm font-medium">Uncategorised</CardTitle>
                 <AlertCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -352,7 +352,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
                   {stats?.uncategorizedCount === 0
-                    ? "All transactions categorized!"
+                    ? "All transactions categorised!"
                     : "Transactions needing review"}
                 </p>
               </CardContent>

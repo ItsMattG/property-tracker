@@ -21,7 +21,7 @@ export default function TermsPage() {
         <h2>2. Description of Service</h2>
         <p>
           BrickTrack is a property portfolio management platform that helps Australian
-          investors track their properties, connect bank accounts, categorize transactions,
+          investors track their properties, connect bank accounts, categorise transactions,
           and generate reports for tax purposes.
         </p>
 

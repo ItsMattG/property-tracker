@@ -116,7 +116,7 @@ export default function BankingConnectPage() {
               <div>
                 <h4 className="font-medium">Automatic syncing</h4>
                 <p className="text-sm text-muted-foreground">
-                  Transactions are automatically imported and categorized. No
+                  Transactions are automatically imported and categorised. No
                   more manual data entry or CSV uploads.
                 </p>
               </div>

@@ -302,7 +302,7 @@ export const categorizationRouter = router({
       if (!process.env.ANTHROPIC_API_KEY) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: "AI categorization is not configured. Please set the ANTHROPIC_API_KEY environment variable.",
+          message: "AI categorisation is not configured. Please set the ANTHROPIC_API_KEY environment variable.",
         });
       }
 

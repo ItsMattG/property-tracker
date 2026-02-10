@@ -151,7 +151,7 @@ export function SuggestionCard({
               </TooltipTrigger>
               <TooltipContent>
                 {hasOverride
-                  ? `Categorize as "${getCategoryLabel(overrideCategory)}"`
+                  ? `Categorise as "${getCategoryLabel(overrideCategory)}"`
                   : `Accept AI suggestion: "${getCategoryLabel(transaction.suggestedCategory || "uncategorized")}"`}
               </TooltipContent>
             </Tooltip>

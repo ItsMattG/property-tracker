@@ -42,7 +42,7 @@ export const categories: CategoryInfo[] = [
   // Other
   { value: "transfer", label: "Transfer", type: "other", isDeductible: false },
   { value: "personal", label: "Personal (Not Property)", type: "other", isDeductible: false },
-  { value: "uncategorized", label: "Uncategorized", type: "other", isDeductible: false },
+  { value: "uncategorized", label: "Uncategorised", type: "other", isDeductible: false },
 ];
 
 export const categoryMap = new Map(categories.map((c) => [c.value, c]));

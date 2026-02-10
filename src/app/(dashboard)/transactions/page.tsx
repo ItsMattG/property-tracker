@@ -280,7 +280,7 @@ export default function TransactionsPage() {
         <div>
           <h2 className="text-2xl font-bold">Transactions</h2>
           <p className="text-muted-foreground">
-            Review and categorize your transactions
+            Review and categorise your transactions
           </p>
         </div>
         <div className="flex items-center gap-2">

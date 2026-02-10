@@ -78,7 +78,7 @@ export default async function LoanPackViewPage({ params }: PageProps) {
           <div className="flex flex-col items-center gap-4 text-center">
             <div>
               <p className="text-sm text-muted-foreground">Powered by <Link href="/" className="font-medium text-foreground hover:underline">BrickTrack</Link></p>
-              <p className="text-xs text-muted-foreground mt-1">Track, analyze, and share your property investment portfolio</p>
+              <p className="text-xs text-muted-foreground mt-1">Track, analyse, and share your property investment portfolio</p>
             </div>
             <Link href="/sign-up"><Button variant="outline" size="sm">Create Your Free Account</Button></Link>
           </div>

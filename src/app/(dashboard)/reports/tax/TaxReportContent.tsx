@@ -53,13 +53,13 @@ export function TaxReportContent() {
         </p>
       </div>
 
-      {/* Tax Optimization Suggestions */}
+      {/* Tax Optimisation Suggestions */}
       {suggestionCount && suggestionCount.count > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Lightbulb className="w-5 h-5 text-amber-500" />
-              Tax Optimization Suggestions
+              Tax Optimisation Suggestions
             </CardTitle>
           </CardHeader>
           <CardContent>
