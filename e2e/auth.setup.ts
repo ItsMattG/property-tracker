@@ -23,45 +23,47 @@ setup("authenticate", async ({ page }) => {
     return;
   }
 
+  // Attempt sign-in first
   console.log(`[auth] Navigating to /sign-in...`);
   await page.goto("/sign-in", { waitUntil: "networkidle" });
-  console.log(`[auth] Current URL: ${page.url()}`);
 
-  // Wait for form to be ready
-  await expect(page.getByLabel(/email/i)).toBeVisible({ timeout: 10_000 });
-  console.log(`[auth] Email field visible, filling form...`);
-
+  await expect(page.getByLabel(/email/i)).toBeVisible({ timeout: 15_000 });
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
-
-  console.log(`[auth] Clicking sign in...`);
   await page.getByRole("button", { name: /sign in/i }).click();
 
-  // Wait briefly, then check what happened
-  await page.waitForTimeout(5_000);
-  const urlAfterClick = page.url();
-  console.log(`[auth] URL after click: ${urlAfterClick}`);
+  // Wait for either dashboard redirect or error message
+  const result = await Promise.race([
+    page
+      .waitForURL("**/dashboard", { timeout: 30_000 })
+      .then(() => "dashboard" as const),
+    page
+      .locator("text=Invalid email or password")
+      .waitFor({ state: "visible", timeout: 30_000 })
+      .then(() => "invalid-credentials" as const),
+  ]);
 
-  // Check for error messages
-  const errorText = await page.locator("text=Invalid").textContent().catch(() => null);
-  if (errorText) {
-    console.error(`[auth] Login error: ${errorText}`);
-    // Capture screenshot for debugging
-    await page.screenshot({ path: "test-results/auth-error.png" });
-    throw new Error(`Login failed with error: ${errorText}`);
-  }
-
-  // If we're already on dashboard, great
-  if (urlAfterClick.includes("/dashboard")) {
-    console.log(`[auth] Already on dashboard!`);
+  if (result === "dashboard") {
+    console.log("[auth] Sign-in successful!");
   } else {
-    console.log(`[auth] Not on dashboard yet, waiting...`);
-    await page.waitForURL("**/dashboard", { timeout: 60_000 });
+    // User doesn't exist on this environment — create via sign-up
+    console.log("[auth] User not found — creating account via sign-up...");
+
+    await page.goto("/sign-up", { waitUntil: "networkidle" });
+    await expect(page.getByLabel(/name/i)).toBeVisible({ timeout: 15_000 });
+
+    await page.getByLabel(/name/i).fill("E2E Test User");
+    await page.getByLabel(/email/i).fill(email);
+    await page.getByLabel(/password/i).fill(password);
+    await page.getByRole("button", { name: /create account/i }).click();
+
+    // After sign-up, BetterAuth auto-logs in and redirects to /dashboard
+    await page.waitForURL("**/dashboard", { timeout: 30_000 });
+    console.log("[auth] Account created and signed in!");
   }
 
-  console.log(`[auth] Login successful! URL: ${page.url()}`);
-
-  // Save signed-in state for reuse by authenticated/core-loop projects.
+  // Save signed-in state for reuse by other projects/shards
   mkdirSync(path.dirname(authFile), { recursive: true });
   await page.context().storageState({ path: authFile });
+  console.log("[auth] Auth state saved.");
 });
