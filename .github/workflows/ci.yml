@@ -247,7 +247,7 @@ jobs:
           exit 1
 
       - name: Run E2E tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
-        run: pnpm run test:e2e -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm exec playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
           PLAYWRIGHT_BASE_URL: https://staging.bricktrack.au
