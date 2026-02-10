@@ -187,10 +187,63 @@ jobs:
           BETTER_AUTH_URL: http://localhost:3000
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
+  e2e-auth:
+    name: E2E Auth
+    runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 10
+    environment: production
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Wait for staging deploy
+        run: |
+          echo "Waiting for staging to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf https://staging.bricktrack.au > /dev/null 2>&1; then
+              echo "Staging is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting 10s..."
+            sleep 10
+          done
+          echo "Staging not ready after 5 minutes"
+          exit 1
+
+      - name: Authenticate E2E user
+        run: pnpm exec playwright test --project=setup
+        env:
+          PLAYWRIGHT_BASE_URL: https://staging.bricktrack.au
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+
+      - name: Upload auth state
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-auth-state
+          path: e2e/.auth/
+          retention-days: 1
+
   e2e-tests:
     name: E2E Tests (Shard ${{ matrix.shardIndex }}/4)
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [e2e-auth]
     timeout-minutes: 30
     environment: production
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
@@ -232,19 +285,11 @@ jobs:
         run: pnpm exec playwright install-deps chromium
         if: steps.playwright-cache.outputs.cache-hit == 'true'
 
-      - name: Wait for staging deploy
-        run: |
-          echo "Waiting for staging to be ready..."
-          for i in $(seq 1 30); do
-            if curl -sf https://staging.bricktrack.au > /dev/null 2>&1; then
-              echo "Staging is ready!"
-              exit 0
-            fi
-            echo "Attempt $i/30 - waiting 10s..."
-            sleep 10
-          done
-          echo "Staging not ready after 5 minutes"
-          exit 1
+      - name: Download auth state
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-auth-state
+          path: e2e/.auth/
 
       - name: Run E2E tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         run: pnpm exec playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
