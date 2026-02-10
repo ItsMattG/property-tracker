@@ -1,9 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 import { config } from "dotenv";
+import path from "path";
 
 config({ path: ".env.local" });
 
-const authFile = ".auth/user.json";
+const authFile = path.join(__dirname, "e2e", ".auth", "user.json");
 
 export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",

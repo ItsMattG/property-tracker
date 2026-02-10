@@ -12,7 +12,7 @@
 
 # testing
 /coverage
-/.auth
+/e2e/.auth/
 /playwright-report
 /blob-report
 /test-results
