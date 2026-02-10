@@ -4,8 +4,8 @@ import path from "path";
 
 const authFile = path.join(__dirname, ".auth", "user.json");
 
-setup("authenticate", async ({ request }) => {
-  // If auth file already exists (pre-authenticated by CI), skip login entirely.
+setup("authenticate", async ({ page }) => {
+  // If auth file already exists (pre-authenticated by CI), skip login.
   // This allows a single CI job to authenticate once and share the session
   // across all shards via artifact download.
   if (existsSync(authFile)) {
@@ -23,20 +23,15 @@ setup("authenticate", async ({ request }) => {
     return;
   }
 
-  // API-based login: POST directly to BetterAuth sign-in endpoint.
-  // This is faster and more reliable than browser-based form login.
-  const response = await request.post("/api/auth/sign-in/email", {
-    data: { email, password },
-  });
+  // Browser-based login via the sign-in form.
+  // BetterAuth requires CSRF tokens that the form provides automatically.
+  await page.goto("/sign-in");
+  await page.getByLabel(/email/i).fill(email);
+  await page.getByLabel(/password/i).fill(password);
+  await page.getByRole("button", { name: /sign in/i }).click();
+  await page.waitForURL("**/dashboard", { timeout: 30_000 });
 
-  if (!response.ok()) {
-    throw new Error(
-      `Auth API login failed (${response.status()}): ${await response.text()}`
-    );
-  }
-
-  // The API response sets session cookies on the request context.
-  // Save them as storageState for authenticated/core-loop projects.
+  // Save signed-in state for reuse by authenticated/core-loop projects.
   mkdirSync(path.dirname(authFile), { recursive: true });
-  await request.storageState({ path: authFile });
+  await page.context().storageState({ path: authFile });
 });
