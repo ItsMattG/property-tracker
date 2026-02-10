@@ -1,4 +1,4 @@
-import { test as setup } from "@playwright/test";
+import { test as setup, expect } from "@playwright/test";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
 
@@ -8,8 +8,6 @@ setup("authenticate", async ({ page }) => {
   setup.setTimeout(120_000);
 
   // If auth file already exists (pre-authenticated by CI), skip login.
-  // This allows a single CI job to authenticate once and share the session
-  // across all shards via artifact download.
   if (existsSync(authFile)) {
     console.log("Auth file already exists — skipping login");
     return;
@@ -25,13 +23,43 @@ setup("authenticate", async ({ page }) => {
     return;
   }
 
-  // Browser-based login via the sign-in form.
-  // BetterAuth requires CSRF tokens that the form provides automatically.
-  await page.goto("/sign-in");
+  console.log(`[auth] Navigating to /sign-in...`);
+  await page.goto("/sign-in", { waitUntil: "networkidle" });
+  console.log(`[auth] Current URL: ${page.url()}`);
+
+  // Wait for form to be ready
+  await expect(page.getByLabel(/email/i)).toBeVisible({ timeout: 10_000 });
+  console.log(`[auth] Email field visible, filling form...`);
+
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
+
+  console.log(`[auth] Clicking sign in...`);
   await page.getByRole("button", { name: /sign in/i }).click();
-  await page.waitForURL("**/dashboard", { timeout: 30_000 });
+
+  // Wait briefly, then check what happened
+  await page.waitForTimeout(5_000);
+  const urlAfterClick = page.url();
+  console.log(`[auth] URL after click: ${urlAfterClick}`);
+
+  // Check for error messages
+  const errorText = await page.locator("text=Invalid").textContent().catch(() => null);
+  if (errorText) {
+    console.error(`[auth] Login error: ${errorText}`);
+    // Capture screenshot for debugging
+    await page.screenshot({ path: "test-results/auth-error.png" });
+    throw new Error(`Login failed with error: ${errorText}`);
+  }
+
+  // If we're already on dashboard, great
+  if (urlAfterClick.includes("/dashboard")) {
+    console.log(`[auth] Already on dashboard!`);
+  } else {
+    console.log(`[auth] Not on dashboard yet, waiting...`);
+    await page.waitForURL("**/dashboard", { timeout: 60_000 });
+  }
+
+  console.log(`[auth] Login successful! URL: ${page.url()}`);
 
   // Save signed-in state for reuse by authenticated/core-loop projects.
   mkdirSync(path.dirname(authFile), { recursive: true });
