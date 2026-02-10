@@ -4,10 +4,10 @@ import { seed } from "@/lib/seed";
 import type { SeedMode } from "@/lib/seed";
 
 export async function POST(request: NextRequest) {
-  // Block in production (allow staging/preview deployments)
-  const isVercelProduction = process.env.VERCEL_ENV === "production";
-  const isLocalProd = process.env.NODE_ENV === "production" && !process.env.VERCEL_ENV;
-  if (isVercelProduction || isLocalProd) {
+  // Block in production (allow staging/preview via VERCEL_GIT_COMMIT_REF)
+  const gitBranch = process.env.VERCEL_GIT_COMMIT_REF;
+  const isProductionBranch = !gitBranch || gitBranch === "main";
+  if (process.env.NODE_ENV === "production" && isProductionBranch) {
     return NextResponse.json({ error: "Seed endpoint is not available in production" }, { status: 403 });
   }
 
