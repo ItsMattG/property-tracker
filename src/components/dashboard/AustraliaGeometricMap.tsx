@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+
 import {
   Tooltip,
   TooltipContent,
@@ -187,9 +187,8 @@ export function AustraliaGeometricMap({ properties }: AustraliaPropertiesMapProp
 
   return (
     <Card data-testid="australia-map">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium">Property Locations</CardTitle>
-        <MapPin className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent className="flex items-center justify-center pb-4">
         <TooltipProvider delayDuration={0}>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Grid3X3, Triangle } from "lucide-react";
+import { Grid3X3, Triangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
