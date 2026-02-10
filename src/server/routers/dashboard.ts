@@ -145,7 +145,7 @@ export const dashboardRouter = router({
 
           // Property count trend: current active vs active before start of current month
           const activeProperties = await ctx.db
-            .select({ id: properties.id, createdAt: properties.createdAt })
+            .select({ id: properties.id, createdAt: properties.createdAt, purchasePrice: properties.purchasePrice })
             .from(properties)
             .where(
               and(
@@ -233,8 +233,13 @@ export const dashboardRouter = router({
                 desc(propertyValues.createdAt)
               );
 
-            currentPortfolioValue = currentValues.reduce(
-              (sum: number, row) => sum + parseFloat(row.estimatedValue || "0"),
+            // Build map of latest valuations, fall back to purchasePrice
+            const valuationMap = new Map<string, number>();
+            for (const row of currentValues) {
+              valuationMap.set(row.propertyId, parseFloat(row.estimatedValue || "0"));
+            }
+            currentPortfolioValue = activeProperties.reduce(
+              (sum, p) => sum + (valuationMap.get(p.id) || parseFloat(p.purchasePrice || "0")),
               0
             );
 
@@ -258,9 +263,16 @@ export const dashboardRouter = router({
                 desc(propertyValues.createdAt)
               );
 
-            if (prevValues.length > 0) {
-              previousPortfolioValue = prevValues.reduce(
-                (sum: number, row) => sum + parseFloat(row.estimatedValue || "0"),
+            // For previous period, fall back to purchasePrice for properties without prior valuations
+            const prevValuationMap = new Map<string, number>();
+            for (const row of prevValues) {
+              prevValuationMap.set(row.propertyId, parseFloat(row.estimatedValue || "0"));
+            }
+            // Only compute previous if at least some properties existed before this month
+            const propertiesBeforeMonth = activeProperties.filter(p => p.createdAt < startOfMonth);
+            if (propertiesBeforeMonth.length > 0) {
+              previousPortfolioValue = propertiesBeforeMonth.reduce(
+                (sum, p) => sum + (prevValuationMap.get(p.id) || parseFloat(p.purchasePrice || "0")),
                 0
               );
             }
