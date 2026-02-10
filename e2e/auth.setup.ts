@@ -5,6 +5,8 @@ import path from "path";
 const authFile = path.join(__dirname, ".auth", "user.json");
 
 setup("authenticate", async ({ page }) => {
+  setup.setTimeout(120_000);
+
   // If auth file already exists (pre-authenticated by CI), skip login.
   // This allows a single CI job to authenticate once and share the session
   // across all shards via artifact download.
