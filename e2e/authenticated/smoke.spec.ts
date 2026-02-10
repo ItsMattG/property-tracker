@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 
 const TEST_PROPERTY = {
   address: "1 Smoke Test Street",
@@ -14,9 +14,10 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
   test.setTimeout(60000);
 
   test("can log in, create a property, and delete it", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     // Step 1: Verify we're logged in and on the dashboard
+    await page.goto("/dashboard");
     await expect(page).toHaveURL(/dashboard/);
 
     // Step 2: Clean up any leftover smoke test property from a previous failed run

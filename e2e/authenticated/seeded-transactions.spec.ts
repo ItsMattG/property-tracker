@@ -1,9 +1,9 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 
 test.describe("Transactions (Seeded Data)", () => {
   let pageErrors: Error[];
 
-  test.beforeEach(async ({ authenticatedPage: page }) => {
+  test.beforeEach(async ({ page }) => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
     await page.goto("/transactions");
@@ -15,11 +15,11 @@ test.describe("Transactions (Seeded Data)", () => {
     expect(pageErrors, "No uncaught page errors").toHaveLength(0);
   });
 
-  test("should display transactions page", async ({ authenticatedPage: page }) => {
+  test("should display transactions page", async ({ page }) => {
     await expect(page.getByRole("heading", { name: /transaction/i }).first()).toBeVisible();
   });
 
-  test("should show transactions content or empty state", async ({ authenticatedPage: page }) => {
+  test("should show transactions content or empty state", async ({ page }) => {
     const hasTable = await page.getByRole("table").first().isVisible().catch(() => false);
     const hasDollar = await page.locator("text=/\\$[0-9,]+/").first().isVisible().catch(() => false);
     const hasCategory = await page.getByText(/rental|income|expense|water|council|insurance/i).first().isVisible().catch(() => false);
@@ -29,7 +29,7 @@ test.describe("Transactions (Seeded Data)", () => {
     expect(hasTable || hasDollar || hasCategory || hasNoTransactions || hasDescription || hasHeading).toBe(true);
   });
 
-  test("should show allocation status text when transactions exist", async ({ authenticatedPage: page }) => {
+  test("should show allocation status text when transactions exist", async ({ page }) => {
     const hasTable = await page.getByRole("table").first().isVisible().catch(() => false);
     if (!hasTable) {
       // No transactions to check allocation display for — skip gracefully
@@ -42,13 +42,13 @@ test.describe("Transactions (Seeded Data)", () => {
     expect(hasAllocated).toBe(true);
   });
 
-  test("should show Export CSV button", async ({ authenticatedPage: page }) => {
+  test("should show Export CSV button", async ({ page }) => {
     await expect(
       page.getByRole("button", { name: /export csv/i })
     ).toBeVisible();
   });
 
-  test("should show category dropdowns when transactions exist", async ({ authenticatedPage: page }) => {
+  test("should show category dropdowns when transactions exist", async ({ page }) => {
     const hasTable = await page.getByRole("table").first().isVisible().catch(() => false);
     if (!hasTable) return;
 

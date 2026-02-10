@@ -1,6 +1,6 @@
-import { test, expect } from "./fixtures/auth";
-import { seedDecoyData, cleanupDecoyData } from "./fixtures/decoy-data";
-import { closeDbConnection } from "./fixtures/db";
+import { test, expect } from "@playwright/test";
+import { seedDecoyData, cleanupDecoyData } from "../fixtures/decoy-data";
+import { closeDbConnection } from "../fixtures/db";
 
 test.describe("Cross-Tenant Access Protection", () => {
   let decoyIds: { userId: string; propertyId: string; transactionId: string | null } | null = null;
@@ -39,7 +39,7 @@ test.describe("Cross-Tenant Access Protection", () => {
     test.skip(seedingFailed, "Database pool exhausted - skipping cross-tenant tests");
   });
 
-  test("cannot access another user's property via direct URL", async ({ authenticatedPage: page }) => {
+  test("cannot access another user's property via direct URL", async ({ page }) => {
     // decoyIds is guaranteed non-null here due to beforeEach skip
     const ids = decoyIds!;
 
@@ -59,7 +59,7 @@ test.describe("Cross-Tenant Access Protection", () => {
     expect(notFoundOrRedirect).toBe(true);
   });
 
-  test("cannot see another user's transactions", async ({ authenticatedPage: page }) => {
+  test("cannot see another user's transactions", async ({ page }) => {
     const ids = decoyIds!;
 
     // Navigate to transactions with decoy property filter
@@ -72,7 +72,7 @@ test.describe("Cross-Tenant Access Protection", () => {
     expect(content).not.toContain("SHOULD NOT BE VISIBLE");
   });
 
-  test("cannot edit another user's property", async ({ authenticatedPage: page }) => {
+  test("cannot edit another user's property", async ({ page }) => {
     const ids = decoyIds!;
 
     // Try to access edit page for decoy property
@@ -91,7 +91,7 @@ test.describe("Cross-Tenant Access Protection", () => {
     expect(notFoundOrRedirect).toBe(true);
   });
 
-  test("API rejects access to another user's property", async ({ authenticatedPage: page, request }) => {
+  test("API rejects access to another user's property", async ({ page, request }) => {
     const ids = decoyIds!;
 
     // First visit the app to get authenticated session

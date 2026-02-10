@@ -7,9 +7,9 @@
  * Uses Basiq sandbox credentials for automated testing.
  * Run with: pnpm test:core-loop
  */
-import { test, expect } from "./fixtures/auth";
-import { testDb, cleanupTestData, closeDbConnection, schema } from "./fixtures/db";
-import { createSandboxUser, deleteSandboxUser, sandboxCredentials } from "./fixtures/basiq-sandbox";
+import { test, expect } from "@playwright/test";
+import { testDb, cleanupTestData, closeDbConnection, schema } from "../fixtures/db";
+import { createSandboxUser, deleteSandboxUser, sandboxCredentials } from "../fixtures/basiq-sandbox";
 import { eq, and } from "drizzle-orm";
 
 const BASIQ_API_KEY = process.env.BASIQ_API_KEY;
@@ -46,7 +46,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
     await closeDbConnection();
   });
 
-  test("Step 1: Create a test property", async ({ authenticatedPage: page }) => {
+  test("Step 1: Create a test property", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set - skipping Basiq-dependent tests");
     await page.goto("/properties/new");
     await expect(page).toHaveURL(/properties\/new/);
@@ -76,7 +76,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
     expect(testPropertyId).toBeTruthy();
   });
 
-  test("Step 2: Connect bank account via Basiq", async ({ authenticatedPage: page }) => {
+  test("Step 2: Connect bank account via Basiq", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/banking/connect");
     await expect(page.getByRole("heading", { name: /connect your bank/i })).toBeVisible();
@@ -119,7 +119,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
     await expect(page.getByText(/account/i).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test("Step 3: Link account to property", async ({ authenticatedPage: page }) => {
+  test("Step 3: Link account to property", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     test.skip(!testPropertyId, "No test property created");
 
@@ -132,7 +132,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
     await expect(defaultPropertyText).toBeVisible({ timeout: 10000 });
   });
 
-  test("Step 4: Sync transactions", async ({ authenticatedPage: page }) => {
+  test("Step 4: Sync transactions", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/banking");
 
@@ -150,13 +150,13 @@ test.describe.serial("Core Loop - Happy Path", () => {
     }
   });
 
-  test("Step 5: Verify transactions page loads", async ({ authenticatedPage: page }) => {
+  test("Step 5: Verify transactions page loads", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/transactions");
     await expect(page.getByRole("heading", { name: /transaction/i })).toBeVisible({ timeout: 10000 });
   });
 
-  test("Step 6: Export - Reports export page", async ({ authenticatedPage: page }) => {
+  test("Step 6: Export - Reports export page", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/reports/export");
     await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
@@ -173,7 +173,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
     }
   });
 
-  test("Step 7: Export - CSV export page", async ({ authenticatedPage: page }) => {
+  test("Step 7: Export - CSV export page", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/export");
     await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
@@ -185,7 +185,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 });
 
 test.describe.serial("Core Loop - Bank Connection Failure", () => {
-  test("should handle bank connection error gracefully", async ({ authenticatedPage: page }) => {
+  test("should handle bank connection error gracefully", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await page.goto("/banking/connect");
     await expect(page.getByRole("heading", { name: /connect your bank/i })).toBeVisible();
@@ -219,7 +219,7 @@ test.describe.serial("Core Loop - Bank Connection Failure", () => {
 });
 
 test.describe.serial("Core Loop - Sync Rate Limiting", () => {
-  test("should enforce sync rate limit", async ({ authenticatedPage: page }) => {
+  test("should enforce sync rate limit", async ({ page }) => {
     await page.goto("/banking");
 
     // Only run if there are accounts to sync
@@ -243,7 +243,7 @@ test.describe.serial("Core Loop - Sync Rate Limiting", () => {
 });
 
 test.describe.serial("Core Loop - Multi-Property Assignment", () => {
-  test("should allow linking account to different properties", async ({ authenticatedPage: page }) => {
+  test("should allow linking account to different properties", async ({ page }) => {
     await page.goto("/banking");
     await expect(page.getByRole("heading", { name: /banking/i })).toBeVisible();
 
@@ -257,7 +257,7 @@ test.describe.serial("Core Loop - Multi-Property Assignment", () => {
 });
 
 test.describe.serial("Core Loop - Empty Export", () => {
-  test("should handle export with no transactions gracefully", async ({ authenticatedPage: page }) => {
+  test("should handle export with no transactions gracefully", async ({ page }) => {
     await page.goto("/reports/export");
     await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
 
@@ -270,7 +270,7 @@ test.describe.serial("Core Loop - Empty Export", () => {
     }
   });
 
-  test("should handle CSV export with no transactions", async ({ authenticatedPage: page }) => {
+  test("should handle CSV export with no transactions", async ({ page }) => {
     await page.goto("/export");
     await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
 
@@ -281,7 +281,7 @@ test.describe.serial("Core Loop - Empty Export", () => {
 });
 
 test.describe.serial("Core Loop - Category Persistence Through Export", () => {
-  test("should preserve categories in exported data", async ({ authenticatedPage: page }) => {
+  test("should preserve categories in exported data", async ({ page }) => {
     // Navigate to transactions page
     await page.goto("/transactions");
     await expect(page.getByRole("heading", { name: /transaction/i })).toBeVisible({ timeout: 10000 });

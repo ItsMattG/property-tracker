@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Loans (Seeded Data)", () => {
@@ -6,18 +6,18 @@ test.describe("Loans (Seeded Data)", () => {
     test.skip(!featureFlags.loans, "loans feature flag is disabled");
   });
 
-  test.beforeEach(async ({ authenticatedPage: page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto("/loans");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
   });
 
-  test("should display loans page", async ({ authenticatedPage: page }) => {
+  test("should display loans page", async ({ page }) => {
     // Check for loans heading
     await expect(page.getByRole("heading", { name: /loan/i }).first()).toBeVisible();
   });
 
-  test("should show loans content or empty state", async ({ authenticatedPage: page }) => {
+  test("should show loans content or empty state", async ({ page }) => {
     // With seeded data: shows bank names, rates, LVR
     // Without: shows empty state or just heading
     const hasBank = await page.getByText(/commonwealth|anz|westpac/i).first().isVisible().catch(() => false);

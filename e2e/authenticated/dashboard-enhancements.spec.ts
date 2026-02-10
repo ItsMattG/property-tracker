@@ -1,10 +1,14 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 
 test.describe("Dashboard Enhancements", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/dashboard");
+  });
+
   // ── FY Selector ──────────────────────────────────────────────────────
 
   test("should display FY selector in header", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
@@ -16,7 +20,7 @@ test.describe("Dashboard Enhancements", () => {
   });
 
   test("FY selector should default to current financial year", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
@@ -31,7 +35,7 @@ test.describe("Dashboard Enhancements", () => {
   });
 
   test("FY selector should show dropdown options when clicked", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
@@ -51,7 +55,7 @@ test.describe("Dashboard Enhancements", () => {
   // ── LVR Gauge ────────────────────────────────────────────────────────
 
   test("should display LVR gauge card on dashboard", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
@@ -62,7 +66,7 @@ test.describe("Dashboard Enhancements", () => {
   });
 
   test("LVR gauge card should show percentage or empty state", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
@@ -82,7 +86,7 @@ test.describe("Dashboard Enhancements", () => {
   // ── Equity Projection Chart ──────────────────────────────────────────
 
   test("should display equity projection card on dashboard", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
@@ -93,7 +97,7 @@ test.describe("Dashboard Enhancements", () => {
   });
 
   test("equity projection card should show chart or empty state", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
@@ -113,12 +117,12 @@ test.describe("Dashboard Enhancements", () => {
   // ── No page errors ──────────────────────────────────────────────────
 
   test("dashboard should load without any console errors", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
 
-    // Dashboard is already loaded by authenticatedPage fixture
+    // Dashboard is loaded by beforeEach
     await expect(
       page.getByRole("heading", { name: /welcome to bricktrack/i })
     ).toBeVisible();

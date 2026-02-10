@@ -1,22 +1,22 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 
 test.describe("Properties", () => {
-  test("should display properties page with heading", async ({ authenticatedPage: page }) => {
+  test("should display properties page with heading", async ({ page }) => {
     await page.goto("/properties");
     await expect(page.getByRole("heading", { name: /properties/i })).toBeVisible();
   });
 
-  test("should display properties description", async ({ authenticatedPage: page }) => {
+  test("should display properties description", async ({ page }) => {
     await page.goto("/properties");
     await expect(page.getByText(/manage your investment properties/i)).toBeVisible();
   });
 
-  test("should navigate to new property form directly", async ({ authenticatedPage: page }) => {
+  test("should navigate to new property form directly", async ({ page }) => {
     await page.goto("/properties/new");
     await expect(page).toHaveURL(/properties\/new/);
   });
 
-  test("should show valuation card on property detail page", async ({ authenticatedPage: page }) => {
+  test("should show valuation card on property detail page", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
 
@@ -39,7 +39,7 @@ test.describe("Properties", () => {
     expect(errors).toHaveLength(0);
   });
 
-  test("should display financial metrics on property cards when data exists", async ({ authenticatedPage: page }) => {
+  test("should display financial metrics on property cards when data exists", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
 
@@ -62,7 +62,7 @@ test.describe("Properties", () => {
     expect(errors).toHaveLength(0);
   });
 
-  test("should display performance badge on property cards when metrics loaded", async ({ authenticatedPage: page }) => {
+  test("should display performance badge on property cards when metrics loaded", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
 

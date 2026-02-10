@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures/auth";
+import { test, expect } from "@playwright/test";
 import { featureFlags } from "@/config/feature-flags";
 
 test.describe("Gmail OAuth Integration", () => {
@@ -7,7 +7,7 @@ test.describe("Gmail OAuth Integration", () => {
   });
 
   test("email connections page loads and shows connect button", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     await page.goto("/settings/email-connections");
 
@@ -38,7 +38,7 @@ test.describe("Gmail OAuth Integration", () => {
   });
 
   test("shows warning when no approved senders", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     await page.goto("/settings/email-connections");
     await page.waitForLoadState("networkidle");
@@ -50,7 +50,7 @@ test.describe("Gmail OAuth Integration", () => {
   });
 
   test("connect gmail button navigates to OAuth endpoint", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     await page.goto("/settings/email-connections");
 
@@ -71,7 +71,7 @@ test.describe("Gmail OAuth Integration", () => {
   });
 
   test("oauth endpoint returns redirect response", async ({
-    authenticatedPage: page,
+    page,
   }) => {
     // Use Playwright's request API to check the redirect response
     const context = page.context();

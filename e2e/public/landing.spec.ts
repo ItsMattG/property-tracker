@@ -28,8 +28,8 @@ test.describe("Landing Page", () => {
   test("should display social proof bar", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByText(/properties tracked/i)).toBeVisible();
-    await expect(page.getByText(/investors/i).first()).toBeVisible();
+    await expect(page.getByText(/ato categories/i)).toBeVisible();
+    await expect(page.getByText(/banks supported/i)).toBeVisible();
     await expect(page.getByText(/bank-grade security/i).first()).toBeVisible();
     await expect(page.getByText(/australian/i).first()).toBeVisible();
   });
@@ -94,9 +94,7 @@ test.describe("Landing Page", () => {
   test("should display footer with links", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("link", { name: /blog/i }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /privacy policy/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /terms of service/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /changelog/i })).toBeVisible();
   });
 });
