@@ -4,31 +4,34 @@ import path from "path";
 
 const authFile = path.join(__dirname, ".auth", "user.json");
 
-setup("authenticate", async ({ page }) => {
-  setup.setTimeout(60_000);
-
+setup("authenticate", async ({ request }) => {
   const email = process.env.E2E_USER_EMAIL;
   const password = process.env.E2E_USER_PASSWORD;
 
   if (!email || !password) {
     console.warn("E2E credentials not set - auth setup skipped");
-    // Create empty storage state so dependent projects don't fail
     mkdirSync(path.dirname(authFile), { recursive: true });
-    await page.context().storageState({ path: authFile });
+    // Write minimal empty storage state
+    const { writeFileSync } = await import("fs");
+    writeFileSync(authFile, JSON.stringify({ cookies: [], origins: [] }));
     return;
   }
 
-  // Stagger login across shards to avoid rate limiting
-  const shardDelay = Math.random() * 5000;
-  await page.waitForTimeout(shardDelay);
+  // API-based login: POST directly to BetterAuth sign-in endpoint
+  // This is faster and more reliable than browser-based form login,
+  // especially when multiple shards authenticate simultaneously.
+  const response = await request.post("/api/auth/sign-in/email", {
+    data: { email, password },
+  });
 
-  await page.goto("/sign-in");
-  await page.getByLabel(/email/i).fill(email);
-  await page.getByLabel(/password/i).fill(password);
-  await page.getByRole("button", { name: /sign in/i }).click();
-  await page.waitForURL("**/dashboard", { timeout: 30_000 });
+  if (!response.ok()) {
+    throw new Error(
+      `Auth API login failed (${response.status()}): ${await response.text()}`
+    );
+  }
 
-  // Save signed-in state for reuse by authenticated/core-loop projects
+  // The API response sets session cookies on the request context.
+  // Save them as storageState for authenticated/core-loop projects.
   mkdirSync(path.dirname(authFile), { recursive: true });
-  await page.context().storageState({ path: authFile });
+  await request.storageState({ path: authFile });
 });
