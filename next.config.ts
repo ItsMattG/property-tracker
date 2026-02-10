@@ -20,12 +20,12 @@ const securityHeaders = [
 // Standard CSP for most pages
 const standardCSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.posthog.com https://challenges.cloudflare.com https://*.cloudflare.com https://maps.googleapis.com https://va.vercel-scripts.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: blob: https://*.supabase.co https://img.logo.dev https://fonts.gstatic.com https://*.posthog.com",
-  "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.posthog.com https://*.bricktrack.au wss://*.bricktrack.au https://api.basiq.io https://sentry.io https://*.ingest.sentry.io https://img.logo.dev https://*.cloudflare.com https://maps.googleapis.com https://va.vercel-scripts.com https://vitals.vercel-insights.com",
-  "frame-src 'self' https://js.stripe.com https://*.bricktrack.au https://challenges.cloudflare.com https://*.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.posthog.com https://challenges.cloudflare.com https://*.cloudflare.com https://maps.googleapis.com https://va.vercel-scripts.com https://vercel.live",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://vercel.live",
+  "img-src 'self' data: blob: https://*.supabase.co https://img.logo.dev https://fonts.gstatic.com https://*.posthog.com https://vercel.live",
+  "font-src 'self' https://fonts.gstatic.com https://vercel.live",
+  "connect-src 'self' https://*.supabase.co https://api.stripe.com https://*.posthog.com https://*.bricktrack.au wss://*.bricktrack.au https://api.basiq.io https://sentry.io https://*.ingest.sentry.io https://img.logo.dev https://*.cloudflare.com https://maps.googleapis.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://vercel.live wss://ws-us3.pusher.com",
+  "frame-src 'self' https://js.stripe.com https://*.bricktrack.au https://challenges.cloudflare.com https://*.cloudflare.com https://vercel.live",
   "worker-src 'self' blob:",
 ].join("; ");
 
