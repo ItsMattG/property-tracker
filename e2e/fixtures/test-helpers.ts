@@ -28,7 +28,8 @@ export async function safeGoto(
   options?: { maxRetries?: number; timeout?: number }
 ): Promise<void> {
   const maxRetries = options?.maxRetries ?? 2;
-  const timeout = options?.timeout ?? 30000;
+  // 15s per attempt allows 3 attempts within the 60s CI test timeout
+  const timeout = options?.timeout ?? 15000;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
