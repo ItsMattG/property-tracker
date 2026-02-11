@@ -109,8 +109,8 @@ export function PortfolioSummaryTable() {
                     className={cn(
                       "text-right tabular-nums pr-6",
                       m.cashFlow >= 0
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
+                        ? "text-green-700 dark:text-green-300"
+                        : "text-red-700 dark:text-red-300"
                     )}
                   >
                     {formatCurrency(m.cashFlow)}
@@ -141,8 +141,8 @@ export function PortfolioSummaryTable() {
                   className={cn(
                     "text-right tabular-nums pr-6",
                     totals.cash >= 0
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
+                      ? "text-green-700 dark:text-green-300"
+                      : "text-red-700 dark:text-red-300"
                   )}
                 >
                   {formatCurrency(totals.cash)}

@@ -39,13 +39,13 @@ test.describe("Landing Page", () => {
 
     await expect(page.getByText(/your portfolio, one screen/i)).toBeVisible();
     await expect(page.getByText(/tax time in minutes/i)).toBeVisible();
-    await expect(page.getByText(/transactions that categorize themselves/i)).toBeVisible();
+    await expect(page.getByText(/transactions that categorise themselves/i)).toBeVisible();
   });
 
   test("should display benefits list", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByText(/bank transactions import and categorize automatically/i)).toBeVisible();
+    await expect(page.getByText(/bank transactions import and categorise automatically/i)).toBeVisible();
     await expect(page.getByText(/ato expense codes applied/i)).toBeVisible();
     await expect(page.getByText(/export-ready reports/i)).toBeVisible();
   });

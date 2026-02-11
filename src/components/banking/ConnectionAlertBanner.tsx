@@ -62,6 +62,7 @@ export function ConnectionAlertBanner({
             size="icon"
             className="h-8 w-8 cursor-pointer"
             onClick={onDismiss}
+            aria-label="Dismiss"
           >
             <X className="w-4 h-4" />
           </Button>

@@ -132,7 +132,7 @@ function SectionHeading({ label, isCollapsed }: { label: string; isCollapsed: bo
 
   return (
     <div className="flex items-center gap-3 px-3 pt-2 pb-1">
-      <span className="text-xs font-medium text-muted-foreground/70 whitespace-nowrap">
+      <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
         {label}
       </span>
       <div className="h-px flex-1 bg-border" />

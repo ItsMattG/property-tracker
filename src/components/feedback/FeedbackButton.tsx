@@ -20,7 +20,7 @@ export function FeedbackButton() {
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" title="Feedback">
+          <Button variant="ghost" size="icon" title="Feedback" aria-label="Feedback">
             <MessageSquarePlus className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

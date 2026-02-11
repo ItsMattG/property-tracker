@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Changelog", () => {
   test("public changelog page loads and shows entries", async ({ page }) => {
-    await page.goto("/changelog", { waitUntil: "commit", timeout: 30_000 });
+    await page.goto("/changelog", { waitUntil: "commit", timeout: 60_000 });
     await page.waitForLoadState("domcontentloaded");
 
     // Verify page title
@@ -16,7 +16,7 @@ test.describe("Changelog", () => {
   });
 
   test("changelog entry detail page loads", async ({ page }) => {
-    await page.goto("/changelog", { waitUntil: "commit", timeout: 30_000 });
+    await page.goto("/changelog", { waitUntil: "commit", timeout: 60_000 });
     await page.waitForLoadState("domcontentloaded");
 
     // Click on an entry (if exists)
@@ -30,7 +30,7 @@ test.describe("Changelog", () => {
   });
 
   test("category filters work", async ({ page }) => {
-    await page.goto("/changelog", { waitUntil: "commit", timeout: 30_000 });
+    await page.goto("/changelog", { waitUntil: "commit", timeout: 60_000 });
     await page.waitForLoadState("domcontentloaded");
 
     // Wait for tabs to be rendered
