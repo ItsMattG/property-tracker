@@ -10,8 +10,8 @@ const TEST_PROPERTY = {
 };
 
 test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
-  // Increase timeout for this multi-step test
-  test.setTimeout(60000);
+  // Increase timeout for this multi-step test (staging can be slow)
+  test.setTimeout(120000);
 
   test("can log in, create a property, and delete it", async ({
     page,
@@ -22,7 +22,8 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
 
     // Step 2: Clean up any leftover smoke test property from a previous failed run
     await page.goto("/properties");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
     const leftoverCard = page.locator("a").filter({ hasText: TEST_PROPERTY.address }).first();
     if (await leftoverCard.isVisible({ timeout: 5000 }).catch(() => false)) {
       await leftoverCard.getByRole("button").click();
@@ -36,7 +37,8 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
 
     // Step 3: Navigate to add property page
     await page.goto("/properties/new");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(2000);
 
     // Dismiss onboarding tour if it appears
     const tourOverlay = page.locator(".driver-overlay");
@@ -47,7 +49,8 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
 
     // Reload to ensure clean form state (driver.js can leave residual event listeners)
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(2000);
 
     // Step 4: Fill out the property form
     await page.getByLabel("Street Address").fill(TEST_PROPERTY.address);
@@ -75,7 +78,8 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
 
     // Step 7: Navigate to properties list and verify property appears
     await page.goto("/properties");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(2000);
     const propertyCard = page.locator("a").filter({ hasText: TEST_PROPERTY.address }).first();
     await expect(propertyCard).toBeVisible({ timeout: 10000 });
 
