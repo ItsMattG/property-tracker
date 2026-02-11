@@ -10,6 +10,7 @@
 import { test, expect } from "@playwright/test";
 import { testDb, closeDbConnection, schema } from "../fixtures/db";
 import { createSandboxUser, deleteSandboxUser, sandboxCredentials } from "../fixtures/basiq-sandbox";
+import { safeGoto } from "../fixtures/test-helpers";
 import { eq } from "drizzle-orm";
 
 const BASIQ_API_KEY = process.env.BASIQ_API_KEY;
@@ -48,7 +49,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 1: Create a test property", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set - skipping Basiq-dependent tests");
-    await page.goto("/properties/new");
+    await safeGoto(page, "/properties/new");
     await expect(page).toHaveURL(/properties\/new/);
 
     // Fill in required fields
@@ -86,7 +87,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 2: Connect bank account via Basiq", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    await page.goto("/banking/connect");
+    await safeGoto(page, "/banking/connect");
     await expect(page.getByRole("heading", { name: /connect your bank/i })).toBeVisible();
 
     // Click the connect button - this calls our connect mutation
@@ -131,7 +132,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     test.skip(!testPropertyId, "No test property created");
 
-    await page.goto("/banking");
+    await safeGoto(page, "/banking");
     await expect(page.getByRole("heading", { name: /bank feeds/i })).toBeVisible();
 
     // Find the first account card and look for property linking
@@ -142,7 +143,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 4: Sync transactions", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    await page.goto("/banking");
+    await safeGoto(page, "/banking");
 
     // Find and click the Sync button
     const syncButton = page.getByRole("button", { name: /sync/i }).first();
@@ -153,21 +154,21 @@ test.describe.serial("Core Loop - Happy Path", () => {
       await page.waitForTimeout(5000);
 
       // Navigate to transactions
-      await page.goto("/transactions");
-      await expect(page.getByRole("heading", { name: /transaction/i })).toBeVisible();
+      await safeGoto(page, "/transactions");
+      await expect(page.getByRole("heading", { name: /transaction/i }).first()).toBeVisible();
     }
   });
 
   test("Step 5: Verify transactions page loads", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    await page.goto("/transactions");
-    await expect(page.getByRole("heading", { name: /transaction/i })).toBeVisible({ timeout: 10000 });
+    await safeGoto(page, "/transactions");
+    await expect(page.getByRole("heading", { name: /transaction/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("Step 6: Export - Reports export page", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    await page.goto("/reports/export");
-    await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
+    await safeGoto(page, "/reports/export");
+    await expect(page.getByRole("heading", { name: /export/i }).first()).toBeVisible({ timeout: 10000 });
 
     // Select PDF and Excel
     const pdfCheckbox = page.locator("#pdf");
@@ -183,8 +184,8 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 7: Export - CSV export page", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    await page.goto("/export");
-    await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
+    await safeGoto(page, "/export");
+    await expect(page.getByRole("heading", { name: /export/i }).first()).toBeVisible({ timeout: 10000 });
 
     // Verify the download button exists
     const downloadButton = page.getByRole("button", { name: /download csv/i });
@@ -195,7 +196,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 test.describe.serial("Core Loop - Bank Connection Failure", () => {
   test("should handle bank connection error gracefully", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    await page.goto("/banking/connect", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await safeGoto(page, "/banking/connect");
     await page.waitForTimeout(3000);
     await expect(page.getByRole("heading", { name: /connect.*bank/i })).toBeVisible({ timeout: 15000 });
 
@@ -229,7 +230,7 @@ test.describe.serial("Core Loop - Bank Connection Failure", () => {
 
 test.describe.serial("Core Loop - Sync Rate Limiting", () => {
   test("should enforce sync rate limit", async ({ page }) => {
-    await page.goto("/banking");
+    await safeGoto(page, "/banking");
 
     // Only run if there are accounts to sync
     const syncButton = page.getByRole("button", { name: /sync/i }).first();
@@ -253,7 +254,7 @@ test.describe.serial("Core Loop - Sync Rate Limiting", () => {
 
 test.describe.serial("Core Loop - Multi-Property Assignment", () => {
   test("should allow linking account to different properties", async ({ page }) => {
-    await page.goto("/banking");
+    await safeGoto(page, "/banking");
     await expect(page.getByRole("heading", { name: /bank feeds/i })).toBeVisible();
 
     // Verify the banking page loads with property assignment UI
@@ -267,9 +268,9 @@ test.describe.serial("Core Loop - Multi-Property Assignment", () => {
 
 test.describe.serial("Core Loop - Empty Export", () => {
   test("should handle export with no transactions gracefully", async ({ page }) => {
-    await page.goto("/reports/export", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await safeGoto(page, "/reports/export");
     await page.waitForTimeout(3000);
-    await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: /export/i }).first()).toBeVisible({ timeout: 15000 });
 
     // Page should load without crashing even with no data
     // The export button may be present but the preview may show $0
@@ -281,9 +282,9 @@ test.describe.serial("Core Loop - Empty Export", () => {
   });
 
   test("should handle CSV export with no transactions", async ({ page }) => {
-    await page.goto("/export", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await safeGoto(page, "/export");
     await page.waitForTimeout(3000);
-    await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: /export/i }).first()).toBeVisible({ timeout: 15000 });
 
     // Page should load without crashing
     const downloadButton = page.getByRole("button", { name: /download csv/i });
@@ -294,9 +295,9 @@ test.describe.serial("Core Loop - Empty Export", () => {
 test.describe.serial("Core Loop - Category Persistence Through Export", () => {
   test("should preserve categories in exported data", async ({ page }) => {
     // Navigate to transactions page
-    await page.goto("/transactions", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await safeGoto(page, "/transactions");
     await page.waitForTimeout(3000);
-    await expect(page.getByRole("heading", { name: /transaction/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: /transaction/i }).first()).toBeVisible({ timeout: 15000 });
 
     // If there are transactions, verify the category column exists
     const categoryFilter = page.locator("#category-filter");
@@ -306,8 +307,8 @@ test.describe.serial("Core Loop - Category Persistence Through Export", () => {
     }
 
     // Navigate to export and verify it works
-    await page.goto("/export", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await safeGoto(page, "/export");
     await page.waitForTimeout(3000);
-    await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: /export/i }).first()).toBeVisible({ timeout: 15000 });
   });
 });

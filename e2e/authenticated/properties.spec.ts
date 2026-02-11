@@ -1,27 +1,14 @@
 import { test, expect } from "@playwright/test";
-
-const BENIGN_ERROR_PATTERNS = [
-  /ResizeObserver/i,
-  /hydrat/i,
-  /AbortError/i,
-  /cancelled/i,
-  /Loading chunk/i,
-  /Script error/i,
-];
-
-function isBenignError(msg: string): boolean {
-  return BENIGN_ERROR_PATTERNS.some((p) => p.test(msg));
-}
+import { isBenignError, safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Properties", () => {
   test("should display properties page with heading", async ({ page }) => {
-    await page.goto("/properties");
-    await page.waitForLoadState("domcontentloaded");
-    await expect(page.getByRole("heading", { name: /properties/i })).toBeVisible({ timeout: 15000 });
+    await safeGoto(page, "/properties");
+    await expect(page.getByRole("heading", { name: /properties/i }).first()).toBeVisible({ timeout: 15000 });
   });
 
   test("should display properties description", async ({ page }) => {
-    await page.goto("/properties");
+    await safeGoto(page, "/properties");
     await expect(page.getByText(/manage your investment properties/i)).toBeVisible();
   });
 
@@ -34,8 +21,7 @@ test.describe("Properties", () => {
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
 
-    await page.goto("/properties");
-    await page.waitForLoadState("domcontentloaded");
+    await safeGoto(page, "/properties");
     await page.waitForTimeout(3000);
     await expect(page.getByRole("heading", { name: /properties/i }).first()).toBeVisible();
 
@@ -59,10 +45,9 @@ test.describe("Properties", () => {
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
 
-    await page.goto("/properties");
-    await page.waitForLoadState("domcontentloaded");
+    await safeGoto(page, "/properties");
     await page.waitForTimeout(3000);
-    await expect(page.getByRole("heading", { name: /properties/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /properties/i }).first()).toBeVisible();
 
     // Wait for property cards to render (either cards exist or empty state)
     const hasProperties = await page.locator("[data-testid='property-card']").count().then(c => c > 0).catch(() => false);
@@ -88,10 +73,9 @@ test.describe("Properties", () => {
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
 
-    await page.goto("/properties");
-    await page.waitForLoadState("domcontentloaded");
+    await safeGoto(page, "/properties");
     await page.waitForTimeout(3000);
-    await expect(page.getByRole("heading", { name: /properties/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /properties/i }).first()).toBeVisible();
 
     const hasProperties = await page.locator("[data-testid='property-card']").count().then(c => c > 0).catch(() => false);
 
