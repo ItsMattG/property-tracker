@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { featureFlags } from "../../src/config/feature-flags";
 
 test.describe("Feature Request Submission", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.helpMenu, "Help menu feature flag is disabled");
+  });
+
   test("should show Request Feature button when logged in", async ({ page }) => {
     await page.goto("/feedback");
 
@@ -38,6 +43,10 @@ test.describe("Feature Request Submission", () => {
 });
 
 test.describe("Feedback Button in Header", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.helpMenu, "Help menu feature flag is disabled");
+  });
+
   test("should show feedback button in header", async ({ page }) => {
     const header = page.locator("header");
     await expect(header.getByRole("button", { name: /feedback/i })).toBeVisible();
@@ -68,6 +77,10 @@ test.describe("Feedback Button in Header", () => {
 });
 
 test.describe("Bug Report Modal", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.helpMenu, "Help menu feature flag is disabled");
+  });
+
   test("should have severity dropdown", async ({ page }) => {
     await page.getByRole("button", { name: /feedback/i }).click();
     await page.getByRole("menuitem", { name: /report bug/i }).click();
@@ -91,6 +104,10 @@ test.describe("Bug Report Modal", () => {
 });
 
 test.describe("Settings Navigation", () => {
+  test.beforeEach(() => {
+    test.skip(!featureFlags.featureRequests, "Feature requests feature flag is disabled");
+  });
+
   test("should have feature requests link in settings", async ({ page }) => {
     await expect(page.getByRole("link", { name: /feature requests/i })).toBeVisible();
   });

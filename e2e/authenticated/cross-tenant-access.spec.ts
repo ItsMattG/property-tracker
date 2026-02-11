@@ -65,7 +65,8 @@ test.describe("Cross-Tenant Access Protection", () => {
 
     // Navigate to transactions with decoy property filter
     await page.goto(`/transactions?propertyId=${ids.propertyId}`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
 
     // Should show empty list or no results
     const content = await page.content();
@@ -97,7 +98,8 @@ test.describe("Cross-Tenant Access Protection", () => {
 
     // First visit the app to get authenticated session
     await page.goto("/dashboard");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
 
     // Get cookies for API request
     const cookies = await page.context().cookies();

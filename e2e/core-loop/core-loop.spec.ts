@@ -124,7 +124,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
     test.skip(!testPropertyId, "No test property created");
 
     await page.goto("/banking");
-    await expect(page.getByRole("heading", { name: /banking/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /bank feeds/i })).toBeVisible();
 
     // Find the first account card and look for property linking
     // The banking page shows account cards with "Default property" field
@@ -245,7 +245,7 @@ test.describe.serial("Core Loop - Sync Rate Limiting", () => {
 test.describe.serial("Core Loop - Multi-Property Assignment", () => {
   test("should allow linking account to different properties", async ({ page }) => {
     await page.goto("/banking");
-    await expect(page.getByRole("heading", { name: /banking/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /bank feeds/i })).toBeVisible();
 
     // Verify the banking page loads with property assignment UI
     const defaultPropertyText = page.getByText(/default property/i).first();

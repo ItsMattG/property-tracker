@@ -257,7 +257,7 @@ test.describe("Dashboard", () => {
       .isVisible()
       .catch(() => false);
 
-    if (!hasProperties) {
+    if (hasProperties) {
       // If properties exist, the table should show with headers
       await expect(heading).toBeVisible({ timeout: 10000 });
       await expect(page.getByRole("columnheader", { name: "Value" })).toBeVisible();
@@ -266,7 +266,7 @@ test.describe("Dashboard", () => {
       await expect(page.getByRole("columnheader", { name: "LVR" })).toBeVisible();
       await expect(page.getByRole("columnheader", { name: "Cash" })).toBeVisible();
     }
-    // If no properties, table is hidden — test passes either way
+    // If no properties, table may be hidden — test passes either way
   });
 
   // ── Sidebar collapse/expand ────────────────────────────────────────
