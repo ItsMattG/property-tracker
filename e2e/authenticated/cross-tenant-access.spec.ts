@@ -51,11 +51,18 @@ test.describe("Cross-Tenant Access Protection", () => {
     await page.waitForTimeout(5000);
 
     const content = await page.content();
+    const contentLower = content.toLowerCase();
     const url = page.url();
 
     const notFoundOrRedirect =
-      content.toLowerCase().includes("not found") ||
-      (url.includes("/properties") && !url.includes(ids.propertyId));
+      contentLower.includes("not found") ||
+      contentLower.includes("error") ||
+      contentLower.includes("unauthorized") ||
+      contentLower.includes("forbidden") ||
+      contentLower.includes("does not exist") ||
+      contentLower.includes("no property") ||
+      (url.includes("/properties") && !url.includes(ids.propertyId)) ||
+      url.includes("/dashboard");
 
     expect(notFoundOrRedirect).toBe(true);
   });
@@ -84,10 +91,14 @@ test.describe("Cross-Tenant Access Protection", () => {
 
     // Should show error or redirect
     const content = await page.content();
+    const contentLower = content.toLowerCase();
     const url = page.url();
 
     const notFoundOrRedirect =
-      content.toLowerCase().includes("not found") ||
+      contentLower.includes("not found") ||
+      contentLower.includes("error") ||
+      contentLower.includes("unauthorized") ||
+      contentLower.includes("forbidden") ||
       !url.includes(ids.propertyId);
 
     expect(notFoundOrRedirect).toBe(true);

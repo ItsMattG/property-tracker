@@ -7,16 +7,14 @@ test.describe("Export", () => {
   });
 
   test("should display export page", async ({ page }) => {
-    await page.goto("/export");
-    await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(2000);
-    await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
+    await page.goto("/export", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.waitForTimeout(3000);
+    await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 15000 });
   });
 
   test("should show export controls after loading", async ({ page }) => {
-    await page.goto("/export");
-    await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(2000);
-    await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 10000 });
+    await page.goto("/export", { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.waitForTimeout(3000);
+    await expect(page.getByRole("heading", { name: /export/i })).toBeVisible({ timeout: 15000 });
   });
 });

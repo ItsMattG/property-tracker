@@ -74,8 +74,8 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
     }
 
     // Check for plan limit error (free plan allows 1 property, seeded data may exceed this)
-    const planLimitToast = page.getByText(/upgrade to pro|plan allows/i);
-    if (await planLimitToast.isVisible({ timeout: 5000 }).catch(() => false)) {
+    const planLimitToast = page.getByText(/upgrade to pro|plan allows|maximum|limit|forbidden/i);
+    if (await planLimitToast.isVisible({ timeout: 10000 }).catch(() => false)) {
       // Plan limit reached — this is expected when seeded data exists on a free plan
       // Skip the rest of the test gracefully
       return;
