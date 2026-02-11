@@ -8,9 +8,9 @@
  * Run with: pnpm test:core-loop
  */
 import { test, expect } from "@playwright/test";
-import { testDb, cleanupTestData, closeDbConnection, schema } from "../fixtures/db";
+import { testDb, closeDbConnection, schema } from "../fixtures/db";
 import { createSandboxUser, deleteSandboxUser, sandboxCredentials } from "../fixtures/basiq-sandbox";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 const BASIQ_API_KEY = process.env.BASIQ_API_KEY;
 

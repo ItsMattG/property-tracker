@@ -16,7 +16,6 @@ test.describe("Settings - Theme Toggle", () => {
     await expect(page.getByText("Appearance")).toBeVisible({ timeout: 10_000 });
 
     // Theme toggle may say "Switch to dark mode" or "Switch to light mode" depending on current state
-    const darkModeBtn = page.getByRole("button", { name: /switch to dark mode/i });
     const lightModeBtn = page.getByRole("button", { name: /switch to light mode/i });
 
     // If already in dark mode, switch to light first to reset
