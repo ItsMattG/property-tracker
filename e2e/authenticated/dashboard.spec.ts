@@ -1,19 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "../../src/config/feature-flags";
-
-// Filter out known benign page errors that don't indicate real bugs
-const BENIGN_ERROR_PATTERNS = [
-  /ResizeObserver/i,
-  /hydrat/i,
-  /AbortError/i,
-  /cancelled/i,
-  /Loading chunk/i,
-  /Script error/i,
-];
-
-function isBenignError(err: Error): boolean {
-  return BENIGN_ERROR_PATTERNS.some((p) => p.test(err.message));
-}
+import { isBenignError, safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Dashboard", () => {
   let pageErrors: Error[];
@@ -21,7 +8,7 @@ test.describe("Dashboard", () => {
   test.beforeEach(async ({ page }) => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
-    await page.goto("/dashboard");
+    await safeGoto(page, "/dashboard");
   });
 
   test.afterEach(() => {

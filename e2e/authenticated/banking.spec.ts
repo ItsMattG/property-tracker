@@ -1,17 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-const BENIGN_ERROR_PATTERNS = [
-  /ResizeObserver/i,
-  /hydrat/i,
-  /AbortError/i,
-  /cancelled/i,
-  /Loading chunk/i,
-  /Script error/i,
-];
-
-function isBenignError(err: Error): boolean {
-  return BENIGN_ERROR_PATTERNS.some((p) => p.test(err.message));
-}
+import { isBenignError, safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Bank Feeds", () => {
   let pageErrors: Error[];
@@ -27,12 +15,12 @@ test.describe("Bank Feeds", () => {
   });
 
   test("should display Bank Feeds page with heading", async ({ page }) => {
-    await page.goto("/banking");
+    await safeGoto(page, "/banking");
     await expect(page.getByRole("heading", { name: /bank feeds/i })).toBeVisible();
   });
 
   test("should show account count or empty state", async ({ page }) => {
-    await page.goto("/banking");
+    await safeGoto(page, "/banking");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
 
@@ -45,7 +33,7 @@ test.describe("Bank Feeds", () => {
   });
 
   test("should show Connect Bank button", async ({ page }) => {
-    await page.goto("/banking");
+    await safeGoto(page, "/banking");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
 
@@ -58,12 +46,12 @@ test.describe("Bank Feeds", () => {
   });
 
   test("should navigate to connect page directly", async ({ page }) => {
-    await page.goto("/banking/connect");
+    await safeGoto(page, "/banking/connect");
     await expect(page).toHaveURL(/banking\/connect/);
   });
 
   test("sidebar should show Bank Feeds label", async ({ page }) => {
-    await page.goto("/banking");
+    await safeGoto(page, "/banking");
     // The sidebar link should say "Bank Feeds" not "Banking"
     await expect(
       page.locator("aside").getByText("Bank Feeds")

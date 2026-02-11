@@ -1,13 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-const BENIGN_ERROR_PATTERNS = [
-  /ResizeObserver/i,
-  /hydrat/i,
-  /AbortError/i,
-  /cancelled/i,
-  /Loading chunk/i,
-  /Script error/i,
-];
+import { BENIGN_ERROR_PATTERNS, safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Settings - Theme Toggle", () => {
   test("can toggle dark mode and it persists after reload", async ({
@@ -17,7 +9,7 @@ test.describe("Settings - Theme Toggle", () => {
     page.on("pageerror", (err) => errors.push(err.message));
 
     // Navigate to settings
-    await page.goto("/settings");
+    await safeGoto(page, "/settings");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
 
@@ -53,7 +45,7 @@ test.describe("Settings - Theme Toggle", () => {
     expect(themeAfterReload).toBe("dark");
 
     // Toggle back to light mode to clean up
-    await page.goto("/settings");
+    await safeGoto(page, "/settings");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
     await page.getByRole("button", { name: /switch to light mode/i }).click();

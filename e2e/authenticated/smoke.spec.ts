@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { safeGoto } from "../fixtures/test-helpers";
 
 const TEST_PROPERTY = {
   address: "1 Smoke Test Street",
@@ -17,11 +18,11 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
     page,
   }) => {
     // Step 1: Verify we're logged in and on the dashboard
-    await page.goto("/dashboard");
+    await safeGoto(page, "/dashboard");
     await expect(page).toHaveURL(/dashboard/);
 
     // Step 2: Clean up any leftover smoke test property from a previous failed run
-    await page.goto("/properties");
+    await safeGoto(page, "/properties");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
     const leftoverCard = page.locator("a").filter({ hasText: TEST_PROPERTY.address }).first();
@@ -36,7 +37,7 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
     }
 
     // Step 3: Navigate to add property page
-    await page.goto("/properties/new");
+    await safeGoto(page, "/properties/new");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
 
@@ -85,7 +86,7 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
     await page.waitForURL(/\/properties\/.+\/settlement/, { timeout: 30000 });
 
     // Step 7: Navigate to properties list and verify property appears
-    await page.goto("/properties");
+    await safeGoto(page, "/properties");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
     const propertyCard = page.locator("a").filter({ hasText: TEST_PROPERTY.address }).first();
