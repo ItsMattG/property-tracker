@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { featureFlags } from "../../src/config/feature-flags";
 
 test.describe("Dashboard Enhancements", () => {
   test.beforeEach(async ({ page }) => {
@@ -10,6 +11,7 @@ test.describe("Dashboard Enhancements", () => {
   test("should display FY selector in header", async ({
     page,
   }) => {
+    test.skip(!featureFlags.fySelector, "FY selector feature flag is disabled");
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
 
@@ -22,6 +24,7 @@ test.describe("Dashboard Enhancements", () => {
   test("FY selector should default to current financial year", async ({
     page,
   }) => {
+    test.skip(!featureFlags.fySelector, "FY selector feature flag is disabled");
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
 
@@ -37,6 +40,7 @@ test.describe("Dashboard Enhancements", () => {
   test("FY selector should show dropdown options when clicked", async ({
     page,
   }) => {
+    test.skip(!featureFlags.fySelector, "FY selector feature flag is disabled");
     const errors: Error[] = [];
     page.on("pageerror", (err) => errors.push(err));
 

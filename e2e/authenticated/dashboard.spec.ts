@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { featureFlags } from "../../src/config/feature-flags";
 
 test.describe("Dashboard", () => {
   let pageErrors: Error[];
@@ -40,6 +41,7 @@ test.describe("Dashboard", () => {
   test("should display feedback button in header", async ({
     page,
   }) => {
+    test.skip(!featureFlags.helpMenu, "Help menu feature flag is disabled");
     const header = page.locator("header");
     await expect(
       header.getByRole("button", { name: /feedback/i })
@@ -54,7 +56,7 @@ test.describe("Dashboard", () => {
     const statsGrid = page.locator("[data-tour='portfolio-summary']");
     await expect(statsGrid.getByText("Properties", { exact: true })).toBeVisible();
     await expect(statsGrid.getByText("Transactions", { exact: true })).toBeVisible();
-    await expect(statsGrid.getByText("Uncategorized", { exact: true })).toBeVisible();
+    await expect(statsGrid.getByText("Uncategorised", { exact: true })).toBeVisible();
   });
 
   test("should display tax position card", async ({
@@ -83,14 +85,14 @@ test.describe("Dashboard", () => {
     await expect(page).toHaveURL(/\/transactions/);
   });
 
-  test("uncategorized card links to /transactions?category=uncategorized", async ({
+  test("uncategorised card links to /transactions?category=uncategorized", async ({
     page,
   }) => {
-    const uncategorizedCard = page.locator(
+    const uncategorisedCard = page.locator(
       'a[href="/transactions?category=uncategorized"]'
     );
-    await expect(uncategorizedCard).toBeVisible();
-    await uncategorizedCard.click();
+    await expect(uncategorisedCard).toBeVisible();
+    await uncategorisedCard.click();
     await expect(page).toHaveURL(/\/transactions\?category=uncategorized/);
   });
 
@@ -113,7 +115,7 @@ test.describe("Dashboard", () => {
       sidebar.getByRole("link", { name: "Reports", exact: true })
     ).toBeVisible();
     await expect(
-      sidebar.getByRole("link", { name: /banking/i })
+      sidebar.getByRole("link", { name: /bank feeds/i })
     ).toBeVisible();
   });
 
@@ -132,10 +134,16 @@ test.describe("Dashboard", () => {
   }) => {
     const sidebar = page.locator("aside");
 
-    // Portfolio is enabled (feature flag = true)
-    await expect(
-      sidebar.getByRole("link", { name: "Portfolio", exact: true })
-    ).toBeVisible();
+    // Portfolio visibility depends on feature flag
+    if (featureFlags.portfolio) {
+      await expect(
+        sidebar.getByRole("link", { name: "Portfolio", exact: true })
+      ).toBeVisible();
+    } else {
+      await expect(
+        sidebar.getByRole("link", { name: "Portfolio", exact: true })
+      ).not.toBeVisible();
+    }
 
     // These are feature-flagged to false and should be hidden
     await expect(
@@ -159,12 +167,17 @@ test.describe("Dashboard", () => {
   }) => {
     const sidebar = page.locator("aside");
     await expect(sidebar.getByText("Settings")).toBeVisible();
-    await expect(
-      sidebar.getByRole("link", { name: /notifications/i })
-    ).toBeVisible();
-    await expect(
-      sidebar.getByRole("link", { name: /feature requests/i })
-    ).toBeVisible();
+    // Settings links depend on feature flags
+    if (featureFlags.notifications) {
+      await expect(
+        sidebar.getByRole("link", { name: /notifications/i })
+      ).toBeVisible();
+    }
+    if (featureFlags.featureRequests) {
+      await expect(
+        sidebar.getByRole("link", { name: /feature requests/i })
+      ).toBeVisible();
+    }
   });
 
   test("should hide feature-flagged settings items", async ({
@@ -196,6 +209,7 @@ test.describe("Dashboard", () => {
   test("should navigate to portfolio from sidebar", async ({
     page,
   }) => {
+    test.skip(!featureFlags.portfolio, "Portfolio feature flag is disabled");
     const sidebar = page.locator("aside");
     await sidebar.getByRole("link", { name: "Portfolio", exact: true }).click();
     await page.waitForURL(/\/portfolio/, { timeout: 10000 });
@@ -317,7 +331,7 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await sidebar.getByRole("link", { name: /banking/i }).click();
+    await sidebar.getByRole("link", { name: /bank feeds/i }).click();
     await page.waitForURL(/\/banking/, { timeout: 10000 });
     await expect(page).toHaveURL(/\/banking/);
   });

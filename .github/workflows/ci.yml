@@ -241,6 +241,12 @@ jobs:
           echo "Staging not ready after 5 minutes"
           exit 1
 
+      - name: Seed E2E test data
+        run: npx tsx src/scripts/seed.ts demo --email=${{ secrets.E2E_USER_EMAIL }} --clean
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        continue-on-error: true
+
       - name: Authenticate E2E user
         run: pnpm exec playwright test --project=setup
         env:

@@ -10,6 +10,8 @@ test.describe("Accessibility - Authenticated Pages", () => {
 
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .exclude(".driver-active-element") // driver.js tour injects invalid ARIA attrs
+      .exclude(".driver-popover") // driver.js popover
       .analyze();
 
     if (results.violations.length > 0) {

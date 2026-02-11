@@ -45,15 +45,16 @@ test.describe("Cross-Tenant Access Protection", () => {
 
     // Navigate to decoy property
     await page.goto(`/properties/${ids.propertyId}`);
+    await page.waitForLoadState("domcontentloaded");
 
-    // Should show error or redirect, not the property details
-    await page.waitForLoadState("networkidle");
+    // Wait for the page to settle (tRPC data needs time to load and show "not found")
+    await page.waitForTimeout(5000);
+
     const content = await page.content();
     const url = page.url();
 
     const notFoundOrRedirect =
       content.toLowerCase().includes("not found") ||
-      content.toLowerCase().includes("property not found") ||
       (url.includes("/properties") && !url.includes(ids.propertyId));
 
     expect(notFoundOrRedirect).toBe(true);
@@ -77,7 +78,8 @@ test.describe("Cross-Tenant Access Protection", () => {
 
     // Try to access edit page for decoy property
     await page.goto(`/properties/${ids.propertyId}/edit`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(5000);
 
     // Should show error or redirect
     const content = await page.content();
@@ -85,7 +87,6 @@ test.describe("Cross-Tenant Access Protection", () => {
 
     const notFoundOrRedirect =
       content.toLowerCase().includes("not found") ||
-      content.toLowerCase().includes("property not found") ||
       !url.includes(ids.propertyId);
 
     expect(notFoundOrRedirect).toBe(true);
