@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "@/config/feature-flags";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Portfolio (Seeded Data)", () => {
   test.beforeEach(() => {
@@ -7,7 +8,7 @@ test.describe("Portfolio (Seeded Data)", () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto("/portfolio");
+    await safeGoto(page, "/portfolio");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
   });

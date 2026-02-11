@@ -1,11 +1,12 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Accessibility - Public Pages", () => {
   test("landing page should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/");
+    await safeGoto(page, "/");
     await page.waitForLoadState("networkidle");
 
     const results = await new AxeBuilder({ page })
@@ -22,7 +23,7 @@ test.describe("Accessibility - Public Pages", () => {
   test("blog listing page should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/blog");
+    await safeGoto(page, "/blog");
     await page.waitForLoadState("networkidle");
 
     const results = await new AxeBuilder({ page })
@@ -39,7 +40,7 @@ test.describe("Accessibility - Public Pages", () => {
   test("changelog page should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/changelog");
+    await safeGoto(page, "/changelog");
     await page.waitForLoadState("networkidle");
 
     const results = await new AxeBuilder({ page })
@@ -56,7 +57,7 @@ test.describe("Accessibility - Public Pages", () => {
   test("privacy policy page should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/privacy");
+    await safeGoto(page, "/privacy");
     await page.waitForLoadState("networkidle");
 
     const results = await new AxeBuilder({ page })
@@ -73,7 +74,7 @@ test.describe("Accessibility - Public Pages", () => {
   test("terms of service page should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/terms");
+    await safeGoto(page, "/terms");
     await page.waitForLoadState("networkidle");
 
     const results = await new AxeBuilder({ page })

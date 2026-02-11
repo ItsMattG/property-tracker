@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Tax Report (Seeded Data)", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/reports/tax");
+    await safeGoto(page, "/reports/tax");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
   });

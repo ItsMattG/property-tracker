@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Blog", () => {
   test("public blog page loads and shows heading", async ({ page }) => {
-    await page.goto("/blog");
+    await safeGoto(page, "/blog");
 
     await expect(page.locator("h1")).toContainText("Blog");
     await expect(
@@ -11,7 +12,7 @@ test.describe("Blog", () => {
   });
 
   test("blog page shows category tabs", async ({ page }) => {
-    await page.goto("/blog");
+    await safeGoto(page, "/blog");
 
     await expect(page.getByRole("tab", { name: "All" })).toBeVisible();
     await expect(
@@ -24,7 +25,7 @@ test.describe("Blog", () => {
   });
 
   test("category tab filtering works", async ({ page }) => {
-    await page.goto("/blog");
+    await safeGoto(page, "/blog");
 
     await page.getByRole("tab", { name: "Fundamentals" }).click();
     await expect(
@@ -33,7 +34,7 @@ test.describe("Blog", () => {
   });
 
   test("blog article detail page loads", async ({ page }) => {
-    await page.goto("/blog");
+    await safeGoto(page, "/blog");
 
     const article = page.locator("a[href^='/blog/']").first();
     if (await article.isVisible()) {
@@ -46,7 +47,7 @@ test.describe("Blog", () => {
   });
 
   test("blog article shows CTA banner", async ({ page }) => {
-    await page.goto("/blog");
+    await safeGoto(page, "/blog");
 
     const article = page.locator("a[href^='/blog/']").first();
     if (await article.isVisible()) {
@@ -62,7 +63,7 @@ test.describe("Blog", () => {
   });
 
   test("blog header has navigation links", async ({ page }) => {
-    await page.goto("/blog");
+    await safeGoto(page, "/blog");
 
     const header = page.getByRole("banner");
     await expect(header.getByRole("link", { name: /sign in/i })).toBeVisible();

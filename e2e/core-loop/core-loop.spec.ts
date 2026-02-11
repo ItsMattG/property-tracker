@@ -51,8 +51,21 @@ test.describe.serial("Core Loop - Happy Path", () => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set - skipping Basiq-dependent tests");
     await safeGoto(page, "/properties/new");
     await expect(page).toHaveURL(/properties\/new/);
+    await page.waitForTimeout(2000);
 
-    // Fill in required fields
+    // Dismiss onboarding tour if it appears
+    const tourOverlay = page.locator(".driver-overlay");
+    if (await tourOverlay.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await page.keyboard.press("Escape");
+      await expect(tourOverlay).not.toBeVisible({ timeout: 3000 });
+    }
+
+    // Reload to ensure clean form state (driver.js can leave residual event listeners)
+    await safeGoto(page, "/properties/new");
+    await page.waitForTimeout(2000);
+
+    // Fill in required fields (wait for form to render)
+    await expect(page.getByLabel(/street address/i)).toBeVisible({ timeout: 15000 });
     await page.getByLabel(/street address/i).fill("E2E Test 123 Smith Street");
     await page.getByLabel(/suburb/i).fill("Sydney");
 
@@ -88,7 +101,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
   test("Step 2: Connect bank account via Basiq", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await safeGoto(page, "/banking/connect");
-    await expect(page.getByRole("heading", { name: /connect your bank/i })).toBeVisible();
+    await expect(page.getByText(/connect your bank/i).first()).toBeVisible({ timeout: 15000 });
 
     // Click the connect button - this calls our connect mutation
     await page.getByRole("button", { name: /connect bank account/i }).click();
@@ -198,7 +211,8 @@ test.describe.serial("Core Loop - Bank Connection Failure", () => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     await safeGoto(page, "/banking/connect");
     await page.waitForTimeout(3000);
-    await expect(page.getByRole("heading", { name: /connect.*bank/i })).toBeVisible({ timeout: 15000 });
+    // CardTitle renders as div, not heading — use getByText instead
+    await expect(page.getByText(/connect your bank/i).first()).toBeVisible({ timeout: 15000 });
 
     // Click connect - this will start the flow
     await page.getByRole("button", { name: /connect.*bank/i }).click();

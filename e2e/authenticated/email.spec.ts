@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "@/config/feature-flags";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Email Inbox", () => {
   test.beforeEach(() => {
@@ -7,7 +8,7 @@ test.describe("Email Inbox", () => {
   });
 
   test("global inbox page loads", async ({ page }) => {
-    await page.goto("/emails");
+    await safeGoto(page, "/emails");
 
     await expect(page.getByRole("heading", { name: /emails/i })).toBeVisible();
     await expect(
@@ -16,7 +17,7 @@ test.describe("Email Inbox", () => {
   });
 
   test("global inbox shows empty state", async ({ page }) => {
-    await page.goto("/emails");
+    await safeGoto(page, "/emails");
 
     await expect(page.getByText(/no emails yet/i)).toBeVisible();
     await expect(
@@ -25,7 +26,7 @@ test.describe("Email Inbox", () => {
   });
 
   test("global inbox has property and status filters", async ({ page }) => {
-    await page.goto("/emails");
+    await safeGoto(page, "/emails");
 
     await expect(page.getByText(/all properties/i)).toBeVisible();
     await expect(page.getByText(/all statuses/i)).toBeVisible();
@@ -35,7 +36,7 @@ test.describe("Email Inbox", () => {
     page,
   }) => {
     // Navigate to a property — find first property link
-    await page.goto("/properties");
+    await safeGoto(page, "/properties");
 
     const propertyLink = page.locator("a[href^='/properties/']").first();
     if (await propertyLink.isVisible()) {
@@ -51,7 +52,7 @@ test.describe("Email Inbox", () => {
   });
 
   test("sidebar shows emails link", async ({ page }) => {
-    await page.goto("/dashboard");
+    await safeGoto(page, "/dashboard");
 
     await expect(
       page.getByRole("link", { name: /emails/i })

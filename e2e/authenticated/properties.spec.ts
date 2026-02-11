@@ -13,7 +13,7 @@ test.describe("Properties", () => {
   });
 
   test("should navigate to new property form directly", async ({ page }) => {
-    await page.goto("/properties/new");
+    await safeGoto(page, "/properties/new");
     await expect(page).toHaveURL(/properties\/new/);
   });
 
