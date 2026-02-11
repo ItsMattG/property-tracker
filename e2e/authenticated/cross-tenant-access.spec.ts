@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { seedDecoyData, cleanupDecoyData } from "../fixtures/decoy-data";
 import { closeDbConnection } from "../fixtures/db";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Cross-Tenant Access Protection", () => {
   let decoyIds: { userId: string; propertyId: string; transactionId: string | null } | null = null;
@@ -44,7 +45,7 @@ test.describe("Cross-Tenant Access Protection", () => {
     const ids = decoyIds!;
 
     // Navigate to decoy property
-    await page.goto(`/properties/${ids.propertyId}`);
+    await safeGoto(page, `/properties/${ids.propertyId}`);
     await page.waitForLoadState("domcontentloaded");
 
     // Wait for the page to settle (tRPC data needs time to load and show "not found")
@@ -71,7 +72,7 @@ test.describe("Cross-Tenant Access Protection", () => {
     const ids = decoyIds!;
 
     // Navigate to transactions with decoy property filter
-    await page.goto(`/transactions?propertyId=${ids.propertyId}`);
+    await safeGoto(page, `/transactions?propertyId=${ids.propertyId}`);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
 
@@ -85,7 +86,7 @@ test.describe("Cross-Tenant Access Protection", () => {
     const ids = decoyIds!;
 
     // Try to access edit page for decoy property
-    await page.goto(`/properties/${ids.propertyId}/edit`);
+    await safeGoto(page, `/properties/${ids.propertyId}/edit`);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(5000);
 
@@ -108,7 +109,7 @@ test.describe("Cross-Tenant Access Protection", () => {
     const ids = decoyIds!;
 
     // First visit the app to get authenticated session
-    await page.goto("/dashboard");
+    await safeGoto(page, "/dashboard");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
 
