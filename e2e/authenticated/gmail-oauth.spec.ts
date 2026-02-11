@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "@/config/feature-flags";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Gmail OAuth Integration", () => {
   test.beforeEach(() => {
@@ -9,7 +10,7 @@ test.describe("Gmail OAuth Integration", () => {
   test("email connections page loads and shows connect button", async ({
     page,
   }) => {
-    await page.goto("/settings/email-connections");
+    await safeGoto(page, "/settings/email-connections");
 
     // Wait for page to load
     await page.waitForLoadState("networkidle");
@@ -40,7 +41,7 @@ test.describe("Gmail OAuth Integration", () => {
   test("shows warning when no approved senders", async ({
     page,
   }) => {
-    await page.goto("/settings/email-connections");
+    await safeGoto(page, "/settings/email-connections");
     await page.waitForLoadState("networkidle");
 
     // Should show alert about adding approved senders first
@@ -52,7 +53,7 @@ test.describe("Gmail OAuth Integration", () => {
   test("connect gmail button navigates to OAuth endpoint", async ({
     page,
   }) => {
-    await page.goto("/settings/email-connections");
+    await safeGoto(page, "/settings/email-connections");
 
     // Wait for tRPC data to load
     await page.waitForSelector("[data-testid='connect-gmail-btn'], a[href='/api/auth/gmail']", {

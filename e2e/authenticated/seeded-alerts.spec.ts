@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "@/config/feature-flags";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Alerts (Seeded Data)", () => {
   test.beforeEach(() => {
@@ -7,7 +8,7 @@ test.describe("Alerts (Seeded Data)", () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto("/alerts");
+    await safeGoto(page, "/alerts");
     // Wait for page to be interactive
     await page.waitForLoadState("domcontentloaded");
     // Give async content time to load

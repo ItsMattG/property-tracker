@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "../../src/config/feature-flags";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Feature Request Submission", () => {
   test.beforeEach(() => {
@@ -7,13 +8,13 @@ test.describe("Feature Request Submission", () => {
   });
 
   test("should show Request Feature button when logged in", async ({ page }) => {
-    await page.goto("/feedback");
+    await safeGoto(page, "/feedback");
 
     await expect(page.getByRole("button", { name: /request feature/i })).toBeVisible();
   });
 
   test("should open feature request modal", async ({ page }) => {
-    await page.goto("/feedback");
+    await safeGoto(page, "/feedback");
 
     await page.getByRole("button", { name: /request feature/i }).click();
 
@@ -22,7 +23,7 @@ test.describe("Feature Request Submission", () => {
   });
 
   test("should have form fields in feature modal", async ({ page }) => {
-    await page.goto("/feedback");
+    await safeGoto(page, "/feedback");
 
     await page.getByRole("button", { name: /request feature/i }).click();
 
@@ -32,7 +33,7 @@ test.describe("Feature Request Submission", () => {
   });
 
   test("should close modal on cancel", async ({ page }) => {
-    await page.goto("/feedback");
+    await safeGoto(page, "/feedback");
 
     await page.getByRole("button", { name: /request feature/i }).click();
     await expect(page.getByRole("dialog")).toBeVisible();

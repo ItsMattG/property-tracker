@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Dashboard (Seeded Data)", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/dashboard");
-    await page.waitForLoadState("domcontentloaded");
+    await safeGoto(page, "/dashboard");
     await page.waitForTimeout(2000);
   });
 

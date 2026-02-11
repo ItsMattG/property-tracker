@@ -49,11 +49,11 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
     }
 
     // Reload to ensure clean form state (driver.js can leave residual event listeners)
-    await page.reload();
-    await page.waitForLoadState("domcontentloaded");
+    await safeGoto(page, "/properties/new");
     await page.waitForTimeout(2000);
 
-    // Step 4: Fill out the property form
+    // Step 4: Fill out the property form (wait for form to render)
+    await expect(page.getByLabel("Street Address")).toBeVisible({ timeout: 15000 });
     await page.getByLabel("Street Address").fill(TEST_PROPERTY.address);
     await page.getByLabel("Suburb").fill(TEST_PROPERTY.suburb);
 

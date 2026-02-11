@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "@/config/feature-flags";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Task Management", () => {
   test.describe.configure({ mode: "serial" });
@@ -10,7 +11,7 @@ test.describe("Task Management", () => {
 
   test.beforeEach(async ({ page }) => {
     // Navigate to tasks page
-    await page.goto("/tasks");
+    await safeGoto(page, "/tasks");
   });
 
   test("shows tasks page with new task button", async ({ page }) => {

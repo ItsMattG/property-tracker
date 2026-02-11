@@ -1,11 +1,12 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { safeGoto } from "../fixtures/test-helpers";
 
 test.describe("Accessibility - Authenticated Pages", () => {
   test("dashboard should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/dashboard");
+    await safeGoto(page, "/dashboard");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
 
@@ -27,7 +28,7 @@ test.describe("Accessibility - Authenticated Pages", () => {
   test("properties page should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/properties");
+    await safeGoto(page, "/properties");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
 
@@ -48,7 +49,7 @@ test.describe("Accessibility - Authenticated Pages", () => {
   test("transactions page should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/transactions");
+    await safeGoto(page, "/transactions");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
 
@@ -69,7 +70,7 @@ test.describe("Accessibility - Authenticated Pages", () => {
   test("tax report page should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/tax-report");
+    await safeGoto(page, "/tax-report");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
 
@@ -88,7 +89,7 @@ test.describe("Accessibility - Authenticated Pages", () => {
   test("settings page should have no critical accessibility violations", async ({
     page,
   }) => {
-    await page.goto("/settings");
+    await safeGoto(page, "/settings");
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
 
