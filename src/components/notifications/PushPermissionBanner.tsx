@@ -72,7 +72,7 @@ export function PushPermissionBanner() {
             Enable
           </Button>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleDismiss} className="ml-2">
+        <Button variant="ghost" size="icon" onClick={handleDismiss} className="ml-2" aria-label="Dismiss">
           <X className="h-4 w-4" />
         </Button>
       </div>

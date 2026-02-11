@@ -189,7 +189,7 @@ function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full">
+        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full" aria-label="User menu">
           {session.user.image ? (
             <img
               src={session.user.image}
