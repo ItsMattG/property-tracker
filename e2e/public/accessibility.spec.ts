@@ -7,7 +7,8 @@ test.describe("Accessibility - Public Pages", () => {
     page,
   }) => {
     await safeGoto(page, "/");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
 
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
@@ -24,7 +25,8 @@ test.describe("Accessibility - Public Pages", () => {
     page,
   }) => {
     await safeGoto(page, "/blog");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
 
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
@@ -41,7 +43,8 @@ test.describe("Accessibility - Public Pages", () => {
     page,
   }) => {
     await safeGoto(page, "/changelog");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
 
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
@@ -58,7 +61,8 @@ test.describe("Accessibility - Public Pages", () => {
     page,
   }) => {
     await safeGoto(page, "/privacy");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
 
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
@@ -75,7 +79,8 @@ test.describe("Accessibility - Public Pages", () => {
     page,
   }) => {
     await safeGoto(page, "/terms");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
 
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
