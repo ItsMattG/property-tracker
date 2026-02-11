@@ -9,13 +9,13 @@ test.describe("Settings - Theme Toggle", () => {
 
     // Navigate to settings
     await page.goto("/settings");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(2000);
 
     // Verify Appearance section is visible
     await expect(page.getByText("Appearance")).toBeVisible({ timeout: 10_000 });
 
     // Theme toggle may say "Switch to dark mode" or "Switch to light mode" depending on current state
-    const darkModeBtn = page.getByRole("button", { name: /switch to dark mode/i });
     const lightModeBtn = page.getByRole("button", { name: /switch to light mode/i });
 
     // If already in dark mode, switch to light first to reset
@@ -35,7 +35,8 @@ test.describe("Settings - Theme Toggle", () => {
 
     // Reload and verify theme persists (from DB via SSR)
     await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(2000);
 
     const themeAfterReload = await page.evaluate(() =>
       document.documentElement.getAttribute("data-theme")
@@ -44,7 +45,8 @@ test.describe("Settings - Theme Toggle", () => {
 
     // Toggle back to light mode to clean up
     await page.goto("/settings");
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(2000);
     await page.getByRole("button", { name: /switch to light mode/i }).click();
 
     const resetTheme = await page.evaluate(() =>

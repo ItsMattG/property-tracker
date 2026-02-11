@@ -32,9 +32,12 @@ test.describe("Bank Feeds", () => {
 
   test("should show Connect Bank button", async ({ page }) => {
     await page.goto("/banking");
-    await expect(
-      page.getByRole("link", { name: /connect bank/i })
-    ).toBeVisible();
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(3000);
+
+    // Button text varies: "Connect Bank" (when accounts exist) or "Connect Your Bank" (empty state)
+    const hasConnectBank = await page.getByRole("link", { name: /connect.*bank/i }).first().isVisible().catch(() => false);
+    expect(hasConnectBank).toBe(true);
   });
 
   test("should navigate to connect page directly", async ({ page }) => {
