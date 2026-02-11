@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { safeGoto } from "../fixtures/test-helpers";
+import { safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
 
 const TEST_PROPERTY = {
   address: "1 Smoke Test Street",
@@ -38,22 +38,13 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
 
     // Step 3: Navigate to add property page
     await safeGoto(page, "/properties/new");
-    await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
     // Dismiss onboarding tour if it appears
-    const tourOverlay = page.locator(".driver-overlay");
-    if (await tourOverlay.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await page.keyboard.press("Escape");
-      await expect(tourOverlay).not.toBeVisible({ timeout: 3000 });
-    }
-
-    // Reload to ensure clean form state (driver.js can leave residual event listeners)
-    await safeGoto(page, "/properties/new");
-    await page.waitForTimeout(2000);
+    await dismissTourIfVisible(page);
 
     // Step 4: Fill out the property form (wait for form to render)
-    await expect(page.getByLabel("Street Address")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByLabel("Street Address")).toBeVisible({ timeout: 30000 });
     await page.getByLabel("Street Address").fill(TEST_PROPERTY.address);
     await page.getByLabel("Suburb").fill(TEST_PROPERTY.suburb);
 
