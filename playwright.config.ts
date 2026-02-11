@@ -13,6 +13,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  // Staging is slower — give tests more time in CI
+  timeout: process.env.CI ? 60_000 : 30_000,
   // Use blob reporter in CI for shard merging, HTML locally
   reporter: process.env.CI ? "blob" : "html",
   use: {

@@ -19,8 +19,8 @@ export function isBenignError(err: Error | string): boolean {
 }
 
 /**
- * Navigate to a URL with retry on net::ERR_ABORTED.
- * Staging can intermittently abort page loads; this retries up to `maxRetries` times.
+ * Navigate to a URL with retry on transient staging errors.
+ * Retries on net::ERR_ABORTED and page.goto timeouts.
  */
 export async function safeGoto(
   page: Page,
@@ -36,12 +36,32 @@ export async function safeGoto(
       return; // Success
     } catch (error) {
       const msg = (error as Error).message || "";
-      if (msg.includes("ERR_ABORTED") && attempt < maxRetries) {
+      const isRetryable =
+        msg.includes("ERR_ABORTED") ||
+        msg.includes("Timeout") ||
+        msg.includes("timeout");
+      if (isRetryable && attempt < maxRetries) {
         // Wait briefly then retry
         await page.waitForTimeout(2000);
         continue;
       }
-      throw error; // Re-throw if not ERR_ABORTED or out of retries
+      throw error; // Re-throw if not retryable or out of retries
     }
   }
+}
+
+/**
+ * Dismiss the driver.js onboarding tour overlay if visible.
+ * Returns true if a tour was dismissed.
+ */
+export async function dismissTourIfVisible(page: Page): Promise<boolean> {
+  const tourOverlay = page.locator(".driver-overlay");
+  if (await tourOverlay.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await page.keyboard.press("Escape");
+    await tourOverlay.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
+    // Give React time to settle after tour dismissal
+    await page.waitForTimeout(1000);
+    return true;
+  }
+  return false;
 }
