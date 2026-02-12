@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "../../src/config/feature-flags";
-import { isBenignError, safeGoto } from "../fixtures/test-helpers";
+import { isBenignError, safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
 
 test.describe("Dashboard", () => {
   let pageErrors: Error[];
@@ -280,25 +280,28 @@ test.describe("Dashboard", () => {
   test("should collapse and expand the sidebar", async ({
     page,
   }) => {
+    // Dismiss onboarding tour first — its overlay intercepts clicks
+    await dismissTourIfVisible(page);
+
     const sidebar = page.locator("aside");
 
     // Sidebar starts expanded (give extra time on slow staging)
     await expect(sidebar).toHaveClass(/w-64/, { timeout: 10000 });
     await expect(sidebar.getByText("BrickTrack")).toBeVisible({ timeout: 5000 });
 
-    // Click collapse (force: true to bypass any tour overlay)
+    // Click collapse
     await sidebar
       .getByRole("button", { name: /collapse sidebar/i })
-      .click({ force: true });
+      .click();
 
     // Sidebar is now collapsed
     await expect(sidebar).toHaveClass(/w-16/);
     await expect(sidebar.getByText("BrickTrack")).not.toBeVisible();
 
-    // Click expand (force: true to bypass any tour overlay)
+    // Click expand
     await sidebar
       .getByRole("button", { name: /expand sidebar/i })
-      .click({ force: true });
+      .click();
 
     // Sidebar is expanded again
     await expect(sidebar).toHaveClass(/w-64/);
