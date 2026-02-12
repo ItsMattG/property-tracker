@@ -78,10 +78,10 @@ export function calculatePropertyMetrics(
   }
 
   return {
-    totalIncome,
-    totalExpenses,
-    netIncome: totalIncome - totalExpenses,
-    totalDeductible,
+    totalIncome: Math.round(totalIncome * 100) / 100,
+    totalExpenses: Math.round(totalExpenses * 100) / 100,
+    netIncome: Math.round((totalIncome - totalExpenses) * 100) / 100,
+    totalDeductible: Math.round(totalDeductible * 100) / 100,
   };
 }
 
