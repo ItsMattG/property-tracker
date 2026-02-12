@@ -15,7 +15,7 @@ test.describe("Bank Reconciliation", () => {
       await safeGoto(page, "/banking");
       await page.waitForTimeout(2000);
 
-      const hasAccounts = await page.getByText(/\d+ accounts? across/i).isVisible().catch(() => false);
+      const hasAccounts = await page.getByText(/[1-9]\d* accounts? across/i).isVisible().catch(() => false);
       if (!hasAccounts) return; // No accounts — skip summary check
 
       // Summary stat cards should be visible
@@ -34,7 +34,7 @@ test.describe("Bank Reconciliation", () => {
       await safeGoto(page, "/banking");
       await page.waitForTimeout(2000);
 
-      const hasAccounts = await page.getByText(/\d+ accounts? across/i).isVisible().catch(() => false);
+      const hasAccounts = await page.getByText(/[1-9]\d* accounts? across/i).isVisible().catch(() => false);
       if (!hasAccounts) return;
 
       // Each account should show either "Reconcile X Items" or "All reconciled"
@@ -48,7 +48,7 @@ test.describe("Bank Reconciliation", () => {
       await safeGoto(page, "/banking");
       await page.waitForTimeout(2000);
 
-      const hasAccounts = await page.getByText(/\d+ accounts? across/i).isVisible().catch(() => false);
+      const hasAccounts = await page.getByText(/[1-9]\d* accounts? across/i).isVisible().catch(() => false);
       if (!hasAccounts) return;
 
       // Each account card has a balance summary row with BrickTrack balance
@@ -61,7 +61,7 @@ test.describe("Bank Reconciliation", () => {
       await page.waitForTimeout(3000);
 
       // Should show either the accounts list with summary or the empty state
-      const hasAccounts = await page.getByText(/\d+ accounts? across/i).isVisible().catch(() => false);
+      const hasAccounts = await page.getByText(/[1-9]\d* accounts? across/i).isVisible().catch(() => false);
       const hasEmptyState = await page.getByText(/no bank accounts connected/i).isVisible().catch(() => false);
       const hasHeading = await page.getByRole("heading", { name: /bank feeds/i }).isVisible().catch(() => false);
 
