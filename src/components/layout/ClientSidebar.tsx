@@ -8,7 +8,7 @@ const Sidebar = dynamic(
   {
     ssr: true,
     loading: () => (
-      <div className="w-56 xl:w-64 border-r border-border bg-card h-screen shrink-0">
+      <div className="w-56 xl:w-64 border-r border-border bg-card h-screen shrink-0 hidden md:block">
         <Skeleton className="h-full w-full" />
       </div>
     ),

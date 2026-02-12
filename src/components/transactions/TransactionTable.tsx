@@ -172,7 +172,7 @@ export function TransactionTable({
                 const isIncome = categoryInfo?.type === "income";
 
                 return (
-                  <TableRow key={transaction.id}>
+                  <TableRow key={transaction.id} className="hover:bg-muted/50 transition-colors">
                     <TableCell>
                       <Checkbox
                         checked={selectedIds.has(transaction.id)}
