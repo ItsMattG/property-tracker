@@ -258,19 +258,20 @@ test.describe("Dashboard", () => {
   test("should display Portfolio Summary table", async ({
     page,
   }) => {
-    // PortfolioSummaryTable renders when metrics exist; may be hidden if no properties
-    await page.waitForTimeout(1000);
-    const heading = page.getByText("Portfolio Summary", { exact: true });
-    const headingVisible = await heading.isVisible({ timeout: 5000 }).catch(() => false);
+    // Wait for dashboard to fully render
+    await expect(page.getByRole("heading", { name: /welcome to bricktrack/i })).toBeVisible({ timeout: 10000 });
 
-    if (headingVisible) {
-      // If heading visible, check for at least one column header
-      const hasValue = await page.getByRole("columnheader", { name: "Value" }).isVisible().catch(() => false);
-      const hasLoan = await page.getByRole("columnheader", { name: "Loan" }).isVisible().catch(() => false);
-      const hasEquity = await page.getByRole("columnheader", { name: "Equity" }).isVisible().catch(() => false);
-      expect(hasValue || hasLoan || hasEquity).toBe(true);
+    // Portfolio Summary has 3 states: loading (heading + skeleton), empty (null), data (heading + table).
+    // Wait for loading to settle — either the table appears or the component unmounts.
+    const columnHeader = page.getByRole("columnheader", { name: "Value" });
+    const headerVisible = await columnHeader.isVisible({ timeout: 10000 }).catch(() => false);
+
+    if (headerVisible) {
+      // Table loaded with data — verify structure
+      await expect(page.getByRole("columnheader", { name: "Loan" })).toBeVisible();
+      await expect(page.getByRole("columnheader", { name: "Equity" })).toBeVisible();
     }
-    // If heading not visible (no properties or still loading), test passes
+    // If columnheader never appears (no properties or empty metrics), test passes
   });
 
   // ── Sidebar collapse/expand ────────────────────────────────────────

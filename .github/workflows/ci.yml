@@ -187,13 +187,37 @@ jobs:
           BETTER_AUTH_URL: http://localhost:3000
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
-  e2e-auth:
-    name: E2E Auth
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next/
+          retention-days: 1
+
+  e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
     needs: [build]
-    timeout-minutes: 10
+    timeout-minutes: 15
     environment: production
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: bricktrack
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bricktrack
+      BETTER_AUTH_SECRET: test-secret-for-ci-builds
+      BETTER_AUTH_URL: http://localhost:3000
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -227,150 +251,48 @@ jobs:
         run: pnpm exec playwright install-deps chromium
         if: steps.playwright-cache.outputs.cache-hit == 'true'
 
-      - name: Wait for staging deploy
-        run: |
-          echo "Waiting for staging to be ready..."
-          for i in $(seq 1 30); do
-            if curl -sf https://staging.bricktrack.au > /dev/null 2>&1; then
-              echo "Staging is ready!"
-              exit 0
-            fi
-            echo "Attempt $i/30 - waiting 10s..."
-            sleep 10
-          done
-          echo "Staging not ready after 5 minutes"
-          exit 1
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next/
+
+      - name: Push database schema
+        run: pnpm exec drizzle-kit push
 
       - name: Seed E2E test data
         run: npx tsx src/scripts/seed.ts demo --email=${{ secrets.E2E_USER_EMAIL }} --clean
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          E2E_SEED_DATA: "true"
         continue-on-error: true
 
-      - name: Authenticate E2E user
-        run: pnpm exec playwright test --project=setup
-        env:
-          PLAYWRIGHT_BASE_URL: https://staging.bricktrack.au
-          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
-          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      - name: Start Next.js server
+        run: |
+          pnpm start &
+          # Wait for server to be ready
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+              echo "Server is ready!"
+              exit 0
+            fi
+            echo "Waiting for server... ($i/30)"
+            sleep 2
+          done
+          echo "Server not ready after 60s"
+          exit 1
 
-      - name: Upload auth state
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-auth-state
-          path: e2e/.auth/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  e2e-tests:
-    name: E2E Tests (Shard ${{ matrix.shardIndex }}/4)
-    runs-on: ubuntu-latest
-    needs: [e2e-auth]
-    timeout-minutes: 30
-    environment: production
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    strategy:
-      fail-fast: false
-      matrix:
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-
-      - name: Install Playwright deps only
-        run: pnpm exec playwright install-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-
-      - name: Download auth state
-        uses: actions/download-artifact@v4
-        with:
-          name: e2e-auth-state
-          path: e2e/.auth/
-
-      - name: Run E2E tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
-        run: pnpm exec playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+      - name: Run E2E tests
+        run: pnpm exec playwright test
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
-          PLAYWRIGHT_BASE_URL: https://staging.bricktrack.au
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          BETTER_AUTH_URL: https://staging.bricktrack.au
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          NEXT_PUBLIC_APP_URL: https://staging.bricktrack.au
           E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
           E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
           BASIQ_API_KEY: ${{ secrets.BASIQ_API_KEY }}
+          E2E_SEED_DATA: "true"
 
-      - name: Upload blob report
+      - name: Upload Playwright report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
-        with:
-          name: blob-report-${{ matrix.shardIndex }}
-          path: blob-report
-          retention-days: 1
-
-  e2e-report:
-    name: E2E Report
-    runs-on: ubuntu-latest
-    needs: [e2e-tests]
-    if: ${{ !cancelled() && (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')) }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Download blob reports
-        uses: actions/download-artifact@v4
-        with:
-          path: all-blob-reports
-          pattern: blob-report-*
-          merge-multiple: true
-
-      - name: Merge reports
-        run: pnpm exec playwright merge-reports --reporter html ./all-blob-reports
-
-      - name: Upload merged report
-        uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: playwright-report
           path: playwright-report/
