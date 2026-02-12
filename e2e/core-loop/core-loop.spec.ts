@@ -57,17 +57,19 @@ test.describe.serial("Core Loop - Happy Path", () => {
     await dismissTourIfVisible(page);
 
     // Fill in required fields (wait for form to render)
-    await expect(page.getByLabel(/street address/i)).toBeVisible({ timeout: 30000 });
-    await page.getByLabel(/street address/i).fill("E2E Test 123 Smith Street");
-    await page.getByLabel(/suburb/i).fill("Sydney");
+    // AddressAutocomplete renders a textbox with placeholder — no label association
+    const addressInput = page.getByPlaceholder(/start typing an address|123 Smith Street/i);
+    await expect(addressInput).toBeVisible({ timeout: 30000 });
+    await addressInput.fill("E2E Test 123 Smith Street");
+    await page.getByRole("textbox", { name: /suburb/i }).fill("Sydney");
 
     // Select state
-    await page.getByLabel(/state/i).click();
+    await page.getByRole("combobox", { name: /state/i }).click();
     await page.getByRole("option", { name: "NSW" }).click();
 
-    await page.getByLabel(/postcode/i).fill("2000");
-    await page.getByLabel(/purchase price/i).fill("850000");
-    await page.getByLabel(/purchase date/i).fill("2024-01-15");
+    await page.getByRole("textbox", { name: /postcode/i }).fill("2000");
+    await page.getByRole("textbox", { name: /purchase price/i }).fill("850000");
+    await page.getByRole("textbox", { name: /contract date/i }).fill("2024-01-15");
 
     // Submit the form
     await page.getByRole("button", { name: /add property|create|save/i }).click();

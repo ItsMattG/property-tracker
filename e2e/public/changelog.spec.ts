@@ -6,8 +6,8 @@ test.describe("Changelog", () => {
     await safeGoto(page, "/changelog");
     await page.waitForLoadState("domcontentloaded");
 
-    // Verify page title
-    await expect(page.locator("h1")).toContainText("Changelog");
+    // Verify page title (give extra time for SSR hydration on staging)
+    await expect(page.locator("h1")).toContainText("Changelog", { timeout: 30_000 });
 
     // Verify tabs exist
     await expect(page.getByRole("tab", { name: "All" })).toBeVisible();
@@ -19,10 +19,11 @@ test.describe("Changelog", () => {
   test("changelog entry detail page loads", async ({ page }) => {
     await safeGoto(page, "/changelog");
     await page.waitForLoadState("domcontentloaded");
+    await expect(page.locator("h1")).toContainText("Changelog", { timeout: 30_000 });
 
     // Click on an entry (if exists)
     const entry = page.locator("a[href^='/changelog/']").first();
-    if (await entry.isVisible()) {
+    if (await entry.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await entry.click();
 
       // Verify we're on detail page
@@ -33,10 +34,11 @@ test.describe("Changelog", () => {
   test("category filters work", async ({ page }) => {
     await safeGoto(page, "/changelog");
     await page.waitForLoadState("domcontentloaded");
+    await expect(page.locator("h1")).toContainText("Changelog", { timeout: 30_000 });
 
     // Wait for tabs to be rendered
     const featuresTab = page.getByRole("tab", { name: "Features" });
-    await expect(featuresTab).toBeVisible({ timeout: 10000 });
+    await expect(featuresTab).toBeVisible({ timeout: 15_000 });
 
     // Click Features tab
     await featuresTab.click();

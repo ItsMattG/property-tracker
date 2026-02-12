@@ -44,17 +44,19 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
     await dismissTourIfVisible(page);
 
     // Step 4: Fill out the property form (wait for form to render)
-    await expect(page.getByLabel("Street Address")).toBeVisible({ timeout: 30000 });
-    await page.getByLabel("Street Address").fill(TEST_PROPERTY.address);
-    await page.getByLabel("Suburb").fill(TEST_PROPERTY.suburb);
+    // AddressAutocomplete renders a textbox with placeholder — no label association
+    const addressInput = page.getByPlaceholder(/start typing an address|123 Smith Street/i);
+    await expect(addressInput).toBeVisible({ timeout: 30000 });
+    await addressInput.fill(TEST_PROPERTY.address);
+    await page.getByRole("textbox", { name: "Suburb" }).fill(TEST_PROPERTY.suburb);
 
     // State is a Radix Select - click trigger then option (use name to avoid hidden native select)
     await page.getByRole("combobox", { name: "State" }).click();
     await page.getByRole("option", { name: TEST_PROPERTY.state }).click();
 
-    await page.getByLabel("Postcode").fill(TEST_PROPERTY.postcode);
-    await page.getByLabel("Purchase Price ($)").fill(TEST_PROPERTY.price);
-    await page.getByLabel("Purchase Date").fill(TEST_PROPERTY.date);
+    await page.getByRole("textbox", { name: "Postcode" }).fill(TEST_PROPERTY.postcode);
+    await page.getByRole("textbox", { name: /purchase price/i }).fill(TEST_PROPERTY.price);
+    await page.getByRole("textbox", { name: /contract date/i }).fill(TEST_PROPERTY.date);
 
     // Step 5: Submit the form
     await page.getByRole("button", { name: /save property/i }).click();

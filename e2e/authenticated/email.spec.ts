@@ -43,7 +43,7 @@ test.describe("Email Inbox", () => {
       await propertyLink.click();
 
       // Navigate to emails tab
-      await page.goto(page.url() + "/emails");
+      await safeGoto(page, page.url() + "/emails");
 
       await expect(page.getByText(/email forwarding/i)).toBeVisible();
       await expect(page.getByText(/forward property emails/i)).toBeVisible();
