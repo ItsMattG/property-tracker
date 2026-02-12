@@ -262,6 +262,9 @@ jobs:
       - name: Extract build output
         run: tar xf nextjs-build.tar
 
+      - name: Enable pgvector extension
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -d bricktrack -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
       - name: Push database schema
         run: pnpm exec drizzle-kit push
 
