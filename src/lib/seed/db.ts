@@ -49,12 +49,20 @@ export async function getOrCreateUser(email: string, password?: string): Promise
     return existingUser.id;
   }
 
-  // Create user
+  // Create user with pro trial (matches BetterAuth databaseHooks behavior)
+  const now = new Date();
+  const trialEnd = new Date(now);
+  trialEnd.setDate(trialEnd.getDate() + 14);
+
   const [newUser] = await db
     .insert(schema.users)
     .values({
       email,
       name: "Demo User",
+      emailVerified: true,
+      trialStartedAt: now,
+      trialEndsAt: trialEnd,
+      trialPlan: "pro",
     })
     .returning();
 
