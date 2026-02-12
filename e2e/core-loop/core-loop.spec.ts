@@ -18,6 +18,7 @@ const TEST_MOBILE = "0412345678";
 
 let basiqSandboxUserId: string | null = null;
 let testPropertyId: string | null = null;
+let bankConnected = false;
 
 /**
  * Click "Connect Bank Account" and handle the MOBILE_REQUIRED flow.
@@ -190,11 +191,13 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
     // Verify accounts are listed
     await expect(page.getByText(/account/i).first()).toBeVisible({ timeout: 10000 });
+    bankConnected = true;
   });
 
   test("Step 3: Link account to property", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
     test.skip(!testPropertyId, "No test property created");
+    test.skip(!bankConnected, "Bank connection step was skipped or failed");
 
     await safeGoto(page, "/banking");
     await expect(page.getByRole("heading", { name: /bank feeds/i })).toBeVisible();
@@ -207,6 +210,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 4: Sync transactions", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
+    test.skip(!bankConnected, "Bank connection step was skipped or failed");
     await safeGoto(page, "/banking");
 
     // Find and click the Sync button

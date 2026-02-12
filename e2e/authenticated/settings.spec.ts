@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { BENIGN_ERROR_PATTERNS, safeGoto } from "../fixtures/test-helpers";
+import { BENIGN_ERROR_PATTERNS, safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
 
 test.describe("Settings - Theme Toggle", () => {
   test("can toggle dark mode and it persists after reload", async ({
@@ -14,11 +14,14 @@ test.describe("Settings - Theme Toggle", () => {
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(2000);
 
+    // Dismiss onboarding tour — it duplicates buttons causing strict mode violations
+    await dismissTourIfVisible(page);
+
     // Verify Appearance section is visible
     await expect(page.getByText("Appearance")).toBeVisible({ timeout: 10_000 });
 
     // Theme toggle may say "Switch to dark mode" or "Switch to light mode" depending on current state
-    const lightModeBtn = page.getByRole("button", { name: /switch to light mode/i });
+    const lightModeBtn = page.getByRole("button", { name: /switch to light mode/i }).first();
 
     // If already in dark mode, switch to light first to reset
     if (await lightModeBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
@@ -37,7 +40,7 @@ test.describe("Settings - Theme Toggle", () => {
     );
 
     // Click dark mode toggle — applyTheme() synchronously sets data-theme + localStorage
-    await page.getByRole("button", { name: /switch to dark mode/i }).click({ timeout: 10_000 });
+    await page.getByRole("button", { name: /switch to dark mode/i }).first().click({ timeout: 10_000 });
 
     // Verify data-theme is set (applyTheme sets it synchronously, mock prevents revert)
     await page.waitForFunction(
