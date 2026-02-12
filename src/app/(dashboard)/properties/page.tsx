@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { trpc } from "@/lib/trpc/client";
-import { Plus, Building2 } from "lucide-react";
+import { Plus } from "lucide-react";
+import { PropertyIllustration } from "@/components/ui/illustrations/PropertyIllustration";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 import { PropertyListSkeleton } from "@/components/skeletons";
@@ -171,9 +172,7 @@ export default function PropertiesPage() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Building2 className="w-8 h-8 text-primary" />
-          </div>
+          <PropertyIllustration className="w-24 h-24 text-primary/40 mb-4" />
           <h3 className="text-lg font-semibold">No properties yet</h3>
           <p className="text-muted-foreground max-w-sm mt-2">
             Add your first investment property to start tracking your portfolio.

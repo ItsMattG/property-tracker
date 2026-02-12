@@ -78,7 +78,7 @@ export function PortfolioSummaryTable() {
             </TableHeader>
             <TableBody>
               {metrics.map((m) => (
-                <TableRow key={m.propertyId}>
+                <TableRow key={m.propertyId} className="hover:bg-muted/50 transition-colors">
                   <TableCell className="pl-6 font-medium">
                     <Link
                       href={`/properties/${m.propertyId}`}
