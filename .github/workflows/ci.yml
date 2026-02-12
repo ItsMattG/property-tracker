@@ -187,12 +187,14 @@ jobs:
           BETTER_AUTH_URL: http://localhost:3000
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
+      - name: Tar build output
+        run: tar cf nextjs-build.tar .next/
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-build
-          path: .next/
-          include-hidden-files: true
+          path: nextjs-build.tar
           retention-days: 1
 
   e2e:
@@ -256,7 +258,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: nextjs-build
-          path: .next/
+
+      - name: Extract build output
+        run: tar xf nextjs-build.tar
 
       - name: Push database schema
         run: pnpm exec drizzle-kit push
