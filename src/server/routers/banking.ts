@@ -699,9 +699,16 @@ export const bankingRouter = router({
 
       // Create auth link for consent flow — if the stored basiqUserId is stale
       // (e.g. API key changed, user deleted from Basiq), recreate the user and retry
+      const hadExistingConsent = !!user.basiqUserId;
       try {
         const { links } = await basiqService.createAuthLink(basiqUserId);
-        return { url: links.public };
+        let url = links.public;
+        // If user already has consent, append action=connect so Basiq skips the
+        // consent management screen and goes straight to bank selection
+        if (hadExistingConsent) {
+          url += (url.includes("?") ? "&" : "?") + "action=connect";
+        }
+        return { url };
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         const isNotFound = msg.includes("resource-not-found");
@@ -725,6 +732,7 @@ export const bankingRouter = router({
             .where(eq(users.id, user.id));
 
           const { links } = await basiqService.createAuthLink(basiqUserId);
+          // New Basiq user = fresh consent needed, no action param
           return { url: links.public };
         } catch (retryError) {
           const retryMsg = retryError instanceof Error ? retryError.message : String(retryError);
