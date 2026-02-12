@@ -25,7 +25,6 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Sidebar } from "./Sidebar";
-import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -279,9 +278,7 @@ export function Header() {
       {/* Mobile navigation drawer */}
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent side="left" className="w-[280px] p-0 md:hidden" showCloseButton={false}>
-          <VisuallyHidden.Root>
-            <SheetTitle>Navigation</SheetTitle>
-          </VisuallyHidden.Root>
+          <SheetTitle className="sr-only">Navigation</SheetTitle>
           <Sidebar onNavigate={() => setMobileNavOpen(false)} />
         </SheetContent>
       </Sheet>
