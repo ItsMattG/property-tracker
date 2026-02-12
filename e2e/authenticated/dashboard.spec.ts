@@ -9,7 +9,8 @@ test.describe("Dashboard", () => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
     await safeGoto(page, "/dashboard");
-    await page.waitForTimeout(3000);
+    // Wait for initial React render (shorter wait to leave more time for test body)
+    await page.waitForTimeout(1000);
   });
 
   test.afterEach(() => {
@@ -228,7 +229,7 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     // Wait for dashboard to load
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
 
     // The map only renders when properties exist
     const mapVisible = await page.getByTestId("australia-map").isVisible().catch(() => false);
@@ -247,7 +248,7 @@ test.describe("Dashboard", () => {
   }) => {
     // CashFlowWidget renders a CardTitle "Cash Flow" in all states (loading, empty, data)
     // On slow staging, give extra time for tRPC data to load
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
     const hasCashFlow = await page.getByRole("heading", { name: "Cash Flow", exact: true }).isVisible({ timeout: 10000 }).catch(() => false);
     const hasDashboard = await page.getByRole("heading", { name: /dashboard/i }).first().isVisible().catch(() => false);
     // Cash Flow widget should be visible, but if page is still loading, dashboard heading is enough
@@ -258,7 +259,7 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     // PortfolioSummaryTable renders when metrics exist; may be hidden if no properties
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1000);
     const heading = page.getByText("Portfolio Summary", { exact: true });
     const headingVisible = await heading.isVisible({ timeout: 5000 }).catch(() => false);
 

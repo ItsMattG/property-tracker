@@ -43,18 +43,24 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
     // Dismiss onboarding tour if it appears
     await dismissTourIfVisible(page);
 
-    // Step 4: Fill out the property form (wait for form to render)
-    await expect(page.getByLabel("Street Address")).toBeVisible({ timeout: 30000 });
-    await page.getByLabel("Street Address").fill(TEST_PROPERTY.address);
-    await page.getByLabel("Suburb").fill(TEST_PROPERTY.suburb);
+    // Step 4: Fill out the property form
+    // Note: AddressAutocomplete doesn't forward id from FormControl, so getByLabel won't work.
+    // Use input[name] selectors for fields using custom input components.
+    const addressInput = page.locator('input[name="address"]');
+    await expect(addressInput).toBeVisible({ timeout: 30000 });
+    await addressInput.fill(TEST_PROPERTY.address);
+    await page.locator('input[name="suburb"]').fill(TEST_PROPERTY.suburb);
 
-    // State is a Radix Select - click trigger then option (use name to avoid hidden native select)
+    // State is a Radix Select - click trigger then option
     await page.getByRole("combobox", { name: "State" }).click();
     await page.getByRole("option", { name: TEST_PROPERTY.state }).click();
 
-    await page.getByLabel("Postcode").fill(TEST_PROPERTY.postcode);
-    await page.getByLabel("Purchase Price ($)").fill(TEST_PROPERTY.price);
-    await page.getByLabel("Purchase Date").fill(TEST_PROPERTY.date);
+    await page.locator('input[name="postcode"]').fill(TEST_PROPERTY.postcode);
+    await page.locator('input[name="purchasePrice"]').fill(TEST_PROPERTY.price);
+
+    // DatePicker properly forwards the id from FormControl, so getByLabel works
+    // Note: The form label is "Contract Date", not "Purchase Date"
+    await page.getByPlaceholder("DD/MM/YYYY").first().fill("15/06/2024");
 
     // Step 5: Submit the form
     await page.getByRole("button", { name: /save property/i }).click();
