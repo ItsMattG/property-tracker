@@ -7,16 +7,35 @@
  * Uses Basiq sandbox credentials for automated testing.
  * Run with: pnpm test:core-loop
  */
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { testDb, closeDbConnection, schema } from "../fixtures/db";
 import { createSandboxUser, deleteSandboxUser, sandboxCredentials } from "../fixtures/basiq-sandbox";
 import { safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
 import { eq } from "drizzle-orm";
 
 const BASIQ_API_KEY = process.env.BASIQ_API_KEY;
+const TEST_MOBILE = "0412345678";
 
 let basiqSandboxUserId: string | null = null;
 let testPropertyId: string | null = null;
+
+/**
+ * Click "Connect Bank Account" and handle the MOBILE_REQUIRED flow.
+ * The connect mutation requires a mobile number for Basiq SMS verification.
+ * If the user doesn't have one stored, the UI shows a mobile input form.
+ */
+async function clickConnectAndHandleMobile(page: Page) {
+  await page.getByRole("button", { name: /connect bank account/i }).click();
+
+  // The mutation may return MOBILE_REQUIRED, which shows a mobile input form
+  const mobileInput = page.locator('input[name="mobile"]');
+  const mobileFormVisible = await mobileInput.isVisible({ timeout: 5000 }).catch(() => false);
+
+  if (mobileFormVisible) {
+    await mobileInput.fill(TEST_MOBILE);
+    await page.getByRole("button", { name: /continue/i }).click();
+  }
+}
 
 test.describe.serial("Core Loop - Happy Path", () => {
   test.beforeAll(async () => {
@@ -95,12 +114,11 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 2: Connect bank account via Basiq", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    test.skip(!!process.env.CI, "Basiq consent redirect not available in CI");
     await safeGoto(page, "/banking/connect");
     await expect(page.getByText(/connect your bank/i).first()).toBeVisible({ timeout: 15000 });
 
-    // Click the connect button - this calls our connect mutation
-    await page.getByRole("button", { name: /connect bank account/i }).click();
+    // Click the connect button (handles MOBILE_REQUIRED flow if needed)
+    await clickConnectAndHandleMobile(page);
 
     // The page should redirect to Basiq consent UI
     // In sandbox mode, we'll interact with the Basiq consent flow
@@ -139,7 +157,6 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 3: Link account to property", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     test.skip(!testPropertyId, "No test property created");
 
     await safeGoto(page, "/banking");
@@ -153,7 +170,6 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 4: Sync transactions", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     await safeGoto(page, "/banking");
 
     // Find and click the Sync button
@@ -172,14 +188,12 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 5: Verify transactions page loads", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     await safeGoto(page, "/transactions");
     await expect(page.getByRole("heading", { name: /transaction/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("Step 6: Export - Reports export page", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     await safeGoto(page, "/reports/export");
     await expect(page.getByRole("heading", { name: /export/i }).first()).toBeVisible({ timeout: 10000 });
 
@@ -197,7 +211,6 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 7: Export - CSV export page", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     await safeGoto(page, "/export");
     await expect(page.getByRole("heading", { name: /export/i }).first()).toBeVisible({ timeout: 10000 });
 
@@ -210,14 +223,13 @@ test.describe.serial("Core Loop - Happy Path", () => {
 test.describe.serial("Core Loop - Bank Connection Failure", () => {
   test("should handle bank connection error gracefully", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
-    test.skip(!!process.env.CI, "Basiq consent redirect not available in CI");
     await safeGoto(page, "/banking/connect");
     await page.waitForTimeout(3000);
     // CardTitle renders as div, not heading — use getByText instead
     await expect(page.getByText(/connect your bank/i).first()).toBeVisible({ timeout: 15000 });
 
-    // Click connect - this will start the flow
-    await page.getByRole("button", { name: /connect.*bank/i }).click();
+    // Click connect (handles MOBILE_REQUIRED flow if needed)
+    await clickConnectAndHandleMobile(page);
 
     // If we get to Basiq consent UI, try error credentials
     try {
