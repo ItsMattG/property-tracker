@@ -5,6 +5,8 @@ import { isBenignError, safeGoto } from "../fixtures/test-helpers";
 test.describe("Dashboard Enhancements", () => {
   test.beforeEach(async ({ page }) => {
     await safeGoto(page, "/dashboard");
+    // Wait for dashboard content to actually render before running test assertions
+    await expect(page.locator("aside, header").first()).toBeVisible({ timeout: 30_000 });
   });
 
   // ── FY Selector ──────────────────────────────────────────────────────

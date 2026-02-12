@@ -1,6 +1,7 @@
 import { test as setup, expect } from "@playwright/test";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 import path from "path";
+import { safeGoto } from "./fixtures/test-helpers";
 
 const authFile = path.join(__dirname, ".auth", "user.json");
 
@@ -23,9 +24,9 @@ setup("authenticate", async ({ page }) => {
     return;
   }
 
-  // Attempt sign-in first
+  // Attempt sign-in first — use longer timeout for cold start (first page load)
   console.log(`[auth] Navigating to /sign-in...`);
-  await page.goto("/sign-in", { waitUntil: "networkidle" });
+  await safeGoto(page, "/sign-in", { timeout: 30_000 });
 
   await expect(page.getByLabel(/email/i)).toBeVisible({ timeout: 15_000 });
   await page.getByLabel(/email/i).fill(email);
@@ -49,7 +50,7 @@ setup("authenticate", async ({ page }) => {
     // User doesn't exist on this environment — create via sign-up
     console.log("[auth] User not found — creating account via sign-up...");
 
-    await page.goto("/sign-up", { waitUntil: "networkidle" });
+    await safeGoto(page, "/sign-up");
     await expect(page.getByLabel(/name/i)).toBeVisible({ timeout: 15_000 });
 
     await page.getByLabel(/name/i).fill("E2E Test User");
