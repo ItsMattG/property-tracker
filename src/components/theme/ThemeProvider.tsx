@@ -14,7 +14,9 @@ export function ThemeProvider({
   children: React.ReactNode;
 }) {
   useEffect(() => {
-    const resolved = (theme as Theme) || "forest";
+    // Prefer localStorage (always current) over server session (may be cached)
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    const resolved = stored || (theme as Theme) || "forest";
     if (resolved === "forest") {
       document.documentElement.removeAttribute("data-theme");
     } else {
