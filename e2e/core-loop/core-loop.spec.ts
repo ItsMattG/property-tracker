@@ -57,19 +57,20 @@ test.describe.serial("Core Loop - Happy Path", () => {
     await dismissTourIfVisible(page);
 
     // Fill in required fields (wait for form to render)
-    // AddressAutocomplete renders a textbox with placeholder — no label association
-    const addressInput = page.getByPlaceholder(/start typing an address|123 Smith Street/i);
+    // Note: AddressAutocomplete doesn't forward id from FormControl, so use input[name] selectors
+    const addressInput = page.locator('input[name="address"]');
     await expect(addressInput).toBeVisible({ timeout: 30000 });
     await addressInput.fill("E2E Test 123 Smith Street");
-    await page.getByRole("textbox", { name: /suburb/i }).fill("Sydney");
+    await page.locator('input[name="suburb"]').fill("Sydney");
 
     // Select state
     await page.getByRole("combobox", { name: /state/i }).click();
     await page.getByRole("option", { name: "NSW" }).click();
 
-    await page.getByRole("textbox", { name: /postcode/i }).fill("2000");
-    await page.getByRole("textbox", { name: /purchase price/i }).fill("850000");
-    await page.getByRole("textbox", { name: /contract date/i }).fill("2024-01-15");
+    await page.locator('input[name="postcode"]').fill("2000");
+    await page.locator('input[name="purchasePrice"]').fill("850000");
+    // DatePicker uses DD/MM/YYYY format and doesn't have a name prop
+    await page.getByPlaceholder("DD/MM/YYYY").first().fill("15/01/2024");
 
     // Submit the form
     await page.getByRole("button", { name: /add property|create|save/i }).click();
