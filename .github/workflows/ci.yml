@@ -272,6 +272,7 @@ jobs:
         run: npx tsx src/scripts/seed.ts demo --email=${{ secrets.E2E_USER_EMAIL }} --clean
         env:
           E2E_SEED_DATA: "true"
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
         continue-on-error: true
 
       - name: Start Next.js server
