@@ -6,10 +6,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, ArrowRight, Target } from "lucide-react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
+import { featureFlags } from "@/config/feature-flags";
 
 export function TopPerformerMatchesWidget() {
   // Get user's properties to find top performer
-  const { data: properties, isLoading: propertiesLoading } = trpc.property.list.useQuery();
+  const { data: properties, isLoading: propertiesLoading } = trpc.property.list.useQuery(
+    undefined,
+    { enabled: featureFlags.similarProperties }
+  );
 
   // Find the first property (simplified - could use actual performance score)
   const topPerformer = properties?.[0];
@@ -17,8 +21,10 @@ export function TopPerformerMatchesWidget() {
   const { data: similarProperties, isLoading: similarLoading } =
     trpc.similarProperties.findSimilar.useQuery(
       { propertyId: topPerformer?.id || "", limit: 3 },
-      { enabled: !!topPerformer?.id }
+      { enabled: featureFlags.similarProperties && !!topPerformer?.id }
     );
+
+  if (!featureFlags.similarProperties) return null;
 
   if (propertiesLoading || similarLoading) {
     return (

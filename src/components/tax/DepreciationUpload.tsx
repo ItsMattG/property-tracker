@@ -9,14 +9,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { PropertySelect } from "@/components/properties/PropertySelect";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
@@ -60,7 +54,6 @@ export function DepreciationUpload() {
   } | null>(null);
 
   const utils = trpc.useUtils();
-  const { data: properties } = trpc.property.list.useQuery();
 
   const extractMutation = trpc.taxOptimization.extractDepreciation.useMutation({
     onSuccess: (data) => {
@@ -200,18 +193,10 @@ export function DepreciationUpload() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Property</Label>
-              <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a property" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties?.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.address}, {p.suburb}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PropertySelect
+                value={selectedProperty}
+                onValueChange={setSelectedProperty}
+              />
             </div>
             <Button onClick={() => setStep("upload")} disabled={!selectedProperty}>
               Continue

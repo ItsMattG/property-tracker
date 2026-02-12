@@ -25,7 +25,7 @@ export function UpgradePrompt({
         <Zap className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
         <h3 className="font-semibold mb-1">{feature}</h3>
         <p className="text-sm text-muted-foreground mb-4">{description}</p>
-        <Link href="/settings/billing">
+        <Link href="/settings/billing" prefetch={false}>
           <Button size="sm">
             Upgrade to {planName} — {price}
           </Button>

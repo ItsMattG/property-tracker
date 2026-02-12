@@ -5,7 +5,7 @@ import { createMockContext, createTestCaller } from "../../__tests__/test-utils"
 describe("property router", () => {
   describe("authentication", () => {
     it("throws UNAUTHORIZED when not authenticated", async () => {
-      const ctx = createMockContext({ clerkId: null });
+      const ctx = createMockContext({ userId: null });
       const caller = createTestCaller(ctx);
 
       await expect(caller.property.list()).rejects.toThrow(TRPCError);
@@ -15,7 +15,7 @@ describe("property router", () => {
     });
 
     it("throws UNAUTHORIZED when user not found in database", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123" });
+      const ctx = createMockContext({ userId: "user-1" });
       // Mock db.query.users.findFirst to return null
       ctx.db = {
         query: {
@@ -37,15 +37,15 @@ describe("property router", () => {
   describe("data isolation", () => {
     const mockUser = {
       id: "user-1",
-      clerkId: "clerk_123",
       email: "test@example.com",
       name: "Test User",
+      emailVerified: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     it("property.get includes userId filter in query", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
       const findFirstMock = vi.fn().mockResolvedValue(null);
       ctx.db = {
         query: {
@@ -73,7 +73,7 @@ describe("property router", () => {
     });
 
     it("property.list includes userId filter in query", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
       const userProperties = [
         { id: "prop-1", userId: "user-1", address: "123 Main St" },
         { id: "prop-2", userId: "user-1", address: "456 Oak Ave" },
@@ -107,7 +107,7 @@ describe("property router", () => {
     });
 
     it("property.update only updates user's own properties", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
       const updateMock = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
@@ -139,7 +139,7 @@ describe("property router", () => {
     });
 
     it("property.delete only deletes user's own properties", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
       const deleteMock = vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue(undefined),
       });
@@ -166,7 +166,7 @@ describe("property router", () => {
     });
 
     it("property.update returns undefined when property not found or belongs to other user", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       // Mock chain that returns empty array (no matching property)
       ctx.db = {

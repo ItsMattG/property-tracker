@@ -60,7 +60,7 @@ export function TaxPositionCard() {
   // Not set up state
   if (!summary.isComplete) {
     return (
-      <Link href="/reports/tax-position">
+      <Link href="/reports/tax-position" prefetch={false}>
         <Card className="cursor-pointer transition-colors hover:bg-secondary/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Tax Position</CardTitle>
@@ -69,7 +69,7 @@ export function TaxPositionCard() {
           <CardContent>
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                See your estimated refund
+                Estimate your tax refund for this financial year based on your property income and expenses.
               </p>
               <Button size="sm" variant="outline" className="w-full">
                 Set up in 2 min
@@ -88,7 +88,7 @@ export function TaxPositionCard() {
   const propertySavings = summary.propertySavings ?? 0;
 
   return (
-    <Link href="/reports/tax-position">
+    <Link href="/reports/tax-position" prefetch={false}>
       <Card className="cursor-pointer transition-colors hover:bg-secondary/50">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium">Tax Position</CardTitle>

@@ -10,13 +10,7 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { PropertySelect } from "@/components/properties/PropertySelect";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet } from "lucide-react";
@@ -31,7 +25,6 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: properties } = trpc.property.list.useQuery();
   const importCSV = trpc.transaction.importCSV.useMutation({
     onSuccess: (result) => {
       toast.success(
@@ -71,7 +64,7 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
           Import CSV
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Import Transactions from CSV</DialogTitle>
           <DialogDescription>
@@ -82,32 +75,26 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium">Property</label>
-            <Select value={propertyId} onValueChange={setPropertyId}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select property" />
-              </SelectTrigger>
-              <SelectContent>
-                {properties?.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.address}, {property.suburb}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PropertySelect
+              value={propertyId}
+              onValueChange={setPropertyId}
+              triggerClassName="mt-1"
+            />
           </div>
 
           <div>
-            <label className="text-sm font-medium">CSV File</label>
-            <div
-              className="mt-1 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
-              onClick={() => fileInputRef.current?.click()}
+            <span className="text-sm font-medium">CSV File</span>
+            <label
+              htmlFor="csv-file-upload"
+              className="mt-1 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors block"
             >
               <input
+                id="csv-file-upload"
                 ref={fileInputRef}
                 type="file"
                 accept=".csv"
                 onChange={handleFileChange}
-                className="hidden"
+                className="sr-only"
               />
               {file ? (
                 <div className="flex items-center justify-center gap-2">
@@ -122,7 +109,7 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
                   </p>
                 </>
               )}
-            </div>
+            </label>
           </div>
 
           <div className="text-xs text-muted-foreground">

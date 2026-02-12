@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PiggyBank } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import { featureFlags } from "@/config/feature-flags";
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-AU", {
@@ -15,7 +16,11 @@ function formatCurrency(amount: number): string {
 
 export function SavingsWidget() {
   const { data: summary, isLoading } =
-    trpc.benchmarking.getPortfolioSummary.useQuery();
+    trpc.benchmarking.getPortfolioSummary.useQuery(undefined, {
+      enabled: featureFlags.performanceBenchmark,
+    });
+
+  if (!featureFlags.performanceBenchmark) return null;
 
   if (isLoading) {
     return (

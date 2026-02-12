@@ -3,9 +3,11 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { NumericFormat } from "react-number-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
+import { AddressAutocomplete } from "./AddressAutocomplete";
 import {
   Form,
   FormControl,
@@ -26,12 +28,15 @@ const states = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
 
 const propertyFormSchema = z.object({
   address: z.string().min(1, "Address is required"),
-  suburb: z.string().min(1, "Suburb is required"),
+  suburb: z.string().min(1, "Suburb is required").regex(/^[a-zA-Z\s\-']+$/, "Suburb must only contain letters"),
   state: z.enum(states, { error: "State is required" }),
   postcode: z.string().regex(/^\d{4}$/, "Invalid postcode (must be 4 digits)"),
   purchasePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid price"),
-  purchaseDate: z.string().min(1, "Purchase date is required"),
+  contractDate: z.string().min(1, "Contract date is required"),
+  settlementDate: z.string().optional(),
   entityName: z.string().optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
 });
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -49,6 +54,10 @@ interface PropertyFormProps {
   entities?: EntityOption[];
 }
 
+function RequiredMark() {
+  return <span className="text-destructive ml-0.5" aria-hidden="true">*</span>;
+}
+
 export function PropertyForm({
   defaultValues,
   onSubmit,
@@ -63,36 +72,56 @@ export function PropertyForm({
       state: undefined,
       postcode: "",
       purchasePrice: "",
-      purchaseDate: "",
+      contractDate: "",
+      settlementDate: "",
       entityName: "Personal",
+      latitude: "",
+      longitude: "",
       ...defaultValues,
     },
   });
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {/* Address */}
         <FormField
           control={form.control}
           name="address"
           render={({ field }) => (
             <FormItem data-tour="address-field">
-              <FormLabel>Street Address</FormLabel>
+              <FormLabel>Street Address<RequiredMark /></FormLabel>
               <FormControl>
-                <Input placeholder="123 Smith Street" {...field} />
+                <AddressAutocomplete
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  onAddressSelected={(result) => {
+                    form.setValue("address", result.address, { shouldValidate: true });
+                    form.setValue("suburb", result.suburb, { shouldValidate: true });
+                    if (result.state) {
+                      form.setValue("state", result.state as typeof states[number], { shouldValidate: true });
+                    }
+                    form.setValue("postcode", result.postcode, { shouldValidate: true });
+                    form.setValue("latitude", result.latitude);
+                    form.setValue("longitude", result.longitude);
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Location row: Suburb, State, Postcode */}
+        <div className="grid grid-cols-4 gap-4">
           <FormField
             control={form.control}
             name="suburb"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Suburb</FormLabel>
+              <FormItem className="col-span-2">
+                <FormLabel>Suburb<RequiredMark /></FormLabel>
                 <FormControl>
                   <Input placeholder="Sydney" {...field} />
                 </FormControl>
@@ -106,11 +135,11 @@ export function PropertyForm({
             name="state"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>State</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormLabel>State<RequiredMark /></FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? ""}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
+                      <SelectValue placeholder="Select" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -125,17 +154,32 @@ export function PropertyForm({
               </FormItem>
             )}
           />
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="postcode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Postcode</FormLabel>
+                <FormLabel>Postcode<RequiredMark /></FormLabel>
                 <FormControl>
-                  <Input placeholder="2000" {...field} />
+                  <NumericFormat customInput={Input} placeholder="2000" allowNegative={false} decimalScale={0} maxLength={4} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {/* Purchase details row: Price + Entity */}
+        <div className="grid grid-cols-2 gap-4" data-tour="purchase-details">
+          <FormField
+            control={form.control}
+            name="purchasePrice"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Purchase Price ($)<RequiredMark /></FormLabel>
+                <FormControl>
+                  <NumericFormat customInput={Input} placeholder="0" thousandSeparator="," allowNegative={false} decimalScale={0} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -148,7 +192,7 @@ export function PropertyForm({
             render={({ field }) => (
               <FormItem data-tour="property-type">
                 <FormLabel>Entity</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value || "Personal"}>
+                <Select onValueChange={field.onChange} value={field.value || "Personal"}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select entity" />
@@ -169,15 +213,16 @@ export function PropertyForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4" data-tour="purchase-details">
+        {/* Dates row: Contract Date + Settlement Date */}
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="purchasePrice"
+            name="contractDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Purchase Price ($)</FormLabel>
+                <FormLabel>Contract Date<RequiredMark /></FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="500000" {...field} />
+                  <DatePicker value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -186,12 +231,12 @@ export function PropertyForm({
 
           <FormField
             control={form.control}
-            name="purchaseDate"
+            name="settlementDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Purchase Date</FormLabel>
+                <FormLabel>Settlement Date</FormLabel>
                 <FormControl>
-                  <DatePicker value={field.value} onChange={field.onChange} placeholder="Select purchase date" />
+                  <DatePicker value={field.value ?? ""} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

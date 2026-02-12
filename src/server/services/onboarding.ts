@@ -44,7 +44,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     id: "categorize_10",
-    label: "Categorize 10 transactions",
+    label: "Categorise 10 transactions",
     actionLink: "/transactions",
     threshold: 10,
     countKey: "categorizedCount",
@@ -52,14 +52,14 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: "setup_recurring",
     label: "Set up recurring transaction",
-    actionLink: "/properties",
+    actionLink: "/transactions",
     threshold: 1,
     countKey: "recurringCount",
   },
   {
     id: "add_property_value",
     label: "Add property value estimate",
-    actionLink: "/portfolio",
+    actionLink: "/properties",
     threshold: 1,
     countKey: "propertyValueCount",
   },

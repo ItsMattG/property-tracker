@@ -48,7 +48,7 @@ export function WhatsNewDrawer({ open, onClose }: WhatsNewDrawerProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">What&apos;s New</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
             <X className="h-5 w-5" />
           </Button>
         </div>

@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import DOMPurify from "isomorphic-dompurify";
 
 export const revalidate = 3600; // Revalidate hourly
 
@@ -84,12 +85,12 @@ export default async function ChangelogEntryPage({
                 return (
                   <ul key={i}>
                     {items.map((item, j) => (
-                      <li key={j} dangerouslySetInnerHTML={{ __html: formatMarkdown(item.slice(2)) }} />
+                      <li key={j} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatMarkdown(item.slice(2))) }} />
                     ))}
                   </ul>
                 );
               }
-              return <p key={i} dangerouslySetInnerHTML={{ __html: formatMarkdown(paragraph) }} />;
+              return <p key={i} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatMarkdown(paragraph)) }} />;
             })}
           </div>
         </article>

@@ -21,7 +21,7 @@ export default function TermsPage() {
         <h2>2. Description of Service</h2>
         <p>
           BrickTrack is a property portfolio management platform that helps Australian
-          investors track their properties, connect bank accounts, categorize transactions,
+          investors track their properties, connect bank accounts, categorise transactions,
           and generate reports for tax purposes.
         </p>
 
@@ -99,7 +99,7 @@ export default function TermsPage() {
         <h2>13. Contact</h2>
         <p>
           For questions about these terms, contact us at{" "}
-          <a href="mailto:legal@propertytracker.com.au">legal@propertytracker.com.au</a>.
+          <a href="mailto:legal@bricktrack.au">legal@bricktrack.au</a>.
         </p>
       </div>
     </main>

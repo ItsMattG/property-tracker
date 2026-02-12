@@ -6,7 +6,7 @@ BrickTrack uses the following infrastructure:
 
 - **Hosting:** Vercel (Next.js optimized)
 - **Database:** PostgreSQL on Supabase
-- **Authentication:** Clerk
+- **Authentication:** BetterAuth
 - **Error Tracking:** Sentry
 - **CI/CD:** GitHub Actions + Vercel
 
@@ -34,8 +34,10 @@ On every PR and push to main:
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk public key |
-| `CLERK_SECRET_KEY` | Clerk secret key |
+| `BETTER_AUTH_SECRET` | BetterAuth secret key |
+| `BETTER_AUTH_URL` | Application URL (e.g., https://bricktrack.au) |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 | `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN |
 
 ### Production Only
@@ -49,8 +51,8 @@ On every PR and push to main:
 
 | Variable | Description |
 |----------|-------------|
-| `E2E_CLERK_USER_EMAIL` | Test user email |
-| `E2E_CLERK_USER_PASSWORD` | Test user password |
+| `E2E_USER_EMAIL` | Test user email |
+| `E2E_USER_PASSWORD` | Test user password |
 
 ## Monitoring
 

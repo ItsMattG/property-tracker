@@ -4,13 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { PropertySelect } from "@/components/properties/PropertySelect";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
 import { Landmark, ArrowRight, Loader2 } from "lucide-react";
@@ -35,7 +29,7 @@ export default function AssignAccountsPage() {
   const handleContinue = async () => {
     if (!properties?.length) {
       toast.error("Please create a property first");
-      router.push("/properties/create");
+      router.push("/properties/new");
       return;
     }
 
@@ -122,23 +116,14 @@ export default function AssignAccountsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Select
+              <PropertySelect
                 value={assignments[account.id] ?? ""}
                 onValueChange={(value) =>
                   setAssignments((prev) => ({ ...prev, [account.id]: value }))
                 }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a property" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties?.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.address}, {property.suburb}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select a property"
+                triggerClassName="w-full"
+              />
             </CardContent>
           </Card>
         ))}

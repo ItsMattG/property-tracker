@@ -9,6 +9,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,16 +37,16 @@ import {
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Check, X, SkipForward, Link2 } from "lucide-react";
+import { Check, SkipForward, MoreHorizontal } from "lucide-react";
 import { getCategoryLabel } from "@/lib/categories";
 
 type ExpectedStatus = "pending" | "matched" | "missed" | "skipped";
 
-const statusConfig: Record<ExpectedStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pending: { label: "Pending", variant: "secondary" },
-  matched: { label: "Matched", variant: "default" },
-  missed: { label: "Missed", variant: "destructive" },
-  skipped: { label: "Skipped", variant: "outline" },
+const statusConfig: Record<ExpectedStatus, { label: string; description: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  pending: { label: "Pending", description: "Awaiting a matching bank transaction", variant: "secondary" },
+  matched: { label: "Matched", description: "Linked to an actual transaction", variant: "default" },
+  missed: { label: "Missed", description: "Expected date passed with no match", variant: "destructive" },
+  skipped: { label: "Skipped", description: "Manually dismissed", variant: "outline" },
 };
 
 interface ReconciliationViewProps {
@@ -39,6 +55,7 @@ interface ReconciliationViewProps {
 
 export function ReconciliationView({ propertyId }: ReconciliationViewProps) {
   const [statusFilter, setStatusFilter] = useState<ExpectedStatus | "all">("all");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; description: string } | null>(null);
   const utils = trpc.useUtils();
 
   const { data: expectedTransactions, isLoading } = trpc.recurring.getExpectedTransactions.useQuery({
@@ -56,6 +73,17 @@ export function ReconciliationView({ propertyId }: ReconciliationViewProps) {
     },
   });
 
+  const deleteMutation = trpc.recurring.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Recurring rule deleted");
+      utils.recurring.getExpectedTransactions.invalidate();
+      utils.recurring.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete recurring rule");
+    },
+  });
+
   const formatAmount = (amount: string) => {
     const num = Number(amount);
     return new Intl.NumberFormat("en-AU", {
@@ -68,6 +96,13 @@ export function ReconciliationView({ propertyId }: ReconciliationViewProps) {
     skipMutation.mutate({ expectedId });
   };
 
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deleteMutation.mutate({ id: deleteTarget.id });
+      setDeleteTarget(null);
+    }
+  };
+
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
   }
@@ -75,20 +110,31 @@ export function ReconciliationView({ propertyId }: ReconciliationViewProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Expected Transactions</h3>
+        <div>
+          <h3 className="text-lg font-medium">Expected Transactions</h3>
+          <p className="text-sm text-muted-foreground">
+            Recurring transactions are matched against your bank feed automatically.
+          </p>
+        </div>
         <Select
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as ExpectedStatus | "all")}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="matched">Matched</SelectItem>
-            <SelectItem value="missed">Missed</SelectItem>
-            <SelectItem value="skipped">Skipped</SelectItem>
+            {(Object.entries(statusConfig) as [ExpectedStatus, typeof statusConfig[ExpectedStatus]][]).map(
+              ([value, config]) => (
+                <SelectItem key={value} value={value}>
+                  <span>{config.label}</span>
+                  <span className="text-muted-foreground ml-1.5 text-xs">
+                    — {config.description}
+                  </span>
+                </SelectItem>
+              )
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -139,7 +185,7 @@ export function ReconciliationView({ propertyId }: ReconciliationViewProps) {
                     </TableCell>
                     <TableCell>
                       {expected.property ? (
-                        <Badge variant="outline">{expected.property.suburb}</Badge>
+                        <Badge variant="outline">{expected.property.address}</Badge>
                       ) : (
                         "-"
                       )}
@@ -148,8 +194,8 @@ export function ReconciliationView({ propertyId }: ReconciliationViewProps) {
                       <Badge variant={config.variant}>{config.label}</Badge>
                     </TableCell>
                     <TableCell>
-                      {status === "pending" && (
-                        <div className="flex gap-1">
+                      <div className="flex items-center gap-1">
+                        {status === "pending" && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -158,19 +204,41 @@ export function ReconciliationView({ propertyId }: ReconciliationViewProps) {
                           >
                             <SkipForward className="w-4 h-4" />
                           </Button>
-                        </div>
-                      )}
-                      {status === "matched" && expected.matchedTransaction && (
-                        <div className="flex items-center gap-1 text-success">
-                          <Check className="w-4 h-4" />
-                          <span className="text-xs">
-                            {format(new Date(expected.matchedTransaction.date), "dd MMM")}
-                          </span>
-                        </div>
-                      )}
-                      {status === "missed" && (
-                        <span className="text-xs text-destructive">Overdue</span>
-                      )}
+                        )}
+                        {status === "matched" && expected.matchedTransaction && (
+                          <div className="flex items-center gap-1 text-success">
+                            <Check className="w-4 h-4" />
+                            <span className="text-xs">
+                              {format(new Date(expected.matchedTransaction.date), "dd MMM")}
+                            </span>
+                          </div>
+                        )}
+                        {status === "missed" && (
+                          <span className="text-xs text-destructive">Overdue</span>
+                        )}
+                        {expected.recurringTransaction && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" aria-label="Transaction actions">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() =>
+                                  setDeleteTarget({
+                                    id: expected.recurringTransaction!.id,
+                                    description: expected.recurringTransaction!.description,
+                                  })
+                                }
+                              >
+                                Delete Recurring Rule
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -179,6 +247,28 @@ export function ReconciliationView({ propertyId }: ReconciliationViewProps) {
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Recurring Rule</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the recurring rule for{" "}
+              <span className="font-medium">{deleteTarget?.description}</span>?
+              This will remove all future expected transactions for this rule.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, ArrowLeftRight, AlertCircle } from "lucide-react";
+import { Building2, ArrowLeftRight, AlertCircle, DollarSign, PiggyBank } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import Link from "next/link";
+import { TrendIndicator } from "@/components/ui/trend-indicator";
+import { cn, formatCurrency } from "@/lib/utils";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
 import { EnhancedWizard } from "@/components/onboarding/EnhancedWizard";
 import { SetupChecklist } from "@/components/onboarding/SetupChecklist";
@@ -17,10 +19,15 @@ import { useTour } from "@/hooks/useTour";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 import { RentalYieldCard } from "@/components/rental-yield";
 import { PortfolioValueChart } from "./PortfolioValueChart";
+import { CashFlowWidget } from "./CashFlowWidget";
 import { ErrorState } from "@/components/ui/error-state";
 import { getErrorMessage } from "@/lib/errors";
 import { TrialPropertyLimitBanner } from "@/components/banners/TrialPropertyLimitBanner";
 import { StaleLoansDashboardCard } from "@/components/loans/StaleLoansDashboardCard";
+import { PortfolioSummaryTable } from "./PortfolioSummaryTable";
+import { PropertyMapWidget } from "./PropertyMapWidget";
+import { LvrGaugeCard } from "./LvrGaugeCard";
+import { EquityProjectionCard } from "./EquityProjectionCard";
 
 // Server-side data structure from dashboard.getInitialData
 // Note: Dates are Date objects on server but get serialized to strings when passed to client
@@ -30,6 +37,13 @@ interface DashboardInitialData {
     transactionCount: number;
     uncategorizedCount: number;
   };
+  trends: {
+    propertyCount: { current: number; previous: number };
+    transactionCount: { current: number; previous: number };
+    uncategorizedCount: { current: number; previous: number };
+    portfolioValue: { current: number; previous: number | null };
+    totalEquity: { current: number; previous: number | null };
+  };
   alerts: unknown[];
   onboarding: unknown | null;
   properties: unknown[];
@@ -37,6 +51,13 @@ interface DashboardInitialData {
 
 interface DashboardClientProps {
   initialData: DashboardInitialData | null;
+}
+
+function getTrendBorderClass(current: number, previous: number | null, invert = false): string {
+  if (previous === null || current === previous) return "";
+  const isUp = current > previous;
+  const isGood = invert ? !isUp : isUp;
+  return isGood ? "border-l-2 border-l-green-500" : "border-l-2 border-l-red-500";
 }
 
 export function DashboardClient({ initialData }: DashboardClientProps) {
@@ -76,6 +97,11 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
   const { data: trialStatus } = trpc.billing.getTrialStatus.useQuery(undefined, {
     staleTime: 60_000,
   });
+
+  const { data: dashboardData } = trpc.dashboard.getInitialData.useQuery(undefined, {
+    staleTime: 60_000,
+  });
+  const trends = dashboardData?.trends ?? initialData?.trends ?? null;
 
   const dismissAlert = trpc.banking.dismissAlert.useMutation({
     onMutate: async (newData) => {
@@ -136,6 +162,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         <TrialPropertyLimitBanner
           propertyCount={trialStatus.propertyCount}
           trialEndsAt={new Date(trialStatus.trialEndsAt)}
+          firstPropertyAddress={properties?.[0]?.address}
         />
       )}
 
@@ -158,101 +185,215 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       {isError ? (
         <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
       ) : (
-      <div data-tour="portfolio-summary" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div data-tour="portfolio-summary" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Row 1: Properties, Portfolio Value, Total Equity */}
         <div className="animate-card-entrance" style={{ '--stagger-index': 0 } as React.CSSProperties}>
-        <Link href="/properties">
-          <Card className="interactive-card hover:border-primary transition-colors cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Properties</CardTitle>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoading ? (
-                  <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-                ) : (
-                  stats?.propertyCount ?? 0
+          <Link href="/properties" prefetch={false}>
+            <Card className={cn(
+              "interactive-card hover:border-primary transition-colors cursor-pointer",
+              getTrendBorderClass(trends?.propertyCount.current ?? 0, trends?.propertyCount.previous ?? null)
+            )}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Properties</CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {isLoading ? (
+                    <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+                  ) : (
+                    stats?.propertyCount ?? 0
+                  )}
+                </div>
+                {trends && (
+                  <TrendIndicator
+                    current={trends.propertyCount.current}
+                    previous={trends.propertyCount.previous}
+                    format="number"
+                  />
                 )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.propertyCount === 0
-                  ? "Add your first property to get started"
-                  : "Investment properties tracked"}
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats?.propertyCount === 0
+                    ? "Add your first property to get started"
+                    : "Investment properties tracked"}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         <div className="animate-card-entrance" style={{ '--stagger-index': 1 } as React.CSSProperties}>
-        <Link href="/transactions">
-          <Card className="interactive-card hover:border-primary transition-colors cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Transactions
-              </CardTitle>
-              <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoading ? (
-                  <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-                ) : (
-                  stats?.transactionCount ?? 0
+          <Link href="/properties" prefetch={false}>
+            <Card className={cn(
+              "interactive-card hover:border-primary transition-colors cursor-pointer",
+              getTrendBorderClass(trends?.portfolioValue.current ?? 0, trends?.portfolioValue.previous ?? null)
+            )}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {!trends ? (
+                    <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+                  ) : (
+                    formatCurrency(trends.portfolioValue.current)
+                  )}
+                </div>
+                {trends && (
+                  <TrendIndicator
+                    current={trends.portfolioValue.current}
+                    previous={trends.portfolioValue.previous}
+                    format="currency"
+                  />
                 )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.transactionCount === 0
-                  ? "Connect your bank to import transactions"
-                  : "Total transactions imported"}
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total estimated market value
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         <div className="animate-card-entrance" style={{ '--stagger-index': 2 } as React.CSSProperties}>
-        <Link href="/transactions?category=uncategorized">
-          <Card className="interactive-card hover:border-primary transition-colors cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Uncategorized
-              </CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoading ? (
-                  <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-                ) : (
-                  stats?.uncategorizedCount ?? 0
+          <Link href="/properties" prefetch={false}>
+            <Card className={cn(
+              "interactive-card hover:border-primary transition-colors cursor-pointer",
+              getTrendBorderClass(trends?.totalEquity.current ?? 0, trends?.totalEquity.previous ?? null)
+            )}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total Equity</CardTitle>
+                <PiggyBank className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {!trends ? (
+                    <div className="h-8 w-24 bg-muted animate-pulse rounded" />
+                  ) : (
+                    formatCurrency(trends.totalEquity.current)
+                  )}
+                </div>
+                {trends && (
+                  <TrendIndicator
+                    current={trends.totalEquity.current}
+                    previous={trends.totalEquity.previous}
+                    format="currency"
+                  />
                 )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.uncategorizedCount === 0
-                  ? "All transactions categorized!"
-                  : "Transactions needing review"}
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Value minus current loan balances
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
+        {/* Row 2: Transactions, Uncategorized, Tax Position */}
         <div className="animate-card-entrance" style={{ '--stagger-index': 3 } as React.CSSProperties}>
-        <TaxPositionCard />
+          <Link href="/transactions" prefetch={false}>
+            <Card className={cn(
+              "interactive-card hover:border-primary transition-colors cursor-pointer",
+              getTrendBorderClass(trends?.transactionCount.current ?? 0, trends?.transactionCount.previous ?? null)
+            )}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Transactions</CardTitle>
+                <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {isLoading ? (
+                    <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+                  ) : (
+                    stats?.transactionCount ?? 0
+                  )}
+                </div>
+                {trends && (
+                  <TrendIndicator
+                    current={trends.transactionCount.current}
+                    previous={trends.transactionCount.previous}
+                    format="number"
+                  />
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats?.transactionCount === 0
+                    ? "Connect your bank to import transactions"
+                    : "Total transactions imported"}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        <div className="animate-card-entrance" style={{ '--stagger-index': 4 } as React.CSSProperties}>
+          <Link href="/transactions?category=uncategorized" prefetch={false}>
+            <Card className={cn(
+              "interactive-card hover:border-primary transition-colors cursor-pointer",
+              getTrendBorderClass(trends?.uncategorizedCount.current ?? 0, trends?.uncategorizedCount.previous ?? null, true)
+            )}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Uncategorised</CardTitle>
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {isLoading ? (
+                    <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+                  ) : (
+                    stats?.uncategorizedCount ?? 0
+                  )}
+                </div>
+                {trends && (
+                  <TrendIndicator
+                    current={trends.uncategorizedCount.current}
+                    previous={trends.uncategorizedCount.previous}
+                    format="number"
+                    invertColor
+                  />
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats?.uncategorizedCount === 0
+                    ? "All transactions categorised!"
+                    : "Transactions needing review"}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        <div className="animate-card-entrance" style={{ '--stagger-index': 5 } as React.CSSProperties}>
+          <TaxPositionCard />
         </div>
       </div>
       )}
 
       <StaleLoansDashboardCard />
 
+      <PortfolioSummaryTable />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="animate-card-entrance" style={{ '--stagger-index': 0 } as React.CSSProperties}>
+          <LvrGaugeCard />
+        </div>
+        <div className="animate-card-entrance" style={{ '--stagger-index': 1 } as React.CSSProperties}>
+          <EquityProjectionCard />
+        </div>
+      </div>
+
       <PortfolioValueChart />
+
+      <CashFlowWidget />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {properties && properties.length > 0 && (
+          <PropertyMapWidget properties={properties} />
+        )}
+        <RentalYieldCard />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {properties && properties.length > 0 && (
           <ClimateRiskSummary properties={properties} />
         )}
-        <RentalYieldCard />
       </div>
 
       <SavingsWidget />

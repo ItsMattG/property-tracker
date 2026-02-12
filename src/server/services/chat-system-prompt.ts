@@ -31,7 +31,7 @@ Formatting:
 App Navigation:
 - Dashboard: Portfolio overview and performance charts
 - Properties: Add/manage properties, documents, compliance
-- Transactions: View/categorize income and expenses
+- Transactions: View/categorise income and expenses
 - Reports: Tax position, CGT, depreciation, benchmarking, MyTax export
 - Tasks: Property-related to-dos with reminders
 - Emails: Forwarded property emails and invoice matching

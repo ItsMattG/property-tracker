@@ -506,25 +506,82 @@ export const ticketUrgencyEnum = pgEnum("ticket_urgency", [
 
 // Tables
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  clerkId: text("clerk_id").notNull().unique(),
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  name: text("name"),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  mobile: text("mobile"),
   mobilePasswordHash: text("mobile_password_hash"),
   basiqUserId: text("basiq_user_id"),
   pendingBankPropertyId: uuid("pending_bank_property_id").references((): AnyPgColumn => properties.id, { onDelete: "set null" }),
   trialStartedAt: timestamp("trial_started_at"),
   trialEndsAt: timestamp("trial_ends_at"),
   trialPlan: varchar("trial_plan", { length: 20 }).default("pro"),
+  theme: varchar("theme", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at").notNull(),
+    token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("session_user_id_idx").on(table.userId)],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+  },
+  (table) => [index("account_user_id_idx").on(table.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("verification_identifier_idx").on(table.identifier)],
+);
 
 export const entities = pgTable(
   "entities",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     type: entityTypeEnum("type").notNull(),
@@ -569,11 +626,11 @@ export const entityMembers = pgTable(
     entityId: uuid("entity_id")
       .references(() => entities.id, { onDelete: "cascade" })
       .notNull(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     role: entityMemberRoleEnum("role").notNull(),
-    invitedBy: uuid("invited_by").references(() => users.id, {
+    invitedBy: text("invited_by").references(() => users.id, {
       onDelete: "set null",
     }),
     invitedAt: timestamp("invited_at").defaultNow().notNull(),
@@ -740,7 +797,7 @@ export const distributionAllocations = pgTable(
 
 export const properties = pgTable("properties", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   entityId: uuid("entity_id").references(() => entities.id, {
@@ -752,10 +809,14 @@ export const properties = pgTable("properties", {
   postcode: text("postcode").notNull(),
   purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }).notNull(),
   purchaseDate: date("purchase_date").notNull(),
+  contractDate: date("contract_date"),
+  settlementDate: date("settlement_date"),
   entityName: text("entity_name").default("Personal").notNull(),
   status: propertyStatusEnum("status").default("active").notNull(),
   soldAt: date("sold_at"),
   climateRisk: jsonb("climate_risk").$type<import("@/types/climate-risk").ClimateRisk>(),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
   forwardingAddress: text("forwarding_address").unique(),
   locked: boolean("locked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -766,7 +827,7 @@ export const externalListings = pgTable(
   "external_listings",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     sourceType: listingSourceTypeEnum("source_type").notNull(),
@@ -797,7 +858,7 @@ export const propertyVectors = pgTable(
       () => externalListings.id,
       { onDelete: "cascade" }
     ),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     vector: vector("vector").notNull(),
@@ -816,7 +877,7 @@ export const propertyVectors = pgTable(
 
 export const sharingPreferences = pgTable("sharing_preferences", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull()
     .unique(),
@@ -831,7 +892,7 @@ export const sharingPreferences = pgTable("sharing_preferences", {
 
 export const bankAccounts = pgTable("bank_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   basiqConnectionId: text("basiq_connection_id").notNull(),
@@ -849,6 +910,7 @@ export const bankAccounts = pgTable("bank_accounts", {
   connectionStatus: connectionStatusEnum("connection_status").default("connected").notNull(),
   lastSyncStatus: syncStatusEnum("last_sync_status"),
   lastSyncError: text("last_sync_error"),
+  balance: decimal("balance", { precision: 12, scale: 2 }),
   lastManualSyncAt: timestamp("last_manual_sync_at"),
   lastSyncedAt: timestamp("last_synced_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -858,7 +920,7 @@ export const transactions = pgTable(
   "transactions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
@@ -884,6 +946,7 @@ export const transactions = pgTable(
     suggestionStatus: suggestionStatusEnum("suggestion_status"),
     providerTransactionId: text("provider_transaction_id"),
     provider: text("provider"),
+    claimPercent: decimal("claim_percent", { precision: 5, scale: 2 }).default("100"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
@@ -899,9 +962,29 @@ export const transactions = pgTable(
   ]
 );
 
+export const transactionNotes = pgTable(
+  "transaction_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    transactionId: uuid("transaction_id")
+      .references(() => transactions.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: text("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("transaction_notes_transaction_id_idx").on(table.transactionId),
+    index("transaction_notes_user_id_idx").on(table.userId),
+  ]
+);
+
 export const loans = pgTable("loans", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   propertyId: uuid("property_id")
@@ -929,7 +1012,7 @@ export const propertySales = pgTable("property_sales", {
   propertyId: uuid("property_id")
     .references(() => properties.id, { onDelete: "cascade" })
     .notNull(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
 
@@ -957,7 +1040,7 @@ export const documents = pgTable(
   "documents",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
 
@@ -1018,7 +1101,7 @@ export const documentExtractions = pgTable(
 
 export const propertyManagerConnections = pgTable("property_manager_connections", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   provider: propertyManagerProviderEnum("provider").notNull(),
@@ -1068,7 +1151,7 @@ export const propertyEmails = pgTable("property_emails", {
   propertyId: uuid("property_id").references(() => properties.id, {
     onDelete: "set null",
   }),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   fromAddress: text("from_address").notNull(),
@@ -1145,7 +1228,7 @@ export const emailConnections = pgTable(
   "email_connections",
   {
     id: serial("id").primaryKey(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     provider: emailProviderEnum("provider").notNull(),
@@ -1174,7 +1257,7 @@ export const emailApprovedSenders = pgTable(
   "email_approved_senders",
   {
     id: serial("id").primaryKey(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     emailPattern: text("email_pattern").notNull(), // e.g., "*@raywhite.com"
@@ -1197,7 +1280,7 @@ export const senderPropertyHistory = pgTable(
   "sender_property_history",
   {
     id: serial("id").primaryKey(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     senderAddress: text("sender_address").notNull(),
@@ -1220,7 +1303,7 @@ export const recurringTransactions = pgTable(
   "recurring_transactions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     propertyId: uuid("property_id")
@@ -1272,7 +1355,7 @@ export const expectedTransactions = pgTable(
     recurringTransactionId: uuid("recurring_transaction_id")
       .references(() => recurringTransactions.id, { onDelete: "cascade" })
       .notNull(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     propertyId: uuid("property_id")
@@ -1305,7 +1388,7 @@ export const propertyValues = pgTable(
     propertyId: uuid("property_id")
       .references(() => properties.id, { onDelete: "cascade" })
       .notNull(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     estimatedValue: decimal("estimated_value", { precision: 12, scale: 2 }).notNull(),
@@ -1328,7 +1411,7 @@ export const connectionAlerts = pgTable(
   "connection_alerts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     bankAccountId: uuid("bank_account_id")
@@ -1353,7 +1436,7 @@ export const anomalyAlerts = pgTable(
   "anomaly_alerts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     propertyId: uuid("property_id").references(() => properties.id, {
@@ -1448,7 +1531,7 @@ export const taxProfiles = pgTable(
   "tax_profiles",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     financialYear: integer("financial_year").notNull(),
@@ -1482,7 +1565,7 @@ export const featureRequests = pgTable(
   "feature_requests",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     title: varchar("title", { length: 200 }).notNull(),
@@ -1504,7 +1587,7 @@ export const featureVotes = pgTable(
   "feature_votes",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     featureId: uuid("feature_id")
@@ -1524,7 +1607,7 @@ export const featureComments = pgTable(
     featureId: uuid("feature_id")
       .references(() => featureRequests.id, { onDelete: "cascade" })
       .notNull(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     content: text("content").notNull(),
@@ -1539,7 +1622,7 @@ export const bugReports = pgTable(
   "bug_reports",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     description: text("description").notNull(),
@@ -1597,6 +1680,22 @@ export const usersRelations = relations(users, ({ many }) => ({
   transactions: many(transactions),
   entities: many(entities),
   chatConversations: many(chatConversations),
+  sessions: many(session),
+  accounts: many(account),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(users, {
+    fields: [session.userId],
+    references: [users.id],
+  }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(users, {
+    fields: [account.userId],
+    references: [users.id],
+  }),
 }));
 
 export const entitiesRelations = relations(entities, ({ one, many }) => ({
@@ -1788,6 +1887,18 @@ export const transactionsRelations = relations(transactions, ({ one, many }) => 
     references: [properties.id],
   }),
   documents: many(documents),
+  transactionNotes: many(transactionNotes),
+}));
+
+export const transactionNotesRelations = relations(transactionNotes, ({ one }) => ({
+  transaction: one(transactions, {
+    fields: [transactionNotes.transactionId],
+    references: [transactions.id],
+  }),
+  user: one(users, {
+    fields: [transactionNotes.userId],
+    references: [users.id],
+  }),
 }));
 
 export const loansRelations = relations(loans, ({ one, many }) => ({
@@ -1992,7 +2103,7 @@ export const forecastScenarios = pgTable(
   "forecast_scenarios",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     name: text("name").notNull(),
@@ -2010,7 +2121,7 @@ export const cashFlowForecasts = pgTable(
   "cash_flow_forecasts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     scenarioId: uuid("scenario_id")
@@ -2059,7 +2170,7 @@ export const cashFlowForecastsRelations = relations(cashFlowForecasts, ({ one })
 
 export const notificationPreferences = pgTable("notification_preferences", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull()
     .unique(),
@@ -2081,7 +2192,7 @@ export const pushSubscriptions = pgTable(
   "push_subscriptions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     endpoint: text("endpoint").notNull(),
@@ -2100,7 +2211,7 @@ export const notificationLog = pgTable(
   "notification_log",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     type: notificationTypeEnum("type").notNull(),
@@ -2148,7 +2259,7 @@ export const notificationLogRelations = relations(
 // Push tokens for mobile notifications (React Native)
 export const pushTokens = pgTable("push_tokens", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   token: text("token").notNull().unique(),
@@ -2165,7 +2276,7 @@ export const pushTokensRelations = relations(pushTokens, ({ one }) => ({
 
 export const userOnboarding = pgTable("user_onboarding", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull()
     .unique(),
@@ -2189,14 +2300,14 @@ export const portfolioMembers = pgTable(
   "portfolio_members",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    ownerId: uuid("owner_id")
+    ownerId: text("owner_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     role: portfolioMemberRoleEnum("role").notNull(),
-    invitedBy: uuid("invited_by")
+    invitedBy: text("invited_by")
       .references(() => users.id, { onDelete: "set null" }),
     invitedAt: timestamp("invited_at").defaultNow().notNull(),
     joinedAt: timestamp("joined_at"),
@@ -2211,14 +2322,14 @@ export const portfolioInvites = pgTable(
   "portfolio_invites",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    ownerId: uuid("owner_id")
+    ownerId: text("owner_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     email: text("email").notNull(),
     role: portfolioMemberRoleEnum("role").notNull(),
     status: inviteStatusEnum("status").default("pending").notNull(),
     token: text("token").notNull().unique(),
-    invitedBy: uuid("invited_by")
+    invitedBy: text("invited_by")
       .references(() => users.id, { onDelete: "set null" }),
     expiresAt: timestamp("expires_at").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -2234,10 +2345,10 @@ export const auditLog = pgTable(
   "audit_log",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    ownerId: uuid("owner_id")
+    ownerId: text("owner_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
-    actorId: uuid("actor_id")
+    actorId: text("actor_id")
       .references(() => users.id, { onDelete: "set null" }),
     action: auditActionEnum("action").notNull(),
     targetEmail: text("target_email"),
@@ -2294,7 +2405,7 @@ export const merchantCategories = pgTable(
   "merchant_categories",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     merchantName: text("merchant_name").notNull(),
@@ -2314,7 +2425,7 @@ export const categorizationExamples = pgTable(
   "categorization_examples",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     description: text("description").notNull(),
@@ -2334,7 +2445,7 @@ export const depreciationSchedules = pgTable(
     propertyId: uuid("property_id")
       .references(() => properties.id, { onDelete: "cascade" })
       .notNull(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     documentId: uuid("document_id").references(() => documents.id, {
@@ -2375,7 +2486,7 @@ export const taxSuggestions = pgTable(
   "tax_suggestions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     propertyId: uuid("property_id").references(() => properties.id, {
@@ -2410,7 +2521,7 @@ export const loanComparisons = pgTable(
   "loan_comparisons",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     loanId: uuid("loan_id")
@@ -2450,7 +2561,7 @@ export const scenarios = pgTable(
   "scenarios",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     name: text("name").notNull(),
@@ -2537,7 +2648,7 @@ export const complianceRecords = pgTable(
     propertyId: uuid("property_id")
       .references(() => properties.id, { onDelete: "cascade" })
       .notNull(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     requirementId: text("requirement_id").notNull(),
@@ -2564,7 +2675,7 @@ export const equityMilestones = pgTable(
     propertyId: uuid("property_id")
       .references(() => properties.id, { onDelete: "cascade" })
       .notNull(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     milestoneType: milestoneTypeEnum("milestone_type").notNull(),
@@ -2580,7 +2691,7 @@ export const equityMilestones = pgTable(
 );
 
 export const milestonePreferences = pgTable("milestone_preferences", {
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull()
     .primaryKey(),
@@ -2607,7 +2718,7 @@ export const brokers = pgTable(
   "brokers",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     name: text("name").notNull(),
@@ -2625,7 +2736,7 @@ export const loanPacks = pgTable(
   "loan_packs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     brokerId: uuid("broker_id").references(() => brokers.id, { onDelete: "set null" }),
@@ -2864,10 +2975,10 @@ export const tasks = pgTable(
   "tasks",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
-    assigneeId: uuid("assignee_id").references(() => users.id, {
+    assigneeId: text("assignee_id").references(() => users.id, {
       onDelete: "set null",
     }),
     propertyId: uuid("property_id").references(() => properties.id, {
@@ -2906,7 +3017,7 @@ export const chatConversations = pgTable(
   "chat_conversations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     title: text("title"),
@@ -2974,7 +3085,7 @@ export const supportTickets = pgTable(
   "support_tickets",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     ticketNumber: serial("ticket_number").notNull(),
@@ -3003,7 +3114,7 @@ export const ticketNotes = pgTable(
     ticketId: uuid("ticket_id")
       .references(() => supportTickets.id, { onDelete: "cascade" })
       .notNull(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     content: text("content").notNull(),
@@ -3204,7 +3315,7 @@ export const referralStatusEnum = pgEnum("referral_status", [
 
 export const referralCodes = pgTable("referral_codes", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   code: text("code").notNull().unique(),
@@ -3215,10 +3326,10 @@ export const referrals = pgTable(
   "referrals",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    referrerUserId: uuid("referrer_user_id")
+    referrerUserId: text("referrer_user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
-    refereeUserId: uuid("referee_user_id")
+    refereeUserId: text("referee_user_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     referralCodeId: uuid("referral_code_id")
@@ -3237,7 +3348,7 @@ export const referrals = pgTable(
 
 export const referralCredits = pgTable("referral_credits", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   referralId: uuid("referral_id")
@@ -3267,7 +3378,7 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
 
 export const subscriptions = pgTable("subscriptions", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull()
     .unique(),

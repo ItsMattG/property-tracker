@@ -10,6 +10,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(403).json({ error: 'Not available in production' });
   }
 
+  // Require test secret to prevent unauthorized access
+  const testSecret = process.env.E2E_TEST_SECRET;
+  if (!testSecret || req.headers['x-test-secret'] !== testSecret) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -30,12 +36,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Create test user with mobile password hash
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
     const userId = randomUUID();
 
     await db.insert(users).values({
       id: userId,
-      clerkId: `test_clerk_${userId.slice(0, 8)}`,
       email,
       name,
       mobilePasswordHash: passwordHash,

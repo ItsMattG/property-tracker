@@ -21,14 +21,22 @@ export function PortfolioSwitcher() {
   const { data: portfolios } = trpc.team.getAccessiblePortfolios.useQuery();
 
   const switchPortfolio = async (ownerId: string | null) => {
-    // Set or clear the portfolio cookie
-    if (ownerId) {
-      document.cookie = `portfolio_owner_id=${ownerId};path=/;max-age=31536000`;
-    } else {
-      document.cookie = "portfolio_owner_id=;path=/;max-age=0";
+    try {
+      const res = await fetch("/api/portfolio/switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ownerId }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Failed to switch portfolio");
+        return;
+      }
+      toast.success("Switched portfolio");
+      router.refresh();
+    } catch {
+      toast.error("Failed to switch portfolio");
     }
-    toast.success("Switched portfolio");
-    router.refresh();
   };
 
   // Don't show if user only has their own portfolio

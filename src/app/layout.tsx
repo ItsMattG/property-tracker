@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { TRPCProvider } from "@/lib/trpc/Provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
+import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,16 +18,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Skip static generation - app uses Clerk auth which validates key at build time
+// Skip static generation - app uses auth which requires dynamic rendering
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "BrickTrack - Australian Property Investment Tracking",
+  title: "BrickTrack | Australian Property Investment Tracking",
   description:
     "Track your investment properties, automate bank feeds, and generate tax reports. Built for Australian property investors.",
   metadataBase: new URL("https://www.propertytracker.com.au"),
   openGraph: {
-    title: "BrickTrack - Australian Property Investment Tracking",
+    title: "BrickTrack | Australian Property Investment Tracking",
     description:
       "Track your investment properties, automate bank feeds, and generate tax reports. Built for Australian property investors.",
     siteName: "BrickTrack",
@@ -39,13 +39,13 @@ export const metadata: Metadata = {
         url: "/og-image.svg",
         width: 1200,
         height: 630,
-        alt: "BrickTrack - Australian Property Investment Tracking",
+        alt: "BrickTrack | Australian Property Investment Tracking",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "BrickTrack - Australian Property Investment Tracking",
+    title: "BrickTrack | Australian Property Investment Tracking",
     description:
       "Track your investment properties, automate bank feeds, and generate tax reports.",
     images: ["/og-image.svg"],
@@ -58,19 +58,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <TRPCProvider>
-            <PostHogProvider>{children}</PostHogProvider>
-          </TRPCProvider>
-          <Toaster richColors position="top-right" />
-          <Analytics />
-          <SpeedInsights />
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <NextTopLoader
+          color="hsl(var(--primary))"
+          showSpinner={false}
+          height={2}
+          shadow={false}
+        />
+        <TRPCProvider>
+          <PostHogProvider>{children}</PostHogProvider>
+        </TRPCProvider>
+        <Toaster richColors position="top-right" />
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
   );
 }

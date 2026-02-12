@@ -201,7 +201,7 @@ export function MakeRecurringDialog({
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-60">
                         {categories.map((cat) => (
                           <SelectItem key={cat.value} value={cat.value}>
                             {cat.label}
@@ -227,7 +227,7 @@ export function MakeRecurringDialog({
                         <SelectValue placeholder="Select frequency" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent position="popper" className="max-h-60">
                       {frequencyOptions.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
                           {opt.label}
@@ -256,7 +256,7 @@ export function MakeRecurringDialog({
                           <SelectValue placeholder="Select day" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-60">
                         {dayOfWeekOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
@@ -352,8 +352,11 @@ export function MakeRecurringDialog({
                           type="number"
                           min="0"
                           max="30"
-                          {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
@@ -372,8 +375,11 @@ export function MakeRecurringDialog({
                           type="number"
                           min="0"
                           max="30"
-                          {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          value={field.value ?? ""}
+                          onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
@@ -399,7 +405,7 @@ export function MakeRecurringDialog({
                           <SelectValue placeholder="Any bank account" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-60">
                         <SelectItem value="">Any bank account</SelectItem>
                         {bankAccounts.map((account) => (
                           <SelectItem key={account.id} value={account.id}>

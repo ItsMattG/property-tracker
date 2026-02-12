@@ -18,6 +18,7 @@ interface TrialPropertyLimitModalProps {
   onConfirm: () => void;
   trialEndsAt: Date;
   isLoading?: boolean;
+  firstPropertyAddress?: string;
 }
 
 export function TrialPropertyLimitModal({
@@ -26,6 +27,7 @@ export function TrialPropertyLimitModal({
   onConfirm,
   trialEndsAt,
   isLoading,
+  firstPropertyAddress,
 }: TrialPropertyLimitModalProps) {
   const trialEndDate = format(trialEndsAt, "MMMM d, yyyy");
 
@@ -41,14 +43,15 @@ export function TrialPropertyLimitModal({
               </p>
               <p>
                 Just a heads up: after your trial ends on{" "}
-                <strong>{trialEndDate}</strong>, only your first property stays
-                active. The rest become dormant (data preserved, just view-only).
+                <strong>{trialEndDate}</strong>, only{" "}
+                <strong>{firstPropertyAddress ?? "your first property"}</strong>{" "}
+                stays active. The rest become dormant (data preserved, just view-only).
               </p>
               <p>You can upgrade anytime to keep everything active.</p>
             </div>
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-3">
           <Button variant="outline" asChild>
             <Link href="/settings/billing" target="_blank">
               View Pro pricing

@@ -16,7 +16,7 @@ export const transactionsTour: TourDefinition = {
       element: "[data-tour='category-dropdown']",
       popover: {
         title: "Categories",
-        description: "Categorize each transaction for accurate tax reporting.",
+        description: "Categorise each transaction for accurate tax reporting.",
         side: "left",
         align: "start",
       },
@@ -25,7 +25,7 @@ export const transactionsTour: TourDefinition = {
       element: "[data-tour='bulk-actions']",
       popover: {
         title: "Bulk Actions",
-        description: "Select multiple transactions to categorize or assign in bulk.",
+        description: "Select multiple transactions to categorise or assign in bulk.",
         side: "bottom",
         align: "start",
       },

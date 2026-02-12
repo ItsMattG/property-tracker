@@ -11,24 +11,22 @@ export function useReferralTracking() {
     if (recorded.current) return;
     recorded.current = true;
 
-    // Check for referral cookie
-    const cookies = document.cookie.split(";").map((c) => c.trim());
-    const referralCookie = cookies.find((c) => c.startsWith("referral_code="));
-    if (!referralCookie) return;
+    // Read the httpOnly referral cookie via API route
+    fetch("/api/referral/cookie")
+      .then((res) => res.json())
+      .then((data: { code: string | null }) => {
+        if (!data.code) return;
 
-    const code = referralCookie.split("=")[1];
-    if (!code) return;
-
-    // Record the referral
-    recordReferral.mutate(
-      { code },
-      {
-        onSuccess: () => {
-          // Clear the cookie
-          document.cookie =
-            "referral_code=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        },
-      }
-    );
+        recordReferral.mutate(
+          { code: data.code },
+          {
+            onSuccess: () => {
+              // Clear the httpOnly cookie via API route
+              fetch("/api/referral/cookie", { method: "DELETE" }).catch(() => {});
+            },
+          }
+        );
+      })
+      .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }

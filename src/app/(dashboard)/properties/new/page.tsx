@@ -22,6 +22,7 @@ export default function NewPropertyPage() {
 
   const { data: trialStatus } = trpc.billing.getTrialStatus.useQuery();
   const { data: entities } = trpc.entity.list.useQuery();
+  const { data: properties } = trpc.property.list.useQuery();
 
   const createProperty = trpc.property.create.useMutation({
     onSuccess: (property) => {
@@ -51,14 +52,23 @@ export default function NewPropertyPage() {
       return;
     }
 
-    await createProperty.mutateAsync(values);
+    try {
+      await createProperty.mutateAsync(values);
+    } catch {
+      toast.error("Failed to create property. Please check your details and try again.");
+    }
   };
 
   const handleModalConfirm = async () => {
     if (pendingValues) {
-      await createProperty.mutateAsync(pendingValues);
-      setShowTrialModal(false);
-      setPendingValues(null);
+      try {
+        await createProperty.mutateAsync(pendingValues);
+        setShowTrialModal(false);
+        setPendingValues(null);
+      } catch {
+        toast.error("Failed to create property. Please check your details and try again.");
+        setShowTrialModal(false);
+      }
     }
   };
 
@@ -93,6 +103,7 @@ export default function NewPropertyPage() {
           onConfirm={handleModalConfirm}
           trialEndsAt={new Date(trialStatus.trialEndsAt)}
           isLoading={createProperty.isPending}
+          firstPropertyAddress={properties?.[0]?.address}
         />
       )}
     </div>

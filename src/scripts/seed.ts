@@ -9,18 +9,18 @@ async function main() {
 
   // Parse arguments
   const mode = args.find((a) => ["demo", "dev"].includes(a)) as "demo" | "dev" | undefined;
-  const clerkIdArg = args.find((a) => a.startsWith("--clerk-id="));
-  const clerkId = clerkIdArg?.split("=")[1];
+  const emailArg = args.find((a) => a.startsWith("--email="));
+  const email = emailArg?.split("=")[1];
   const shouldClean = args.includes("--clean") || args.includes("clean");
   const forceClean = args.includes("--force");
 
   // Validate
-  if (!clerkId) {
-    console.error("Error: --clerk-id=<clerk_id> is required");
+  if (!email) {
+    console.error("Error: --email=<email> is required");
     console.log("\nUsage:");
-    console.log("  npm run seed:demo -- --clerk-id=user_xxx");
-    console.log("  npm run seed:dev -- --clerk-id=user_xxx");
-    console.log("  npm run seed:clean -- --clerk-id=user_xxx");
+    console.log("  npm run seed:demo -- --email=user@example.com");
+    console.log("  npm run seed:dev -- --email=user@example.com");
+    console.log("  npm run seed:clean -- --email=user@example.com");
     console.log("\nOptions:");
     console.log("  --clean    Remove existing data before seeding");
     console.log("  --force    Required for clean operation");
@@ -34,12 +34,12 @@ async function main() {
   if (shouldClean && !mode) {
     if (!forceClean) {
       console.error("Error: --force flag required to clean data");
-      console.log("Run: npm run seed:clean -- --clerk-id=xxx --force");
+      console.log("Run: npm run seed:clean -- --email=xxx --force");
       process.exit(1);
     }
 
-    console.log(`Cleaning all data for ${clerkId}...`);
-    await clean(clerkId);
+    console.log(`Cleaning all data for ${email}...`);
+    await clean(email);
     console.log("Done!");
     process.exit(0);
   }
@@ -50,13 +50,14 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Starting seed in ${mode} mode for Clerk ID: ${clerkId}`);
+  console.log(`Starting seed in ${mode} mode for email: ${email}`);
 
   try {
     const summary = await seed({
-      clerkId,
+      email,
       mode,
       clean: shouldClean,
+      password: process.env.E2E_USER_PASSWORD,
     });
 
     console.log("\n=== Seed Summary ===");

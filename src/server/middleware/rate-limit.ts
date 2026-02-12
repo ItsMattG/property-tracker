@@ -1,26 +1,26 @@
-interface RateLimitConfig {
-  windowMs: number;
-  maxRequests: number;
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
 }
 
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
+/**
+ * In-memory fallback for development/test environments where Upstash isn't configured.
+ */
+class InMemoryRateLimiter {
+  private store = new Map<string, { count: number; resetAt: number }>();
 
-export class RateLimiter {
-  private store = new Map<string, RateLimitEntry>();
-  private config: RateLimitConfig;
+  constructor(
+    private maxRequests: number,
+    private windowMs: number
+  ) {}
 
-  constructor(config: RateLimitConfig) {
-    this.config = config;
-  }
-
-  check(key: string): { allowed: boolean; remaining: number } {
+  async check(key: string): Promise<RateLimitResult> {
     const now = Date.now();
     const entry = this.store.get(key);
 
-    // Clean up expired entry
     if (entry && now >= entry.resetAt) {
       this.store.delete(key);
     }
@@ -28,32 +28,76 @@ export class RateLimiter {
     const current = this.store.get(key);
 
     if (!current) {
-      this.store.set(key, {
-        count: 1,
-        resetAt: now + this.config.windowMs,
-      });
-      return { allowed: true, remaining: this.config.maxRequests - 1 };
+      this.store.set(key, { count: 1, resetAt: now + this.windowMs });
+      return { allowed: true, remaining: this.maxRequests - 1 };
     }
 
-    if (current.count >= this.config.maxRequests) {
+    if (current.count >= this.maxRequests) {
       return { allowed: false, remaining: 0 };
     }
 
     current.count++;
-    return {
-      allowed: true,
-      remaining: this.config.maxRequests - current.count,
-    };
+    return { allowed: true, remaining: this.maxRequests - current.count };
   }
 }
 
-// Pre-configured limiters
-export const apiRateLimiter = new RateLimiter({
-  windowMs: 60_000, // 1 minute
-  maxRequests: 100,
-});
+interface DistributedRateLimiter {
+  check(key: string): Promise<RateLimitResult>;
+}
 
-export const authRateLimiter = new RateLimiter({
-  windowMs: 60_000,
-  maxRequests: 10,
-});
+/**
+ * Upstash Redis-backed rate limiter for production (works across serverless instances).
+ * Lazily initializes the Redis connection on first check() to avoid crashing at build time.
+ */
+class UpstashRateLimiter implements DistributedRateLimiter {
+  private ratelimit: Ratelimit | null = null;
+  private maxRequests: number;
+  private windowSeconds: number;
+  private prefix: string;
+
+  constructor(maxRequests: number, windowSeconds: number, prefix: string) {
+    this.maxRequests = maxRequests;
+    this.windowSeconds = windowSeconds;
+    this.prefix = prefix;
+  }
+
+  private getInstance(): Ratelimit {
+    if (!this.ratelimit) {
+      this.ratelimit = new Ratelimit({
+        redis: Redis.fromEnv(),
+        limiter: Ratelimit.slidingWindow(this.maxRequests, `${this.windowSeconds} s`),
+        prefix: `@bricktrack/ratelimit:${this.prefix}`,
+        ephemeralCache: new Map(),
+        timeout: 3000,
+      });
+    }
+    return this.ratelimit;
+  }
+
+  async check(key: string): Promise<RateLimitResult> {
+    const { success, remaining } = await this.getInstance().limit(key);
+    return { allowed: success, remaining };
+  }
+}
+
+function createRateLimiter(
+  maxRequests: number,
+  windowMs: number,
+  prefix: string
+): DistributedRateLimiter {
+  const hasUpstash =
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (hasUpstash) {
+    return new UpstashRateLimiter(maxRequests, Math.floor(windowMs / 1000), prefix);
+  }
+
+  return new InMemoryRateLimiter(maxRequests, windowMs);
+}
+
+// Pre-configured limiters
+export const apiRateLimiter = createRateLimiter(100, 60_000, "api");
+export const authRateLimiter = createRateLimiter(10, 60_000, "auth");
+
+// Re-export for tests
+export { InMemoryRateLimiter };

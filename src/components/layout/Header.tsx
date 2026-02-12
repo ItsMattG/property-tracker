@@ -2,14 +2,25 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 import { QuickAddButton } from "./QuickAddButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { HelpMenu } from "./HelpMenu";
 import { AlertBadge } from "@/components/alerts/AlertBadge";
 import { WhatsNewDrawer } from "@/components/changelog/WhatsNewDrawer";
 import { featureFlags } from "@/config/feature-flags";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Breadcrumb, type BreadcrumbItem } from "./Breadcrumb";
+import { FYSelector } from "./FYSelector";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -19,6 +30,7 @@ const routeTitles: Record<string, string> = {
   "/properties": "Properties",
   "/properties/new": "Add Property",
   "/transactions": "Transactions",
+  "/transactions/new": "Add Transaction",
   "/transactions/review": "Review Transactions",
   "/reports": "Reports",
   "/reports/tax": "Tax Report",
@@ -62,6 +74,7 @@ const routeTitles: Record<string, string> = {
 
 const parentRoutes: Record<string, string> = {
   "/properties/new": "/properties",
+  "/transactions/new": "/transactions",
   "/transactions/review": "/transactions",
   "/reports/tax": "/reports",
   "/reports/tax-position": "/reports",
@@ -93,6 +106,7 @@ function getPageTitle(pathname: string): string {
   if (/^\/properties\/[^/]+\/compliance$/.test(pathname)) return "Compliance";
   if (/^\/properties\/[^/]+\/valuation$/.test(pathname)) return "Valuation";
   if (/^\/properties\/[^/]+\/settlement$/.test(pathname)) return "Settlement";
+  if (/^\/transactions\/[^/]+\/edit$/.test(pathname)) return "Edit Transaction";
   if (/^\/loans\/[^/]+/.test(pathname)) return "Loan";
   if (/^\/entities\/[^/]+/.test(pathname)) return "Entity";
   if (/^\/emails\/[^/]+$/.test(pathname)) return "Email";
@@ -125,6 +139,10 @@ function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
       }
     }
     return items;
+  }
+
+  if (pathname.startsWith("/transactions/") && pathname !== "/transactions/new" && pathname !== "/transactions/review") {
+    return [{ label: "Transactions", href: "/transactions" }, { label: title }];
   }
 
   if (pathname.startsWith("/loans/") && pathname !== "/loans/new" && pathname !== "/loans/compare") {
@@ -162,6 +180,54 @@ function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
   return [];
 }
 
+function UserMenu() {
+  const { data: session } = authClient.useSession();
+  const router = useRouter();
+
+  if (!session?.user) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full" aria-label="User menu">
+          {session.user.image ? (
+            <img
+              src={session.user.image}
+              alt={session.user.name ?? ""}
+              className="h-8 w-8 rounded-full"
+            />
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+              {(session.user.name?.[0] ?? session.user.email[0]).toUpperCase()}
+            </div>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{session.user.name}</span>
+            <span className="text-xs text-muted-foreground">{session.user.email}</span>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/settings")}>
+          Settings
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={async () => {
+            await authClient.signOut();
+            router.push("/");
+          }}
+        >
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
@@ -180,10 +246,11 @@ export function Header() {
         </div>
         <TooltipProvider delayDuration={300}>
           <div className="flex items-center gap-3 flex-shrink-0" data-tour="quick-actions">
-            <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />
+            {featureFlags.fySelector && <FYSelector />}
+            {featureFlags.helpMenu && <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />}
             <AlertBadge />
-            <QuickAddButton />
-            <UserButton afterSignOutUrl="/" />
+            {featureFlags.quickAdd && <QuickAddButton />}
+            <UserMenu />
           </div>
         </TooltipProvider>
       </header>

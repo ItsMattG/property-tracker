@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { portfolioShares } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { transformForPrivacy, type PortfolioSnapshot, type PrivacyMode } from "@/server/services/share";
 import { PortfolioReport } from "@/components/share/PortfolioReport";
@@ -126,10 +126,10 @@ export default async function ShareViewPage({ params }: PageProps) {
     );
   }
 
-  // Update view count (fire and forget)
+  // Update view count atomically (fire and forget)
   db.update(portfolioShares)
     .set({
-      viewCount: share.viewCount + 1,
+      viewCount: sql`${portfolioShares.viewCount} + 1`,
       lastViewedAt: now,
     })
     .where(eq(portfolioShares.id, share.id))
@@ -192,7 +192,7 @@ export default async function ShareViewPage({ params }: PageProps) {
                 </Link>
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Track, analyze, and share your property investment portfolio
+                Track, analyse, and share your property investment portfolio
               </p>
             </div>
             <Link href="/sign-up">

@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -77,6 +78,9 @@ export default function BeneficiariesPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Beneficiary</DialogTitle>
+              <DialogDescription>
+                Add a beneficiary to this trust entity.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>

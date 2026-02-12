@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Check, X, ExternalLink } from "lucide-react";
 import { useState } from "react";
 import { categories } from "@/lib/categories";
-import { trpc } from "@/lib/trpc/client";
+import { PropertySelect } from "@/components/properties/PropertySelect";
 
 interface ExtractionReviewCardProps {
   extraction: {
@@ -64,8 +64,6 @@ export function ExtractionReviewCard({
   onConfirm,
   onDiscard,
 }: ExtractionReviewCardProps) {
-  const { data: properties } = trpc.property.list.useQuery();
-
   const [propertyId, setPropertyId] = useState(
     extraction.matchedPropertyId || extraction.draftTransaction?.propertyId || ""
   );
@@ -188,18 +186,10 @@ export function ExtractionReviewCard({
               </span>
             )}
           </div>
-          <Select value={propertyId} onValueChange={setPropertyId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select property" />
-            </SelectTrigger>
-            <SelectContent>
-              {properties?.map((prop) => (
-                <SelectItem key={prop.id} value={prop.id}>
-                  {prop.address}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <PropertySelect
+            value={propertyId}
+            onValueChange={setPropertyId}
+          />
         </div>
 
         <div className="flex justify-end gap-2 pt-2">

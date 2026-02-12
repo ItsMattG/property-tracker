@@ -25,4 +25,18 @@ export const userRouter = router({
         .where(eq(users.id, ctx.user.id));
       return { success: true };
     }),
+
+  // Set user theme preference
+  setTheme: protectedProcedure
+    .input(z.object({
+      theme: z.enum(["forest", "dark"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(users)
+        .set({ theme: input.theme })
+        .where(eq(users.id, ctx.user.id))
+        .returning({ theme: users.theme });
+      return { theme: updated.theme };
+    }),
 });

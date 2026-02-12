@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 import { Plus } from "lucide-react";
 import { categories } from "@/lib/categories";
+import { PropertySelect } from "@/components/properties/PropertySelect";
 
 const transactionFormSchema = z.object({
   propertyId: z.string().uuid("Please select a property"),
@@ -64,8 +65,6 @@ export function AddTransactionDialog({
 
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
-  const { data: properties } = trpc.property.list.useQuery();
-
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
@@ -107,7 +106,7 @@ export function AddTransactionDialog({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Manual Transaction</DialogTitle>
           <DialogDescription>
@@ -122,20 +121,13 @@ export function AddTransactionDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Property</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <PropertySelect value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select property" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      {properties?.map((property) => (
-                        <SelectItem key={property.id} value={property.id}>
-                          {property.address}, {property.suburb}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  </PropertySelect>
                   <FormMessage />
                 </FormItem>
               )}
@@ -166,7 +158,7 @@ export function AddTransactionDialog({
                       <Input
                         type="number"
                         step="0.01"
-                        placeholder="-150.00"
+                        placeholder="0.00"
                         {...field}
                       />
                     </FormControl>
@@ -202,7 +194,7 @@ export function AddTransactionDialog({
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent position="popper" className="max-h-60">
                       {categories.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           {cat.label}

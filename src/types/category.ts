@@ -43,6 +43,7 @@ export interface TransactionFilterInput {
   startDate?: string;
   endDate?: string;
   isVerified?: boolean;
+  bankAccountId?: string;
   limit?: number;
   offset?: number;
 }

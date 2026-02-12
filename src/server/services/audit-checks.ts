@@ -110,8 +110,8 @@ export function checkUncategorizedTransactions(
   return [{
     checkType: "uncategorized_transactions",
     severity: "warning",
-    title: "Uncategorized Transactions",
-    message: `${address}: ${uncategorized.length} transaction(s) still uncategorized.`,
+    title: "Uncategorised Transactions",
+    message: `${address}: ${uncategorized.length} transaction(s) still uncategorised.`,
     propertyId,
     affectedCount: uncategorized.length,
   }];

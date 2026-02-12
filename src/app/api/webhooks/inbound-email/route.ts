@@ -6,13 +6,18 @@ import { resolveForwardingAddress } from "@/server/services/email-forwarding";
 import { isSenderApproved } from "@/server/services/email-sender-check";
 import { processEmailBackground } from "@/server/services/email-processing";
 import { waitUntil } from "@vercel/functions";
+import { timingSafeEqual } from "crypto";
 
 export const runtime = "nodejs";
 
 const INBOUND_SECRET = process.env.SENDGRID_INBOUND_SECRET;
 
 function verifyBasicAuth(request: NextRequest): boolean {
-  if (!INBOUND_SECRET) return process.env.NODE_ENV !== "production";
+  if (!INBOUND_SECRET) {
+    if (process.env.NODE_ENV === "production") return false;
+    console.warn("SENDGRID_INBOUND_SECRET not set — skipping auth in development");
+    return true;
+  }
 
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Basic ")) return false;
@@ -20,7 +25,16 @@ function verifyBasicAuth(request: NextRequest): boolean {
   const decoded = Buffer.from(authHeader.slice(6), "base64").toString();
   // SendGrid sends username:password, we use a single secret as password
   const password = decoded.split(":")[1];
-  return password === INBOUND_SECRET;
+  if (!password || password.length !== INBOUND_SECRET.length) return false;
+
+  try {
+    return timingSafeEqual(
+      Buffer.from(password),
+      Buffer.from(INBOUND_SECRET)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(request: NextRequest) {

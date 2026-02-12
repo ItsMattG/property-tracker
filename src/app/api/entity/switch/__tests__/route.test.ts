@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-// Mock Clerk auth
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: vi.fn(),
+// Mock BetterAuth
+vi.mock("@/lib/auth", () => ({
+  getAuthSession: vi.fn(),
 }));
 
 // Mock cookies
@@ -24,7 +24,7 @@ vi.mock("@/server/db", () => ({
 }));
 
 import { POST } from "../route";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthSession } from "@/lib/auth";
 import { db } from "@/server/db";
 
 describe("POST /api/entity/switch", () => {
@@ -33,7 +33,7 @@ describe("POST /api/entity/switch", () => {
   });
 
   it("returns 401 when not authenticated", async () => {
-    vi.mocked(auth).mockResolvedValue({ userId: null } as never);
+    vi.mocked(getAuthSession).mockResolvedValue(null);
 
     const request = new NextRequest("http://localhost/api/entity/switch", {
       method: "POST",
@@ -45,7 +45,7 @@ describe("POST /api/entity/switch", () => {
   });
 
   it("returns 401 when user not found in database", async () => {
-    vi.mocked(auth).mockResolvedValue({ userId: "clerk_123" } as never);
+    vi.mocked(getAuthSession).mockResolvedValue({ user: { id: "user_123" } } as never);
     vi.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
 
     const request = new NextRequest("http://localhost/api/entity/switch", {
@@ -58,10 +58,11 @@ describe("POST /api/entity/switch", () => {
   });
 
   it("returns 403 when entityId does not belong to user", async () => {
-    vi.mocked(auth).mockResolvedValue({ userId: "clerk_123" } as never);
+    vi.mocked(getAuthSession).mockResolvedValue({ user: { id: "user-1" } } as never);
     vi.mocked(db.query.users.findFirst).mockResolvedValue({
       id: "user-1",
-      clerkId: "clerk_123",
+      email: "user1@test.com",
+      name: "User 1",
     } as never);
     vi.mocked(db.query.portfolioMembers.findFirst).mockResolvedValue(undefined);
 
@@ -75,10 +76,11 @@ describe("POST /api/entity/switch", () => {
   });
 
   it("returns 403 when user is invited but has not joined portfolio", async () => {
-    vi.mocked(auth).mockResolvedValue({ userId: "clerk_123" } as never);
+    vi.mocked(getAuthSession).mockResolvedValue({ user: { id: "user-1" } } as never);
     vi.mocked(db.query.users.findFirst).mockResolvedValue({
       id: "user-1",
-      clerkId: "clerk_123",
+      email: "user1@test.com",
+      name: "User 1",
     } as never);
     // Membership exists but joinedAt is null (invited but not joined)
     vi.mocked(db.query.portfolioMembers.findFirst).mockResolvedValue({
@@ -97,10 +99,11 @@ describe("POST /api/entity/switch", () => {
   });
 
   it("allows switching to own entity", async () => {
-    vi.mocked(auth).mockResolvedValue({ userId: "clerk_123" } as never);
+    vi.mocked(getAuthSession).mockResolvedValue({ user: { id: "user-1" } } as never);
     vi.mocked(db.query.users.findFirst).mockResolvedValue({
       id: "user-1",
-      clerkId: "clerk_123",
+      email: "user1@test.com",
+      name: "User 1",
     } as never);
 
     const request = new NextRequest("http://localhost/api/entity/switch", {
@@ -116,10 +119,11 @@ describe("POST /api/entity/switch", () => {
   });
 
   it("allows switching to portfolio where user is member", async () => {
-    vi.mocked(auth).mockResolvedValue({ userId: "clerk_123" } as never);
+    vi.mocked(getAuthSession).mockResolvedValue({ user: { id: "user-1" } } as never);
     vi.mocked(db.query.users.findFirst).mockResolvedValue({
       id: "user-1",
-      clerkId: "clerk_123",
+      email: "user1@test.com",
+      name: "User 1",
     } as never);
     vi.mocked(db.query.portfolioMembers.findFirst).mockResolvedValue({
       ownerId: "other-user",

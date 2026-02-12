@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { getAuthSession } from "@/lib/auth";
 import { seed } from "@/lib/seed";
 import type { SeedMode } from "@/lib/seed";
 
 export async function POST(request: NextRequest) {
-  // Block in production
-  if (process.env.NODE_ENV === "production") {
+  // Block in production (allow staging/preview via VERCEL_GIT_COMMIT_REF)
+  const gitBranch = process.env.VERCEL_GIT_COMMIT_REF;
+  const isProductionBranch = !gitBranch || gitBranch === "main";
+  if (process.env.NODE_ENV === "production" && isProductionBranch) {
     return NextResponse.json({ error: "Seed endpoint is not available in production" }, { status: 403 });
   }
 
   // Require authentication
-  const { userId: clerkId } = await auth();
-  if (!clerkId) {
+  const session = await getAuthSession();
+  if (!session?.user) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const summary = await seed({
-      clerkId,
+      email: session.user.email,
       mode,
       clean,
     });

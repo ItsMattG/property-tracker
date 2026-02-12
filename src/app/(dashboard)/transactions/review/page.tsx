@@ -64,7 +64,7 @@ export default function ReviewPage() {
 
   const batchAcceptMutation = trpc.categorization.batchAccept.useMutation({
     onSuccess: (result) => {
-      toast.success(`${result.accepted} transactions categorized`);
+      toast.success(`${result.accepted} transactions categorised`);
       invalidateAll();
     },
     onError: (error) => {
@@ -74,7 +74,7 @@ export default function ReviewPage() {
 
   const triggerMutation = trpc.categorization.triggerCategorization.useMutation({
     onSuccess: (result) => {
-      toast.success(`Categorized ${result.categorized} of ${result.processed} transactions`);
+      toast.success(`Categorised ${result.categorized} of ${result.processed} transactions`);
       invalidateAll();
     },
     onError: (error) => {
@@ -142,11 +142,11 @@ export default function ReviewPage() {
                   triggerMutation.isPending && "animate-spin"
                 )}
               />
-              Scan Uncategorized
+              Scan Uncategorised
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            Run AI categorization on uncategorized transactions
+            Run AI categorisation on uncategorised transactions
           </TooltipContent>
         </Tooltip>
       </div>

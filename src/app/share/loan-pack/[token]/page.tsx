@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { loanPacks } from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { LoanPackReport } from "@/components/loanPack/LoanPackReport";
 import { DownloadLoanPackPDFButton } from "@/components/loanPack/DownloadLoanPackPDFButton";
@@ -45,7 +45,7 @@ export default async function LoanPackViewPage({ params }: PageProps) {
   }
 
   // Update access tracking
-  db.update(loanPacks).set({ accessCount: pack.accessCount + 1, accessedAt: now }).where(eq(loanPacks.id, pack.id)).execute().catch(() => {});
+  db.update(loanPacks).set({ accessCount: sql`${loanPacks.accessCount} + 1`, accessedAt: now }).where(eq(loanPacks.id, pack.id)).execute().catch(() => {});
 
   const snapshot = pack.snapshotData as LoanPackSnapshot;
   const daysUntilExpiry = differenceInDays(new Date(pack.expiresAt), now);
@@ -78,7 +78,7 @@ export default async function LoanPackViewPage({ params }: PageProps) {
           <div className="flex flex-col items-center gap-4 text-center">
             <div>
               <p className="text-sm text-muted-foreground">Powered by <Link href="/" className="font-medium text-foreground hover:underline">BrickTrack</Link></p>
-              <p className="text-xs text-muted-foreground mt-1">Track, analyze, and share your property investment portfolio</p>
+              <p className="text-xs text-muted-foreground mt-1">Track, analyse, and share your property investment portfolio</p>
             </div>
             <Link href="/sign-up"><Button variant="outline" size="sm">Create Your Free Account</Button></Link>
           </div>

@@ -17,30 +17,7 @@ import {
   BottomCTA,
   StatsBar,
 } from "@/components/landing";
-import { db } from "@/server/db";
-import { users, properties } from "@/server/db/schema";
-import { sql } from "drizzle-orm";
-
-// Revalidate stats every 24 hours
-export const revalidate = 86400;
-
-async function getStats() {
-  try {
-    const [[userCountResult], [propertyCountResult]] = await Promise.all([
-      db.select({ count: sql<number>`count(*)::int` }).from(users),
-      db.select({ count: sql<number>`count(*)::int` }).from(properties),
-    ]);
-    return {
-      userCount: userCountResult?.count ?? 0,
-      propertyCount: propertyCountResult?.count ?? 0,
-    };
-  } catch {
-    return { userCount: 0, propertyCount: 0 };
-  }
-}
-
 export default async function HomePage() {
-  const { userCount, propertyCount } = await getStats();
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <script
@@ -91,7 +68,7 @@ export default async function HomePage() {
             <span className="text-primary">Tax time sorted.</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            BrickTrack connects to your bank, categorizes every transaction
+            BrickTrack connects to your bank, categorises every transaction
             for tax, and generates ATO-ready reports automatically. No more
             spreadsheets. No more stress at EOFY.
           </p>
@@ -100,7 +77,7 @@ export default async function HomePage() {
       </section>
 
       {/* Social Proof Bar - stats baked in at build time */}
-      <StatsBar propertyCount={propertyCount} userCount={userCount} />
+      <StatsBar />
 
       {/* Features */}
       <section className="py-12 md:py-20 px-4 bg-secondary">
@@ -217,10 +194,10 @@ export default async function HomePage() {
               <div className="flex-1">
                 <span className="text-sm font-medium text-primary">Banking</span>
                 <h3 className="text-2xl font-bold mt-1 mb-3">
-                  Transactions that categorize themselves
+                  Transactions that categorise themselves
                 </h3>
                 <p className="text-muted-foreground">
-                  Connect your bank once. Transactions import daily and categorize
+                  Connect your bank once. Transactions import daily and categorise
                   automatically using smart rules. Just review and approve.
                 </p>
               </div>
@@ -237,7 +214,7 @@ export default async function HomePage() {
           </h2>
           <div className="space-y-4">
             {[
-              "Bank transactions import and categorize automatically",
+              "Bank transactions import and categorise automatically",
               "ATO expense codes applied without manual entry",
               "Export-ready reports for your accountant or MyTax",
               "Unlimited properties across multiple entities",
@@ -378,12 +355,6 @@ export default async function HomePage() {
             </span>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">
-            <Link href="/blog" className="hover:text-foreground">
-              Blog
-            </Link>
-            <Link href="/changelog" className="hover:text-foreground">
-              Changelog
-            </Link>
             <Link href="/privacy" className="hover:text-foreground">
               Privacy Policy
             </Link>

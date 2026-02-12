@@ -22,6 +22,12 @@ export const featureFlags = {
   tasks: false,
 
   // ── Settings ──────────────────────────────────────────────────────
+  notifications: false,
+  integrations: false,
+  loanPacks: false,
+  featureRequests: false,
+  advisors: false,
+  referrals: false,
   refinanceAlerts: false,
   emailConnections: false,
   mobileApp: false,
@@ -31,9 +37,22 @@ export const featureFlags = {
   bugReports: false,
   support: false,
 
+  // ── Property detail sections ────────────────────────────────────
+  valuation: true,
+  climateRisk: false,
+  milestones: false,
+  performanceBenchmark: false,
+  similarProperties: false,
+
+  // ── Property features ──────────────────────────────────────────────
+  documents: false,
+
   // ── Other UI ──────────────────────────────────────────────────────
+  fySelector: false,
   aiAssistant: false,
   whatsNew: false,
+  helpMenu: false,
+  quickAdd: false,
 } as const;
 
 export type FeatureFlag = keyof typeof featureFlags;
@@ -52,6 +71,12 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/export": "export",
   "/emails": "emails",
   "/tasks": "tasks",
+  "/settings/notifications": "notifications",
+  "/settings/integrations": "integrations",
+  "/settings/loan-packs": "loanPacks",
+  "/settings/feature-requests": "featureRequests",
+  "/settings/advisors": "advisors",
+  "/settings/referrals": "referrals",
   "/settings/refinance-alerts": "refinanceAlerts",
   "/settings/email-connections": "emailConnections",
   "/settings/mobile": "mobileApp",

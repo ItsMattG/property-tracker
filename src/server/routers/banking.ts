@@ -31,6 +31,82 @@ export const bankingRouter = router({
     });
   }),
 
+  getAccountSummaries: protectedProcedure.query(async ({ ctx }) => {
+    const accounts = await ctx.db.query.bankAccounts.findMany({
+      where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
+      with: {
+        defaultProperty: true,
+      },
+    });
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      .toISOString()
+      .split("T")[0];
+
+    const summaries = await Promise.all(
+      accounts.map(async (account) => {
+        // Get unreconciled count
+        const [unreconciledResult] = await ctx.db
+          .select({ count: sql<number>`count(*)` })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.bankAccountId, account.id),
+              eq(transactions.userId, ctx.portfolio.ownerId),
+              eq(transactions.category, "uncategorized")
+            )
+          );
+
+        // Get reconciled balance
+        const [reconciledResult] = await ctx.db
+          .select({ total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)` })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.bankAccountId, account.id),
+              eq(transactions.userId, ctx.portfolio.ownerId),
+              sql`${transactions.category} != 'uncategorized'`
+            )
+          );
+
+        // Get this month's cash in/out
+        const [monthlyResult] = await ctx.db
+          .select({
+            cashIn: sql<string>`COALESCE(SUM(CASE WHEN CAST(amount AS NUMERIC) > 0 THEN CAST(amount AS NUMERIC) ELSE 0 END), 0)`,
+            cashOut: sql<string>`COALESCE(SUM(CASE WHEN CAST(amount AS NUMERIC) < 0 THEN CAST(amount AS NUMERIC) ELSE 0 END), 0)`,
+          })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.bankAccountId, account.id),
+              eq(transactions.userId, ctx.portfolio.ownerId),
+              sql`${transactions.date} >= ${monthStart}`
+            )
+          );
+
+        return {
+          id: account.id,
+          accountName: account.nickname || account.accountName,
+          institution: account.institution,
+          institutionNickname: account.institutionNickname,
+          accountType: account.accountType,
+          accountNumberMasked: account.accountNumberMasked,
+          connectionStatus: account.connectionStatus,
+          lastSyncedAt: account.lastSyncedAt,
+          bankBalance: account.balance,
+          property: account.defaultProperty,
+          unreconciledCount: Number(unreconciledResult?.count ?? 0),
+          reconciledBalance: reconciledResult?.total ?? "0",
+          cashIn: monthlyResult?.cashIn ?? "0",
+          cashOut: monthlyResult?.cashOut ?? "0",
+        };
+      })
+    );
+
+    return summaries;
+  }),
+
   getConnectionStatus: protectedProcedure.query(async ({ ctx }) => {
     const accounts = await ctx.db.query.bankAccounts.findMany({
       where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
@@ -538,8 +614,8 @@ export const bankingRouter = router({
 
   connect: bankProcedure
     .input(z.object({
-      mobile: z.string().regex(/^\+61\d{9}$/, "Must be a valid Australian mobile number (+61...)"),
       propertyId: z.string().uuid().optional(),
+      mobile: z.string().min(1).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Look up user's basiqUserId
@@ -552,13 +628,30 @@ export const bankingRouter = router({
       }
 
       let basiqUserId = user.basiqUserId;
-      const { mobile, propertyId } = input;
 
-      // Store the pre-selected property for auto-assignment after Basiq callback
-      if (propertyId) {
+      // Determine effective mobile: prefer freshly-submitted, fall back to stored
+      const effectiveMobile = input.mobile || user.mobile;
+      if (!effectiveMobile) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "MOBILE_REQUIRED",
+        });
+      }
+
+      // Persist mobile on user record if new or changed
+      if (input.mobile && input.mobile !== user.mobile) {
+        await ctx.db
+          .update(users)
+          .set({ mobile: input.mobile })
+          .where(eq(users.id, user.id));
+      }
+
+      // Store the pre-selected property for auto-assignment after Basiq callback,
+      // or clear any stale value so the callback routes to the assign page
+      if (input.propertyId) {
         const property = await ctx.db.query.properties.findFirst({
           where: and(
-            eq(properties.id, propertyId),
+            eq(properties.id, input.propertyId),
             eq(properties.userId, ctx.portfolio.ownerId)
           ),
         });
@@ -567,28 +660,80 @@ export const bankingRouter = router({
         }
         await ctx.db
           .update(users)
-          .set({ pendingBankPropertyId: propertyId })
+          .set({ pendingBankPropertyId: input.propertyId })
+          .where(eq(users.id, user.id));
+      } else {
+        await ctx.db
+          .update(users)
+          .set({ pendingBankPropertyId: null })
           .where(eq(users.id, user.id));
       }
 
-      // Create Basiq user if needed
+      // Create or update Basiq user with mobile (required for auth link / SMS verification)
       if (!basiqUserId) {
-        const basiqUser = await basiqService.createUser(user.email, mobile);
-        basiqUserId = basiqUser.id;
+        try {
+          const basiqUser = await basiqService.createUser(user.email, effectiveMobile);
+          basiqUserId = basiqUser.id;
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: msg.includes("not configured")
+              ? "Bank connections are not available at this time. Please try again later."
+              : `Unable to initialize bank connection: ${msg}`,
+          });
+        }
 
         await ctx.db
           .update(users)
           .set({ basiqUserId })
           .where(eq(users.id, user.id));
       } else {
-        // Update mobile on existing Basiq user (required for auth links)
-        await basiqService.updateUser(basiqUserId, { mobile });
+        // Existing Basiq user — update mobile in case it changed or wasn't set
+        try {
+          await basiqService.updateUser(basiqUserId, { mobile: effectiveMobile });
+        } catch {
+          // Non-fatal — mobile may already be set from a previous connection
+        }
       }
 
-      // Create auth link for consent flow
-      const { links } = await basiqService.createAuthLink(basiqUserId);
+      // Create auth link for consent flow — if the stored basiqUserId is stale
+      // (e.g. API key changed, user deleted from Basiq), recreate the user and retry
+      try {
+        const { links } = await basiqService.createAuthLink(basiqUserId);
+        return { url: links.public };
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        const isNotFound = msg.includes("resource-not-found");
+        if (!isNotFound) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: msg.includes("not configured")
+              ? "Bank connections are not available at this time. Please try again later."
+              : `Unable to connect to banking provider: ${msg}`,
+          });
+        }
 
-      return { url: links.public };
+        // Stale basiqUserId — create a new Basiq user and retry
+        try {
+          const basiqUser = await basiqService.createUser(user.email, effectiveMobile);
+          basiqUserId = basiqUser.id;
+
+          await ctx.db
+            .update(users)
+            .set({ basiqUserId })
+            .where(eq(users.id, user.id));
+
+          const { links } = await basiqService.createAuthLink(basiqUserId);
+          return { url: links.public };
+        } catch (retryError) {
+          const retryMsg = retryError instanceof Error ? retryError.message : String(retryError);
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `Unable to connect to banking provider: ${retryMsg}`,
+          });
+        }
+      }
     }),
 
   reconnect: bankProcedure

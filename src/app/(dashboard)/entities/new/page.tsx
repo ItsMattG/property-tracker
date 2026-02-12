@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
-  Building2,
   Users,
   Landmark,
   Briefcase,
@@ -24,15 +23,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type EntityType = "personal" | "trust" | "smsf" | "company";
+type EntityType = "trust" | "smsf" | "company";
 
 const entityTypes = [
-  {
-    type: "personal" as const,
-    label: "Personal",
-    description: "Properties held in your own name",
-    icon: Building2,
-  },
   {
     type: "trust" as const,
     label: "Trust",
@@ -112,7 +105,7 @@ export default function NewEntityPage() {
     createEntity.mutate(payload);
   };
 
-  const totalSteps = entityType === "personal" || entityType === "company" ? 2 : 3;
+  const totalSteps = entityType === "company" ? 2 : 3;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -136,7 +129,7 @@ export default function NewEntityPage() {
               Choose the type of legal entity that will hold your properties.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
+          <CardContent className="grid gap-4 md:grid-cols-3">
             {entityTypes.map((et) => (
               <button
                 key={et.type}
@@ -145,7 +138,7 @@ export default function NewEntityPage() {
                   setStep(2);
                 }}
                 className={cn(
-                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors",
+                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-colors cursor-pointer",
                   "hover:border-primary hover:bg-primary/5",
                   entityType === et.type && "border-primary bg-primary/5"
                 )}
@@ -174,11 +167,7 @@ export default function NewEntityPage() {
               <Label htmlFor="name">Entity Name *</Label>
               <Input
                 id="name"
-                placeholder={
-                  entityType === "personal"
-                    ? "Personal"
-                    : "Smith Family Trust"
-                }
+                placeholder="Smith Family Trust"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })

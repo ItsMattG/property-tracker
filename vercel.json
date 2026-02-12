@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm run changelog:sync && pnpm run blog:sync && pnpm run build",
+  "buildCommand": "pnpm run changelog:sync && pnpm run blog:sync && npx drizzle-kit push --force && pnpm run build",
   "devCommand": "pnpm run dev",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": "nextjs",
@@ -18,9 +18,6 @@
     "src/app/**/*.tsx": {
       "maxDuration": 60
     }
-  },
-  "env": {
-    "NEXT_PUBLIC_APP_URL": "https://propertytracker.vercel.app"
   },
   "headers": [
     {

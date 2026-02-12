@@ -1,115 +1,80 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ArrowLeft, Landmark, Shield, RefreshCw, Home } from "lucide-react";
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { ArrowLeft, Landmark, Shield, RefreshCw, Smartphone } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc/client";
 import { useTour } from "@/hooks/useTour";
 
-function formatMobileForDisplay(value: string): string {
-  // Strip everything except digits
-  const digits = value.replace(/\D/g, "");
-  // Format as 04XX XXX XXX
-  if (digits.length <= 4) return digits;
-  if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
-  return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7, 10)}`;
-}
+const mobileSchema = z.object({
+  mobile: z
+    .string()
+    .min(1, "Mobile number is required")
+    .transform((val) => val.replace(/[\s\-()]/g, ""))
+    .refine(
+      (val) => /^(\+?61|0)4\d{8}$/.test(val),
+      "Enter a valid Australian mobile number (e.g. 0412 345 678)"
+    )
+    .transform((val) =>
+      val.startsWith("0")
+        ? `+61${val.slice(1)}`
+        : val.startsWith("614")
+          ? `+${val}`
+          : val
+    ),
+});
 
-function toE164(value: string): string {
-  const digits = value.replace(/\D/g, "");
-  if (digits.startsWith("0")) return `+61${digits.slice(1)}`;
-  if (digits.startsWith("61")) return `+${digits}`;
-  return `+61${digits}`;
-}
-
-function isValidAuMobile(value: string): boolean {
-  const digits = value.replace(/\D/g, "");
-  // Australian mobile: 04XX XXX XXX (10 digits starting with 04)
-  return /^04\d{8}$/.test(digits);
-}
+type MobileForm = z.infer<typeof mobileSchema>;
 
 export default function BankingConnectPage() {
   useTour({ tourId: "banking" });
-  const [mobile, setMobile] = useState("");
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
+  const searchParams = useSearchParams();
+  const propertyId = searchParams?.get("propertyId") ?? undefined;
 
-  const { data: properties, isLoading: propertiesLoading } = trpc.property.list.useQuery();
+  const [showMobileInput, setShowMobileInput] = useState(false);
 
-  // Auto-select if only one property
-  useEffect(() => {
-    if (properties?.length === 1 && !selectedPropertyId) {
-      setSelectedPropertyId(properties[0].id);
-    }
-  }, [properties, selectedPropertyId]);
+  const form = useForm<MobileForm>({
+    resolver: zodResolver(mobileSchema),
+    defaultValues: { mobile: "" },
+  });
 
   const connectMutation = trpc.banking.connect.useMutation({
     onSuccess: (data) => {
       window.location.href = data.url;
     },
     onError: (error) => {
+      if (error.message === "MOBILE_REQUIRED") {
+        setShowMobileInput(true);
+        return;
+      }
       toast.error(`Failed to start connection: ${error.message}`);
     },
   });
 
-  const handleConnect = () => {
-    if (!isValidAuMobile(mobile)) {
-      toast.error("Please enter a valid Australian mobile number (04XX XXX XXX)");
-      return;
-    }
-    if (!selectedPropertyId) {
-      toast.error("Please select a property for this bank account");
-      return;
-    }
-    connectMutation.mutate({
-      mobile: toE164(mobile),
-      propertyId: selectedPropertyId,
-    });
-  };
-
   const isConnecting = connectMutation.isPending;
-  const hasMultipleProperties = (properties?.length ?? 0) > 1;
-  const hasNoProperties = !propertiesLoading && properties?.length === 0;
-  const canConnect = isValidAuMobile(mobile) && !!selectedPropertyId && !isConnecting;
 
-  // Redirect to create property if none exist
-  if (hasNoProperties) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/banking">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Link>
-          </Button>
-        </div>
-        <Card>
-          <CardContent className="py-12 text-center space-y-4">
-            <Home className="w-12 h-12 text-muted-foreground mx-auto" />
-            <h2 className="text-lg font-semibold">Add a property first</h2>
-            <p className="text-muted-foreground">
-              You need at least one property before connecting a bank account.
-              Transactions will be linked to your property automatically.
-            </p>
-            <Button asChild>
-              <Link href="/properties/create">Add Property</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  function handleConnect() {
+    connectMutation.mutate({ propertyId });
+  }
+
+  function handleMobileSubmit(data: MobileForm) {
+    connectMutation.mutate({ propertyId, mobile: data.mobile });
   }
 
   return (
@@ -151,7 +116,7 @@ export default function BankingConnectPage() {
               <div>
                 <h4 className="font-medium">Automatic syncing</h4>
                 <p className="text-sm text-muted-foreground">
-                  Transactions are automatically imported and categorized. No
+                  Transactions are automatically imported and categorised. No
                   more manual data entry or CSV uploads.
                 </p>
               </div>
@@ -185,52 +150,63 @@ export default function BankingConnectPage() {
             </div>
           </div>
 
-          {/* Property selection - shown for multi-property users */}
-          {hasMultipleProperties && (
-            <div className="border-t pt-6 space-y-2">
-              <Label htmlFor="property">Property</Label>
-              <Select value={selectedPropertyId} onValueChange={setSelectedPropertyId}>
-                <SelectTrigger id="property" className="w-full">
-                  <SelectValue placeholder="Which property is this account for?" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties?.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.address}, {property.suburb}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                All connected accounts will be linked to this property. You can reassign individual accounts later.
-              </p>
+          {showMobileInput ? (
+            <div className="animate-slide-down-reveal">
+              <div className="rounded-lg border bg-card p-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Smartphone className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-sm">Mobile verification required</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Your bank requires SMS verification. Enter your Australian mobile number to continue.
+                    </p>
+                  </div>
+                </div>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleMobileSubmit)} className="space-y-3">
+                    <FormField
+                      control={form.control}
+                      name="mobile"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mobile number</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="0412 345 678"
+                              type="tel"
+                              autoFocus
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      size="lg"
+                      disabled={isConnecting}
+                    >
+                      {isConnecting ? "Connecting..." : "Continue"}
+                    </Button>
+                  </form>
+                </Form>
+              </div>
             </div>
+          ) : (
+            <Button
+              data-tour="basiq-connect"
+              onClick={handleConnect}
+              className="w-full"
+              size="lg"
+              disabled={isConnecting}
+            >
+              {isConnecting ? "Connecting..." : "Connect Bank Account"}
+            </Button>
           )}
-
-          <div className="border-t pt-6 space-y-2">
-            <Label htmlFor="mobile">Mobile number</Label>
-            <Input
-              id="mobile"
-              type="tel"
-              placeholder="04XX XXX XXX"
-              value={mobile}
-              onChange={(e) => setMobile(formatMobileForDisplay(e.target.value))}
-              maxLength={12}
-            />
-            <p className="text-xs text-muted-foreground">
-              Basiq will send an SMS code to verify your identity.
-            </p>
-          </div>
-
-          <Button
-            data-tour="basiq-connect"
-            onClick={handleConnect}
-            className="w-full"
-            size="lg"
-            disabled={!canConnect}
-          >
-            {isConnecting ? "Connecting..." : "Connect Bank Account"}
-          </Button>
 
           <p className="text-xs text-center text-muted-foreground" data-tour="sender-allowlist">
             By connecting your account, you agree to our{" "}

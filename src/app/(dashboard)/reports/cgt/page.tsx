@@ -132,7 +132,7 @@ export default function CGTReportPage() {
                   <p className="font-medium">{formatCurrency(property.purchasePrice)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Purchase Date</p>
+                  <p className="text-sm text-muted-foreground">Contract Date</p>
                   <p className="font-medium">{property.purchaseDate}</p>
                 </div>
                 <div>

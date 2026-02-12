@@ -1,15 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
-import { AddTransactionDialog } from "@/components/transactions/AddTransactionDialog";
 import { ImportCSVDialog } from "@/components/transactions/ImportCSVDialog";
 import { ReconciliationView } from "@/components/recurring/ReconciliationView";
 import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc/client";
-import { ArrowLeftRight, List, Calendar } from "lucide-react";
+import { ArrowLeftRight, List, Calendar, Plus, Download } from "lucide-react";
+import Link from "next/link";
 import type { Category, TransactionFilterInput } from "@/types/category";
 import { useTour } from "@/hooks/useTour";
 import { toast } from "sonner";
@@ -22,9 +33,11 @@ type ViewMode = "transactions" | "reconciliation";
 const PAGE_SIZE = 50;
 
 export default function TransactionsPage() {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("transactions");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<TransactionFilterInput>({});
+  const [deleteTransaction, setDeleteTransaction] = useState<{ id: string; description: string } | null>(null);
   useTour({ tourId: "transactions" });
 
   const offset = (page - 1) * PAGE_SIZE;
@@ -171,6 +184,80 @@ export default function TransactionsPage() {
     toggleVerified.mutate({ id });
   };
 
+  const allocate = trpc.transaction.allocate.useMutation({
+    onSuccess: () => {
+      toast.success("Transaction allocated");
+      utils.transaction.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+
+  const handleAllocate = (data: { id: string; category: string; propertyId?: string; claimPercent: number }) => {
+    allocate.mutate({
+      id: data.id,
+      category: data.category as any,
+      propertyId: data.propertyId,
+      claimPercent: data.claimPercent,
+    });
+  };
+
+  const deleteTransactionMutation = trpc.transaction.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Transaction deleted");
+      utils.transaction.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error));
+    },
+  });
+
+  const exportCSV = trpc.transaction.exportCSV.useQuery(
+    {
+      propertyId: filters.propertyId,
+      category: filters.category,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      isVerified: filters.isVerified,
+    },
+    { enabled: false }
+  );
+
+  const handleExportCSV = async () => {
+    try {
+      const result = await exportCSV.refetch();
+      if (result.data) {
+        const blob = new Blob([result.data.csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = result.data.filename;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success("CSV exported successfully");
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleEdit = (id: string) => {
+    router.push(`/transactions/${id}/edit`);
+  };
+
+  const handleDelete = (id: string) => {
+    const txn = transactions?.transactions.find((t) => t.id === id);
+    setDeleteTransaction(txn ? { id: txn.id, description: txn.description } : { id, description: "" });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteTransaction) {
+      await deleteTransactionMutation.mutateAsync({ id: deleteTransaction.id });
+      setDeleteTransaction(null);
+    }
+  };
+
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
   };
@@ -193,12 +280,26 @@ export default function TransactionsPage() {
         <div>
           <h2 className="text-2xl font-bold">Transactions</h2>
           <p className="text-muted-foreground">
-            Review and categorize your transactions
+            Review and categorise your transactions
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            disabled={exportCSV.isFetching}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
           <ImportCSVDialog onSuccess={() => utils.transaction.list.invalidate()} />
-          <AddTransactionDialog onSuccess={() => utils.transaction.list.invalidate()} />
+          <Button asChild>
+            <Link href="/transactions/new">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Transaction
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -241,6 +342,9 @@ export default function TransactionsPage() {
                 onCategoryChange={handleCategoryChange}
                 onToggleVerified={handleToggleVerified}
                 onBulkCategoryChange={handleBulkCategoryChange}
+                onAllocate={handleAllocate}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
               />
               {totalPages > 1 && (
                 <Pagination
@@ -267,6 +371,28 @@ export default function TransactionsPage() {
       ) : (
         <ReconciliationView propertyId={filters.propertyId} />
       )}
+
+      <AlertDialog
+        open={!!deleteTransaction}
+        onOpenChange={(open) => !open && setDeleteTransaction(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium">{deleteTransaction?.description}</span>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

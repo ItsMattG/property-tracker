@@ -1,11 +1,10 @@
 import { test as base, Page } from "@playwright/test";
-import { setupClerkTestingToken } from "@clerk/testing/playwright";
 import * as fs from "fs/promises";
 import * as path from "path";
 
 // Demo user credentials - set in .env.local or use defaults
-const DEMO_USER_EMAIL = process.env.E2E_DEMO_USER_EMAIL;
-const DEMO_USER_PASSWORD = process.env.E2E_DEMO_USER_PASSWORD;
+const DEMO_USER_EMAIL = process.env.E2E_DEMO_USER_EMAIL || process.env.E2E_USER_EMAIL;
+const DEMO_USER_PASSWORD = process.env.E2E_DEMO_USER_PASSWORD || process.env.E2E_USER_PASSWORD;
 
 export interface AuditFinding {
   page: string;
@@ -111,22 +110,21 @@ export const authenticatedTest = base.extend<{ audit: AuditContext }>({
   audit: async ({ page }, use) => {
     const findings: AuditFinding[] = [];
 
-    // Set up Clerk testing token
-    await setupClerkTestingToken({ page });
-
     // Sign in with demo account if credentials provided
     if (DEMO_USER_EMAIL && DEMO_USER_PASSWORD) {
       await page.goto("/sign-in");
-      await page.waitForSelector('[data-clerk-component="SignIn"]', { timeout: 15000 });
-
       await page.getByLabel(/email/i).fill(DEMO_USER_EMAIL);
-      await page.getByRole("button", { name: "Continue", exact: true }).click();
+      await page.getByRole("button", { name: /continue|sign in/i }).click();
 
-      const passwordInput = page.locator('input[type="password"]');
-      await passwordInput.waitFor({ timeout: 5000 });
-      await passwordInput.fill(DEMO_USER_PASSWORD);
+      // Check if password field appears (multi-step form)
+      const passwordInput = page.getByLabel(/password/i);
+      const isVisible = await passwordInput.isVisible({ timeout: 2000 }).catch(() => false);
 
-      await page.getByRole("button", { name: "Continue", exact: true }).click();
+      if (isVisible) {
+        await passwordInput.fill(DEMO_USER_PASSWORD);
+        await page.getByRole("button", { name: /continue|sign in/i }).click();
+      }
+
       await page.waitForURL((url) => !url.pathname.includes("/sign-in"), { timeout: 15000 });
     }
 

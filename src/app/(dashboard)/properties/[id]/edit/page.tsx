@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { PropertyForm, PropertyFormValues } from "@/components/properties/PropertyForm";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
 
@@ -28,54 +29,64 @@ export default function EditPropertyPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold">Edit Property</h2>
-          <p className="text-muted-foreground">Loading property details...</p>
-        </div>
-        <div className="h-96 rounded-lg bg-muted animate-pulse" />
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Edit Property</CardTitle>
+            <CardDescription>Loading property details...</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96 rounded-lg bg-muted animate-pulse" />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!property) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold">Property Not Found</h2>
-          <p className="text-muted-foreground">
-            The property you're looking for doesn't exist.
-          </p>
-        </div>
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Property Not Found</CardTitle>
+            <CardDescription>
+              The property you're looking for doesn't exist.
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Edit Property</h2>
-        <p className="text-muted-foreground">
-          Update the details for {property.address}
-        </p>
-      </div>
-
-      <div className="max-w-2xl">
-        <PropertyForm
-          defaultValues={{
-            address: property.address,
-            suburb: property.suburb,
-            state: property.state,
-            postcode: property.postcode,
-            purchasePrice: property.purchasePrice,
-            purchaseDate: property.purchaseDate,
-            entityName: property.entityName,
-          }}
-          onSubmit={handleSubmit}
-          isLoading={updateProperty.isPending}
-          entities={entities}
-        />
-      </div>
+    <div className="max-w-2xl mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle>Edit Property</CardTitle>
+          <CardDescription>
+            Update the details for {property.address}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PropertyForm
+            defaultValues={{
+              address: property.address,
+              suburb: property.suburb,
+              state: property.state,
+              postcode: property.postcode,
+              purchasePrice: property.purchasePrice,
+              contractDate: property.contractDate ?? property.purchaseDate,
+              settlementDate: property.settlementDate ?? "",
+              entityName: property.entityName,
+              latitude: property.latitude ?? "",
+              longitude: property.longitude ?? "",
+            }}
+            onSubmit={handleSubmit}
+            isLoading={updateProperty.isPending}
+            entities={entities}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

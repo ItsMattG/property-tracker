@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { properties, equityMilestones, referrals, referralCredits, subscriptions } from "../db/schema";
+import { properties, equityMilestones, referrals, referralCredits, subscriptions, users } from "../db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getClimateRisk } from "../services/climate-risk";
-import { getPlanFromSubscription, PLAN_LIMITS } from "../services/subscription";
+import { getPlanFromSubscription, PLAN_LIMITS, type Plan } from "../services/subscription";
 
 const propertySchema = z.object({
   address: z.string().min(1, "Address is required"),
@@ -12,8 +12,11 @@ const propertySchema = z.object({
   state: z.enum(["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"]),
   postcode: z.string().regex(/^\d{4}$/, "Invalid postcode"),
   purchasePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid price"),
-  purchaseDate: z.string(),
+  contractDate: z.string().min(1, "Contract date is required"),
+  settlementDate: z.string().optional(),
   entityName: z.string().optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
 });
 
 export const propertyRouter = router({
@@ -92,13 +95,24 @@ export const propertyRouter = router({
   create: writeProcedure
     .input(propertySchema)
     .mutation(async ({ ctx, input }) => {
-      // Check property limit for current plan
-      const sub = await ctx.db.query.subscriptions.findFirst({
-        where: eq(subscriptions.userId, ctx.portfolio.ownerId),
+      // Check if user is on trial — trial users get pro limits
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.portfolio.ownerId),
+        columns: { trialEndsAt: true, trialPlan: true },
       });
-      const currentPlan = getPlanFromSubscription(
-        sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
-      );
+      const isOnTrial = user?.trialEndsAt && user.trialEndsAt > new Date();
+
+      let currentPlan: Plan;
+      if (isOnTrial) {
+        currentPlan = (user.trialPlan as Plan) ?? "pro";
+      } else {
+        const sub = await ctx.db.query.subscriptions.findFirst({
+          where: eq(subscriptions.userId, ctx.portfolio.ownerId),
+        });
+        currentPlan = getPlanFromSubscription(
+          sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
+        );
+      }
       const limit = PLAN_LIMITS[currentPlan].maxProperties;
 
       if (limit !== Infinity) {
@@ -126,8 +140,12 @@ export const propertyRouter = router({
           state: input.state,
           postcode: input.postcode,
           purchasePrice: input.purchasePrice,
-          purchaseDate: input.purchaseDate,
+          purchaseDate: input.contractDate,
+          contractDate: input.contractDate,
+          settlementDate: input.settlementDate || null,
           entityName: input.entityName || "Personal",
+          latitude: input.latitude || null,
+          longitude: input.longitude || null,
           climateRisk,
         })
         .returning();
@@ -188,14 +206,26 @@ export const propertyRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 
-      // If postcode is being updated, refresh climate risk
+      // If contract date changes, keep purchaseDate in sync
       const updateData: Record<string, unknown> = {
         ...data,
         updatedAt: new Date(),
       };
 
+      if (data.contractDate) {
+        updateData.purchaseDate = data.contractDate;
+      }
+
       if (data.postcode) {
         updateData.climateRisk = getClimateRisk(data.postcode);
+      }
+
+      // Convert empty lat/lng strings to null for decimal column
+      if ("latitude" in updateData) {
+        updateData.latitude = updateData.latitude || null;
+      }
+      if ("longitude" in updateData) {
+        updateData.longitude = updateData.longitude || null;
       }
 
       const [property] = await ctx.db
@@ -253,7 +283,7 @@ export const propertyRouter = router({
       const [updated] = await ctx.db
         .update(properties)
         .set({ climateRisk, updatedAt: new Date() })
-        .where(eq(properties.id, input.id))
+        .where(and(eq(properties.id, input.id), eq(properties.userId, ctx.portfolio.ownerId)))
         .returning();
 
       return updated;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import * as XLSX from "xlsx";
+import { getAuthSession } from "@/lib/auth";
+import ExcelJS from "exceljs";
 
 interface Transaction {
   date: string;
@@ -18,34 +18,42 @@ interface ExportRequest {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) {
+  const session = await getAuthSession();
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const { transactions, financialYear }: ExportRequest = await req.json();
 
-    const data = transactions.map((t) => ({
-      Date: t.date,
-      Property: t.property?.address || "Unassigned",
-      Description: t.description,
-      Amount: Number(t.amount),
-      Category: t.category,
-      Deductible: t.isDeductible ? "Yes" : "No",
-      Verified: t.isVerified ? "Yes" : "No",
-    }));
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(financialYear);
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, financialYear);
+    worksheet.columns = [
+      { header: "Date", key: "date", width: 12 },
+      { header: "Property", key: "property", width: 30 },
+      { header: "Description", key: "description", width: 30 },
+      { header: "Amount", key: "amount", width: 12 },
+      { header: "Category", key: "category", width: 18 },
+      { header: "Deductible", key: "deductible", width: 10 },
+      { header: "Verified", key: "verified", width: 10 },
+    ];
 
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "buffer",
-    });
+    for (const t of transactions) {
+      worksheet.addRow({
+        date: t.date,
+        property: t.property?.address || "Unassigned",
+        description: t.description,
+        amount: Number(t.amount),
+        category: t.category,
+        deductible: t.isDeductible ? "Yes" : "No",
+        verified: t.isVerified ? "Yes" : "No",
+      });
+    }
 
-    return new NextResponse(excelBuffer, {
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return new NextResponse(buffer, {
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

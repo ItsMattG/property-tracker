@@ -4,7 +4,7 @@ import { createMockContext, createTestCaller } from "../../__tests__/test-utils"
 describe("recurring router", () => {
   const mockUser = {
     id: "user-1",
-    clerkId: "clerk_123",
+    userId: "user-1",
     email: "test@example.com",
     name: "Test User",
     createdAt: new Date(),
@@ -61,7 +61,7 @@ describe("recurring router", () => {
 
   describe("list", () => {
     it("returns recurring transactions for user", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -81,7 +81,7 @@ describe("recurring router", () => {
     });
 
     it("filters by propertyId", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -103,7 +103,7 @@ describe("recurring router", () => {
 
   describe("get", () => {
     it("returns a single recurring transaction with expected transactions", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -127,7 +127,7 @@ describe("recurring router", () => {
     });
 
     it("throws error for non-existent recurring transaction", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -148,7 +148,7 @@ describe("recurring router", () => {
 
   describe("create", () => {
     it("creates a recurring transaction and generates expected transactions", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const insertMock = vi.fn().mockReturnValue({
         values: vi.fn().mockReturnValue({
@@ -193,7 +193,7 @@ describe("recurring router", () => {
 
   describe("delete", () => {
     it("deletes a recurring transaction", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const deleteMock = vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue(undefined),
@@ -218,7 +218,7 @@ describe("recurring router", () => {
 
   describe("skip", () => {
     it("marks an expected transaction as skipped", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const updateMock = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
@@ -246,7 +246,7 @@ describe("recurring router", () => {
     });
 
     it("throws error for non-existent expected transaction", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const updateMock = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
@@ -273,7 +273,7 @@ describe("recurring router", () => {
 
   describe("matchManually", () => {
     it("matches an expected transaction to an actual transaction", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       const mockTransaction = {
         id: "990e8400-e29b-41d4-a716-446655440003",
@@ -326,7 +326,7 @@ describe("recurring router", () => {
     });
 
     it("throws error for non-existent expected transaction", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -351,7 +351,7 @@ describe("recurring router", () => {
     });
 
     it("throws error for non-existent transaction", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -378,7 +378,7 @@ describe("recurring router", () => {
 
   describe("getExpectedTransactions", () => {
     it("returns expected transactions for user", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -404,7 +404,7 @@ describe("recurring router", () => {
     });
 
     it("filters by status", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
         query: {
@@ -426,7 +426,7 @@ describe("recurring router", () => {
 
   describe("getSuggestions", () => {
     it("returns pattern suggestions from transactions", async () => {
-      const ctx = createMockContext({ clerkId: "clerk_123", user: mockUser });
+      const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       // Create 3 monthly transactions
       const monthlyTransactions = [

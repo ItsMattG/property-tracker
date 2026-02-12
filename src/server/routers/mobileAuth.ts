@@ -7,8 +7,10 @@ import bcrypt from "bcryptjs";
 import {
   verifyMobileToken,
   signMobileToken,
+  getPasswordVersion,
   type MobileJwtPayload,
 } from "../lib/mobile-jwt";
+import { authRateLimiter } from "../middleware/rate-limit";
 
 export const mobileAuthRouter = router({
   // Login with email/password
@@ -20,6 +22,16 @@ export const mobileAuthRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Rate limit login attempts by email to prevent brute-force
+      const rateLimitKey = `login:${input.email.toLowerCase().trim()}`;
+      const rateCheck = await authRateLimiter.check(rateLimitKey);
+      if (!rateCheck.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Too many login attempts. Please try again later.",
+        });
+      }
+
       const user = await ctx.db.query.users.findFirst({
         where: eq(users.email, input.email.toLowerCase().trim()),
       });
@@ -43,7 +55,11 @@ export const mobileAuthRouter = router({
         });
       }
 
-      const token = signMobileToken({ userId: user.id, email: user.email });
+      const token = signMobileToken({
+        userId: user.id,
+        email: user.email,
+        pwv: getPasswordVersion(user.mobilePasswordHash),
+      });
 
       return {
         token,
@@ -143,6 +159,14 @@ export const mobileAuthRouter = router({
 
         if (!user) {
           return { valid: false, user: null };
+        }
+
+        // Check password version — reject if password was changed since token was issued
+        if (payload.pwv && user.mobilePasswordHash) {
+          const currentPwv = getPasswordVersion(user.mobilePasswordHash);
+          if (payload.pwv !== currentPwv) {
+            return { valid: false, user: null };
+          }
         }
 
         return {

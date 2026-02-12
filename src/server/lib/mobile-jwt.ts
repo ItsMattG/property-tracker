@@ -5,6 +5,8 @@ export const JWT_EXPIRES_IN = "30d";
 export interface MobileJwtPayload {
   userId: string;
   email: string;
+  /** Password version — first 8 chars of bcrypt hash, used to invalidate tokens on password change */
+  pwv?: string;
 }
 
 /**
@@ -21,6 +23,14 @@ function getJwtSecret(): string {
 
 export function verifyMobileToken(token: string): MobileJwtPayload {
   return verify(token, getJwtSecret()) as MobileJwtPayload;
+}
+
+/**
+ * Extract password version from bcrypt hash (first 8 chars after the algorithm prefix).
+ * Used to tie tokens to the current password — changing password invalidates all tokens.
+ */
+export function getPasswordVersion(hash: string): string {
+  return hash.slice(0, 16);
 }
 
 export function signMobileToken(payload: MobileJwtPayload): string {

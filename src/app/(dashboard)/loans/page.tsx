@@ -60,12 +60,14 @@ export default function LoansPage() {
           <h2 className="text-2xl font-bold">Loans</h2>
           <p className="text-muted-foreground">Manage your investment property loans</p>
         </div>
-        <Button asChild>
-          <Link href="/loans/new">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Loan
-          </Link>
-        </Button>
+        {!isLoading && loans && loans.length > 0 && (
+          <Button asChild>
+            <Link href="/loans/new">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Loan
+            </Link>
+          </Button>
+        )}
       </div>
 
       <StaleLoansBanner />

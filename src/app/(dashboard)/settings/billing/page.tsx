@@ -25,10 +25,10 @@ const PLANS = [
   {
     id: "pro" as const,
     name: "Pro",
-    price: "$19/mo",
+    price: "$14/mo",
     features: [
       "Unlimited properties",
-      "Bank feeds & auto-categorization",
+      "Bank feeds & auto-categorisation",
       "Tax reports & MyTax export",
       "Email forwarding",
       "AI chat assistant",
@@ -38,7 +38,7 @@ const PLANS = [
   {
     id: "team" as const,
     name: "Team",
-    price: "$39/mo",
+    price: "$29/mo",
     features: [
       "Everything in Pro",
       "Team members & advisors",
@@ -74,7 +74,7 @@ export default function BillingPage() {
       utils.billing.getSubscription.invalidate();
     }
     if (searchParams?.get("canceled") === "true") {
-      toast.info("Checkout canceled.");
+      toast.info("Checkout cancelled.");
     }
   }, [searchParams, utils]);
 

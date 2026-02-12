@@ -53,7 +53,7 @@ export function LoanPackReport({ data }: { data: LoanPackSnapshot }) {
                 <div><p className="text-muted-foreground">Current Value</p><p className="font-medium">{formatCurrency(property.currentValue)}</p></div>
                 <div><p className="text-muted-foreground">Equity</p><p className="font-medium text-green-600">{formatCurrency(property.equity)}</p></div>
                 <div><p className="text-muted-foreground">Purchase Price</p><p className="font-medium">{formatCurrency(property.purchasePrice)}</p></div>
-                <div><p className="text-muted-foreground">Purchase Date</p><p className="font-medium">{property.purchaseDate}</p></div>
+                <div><p className="text-muted-foreground">Contract Date</p><p className="font-medium">{property.purchaseDate}</p></div>
               </div>
               {property.loans.length > 0 && (
                 <div className="mt-3 pt-3 border-t">

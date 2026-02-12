@@ -30,10 +30,11 @@ export type TransactionCategory =
   | "uncategorized";
 
 export interface SeedOptions {
-  clerkId: string;
+  email: string;
   mode: SeedMode;
   clean?: boolean;
   force?: boolean;
+  password?: string;
 }
 
 export interface SeedSummary {

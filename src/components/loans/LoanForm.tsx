@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc/client";
+import { PropertySelect } from "@/components/properties/PropertySelect";
 
 const loanFormSchema = z.object({
   propertyId: z.string().uuid("Please select a property"),
@@ -48,9 +48,12 @@ interface LoanFormProps {
   isLoading?: boolean;
 }
 
+function RequiredMark() {
+  return <span className="text-destructive ml-0.5" aria-hidden="true">*</span>;
+}
+
 export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) {
   const router = useRouter();
-  const { data: properties } = trpc.property.list.useQuery();
 
   const form = useForm<LoanFormValues>({
     resolver: zodResolver(loanFormSchema),
@@ -74,28 +77,21 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         {/* Property */}
         <FormField
           control={form.control}
           name="propertyId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Property</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormLabel>Property<RequiredMark /></FormLabel>
+              <PropertySelect value={field.value} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select property" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
-                  {properties?.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.address}, {property.suburb}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              </PropertySelect>
               <FormMessage />
             </FormItem>
           )}
@@ -108,7 +104,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
             name="lender"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Lender</FormLabel>
+                <FormLabel>Lender<RequiredMark /></FormLabel>
                 <FormControl>
                   <Input placeholder="Commonwealth Bank" {...field} />
                 </FormControl>
@@ -122,7 +118,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
             name="accountNumberMasked"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Account Number (optional)</FormLabel>
+                <FormLabel>Account Number</FormLabel>
                 <FormControl>
                   <Input placeholder="****1234" {...field} />
                 </FormControl>
@@ -139,7 +135,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
             name="loanType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Loan Type</FormLabel>
+                <FormLabel>Loan Type<RequiredMark /></FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger className="w-full">
@@ -166,7 +162,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
             name="rateType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Rate Type</FormLabel>
+                <FormLabel>Rate Type<RequiredMark /></FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger className="w-full">
@@ -192,9 +188,9 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
             name="originalAmount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Original Loan Amount ($)</FormLabel>
+                <FormLabel>Original Loan Amount ($)<RequiredMark /></FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="500000" {...field} />
+                  <Input type="number" placeholder="0" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -206,9 +202,9 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
             name="currentBalance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Current Balance ($)</FormLabel>
+                <FormLabel>Current Balance ($)<RequiredMark /></FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="450000" {...field} />
+                  <Input type="number" placeholder="0" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -216,14 +212,14 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
           />
         </div>
 
-        {/* Interest rate */}
+        {/* Interest rate + fixed expiry */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
           <FormField
             control={form.control}
             name="interestRate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Interest Rate (%)</FormLabel>
+                <FormLabel>Interest Rate (%)<RequiredMark /></FormLabel>
                 <FormControl>
                   <Input type="number" step="0.01" placeholder="6.5" {...field} />
                 </FormControl>
@@ -235,7 +231,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
             )}
           />
 
-          {(rateType === "fixed" || rateType === "split") && (
+          {(rateType === "fixed" || rateType === "split") ? (
             <FormField
               control={form.control}
               name="fixedRateExpiry"
@@ -249,6 +245,8 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
                 </FormItem>
               )}
             />
+          ) : (
+            <div />
           )}
         </div>
 
@@ -259,9 +257,9 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
             name="repaymentAmount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Repayment Amount ($)</FormLabel>
+                <FormLabel>Repayment Amount ($)<RequiredMark /></FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="2500" {...field} />
+                  <Input type="number" placeholder="0" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -273,7 +271,7 @@ export function LoanForm({ defaultValues, onSubmit, isLoading }: LoanFormProps) 
             name="repaymentFrequency"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Repayment Frequency</FormLabel>
+                <FormLabel>Repayment Frequency<RequiredMark /></FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger className="w-full">
