@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 
 import {
   Tooltip,
@@ -177,6 +177,8 @@ const TASMANIA_FACETS: { points: string; grad: number }[] = [
 ];
 
 export function AustraliaGeometricMap({ properties }: AustraliaPropertiesMapProps) {
+  const router = useRouter();
+
   if (!properties || properties.length === 0) return null;
 
   const pins = properties.map((p: Property) => ({
@@ -186,18 +188,14 @@ export function AustraliaGeometricMap({ properties }: AustraliaPropertiesMapProp
   }));
 
   return (
-    <Card data-testid="australia-map">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Property Locations</CardTitle>
-      </CardHeader>
-      <CardContent className="flex items-center justify-center pb-4">
-        <TooltipProvider delayDuration={0}>
-          <svg
-            viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-            className="w-full h-auto"
-            role="img"
-            aria-label={`Map of Australia showing ${properties.length} ${properties.length === 1 ? "property" : "properties"}`}
-          >
+    <TooltipProvider delayDuration={0}>
+      <svg
+        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+        className="w-full h-auto"
+        role="img"
+        aria-label={`Map of Australia showing ${properties.length} ${properties.length === 1 ? "property" : "properties"}`}
+        data-testid="australia-map"
+      >
             <defs>
               <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" className="[stop-color:var(--color-green-100)] dark:[stop-color:var(--color-green-900)]" />
@@ -270,7 +268,11 @@ export function AustraliaGeometricMap({ properties }: AustraliaPropertiesMapProp
             {pins.map((pin, idx) => (
               <Tooltip key={pin.id}>
                 <TooltipTrigger asChild>
-                  <g className="cursor-pointer" data-testid="map-pin">
+                  <g
+                    className="cursor-pointer"
+                    data-testid="map-pin"
+                    onClick={() => router.push(`/properties/${pin.id}`)}
+                  >
                     {/* Ring pulse */}
                     <circle
                       cx={pin.cx}
@@ -307,9 +309,7 @@ export function AustraliaGeometricMap({ properties }: AustraliaPropertiesMapProp
                 </TooltipContent>
               </Tooltip>
             ))}
-          </svg>
-        </TooltipProvider>
-      </CardContent>
-    </Card>
+      </svg>
+    </TooltipProvider>
   );
 }

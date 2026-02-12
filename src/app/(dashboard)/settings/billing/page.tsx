@@ -146,7 +146,7 @@ export default function BillingPage() {
           return (
             <Card
               key={plan.id}
-              className={isCurrent ? "border-primary" : undefined}
+              className={`flex flex-col ${isCurrent ? "border-primary" : ""}`}
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -155,8 +155,8 @@ export default function BillingPage() {
                 </div>
                 <p className="text-2xl font-bold">{plan.price}</p>
               </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 mb-6">
+              <CardContent className="flex flex-col flex-1">
+                <ul className="space-y-2 flex-1">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm">
                       <Check className="w-4 h-4 text-green-500 shrink-0" />
@@ -165,43 +165,45 @@ export default function BillingPage() {
                   ))}
                 </ul>
 
-                {isUpgrade && (
-                  <Button
-                    className="w-full"
-                    onClick={() =>
-                      checkout.mutate({
-                        plan: plan.id as "pro" | "team",
-                      })
-                    }
-                    disabled={checkout.isPending}
-                  >
-                    <Zap className="w-4 h-4 mr-2" />
-                    Upgrade to {plan.name}
-                  </Button>
-                )}
+                <div className="mt-6">
+                  {isUpgrade && (
+                    <Button
+                      className="w-full"
+                      onClick={() =>
+                        checkout.mutate({
+                          plan: plan.id as "pro" | "team",
+                        })
+                      }
+                      disabled={checkout.isPending}
+                    >
+                      <Zap className="w-4 h-4 mr-2" />
+                      Upgrade to {plan.name}
+                    </Button>
+                  )}
 
-                {isCurrent && currentPlan !== "free" && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => portal.mutate()}
-                    disabled={portal.isPending}
-                  >
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Manage Subscription
-                  </Button>
-                )}
+                  {isCurrent && currentPlan !== "free" && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => portal.mutate()}
+                      disabled={portal.isPending}
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Manage Subscription
+                    </Button>
+                  )}
 
-                {isDowngrade && (
-                  <Button
-                    variant="ghost"
-                    className="w-full"
-                    onClick={() => portal.mutate()}
-                    disabled={portal.isPending}
-                  >
-                    Manage Subscription
-                  </Button>
-                )}
+                  {isDowngrade && (
+                    <Button
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => portal.mutate()}
+                      disabled={portal.isPending}
+                    >
+                      Manage Subscription
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           );
