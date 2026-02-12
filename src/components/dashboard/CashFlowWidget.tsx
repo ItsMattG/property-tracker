@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -20,6 +22,7 @@ import {
 } from "recharts";
 import { trpc } from "@/lib/trpc/client";
 import { Wallet } from "lucide-react";
+import { TimeRangeToggle } from "./TimeRangeToggle";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-AU", {
@@ -93,9 +96,10 @@ function CustomTooltip({
 }
 
 export function CashFlowWidget() {
+  const [months, setMonths] = useState(6);
   const { data, isLoading } = trpc.reports.portfolioSummary.useQuery(
-    { months: 6 },
-    { staleTime: 5 * 60_000 }
+    { months },
+    { staleTime: 5 * 60_000, placeholderData: keepPreviousData }
   );
 
   const hasData = data && data.monthlyData.length > 0;
@@ -131,14 +135,17 @@ export function CashFlowWidget() {
         style={{ "--stagger-index": 5 } as React.CSSProperties}
       >
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Wallet className="h-5 w-5 text-primary" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Wallet className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Cash Flow</CardTitle>
+                <CardDescription>Monthly income vs expenses</CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle>Cash Flow</CardTitle>
-              <CardDescription>Monthly income vs expenses</CardDescription>
-            </div>
+            <TimeRangeToggle value={months} onChange={setMonths} />
           </div>
         </CardHeader>
         <CardContent>
@@ -173,15 +180,18 @@ export function CashFlowWidget() {
               <CardDescription>Monthly income vs expenses</CardDescription>
             </div>
           </div>
-          <div className="text-right">
-            <div
-              className={`text-2xl font-bold ${netTotal >= 0 ? "text-emerald-500" : "text-red-500"}`}
-            >
-              {formatCurrency(netTotal)}
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div
+                className={`text-2xl font-bold ${netTotal >= 0 ? "text-emerald-500" : "text-red-500"}`}
+              >
+                {formatCurrency(netTotal)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Net — last {months} months
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Net — last 6 months
-            </p>
+            <TimeRangeToggle value={months} onChange={setMonths} />
           </div>
         </div>
       </CardHeader>
