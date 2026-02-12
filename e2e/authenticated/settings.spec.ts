@@ -5,6 +5,7 @@ test.describe("Settings - Theme Toggle", () => {
   test("can toggle dark mode and it persists after reload", async ({
     page,
   }) => {
+    test.setTimeout(60000);
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
 

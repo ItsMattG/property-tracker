@@ -95,6 +95,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 2: Connect bank account via Basiq", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
+    test.skip(!!process.env.CI, "Basiq consent redirect not available in CI");
     await safeGoto(page, "/banking/connect");
     await expect(page.getByText(/connect your bank/i).first()).toBeVisible({ timeout: 15000 });
 
@@ -204,6 +205,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 test.describe.serial("Core Loop - Bank Connection Failure", () => {
   test("should handle bank connection error gracefully", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
+    test.skip(!!process.env.CI, "Basiq consent redirect not available in CI");
     await safeGoto(page, "/banking/connect");
     await page.waitForTimeout(3000);
     // CardTitle renders as div, not heading — use getByText instead
