@@ -139,6 +139,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 3: Link account to property", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
+    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     test.skip(!testPropertyId, "No test property created");
 
     await safeGoto(page, "/banking");
@@ -152,6 +153,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 4: Sync transactions", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
+    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     await safeGoto(page, "/banking");
 
     // Find and click the Sync button
@@ -170,12 +172,14 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 5: Verify transactions page loads", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
+    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     await safeGoto(page, "/transactions");
     await expect(page.getByRole("heading", { name: /transaction/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("Step 6: Export - Reports export page", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
+    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     await safeGoto(page, "/reports/export");
     await expect(page.getByRole("heading", { name: /export/i }).first()).toBeVisible({ timeout: 10000 });
 
@@ -193,6 +197,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 7: Export - CSV export page", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
+    test.skip(!!process.env.CI, "Depends on Basiq consent flow (Step 2)");
     await safeGoto(page, "/export");
     await expect(page.getByRole("heading", { name: /export/i }).first()).toBeVisible({ timeout: 10000 });
 

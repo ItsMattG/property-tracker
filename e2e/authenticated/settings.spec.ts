@@ -23,11 +23,17 @@ test.describe("Settings - Theme Toggle", () => {
     // If already in dark mode, switch to light first to reset
     if (await lightModeBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
       await lightModeBtn.click();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
     }
 
-    // Now click the dark mode toggle
+    // Click dark mode toggle and wait for the tRPC mutation to complete
+    // (prevents onError from reverting localStorage before reload)
+    const themeResponsePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/api/trpc') && resp.url().includes('user.setTheme'),
+      { timeout: 10_000 }
+    );
     await page.getByRole("button", { name: /switch to dark mode/i }).click({ timeout: 10_000 });
+    await themeResponsePromise;
 
     // Verify data-theme attribute is set on <html>
     const theme = await page.evaluate(() =>
@@ -35,7 +41,7 @@ test.describe("Settings - Theme Toggle", () => {
     );
     expect(theme).toBe("dark");
 
-    // Reload and verify theme persists (from localStorage via ThemeProvider)
+    // Reload and verify theme persists (inline script reads localStorage)
     await page.reload();
     await page.waitForLoadState("domcontentloaded");
     await page.waitForFunction(
@@ -44,10 +50,12 @@ test.describe("Settings - Theme Toggle", () => {
     );
 
     // Toggle back to light mode to clean up
-    await safeGoto(page, "/settings");
-    await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(2000);
+    const resetResponsePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/api/trpc') && resp.url().includes('user.setTheme'),
+      { timeout: 10_000 }
+    );
     await page.getByRole("button", { name: /switch to light mode/i }).click();
+    await resetResponsePromise;
 
     const resetTheme = await page.evaluate(() =>
       document.documentElement.getAttribute("data-theme")
