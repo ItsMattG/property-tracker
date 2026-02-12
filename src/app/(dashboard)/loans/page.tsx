@@ -17,7 +17,8 @@ import { LoanCard } from "@/components/loans/LoanCard";
 import { StaleLoansBanner } from "@/components/loans/StaleLoansBanner";
 import { trpc } from "@/lib/trpc/client";
 import { getErrorMessage } from "@/lib/errors";
-import { Plus, Wallet } from "lucide-react";
+import { Plus } from "lucide-react";
+import { LoanIllustration } from "@/components/ui/illustrations/LoanIllustration";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { LoanListSkeleton } from "@/components/skeletons";
@@ -87,9 +88,7 @@ export default function LoansPage() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Wallet className="w-8 h-8 text-primary" />
-          </div>
+          <LoanIllustration className="w-24 h-24 text-primary/40 mb-4" />
           <h3 className="text-lg font-semibold">No loans yet</h3>
           <p className="text-muted-foreground max-w-sm mt-2">
             Add your investment property loans to track interest and repayments.

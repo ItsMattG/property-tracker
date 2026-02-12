@@ -24,6 +24,7 @@ import { ClimateRiskCard } from "@/components/climate-risk";
 import { BenchmarkCard } from "@/components/benchmarking";
 import { PerformanceCard } from "@/components/performance-benchmarking";
 import { SimilarPropertiesSection } from "@/components/similar-properties";
+import { PropertyCashFlowChart } from "@/components/properties/PropertyCashFlowChart";
 import { featureFlags } from "@/config/feature-flags";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign, BarChart3, FileText } from "lucide-react";
 import Link from "next/link";
@@ -247,6 +248,11 @@ export default function PropertyDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Cash Flow Chart */}
+      <div className="lg:col-span-2">
+        <PropertyCashFlowChart propertyId={propertyId} />
+      </div>
 
       {/* Climate Risk Card */}
       {featureFlags.climateRisk && (
