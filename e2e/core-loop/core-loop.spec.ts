@@ -21,7 +21,6 @@ let testPropertyId: string | null = null;
 // Core loop requires property creation via form which doesn't complete in CI localhost mode.
 // TODO: Investigate why tRPC mutation doesn't redirect in CI production build.
 test.describe.serial("Core Loop - Happy Path", () => {
-  // eslint-disable-next-line playwright/no-skipped-test
   test.beforeEach(() => {
     test.skip(!!process.env.CI, "Core loop unreliable in CI localhost mode");
   });
