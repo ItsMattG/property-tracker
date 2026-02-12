@@ -65,7 +65,7 @@ export function LoanCard({ loan, onEdit, onDelete }: LoanCardProps) {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="shrink-0">
+            <Button variant="ghost" size="sm" className="shrink-0" aria-label="Loan actions">
               <MoreVertical className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>

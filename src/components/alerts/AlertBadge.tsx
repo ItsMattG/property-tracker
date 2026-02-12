@@ -25,7 +25,7 @@ export function AlertBadge() {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" asChild className="relative cursor-pointer">
+        <Button variant="ghost" size="icon" asChild className="relative cursor-pointer" aria-label="Alerts">
           <Link href="/alerts">
             <Bell className="h-5 w-5" />
             {total > 0 && (

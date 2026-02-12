@@ -91,7 +91,7 @@ export function PropertyCard({ property, metrics, onEdit, onDelete }: PropertyCa
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" aria-label="Property actions">
               <MoreVertical className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>

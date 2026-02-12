@@ -219,7 +219,7 @@ export function ReconciliationView({ propertyId }: ReconciliationViewProps) {
                         {expected.recurringTransaction && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" aria-label="Transaction actions">
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>

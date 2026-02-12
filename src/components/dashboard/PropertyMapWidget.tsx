@@ -51,6 +51,7 @@ export function PropertyMapWidget({ properties }: AustraliaPropertiesMapProps) {
                 size="icon"
                 className="h-6 w-6"
                 onClick={() => toggleStyle("dots")}
+                aria-label="Dot matrix style"
               >
                 <Grid3X3 className="h-3 w-3" />
               </Button>
@@ -64,6 +65,7 @@ export function PropertyMapWidget({ properties }: AustraliaPropertiesMapProps) {
                 size="icon"
                 className="h-6 w-6"
                 onClick={() => toggleStyle("geometric")}
+                aria-label="Geometric style"
               >
                 <Triangle className="h-3 w-3" />
               </Button>

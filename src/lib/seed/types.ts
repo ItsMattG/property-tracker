@@ -34,6 +34,7 @@ export interface SeedOptions {
   mode: SeedMode;
   clean?: boolean;
   force?: boolean;
+  password?: string;
 }
 
 export interface SeedSummary {

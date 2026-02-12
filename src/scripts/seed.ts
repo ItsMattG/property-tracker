@@ -57,6 +57,7 @@ async function main() {
       email,
       mode,
       clean: shouldClean,
+      password: process.env.E2E_USER_PASSWORD,
     });
 
     console.log("\n=== Seed Summary ===");
