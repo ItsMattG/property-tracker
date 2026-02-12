@@ -24,10 +24,11 @@ let testPropertyId: string | null = null;
  * The connect mutation requires a mobile number for Basiq SMS verification.
  * If the user doesn't have one stored, the UI shows a mobile input form.
  *
- * Waits for tRPC responses to ensure the mutation completes before returning.
- * Returns the mutation result text for diagnostics.
+ * Uses response.status() instead of response.text() because on success,
+ * window.location.href = url navigates away immediately and response.text()
+ * fails with "No resource with given identifier found".
  */
-async function clickConnectAndHandleMobile(page: Page): Promise<string> {
+async function clickConnectAndHandleMobile(page: Page) {
   // Set up response interception before clicking
   const firstResponsePromise = page.waitForResponse(
     (resp) => resp.url().includes('/api/trpc') && resp.url().includes('banking.connect'),
@@ -36,12 +37,14 @@ async function clickConnectAndHandleMobile(page: Page): Promise<string> {
 
   await page.getByRole("button", { name: /connect bank account/i }).click();
 
-  // Wait for the first mutation response
+  // Wait for the first mutation response — use status code, not body
+  // (on success, window.location.href navigates away immediately,
+  //  making response.text() fail with a protocol error)
   const firstResponse = await firstResponsePromise;
-  const firstBody = await firstResponse.text();
+  const firstStatus = firstResponse.status();
 
-  // Check if MOBILE_REQUIRED was returned (tRPC error with PRECONDITION_FAILED → HTTP 412)
-  if (firstBody.includes('MOBILE_REQUIRED')) {
+  // MOBILE_REQUIRED returns HTTP 412 (PRECONDITION_FAILED)
+  if (firstStatus === 412) {
     // Wait for mobile form to appear
     const mobileInput = page.locator('input[name="mobile"]');
     await expect(mobileInput).toBeVisible({ timeout: 10000 });
@@ -56,11 +59,9 @@ async function clickConnectAndHandleMobile(page: Page): Promise<string> {
     await page.getByRole("button", { name: /continue/i }).click();
 
     // Wait for the second mutation to complete
-    const secondResponse = await secondResponsePromise;
-    return await secondResponse.text();
+    await secondResponsePromise;
   }
-
-  return firstBody;
+  // If status is 200, mutation succeeded — navigation to basiq.io is already in progress
 }
 
 test.describe.serial("Core Loop - Happy Path", () => {
@@ -144,10 +145,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
     await expect(page.getByText(/connect your bank/i).first()).toBeVisible({ timeout: 15000 });
 
     // Click the connect button (handles MOBILE_REQUIRED flow if needed)
-    const mutationResult = await clickConnectAndHandleMobile(page);
-
-    // Verify the mutation succeeded and returned a consent URL
-    expect(mutationResult, `Connect mutation response: ${mutationResult.substring(0, 300)}`).toContain('"url"');
+    await clickConnectAndHandleMobile(page);
 
     // The page should redirect to Basiq consent UI
     // window.location.href = data.url triggers navigation to consent.basiq.io
