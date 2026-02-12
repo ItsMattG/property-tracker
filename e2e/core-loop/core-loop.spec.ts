@@ -141,6 +141,7 @@ test.describe.serial("Core Loop - Happy Path", () => {
 
   test("Step 2: Connect bank account via Basiq", async ({ page }) => {
     test.skip(!BASIQ_API_KEY, "BASIQ_API_KEY not set");
+    test.setTimeout(180000); // 3 minutes — involves multiple external API calls and redirects
     await safeGoto(page, "/banking/connect");
     await expect(page.getByText(/connect your bank/i).first()).toBeVisible({ timeout: 15000 });
 
@@ -151,24 +152,31 @@ test.describe.serial("Core Loop - Happy Path", () => {
     // window.location.href = data.url triggers navigation to consent.basiq.io
     await page.waitForURL(/basiq\.io|consent/, { timeout: 60000 });
 
-    // Select a bank in the Basiq consent UI (sandbox)
-    // Note: The exact selectors depend on Basiq's consent UI which may change.
-    // This test targets the sandbox flow.
-    const hooli = page.getByText(/hooli/i);
-    if (await hooli.isVisible()) {
-      await hooli.click();
+    // Wait for the consent UI to fully load (it's an external SPA)
+    await page.waitForLoadState("networkidle", { timeout: 30000 });
+
+    // Select Hooli bank in the Basiq consent UI (sandbox)
+    // The consent UI has a search/filter for institutions. Wait for it to render.
+    const searchInput = page.getByPlaceholder(/search/i);
+    const hooliText = page.getByText(/hooli/i).first();
+
+    // Try direct Hooli click first, otherwise search for it
+    if (await hooliText.isVisible({ timeout: 10000 }).catch(() => false)) {
+      await hooliText.click();
+    } else if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await searchInput.fill("Hooli");
+      await page.waitForTimeout(1000); // Wait for search results
+      await page.getByText(/hooli/i).first().click();
     } else {
-      // Search for the bank
-      const searchInput = page.getByPlaceholder(/search/i);
-      if (await searchInput.isVisible()) {
-        await searchInput.fill("Hooli");
-        await page.getByText(/hooli/i).first().click();
-      }
+      // Take a snapshot for debugging if neither is found
+      throw new Error(`Basiq consent UI: could not find institution selector. Current URL: ${page.url()}`);
     }
 
-    // Enter sandbox credentials
+    // Wait for credential form to appear after bank selection
     const { login, password } = sandboxCredentials.gavinBelson;
-    await page.getByLabel(/username|login|user id/i).fill(login);
+    const loginField = page.getByLabel(/username|login|user id/i);
+    await expect(loginField).toBeVisible({ timeout: 15000 });
+    await loginField.fill(login);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole("button", { name: /submit|connect|continue|log in/i }).click();
 
