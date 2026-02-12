@@ -289,6 +289,8 @@ jobs:
           done
           echo "Server not ready after 60s"
           exit 1
+        env:
+          BASIQ_API_KEY: ${{ secrets.BASIQ_API_KEY }}
 
       - name: Run E2E tests
         run: pnpm exec playwright test
