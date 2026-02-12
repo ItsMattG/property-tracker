@@ -23,18 +23,44 @@ let testPropertyId: string | null = null;
  * Click "Connect Bank Account" and handle the MOBILE_REQUIRED flow.
  * The connect mutation requires a mobile number for Basiq SMS verification.
  * If the user doesn't have one stored, the UI shows a mobile input form.
+ *
+ * Waits for tRPC responses to ensure the mutation completes before returning.
+ * Returns the mutation result text for diagnostics.
  */
-async function clickConnectAndHandleMobile(page: Page) {
+async function clickConnectAndHandleMobile(page: Page): Promise<string> {
+  // Set up response interception before clicking
+  const firstResponsePromise = page.waitForResponse(
+    (resp) => resp.url().includes('/api/trpc') && resp.url().includes('banking.connect'),
+    { timeout: 30000 }
+  );
+
   await page.getByRole("button", { name: /connect bank account/i }).click();
 
-  // The mutation may return MOBILE_REQUIRED, which shows a mobile input form
-  const mobileInput = page.locator('input[name="mobile"]');
-  const mobileFormVisible = await mobileInput.isVisible({ timeout: 5000 }).catch(() => false);
+  // Wait for the first mutation response
+  const firstResponse = await firstResponsePromise;
+  const firstBody = await firstResponse.text();
 
-  if (mobileFormVisible) {
+  // Check if MOBILE_REQUIRED was returned (tRPC error with PRECONDITION_FAILED → HTTP 412)
+  if (firstBody.includes('MOBILE_REQUIRED')) {
+    // Wait for mobile form to appear
+    const mobileInput = page.locator('input[name="mobile"]');
+    await expect(mobileInput).toBeVisible({ timeout: 10000 });
     await mobileInput.fill(TEST_MOBILE);
+
+    // Set up response interception for the second mutation call
+    const secondResponsePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/api/trpc') && resp.url().includes('banking.connect'),
+      { timeout: 30000 }
+    );
+
     await page.getByRole("button", { name: /continue/i }).click();
+
+    // Wait for the second mutation to complete
+    const secondResponse = await secondResponsePromise;
+    return await secondResponse.text();
   }
+
+  return firstBody;
 }
 
 test.describe.serial("Core Loop - Happy Path", () => {
@@ -118,10 +144,13 @@ test.describe.serial("Core Loop - Happy Path", () => {
     await expect(page.getByText(/connect your bank/i).first()).toBeVisible({ timeout: 15000 });
 
     // Click the connect button (handles MOBILE_REQUIRED flow if needed)
-    await clickConnectAndHandleMobile(page);
+    const mutationResult = await clickConnectAndHandleMobile(page);
+
+    // Verify the mutation succeeded and returned a consent URL
+    expect(mutationResult, `Connect mutation response: ${mutationResult.substring(0, 300)}`).toContain('"url"');
 
     // The page should redirect to Basiq consent UI
-    // In sandbox mode, we'll interact with the Basiq consent flow
+    // window.location.href = data.url triggers navigation to consent.basiq.io
     await page.waitForURL(/basiq\.io|consent/, { timeout: 60000 });
 
     // Select a bank in the Basiq consent UI (sandbox)

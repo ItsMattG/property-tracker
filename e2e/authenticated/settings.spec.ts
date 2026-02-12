@@ -26,19 +26,24 @@ test.describe("Settings - Theme Toggle", () => {
       await page.waitForTimeout(1000);
     }
 
+    // Mock the tRPC user.setTheme mutation so onError doesn't revert the theme.
+    // In CI the mutation can fail (no DB session), causing applyTheme to be reverted.
+    await page.route('**/api/trpc/user.setTheme*', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([{ result: { data: { theme: "dark" } } }]),
+      })
+    );
+
     // Click dark mode toggle — applyTheme() synchronously sets data-theme + localStorage
     await page.getByRole("button", { name: /switch to dark mode/i }).click({ timeout: 10_000 });
 
-    // Verify data-theme is set immediately (before any async mutation response)
+    // Verify data-theme is set (applyTheme sets it synchronously, mock prevents revert)
     await page.waitForFunction(
       () => document.documentElement.getAttribute("data-theme") === "dark",
       { timeout: 5_000 }
     );
-
-    // The tRPC user.setTheme mutation may fail in CI (no DB session), causing
-    // onError to revert localStorage. Explicitly ensure localStorage is set
-    // so we can test the persistence mechanism (inline script reads it on reload).
-    await page.evaluate(() => localStorage.setItem("bricktrack-theme", "dark"));
 
     // Reload and verify theme persists (inline script reads localStorage)
     await page.reload();

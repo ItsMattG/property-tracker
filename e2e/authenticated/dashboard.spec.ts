@@ -39,7 +39,8 @@ test.describe("Dashboard", () => {
   });
 
   test("should display the header", async ({ page }) => {
-    await expect(page.locator("header")).toBeVisible();
+    // Use .first() because the onboarding tour (driver.js) can add a second <header>
+    await expect(page.locator("header").first()).toBeVisible();
   });
 
   test("should display feedback button in header", async ({
