@@ -5,9 +5,6 @@ test.describe("Settings - Theme Toggle", () => {
   test("can toggle dark mode and it persists after reload", async ({
     page,
   }) => {
-    // Theme persistence relies on server-side session reading the DB theme column;
-    // in CI localhost mode the SSR theme hydration doesn't work reliably.
-    test.skip(!!process.env.CI, "Theme persistence unreliable in CI localhost mode");
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));
 
@@ -37,15 +34,13 @@ test.describe("Settings - Theme Toggle", () => {
     );
     expect(theme).toBe("dark");
 
-    // Reload and verify theme persists (from DB via SSR)
+    // Reload and verify theme persists (from localStorage via ThemeProvider)
     await page.reload();
     await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(2000);
-
-    const themeAfterReload = await page.evaluate(() =>
-      document.documentElement.getAttribute("data-theme")
+    await page.waitForFunction(
+      () => document.documentElement.getAttribute("data-theme") === "dark",
+      { timeout: 10_000 }
     );
-    expect(themeAfterReload).toBe("dark");
 
     // Toggle back to light mode to clean up
     await safeGoto(page, "/settings");

@@ -28,19 +28,6 @@ export default function NewPropertyPage() {
     onSuccess: (property) => {
       // Pre-populate the property cache so the settlement page doesn't need to re-fetch
       utils.property.get.setData({ id: property.id }, property);
-      utils.property.list.invalidate();
-
-      // Show toast for 3rd+ property during trial
-      if (trialStatus?.isOnTrial && trialStatus.propertyCount >= 2) {
-        toast.info("Reminder: Only your first property stays active after your trial", {
-          action: {
-            label: "Upgrade",
-            onClick: () => router.push("/settings/billing"),
-          },
-          duration: 5000,
-        });
-      }
-      router.push(`/properties/${property.id}/settlement`);
     },
   });
 
@@ -53,7 +40,18 @@ export default function NewPropertyPage() {
     }
 
     try {
-      await createProperty.mutateAsync(values);
+      const property = await createProperty.mutateAsync(values);
+      if (trialStatus?.isOnTrial && trialStatus.propertyCount >= 2) {
+        toast.info("Reminder: Only your first property stays active after your trial", {
+          action: {
+            label: "Upgrade",
+            onClick: () => router.push("/settings/billing"),
+          },
+          duration: 5000,
+        });
+      }
+      utils.property.list.invalidate();
+      router.push(`/properties/${property.id}/settlement`);
     } catch {
       toast.error("Failed to create property. Please check your details and try again.");
     }
@@ -62,9 +60,11 @@ export default function NewPropertyPage() {
   const handleModalConfirm = async () => {
     if (pendingValues) {
       try {
-        await createProperty.mutateAsync(pendingValues);
+        const property = await createProperty.mutateAsync(pendingValues);
         setShowTrialModal(false);
         setPendingValues(null);
+        utils.property.list.invalidate();
+        router.push(`/properties/${property.id}/settlement`);
       } catch {
         toast.error("Failed to create property. Please check your details and try again.");
         setShowTrialModal(false);
