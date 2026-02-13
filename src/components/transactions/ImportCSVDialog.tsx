@@ -98,7 +98,7 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
 
       // Parse headers for the mapping step
       const lines = content.trim().split("\n");
-      const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
+      const headers = splitCSVLine(lines[0]).map((h) => h.replace(/"/g, ""));
       setCsvHeaders(headers);
 
       // Get first 3 data rows for preview context in column mapping
