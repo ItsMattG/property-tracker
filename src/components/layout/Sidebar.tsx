@@ -18,6 +18,7 @@ import {
   PieChart,
   ChevronsLeft,
   ChevronsRight,
+  CalendarDays,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useSidebar } from "./SidebarProvider";
@@ -65,6 +66,7 @@ const navGroups: Array<{
     items: [
       { href: "/reports", label: "Reports", icon: BarChart3 },
       { href: "/reports/tax-position", label: "Tax Position", icon: Calculator },
+      { href: "/cash-flow", label: "Cash Flow", icon: CalendarDays, featureFlag: "cashFlow" },
       { href: "/reports/forecast", label: "Forecast", icon: TrendingUp, featureFlag: "forecast" },
     ],
   },
