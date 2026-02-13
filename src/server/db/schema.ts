@@ -947,6 +947,8 @@ export const transactions = pgTable(
     providerTransactionId: text("provider_transaction_id"),
     provider: text("provider"),
     claimPercent: decimal("claim_percent", { precision: 5, scale: 2 }).default("100"),
+    invoiceUrl: text("invoice_url"),
+    invoicePresent: boolean("invoice_present").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
