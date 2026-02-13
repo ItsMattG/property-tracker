@@ -152,8 +152,7 @@ function buildPreviewRow(
   const resolvedInvoicePresent = row.invoicePresent ?? false;
 
   // Determine status
-  const hasErrors =
-    !row.date || !row.description || !row.amount || !resolvedPropertyId;
+  const hasErrors = !row.date || !row.description || !row.amount;
   const hasWarnings = issues.length > 0 && !hasErrors;
 
   const status: RowStatus = hasErrors
@@ -182,8 +181,7 @@ function recalculateStatus(row: PreviewRow): PreviewRow {
   if (!row.amount) issues.push("Missing amount");
   if (!row.resolvedPropertyId) issues.push("No property assigned");
 
-  const hasErrors =
-    !row.date || !row.description || !row.amount || !row.resolvedPropertyId;
+  const hasErrors = !row.date || !row.description || !row.amount;
   const hasWarnings = issues.length > 0 && !hasErrors;
 
   return {
