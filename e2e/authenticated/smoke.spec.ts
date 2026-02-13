@@ -17,9 +17,6 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
   test("can log in, create a property, and delete it", async ({
     page,
   }) => {
-    // Property creation via form doesn't complete in CI localhost mode —
-    // form submits but tRPC mutation doesn't redirect. Works on staging.
-    test.skip(!!process.env.CI, "Property creation form unreliable in CI localhost mode");
     // Step 1: Verify we're logged in and on the dashboard
     await safeGoto(page, "/dashboard");
     await expect(page).toHaveURL(/dashboard/);
@@ -65,7 +62,11 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
     // Note: The form label is "Contract Date", not "Purchase Date"
     await page.getByPlaceholder("DD/MM/YYYY").first().fill("15/06/2024");
 
-    // Step 5: Submit the form
+    // Step 5: Submit the form and wait for tRPC response
+    const responsePromise = page.waitForResponse(
+      (resp) => resp.url().includes('/api/trpc') && resp.url().includes('property.create'),
+      { timeout: 30000 }
+    );
     await page.getByRole("button", { name: /save property/i }).click();
 
     // Step 6: Handle possible trial modal or plan limit error
@@ -82,7 +83,8 @@ test.describe("Smoke Test - Login, Add Property, Delete Property", () => {
       return;
     }
 
-    // Wait for redirect to settlement page (property was created)
+    // Wait for tRPC mutation to complete, then for redirect
+    await responsePromise;
     await page.waitForURL(/\/properties\/.+\/settlement/, { timeout: 30000 });
 
     // Step 7: Navigate to properties list and verify property appears

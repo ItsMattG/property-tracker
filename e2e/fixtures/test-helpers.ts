@@ -7,6 +7,7 @@ import type { Page } from "@playwright/test";
 export const BENIGN_ERROR_PATTERNS = [
   /ResizeObserver/i,
   /hydrat/i,
+  /react\.dev\/errors\/418/, // minified hydration mismatch in production builds
   /AbortError/i,
   /cancelled/i,
   /Loading chunk/i,
