@@ -182,7 +182,7 @@ export const cashFlowCalendarRouter = router({
       }));
 
       // 4. Forecast scenario (optional)
-      let forecastEvents: CalendarEvent[] = [];
+      const forecastEvents: CalendarEvent[] = [];
       let effectiveScenarioId = scenarioId ?? null;
 
       if (!effectiveScenarioId) {
