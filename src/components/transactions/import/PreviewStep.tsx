@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, AlertTriangle, CheckCircle2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { QuickCreatePropertyDialog } from "./QuickCreatePropertyDialog";
 
 // --- Types ---
 
@@ -290,6 +291,11 @@ export function PreviewStep({
     [rows]
   );
 
+  const unassignedCount = useMemo(
+    () => rows.filter((r) => !r.resolvedPropertyId && r.status !== "error").length,
+    [rows]
+  );
+
   const importableCount = rows.length - stats.errors;
 
   const handleImport = useCallback(() => {
@@ -328,6 +334,16 @@ export function PreviewStep({
           {rows.length} rows total
         </span>
       </div>
+
+      {/* Unassigned warning */}
+      {unassignedCount > 0 && (
+        <div className="rounded-md border border-yellow-500/20 bg-yellow-500/5 px-3 py-2">
+          <p className="text-xs text-yellow-700 dark:text-yellow-400">
+            {unassignedCount} row{unassignedCount !== 1 ? "s" : ""} {unassignedCount !== 1 ? "have" : "has"} no property assigned.
+            Use the property dropdown or create a new property to assign {unassignedCount !== 1 ? "them" : "it"}.
+          </p>
+        </div>
+      )}
 
       {/* Preview table */}
       <div className="max-h-[400px] overflow-auto rounded-md border">
@@ -552,6 +568,18 @@ export function PreviewStep({
             : `Import ${importableCount} Transaction${importableCount !== 1 ? "s" : ""}`}
         </Button>
       </div>
+
+      {/* Quick create property dialog */}
+      <QuickCreatePropertyDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onCreated={onPropertyCreated}
+        prefillAddress={
+          createDialogRowIndex !== null
+            ? rows[createDialogRowIndex]?.property ?? undefined
+            : undefined
+        }
+      />
     </div>
   );
 }
