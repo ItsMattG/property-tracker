@@ -19,13 +19,16 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { QuickCreatePropertyDialog } from "./QuickCreatePropertyDialog";
 
 // --- Types ---
 
@@ -152,8 +155,7 @@ function buildPreviewRow(
   const resolvedInvoicePresent = row.invoicePresent ?? false;
 
   // Determine status
-  const hasErrors =
-    !row.date || !row.description || !row.amount || !resolvedPropertyId;
+  const hasErrors = !row.date || !row.description || !row.amount;
   const hasWarnings = issues.length > 0 && !hasErrors;
 
   const status: RowStatus = hasErrors
@@ -182,8 +184,7 @@ function recalculateStatus(row: PreviewRow): PreviewRow {
   if (!row.amount) issues.push("Missing amount");
   if (!row.resolvedPropertyId) issues.push("No property assigned");
 
-  const hasErrors =
-    !row.date || !row.description || !row.amount || !row.resolvedPropertyId;
+  const hasErrors = !row.date || !row.description || !row.amount;
   const hasWarnings = issues.length > 0 && !hasErrors;
 
   return {
@@ -242,6 +243,37 @@ export function PreviewStep({
     []
   );
 
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createDialogRowIndex, setCreateDialogRowIndex] = useState<number | null>(null);
+  const [localProperties, setLocalProperties] = useState<Property[]>(properties);
+
+  const onPropertyCreated = useCallback(
+    (newProperty: Property) => {
+      setLocalProperties((prev) => [...prev, newProperty]);
+
+      setRows((prev) =>
+        prev.map((row, idx) => {
+          if (row.resolvedPropertyId) return row;
+
+          // Force-assign to the row that triggered the dialog
+          if (idx === createDialogRowIndex) {
+            return recalculateStatus({ ...row, resolvedPropertyId: newProperty.id });
+          }
+
+          // Try matching the new property against the row's raw property text
+          const matched = matchProperty(row.property, [newProperty], "");
+          if (matched) {
+            return recalculateStatus({ ...row, resolvedPropertyId: matched });
+          }
+
+          return row;
+        })
+      );
+      setCreateDialogRowIndex(null);
+    },
+    [createDialogRowIndex]
+  );
+
   const stats = useMemo(() => {
     let ready = 0;
     let warnings = 0;
@@ -256,6 +288,11 @@ export function PreviewStep({
 
   const rowsWithIssues = useMemo(
     () => rows.filter((r) => r.issues.length > 0).slice(0, 10),
+    [rows]
+  );
+
+  const unassignedCount = useMemo(
+    () => rows.filter((r) => !r.resolvedPropertyId && r.status !== "error").length,
     [rows]
   );
 
@@ -297,6 +334,16 @@ export function PreviewStep({
           {rows.length} rows total
         </span>
       </div>
+
+      {/* Unassigned warning */}
+      {unassignedCount > 0 && (
+        <div className="rounded-md border border-yellow-500/20 bg-yellow-500/5 px-3 py-2">
+          <p className="text-xs text-yellow-700 dark:text-yellow-400">
+            {unassignedCount} row{unassignedCount !== 1 ? "s" : ""} {unassignedCount !== 1 ? "have" : "has"} no property assigned.
+            Use the property dropdown or create a new property to assign {unassignedCount !== 1 ? "them" : "it"}.
+          </p>
+        </div>
+      )}
 
       {/* Preview table */}
       <div className="max-h-[400px] overflow-auto rounded-md border">
@@ -373,23 +420,43 @@ export function PreviewStep({
                 {/* Property select */}
                 <TableCell className="px-1 py-1">
                   <Select
-                    value={row.resolvedPropertyId ?? ""}
-                    onValueChange={(val) =>
-                      updateRow(idx, { resolvedPropertyId: val })
-                    }
+                    value={row.resolvedPropertyId ?? "__unassigned__"}
+                    onValueChange={(val) => {
+                      if (val === "__create_new__") {
+                        setCreateDialogRowIndex(idx);
+                        setCreateDialogOpen(true);
+                        return;
+                      }
+                      if (val === "__unassigned__") {
+                        updateRow(idx, { resolvedPropertyId: null });
+                        return;
+                      }
+                      updateRow(idx, { resolvedPropertyId: val });
+                    }}
                   >
                     <SelectTrigger
                       size="sm"
-                      className="h-7 text-xs w-[140px]"
+                      className={cn(
+                        "h-7 text-xs w-[140px]",
+                        !row.resolvedPropertyId && "border-yellow-500/50 text-yellow-600 dark:text-yellow-400"
+                      )}
                     >
-                      <SelectValue placeholder="Select..." />
+                      <SelectValue placeholder="Unassigned" />
                     </SelectTrigger>
                     <SelectContent>
-                      {properties.map((p) => (
+                      <SelectItem value="__unassigned__" className="text-xs text-muted-foreground italic">
+                        Unassigned
+                      </SelectItem>
+                      {localProperties.map((p) => (
                         <SelectItem key={p.id} value={p.id} className="text-xs">
                           {p.address}
                         </SelectItem>
                       ))}
+                      <SelectSeparator />
+                      <SelectItem value="__create_new__" className="text-xs text-primary">
+                        <Plus className="size-3 mr-1 inline" />
+                        Create property
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
@@ -501,6 +568,18 @@ export function PreviewStep({
             : `Import ${importableCount} Transaction${importableCount !== 1 ? "s" : ""}`}
         </Button>
       </div>
+
+      {/* Quick create property dialog */}
+      <QuickCreatePropertyDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onCreated={onPropertyCreated}
+        prefillAddress={
+          createDialogRowIndex !== null
+            ? rows[createDialogRowIndex]?.property ?? undefined
+            : undefined
+        }
+      />
     </div>
   );
 }
