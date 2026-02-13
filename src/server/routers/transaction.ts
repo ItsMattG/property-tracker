@@ -539,7 +539,7 @@ export const transactionRouter = router({
             date: z.string(),
             description: z.string().min(1),
             amount: z.number(),
-            propertyId: z.string().uuid(),
+            propertyId: z.string().uuid().nullable(),
             category: z.enum(categoryValues),
             transactionType: z.enum(["income", "expense", "capital", "transfer", "personal"]),
             isDeductible: z.boolean(),

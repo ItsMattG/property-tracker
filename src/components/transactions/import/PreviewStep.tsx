@@ -51,7 +51,7 @@ export interface ImportReadyRow {
   date: string;
   description: string;
   amount: number;
-  propertyId: string;
+  propertyId: string | null;
   category: string;
   transactionType: string;
   isDeductible: boolean;
@@ -268,7 +268,7 @@ export function PreviewStep({
         date: r.date!,
         description: r.description!,
         amount: parseFloat(r.amount!),
-        propertyId: r.resolvedPropertyId!,
+        propertyId: r.resolvedPropertyId ?? null,
         category: r.resolvedCategory ?? "uncategorized",
         transactionType: r.resolvedType ?? "expense",
         isDeductible: r.resolvedDeductible,

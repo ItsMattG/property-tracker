@@ -108,7 +108,7 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
   };
 
   const handleUploadContinue = () => {
-    if (file && propertyId) {
+    if (file) {
       setStep("mapping");
     }
   };
@@ -124,7 +124,7 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
     // Cast rows to satisfy tRPC's stricter enum types — by this point,
     // categories and transaction types have been resolved to valid values
     // by the PreviewStep component.
-    importRichCSV.mutate({ rows: rows as Parameters<typeof importRichCSV.mutate>[0]["rows"] });
+    importRichCSV.mutate({ rows: rows as unknown as Parameters<typeof importRichCSV.mutate>[0]["rows"] });
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -247,7 +247,7 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
 
             <Button
               onClick={handleUploadContinue}
-              disabled={!file || !propertyId}
+              disabled={!file}
               className="w-full"
             >
               Continue to Column Mapping
