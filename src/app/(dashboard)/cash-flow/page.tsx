@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CashFlowClient } from "@/components/cash-flow/CashFlowClient";
 
 export const metadata: Metadata = {
   title: "Cash Flow | BrickTrack",
@@ -6,14 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function CashFlowPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Cash Flow</h2>
-        <p className="text-muted-foreground">
-          Track upcoming payments, income, and projected balances
-        </p>
-      </div>
-    </div>
-  );
+  return <CashFlowClient />;
 }
