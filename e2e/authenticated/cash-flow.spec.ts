@@ -26,9 +26,9 @@ test.describe("Cash Flow Calendar", () => {
 
     // Controls should be visible
     await expect(page.getByText("All properties")).toBeVisible();
-    await expect(page.getByText("3M")).toBeVisible();
-    await expect(page.getByText("6M")).toBeVisible();
-    await expect(page.getByText("12M")).toBeVisible();
+    await expect(page.getByRole("button", { name: "3M" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "6M" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "12M" })).toBeVisible();
 
     // Balance projection card should be visible
     await expect(page.getByText("Balance Projection")).toBeVisible();
@@ -43,15 +43,15 @@ test.describe("Cash Flow Calendar", () => {
     await page.goto("/cash-flow");
     await page.waitForLoadState("networkidle");
 
-    // Default is calendar view - check for day headers
-    await expect(page.getByText("Mon")).toBeVisible();
-    await expect(page.getByText("Tue")).toBeVisible();
+    // Default is calendar view - check for day headers (exact match to avoid "Mon" in "Commonwealth")
+    await expect(page.getByText("Mon", { exact: true })).toBeVisible();
+    await expect(page.getByText("Tue", { exact: true })).toBeVisible();
 
     // Switch to list view
-    await page.getByTitle("List view").click();
+    await page.getByRole("button", { name: "List view" }).click();
 
     // Calendar day headers should not be visible
-    await expect(page.getByText("Mon")).not.toBeVisible();
+    await expect(page.getByText("Mon", { exact: true })).not.toBeVisible();
   });
 
   test("can change time horizon", async ({ authenticatedPage: page }) => {
@@ -59,7 +59,7 @@ test.describe("Cash Flow Calendar", () => {
     await page.waitForLoadState("networkidle");
 
     // Click 12M
-    await page.getByText("12M").click();
+    await page.getByRole("button", { name: "12M" }).click();
 
     // Page should still be functional (no crash)
     await expect(page.getByText("Balance Projection")).toBeVisible();
