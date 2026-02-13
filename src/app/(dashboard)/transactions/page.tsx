@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { ImportCSVDialog } from "@/components/transactions/ImportCSVDialog";
+import { ColumnVisibilityMenu, useColumnVisibility } from "@/components/transactions/ColumnVisibilityMenu";
 import { ReconciliationView } from "@/components/recurring/ReconciliationView";
 import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<TransactionFilterInput>({});
   const [deleteTransaction, setDeleteTransaction] = useState<{ id: string; description: string } | null>(null);
+  const { visibility, toggle, resetToDefaults } = useColumnVisibility();
   useTour({ tourId: "transactions" });
 
   const offset = (page - 1) * PAGE_SIZE;
@@ -286,6 +288,11 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <ColumnVisibilityMenu
+            visibility={visibility}
+            onToggle={toggle}
+            onResetToDefaults={resetToDefaults}
+          />
           <Button
             variant="outline"
             size="sm"
@@ -362,6 +369,9 @@ export default function TransactionsPage() {
                   onAllocate={handleAllocate}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  columnVisibility={visibility}
+                  onToggleColumn={toggle}
+                  onResetColumns={resetToDefaults}
                 />
               </div>
               {totalPages > 1 && (

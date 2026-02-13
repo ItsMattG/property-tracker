@@ -531,6 +531,61 @@ export const transactionRouter = router({
       };
     }),
 
+  importRichCSV: writeProcedure
+    .input(
+      z.object({
+        rows: z.array(
+          z.object({
+            date: z.string(),
+            description: z.string().min(1),
+            amount: z.number(),
+            propertyId: z.string().uuid(),
+            category: z.enum(categoryValues),
+            transactionType: z.enum(["income", "expense", "capital", "transfer", "personal"]),
+            isDeductible: z.boolean(),
+            notes: z.string().nullable(),
+            invoiceUrl: z.string().nullable(),
+            invoicePresent: z.boolean(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const imported: string[] = [];
+      const errors: string[] = [];
+
+      for (const row of input.rows) {
+        try {
+          const [transaction] = await ctx.db
+            .insert(transactions)
+            .values({
+              userId: ctx.portfolio.ownerId,
+              propertyId: row.propertyId,
+              date: row.date,
+              description: row.description,
+              amount: row.amount.toString(),
+              category: row.category,
+              transactionType: row.transactionType,
+              isDeductible: row.isDeductible,
+              notes: row.notes,
+              invoiceUrl: row.invoiceUrl,
+              invoicePresent: row.invoicePresent,
+            })
+            .returning();
+
+          imported.push(transaction.id);
+        } catch (error) {
+          errors.push(`Row ${row.date} ${row.description}: ${error}`);
+        }
+      }
+
+      return {
+        importedCount: imported.length,
+        errorCount: errors.length,
+        errors: errors.slice(0, 5),
+      };
+    }),
+
   allocate: writeProcedure
     .input(
       z.object({
