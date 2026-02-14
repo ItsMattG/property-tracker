@@ -1,13 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import {
-  documents,
-  properties,
-  transactions,
-  documentExtractions,
-} from "../db/schema";
-import { eq, and, or } from "drizzle-orm";
+import { properties, transactions, documentExtractions } from "../db/schema";
+import { eq, and } from "drizzle-orm";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { extractDocument } from "../services/document-extraction";
 import { matchPropertyByAddress } from "../services/property-matcher";
@@ -22,9 +17,6 @@ const ALLOWED_FILE_TYPES = [
 const MAX_FILE_SIZE = 10485760; // 10MB in bytes
 
 export const documentsRouter = router({
-  /**
-   * Get a signed upload URL for direct upload to Supabase Storage
-   */
   getUploadUrl: writeProcedure
     .input(
       z.object({
@@ -36,9 +28,8 @@ export const documentsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { fileName, fileType, fileSize, propertyId, transactionId } = input;
+      const { fileName, propertyId, transactionId } = input;
 
-      // Validate XOR constraint
       if ((!propertyId && !transactionId) || (propertyId && transactionId)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -46,20 +37,10 @@ export const documentsRouter = router({
         });
       }
 
-      // Validate ownership of property or transaction
       if (propertyId) {
-        const property = await ctx.db.query.properties.findFirst({
-          where: and(
-            eq(properties.id, propertyId),
-            eq(properties.userId, ctx.portfolio.ownerId)
-          ),
-        });
-
+        const property = await ctx.uow.property.findById(propertyId, ctx.portfolio.ownerId);
         if (!property) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Property not found",
-          });
+          throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
         }
       }
 
@@ -70,22 +51,16 @@ export const documentsRouter = router({
             eq(transactions.userId, ctx.portfolio.ownerId)
           ),
         });
-
         if (!transaction) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Transaction not found",
-          });
+          throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
         }
       }
 
-      // Generate storage path
       const entityId = propertyId || transactionId;
       const timestamp = Date.now();
       const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
       const storagePath = `${ctx.portfolio.ownerId}/${entityId}/${timestamp}-${sanitizedFileName}`;
 
-      // Create signed upload URL
       const { data, error } = await supabaseAdmin.storage
         .from("documents")
         .createSignedUploadUrl(storagePath);
@@ -105,9 +80,6 @@ export const documentsRouter = router({
       };
     }),
 
-  /**
-   * Create document record after successful upload
-   */
   create: writeProcedure
     .input(
       z.object({
@@ -135,7 +107,6 @@ export const documentsRouter = router({
         description,
       } = input;
 
-      // Validate XOR constraint
       if ((!propertyId && !transactionId) || (propertyId && transactionId)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -143,20 +114,10 @@ export const documentsRouter = router({
         });
       }
 
-      // Validate ownership
       if (propertyId) {
-        const property = await ctx.db.query.properties.findFirst({
-          where: and(
-            eq(properties.id, propertyId),
-            eq(properties.userId, ctx.portfolio.ownerId)
-          ),
-        });
-
+        const property = await ctx.uow.property.findById(propertyId, ctx.portfolio.ownerId);
         if (!property) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Property not found",
-          });
+          throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
         }
       }
 
@@ -167,42 +128,30 @@ export const documentsRouter = router({
             eq(transactions.userId, ctx.portfolio.ownerId)
           ),
         });
-
         if (!transaction) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Transaction not found",
-          });
+          throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
         }
       }
 
-      // Create document record
-      const [document] = await ctx.db
-        .insert(documents)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          propertyId,
-          transactionId,
-          fileName,
-          fileType,
-          fileSize: String(fileSize),
-          storagePath,
-          category,
-          description,
-        })
-        .returning();
+      const document = await ctx.uow.document.create({
+        userId: ctx.portfolio.ownerId,
+        propertyId,
+        transactionId,
+        fileName,
+        fileType,
+        fileSize: String(fileSize),
+        storagePath,
+        category,
+        description,
+      });
 
       // Trigger extraction for supported file types
       const extractableTypes = ["image/jpeg", "image/png", "application/pdf"];
       if (extractableTypes.includes(fileType)) {
-        // Create extraction record
-        const [extraction] = await ctx.db
-          .insert(documentExtractions)
-          .values({
-            documentId: document.id,
-            status: "processing",
-          })
-          .returning();
+        const extraction = await ctx.uow.document.createExtraction({
+          documentId: document.id,
+          status: "processing",
+        });
 
         // Run extraction asynchronously (don't await)
         const ownerId = ctx.portfolio.ownerId;
@@ -213,18 +162,14 @@ export const documentsRouter = router({
             const result = await extractDocument(storagePath, fileType);
 
             if (!result.success || !result.data) {
-              await db
-                .update(documentExtractions)
-                .set({
-                  status: "failed",
-                  error: result.error || "Extraction failed",
-                  completedAt: new Date(),
-                })
-                .where(eq(documentExtractions.id, extraction.id));
+              await ctx.uow.document.updateExtraction(extraction.id, {
+                status: "failed",
+                error: result.error || "Extraction failed",
+                completedAt: new Date(),
+              });
               return;
             }
 
-            // Match property if address found
             let matchedPropertyId: string | null = null;
             let propertyMatchConfidence: number | null = null;
 
@@ -244,7 +189,6 @@ export const documentsRouter = router({
               }
             }
 
-            // Create draft transaction if amount found
             let draftTransactionId: string | null = null;
 
             if (result.data.amount) {
@@ -255,7 +199,7 @@ export const documentsRouter = router({
                   propertyId: matchedPropertyId,
                   date: result.data.date || new Date().toISOString().split("T")[0],
                   description: result.data.vendor || "Extracted from document",
-                  amount: String(result.data.amount * -1), // Expenses are negative
+                  amount: String(result.data.amount * -1),
                   category: (result.data.category as typeof transactions.$inferInsert.category) || "uncategorized",
                   transactionType: "expense",
                   status: "pending_review",
@@ -265,7 +209,6 @@ export const documentsRouter = router({
               draftTransactionId = draftTx.id;
             }
 
-            // Update extraction record
             await db
               .update(documentExtractions)
               .set({
@@ -302,9 +245,6 @@ export const documentsRouter = router({
       return document;
     }),
 
-  /**
-   * List documents for a property or transaction
-   */
   list: protectedProcedure
     .input(
       z.object({
@@ -313,44 +253,16 @@ export const documentsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const { propertyId, transactionId } = input;
-
-      // Build where clause
-      let whereClause;
-      if (propertyId && transactionId) {
-        whereClause = and(
-          eq(documents.userId, ctx.portfolio.ownerId),
-          or(
-            eq(documents.propertyId, propertyId),
-            eq(documents.transactionId, transactionId)
-          )
-        );
-      } else if (propertyId) {
-        whereClause = and(
-          eq(documents.userId, ctx.portfolio.ownerId),
-          eq(documents.propertyId, propertyId)
-        );
-      } else if (transactionId) {
-        whereClause = and(
-          eq(documents.userId, ctx.portfolio.ownerId),
-          eq(documents.transactionId, transactionId)
-        );
-      } else {
-        // Return all user documents
-        whereClause = eq(documents.userId, ctx.portfolio.ownerId);
-      }
-
-      const docs = await ctx.db.query.documents.findMany({
-        where: whereClause,
-        orderBy: (d, { desc }) => [desc(d.createdAt)],
+      const docs = await ctx.uow.document.findByOwner(ctx.portfolio.ownerId, {
+        propertyId: input.propertyId,
+        transactionId: input.transactionId,
       });
 
-      // Generate signed URLs for viewing
       const docsWithUrls = await Promise.all(
         docs.map(async (doc) => {
           const { data } = await supabaseAdmin.storage
             .from("documents")
-            .createSignedUrl(doc.storagePath, 3600); // 1 hour
+            .createSignedUrl(doc.storagePath, 3600);
 
           return {
             ...doc,
@@ -363,19 +275,10 @@ export const documentsRouter = router({
       return docsWithUrls;
     }),
 
-  /**
-   * Delete a document (removes from storage + database)
-   */
   delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      // Find document and verify ownership
-      const document = await ctx.db.query.documents.findFirst({
-        where: and(
-          eq(documents.id, input.id),
-          eq(documents.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const document = await ctx.uow.document.findById(input.id, ctx.portfolio.ownerId);
 
       if (!document) {
         throw new TRPCError({
@@ -384,7 +287,6 @@ export const documentsRouter = router({
         });
       }
 
-      // Delete from storage
       const { error: storageError } = await supabaseAdmin.storage
         .from("documents")
         .remove([document.storagePath]);
@@ -397,24 +299,15 @@ export const documentsRouter = router({
         });
       }
 
-      // Delete from database
-      await ctx.db.delete(documents).where(eq(documents.id, input.id));
+      await ctx.uow.document.delete(input.id, ctx.portfolio.ownerId);
 
       return { success: true };
     }),
 
-  /**
-   * Get a single document with signed URL
-   */
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const document = await ctx.db.query.documents.findFirst({
-        where: and(
-          eq(documents.id, input.id),
-          eq(documents.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const document = await ctx.uow.document.findById(input.id, ctx.portfolio.ownerId);
 
       if (!document) {
         throw new TRPCError({

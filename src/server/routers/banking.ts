@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure, bankProcedure } from "../trpc";
-import { anomalyAlerts, bankAccounts, transactions, users } from "../db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { anomalyAlerts } from "../db/schema";
 import { batchCategorize } from "../services/categorization";
 import { TRPCError } from "@trpc/server";
 import { checkRateLimit, mapBasiqErrorToAlertType, mapAlertTypeToConnectionStatus } from "../services/sync";
@@ -113,9 +112,7 @@ export const bankingRouter = router({
       logger.info("Bank sync started", { accountId: input.accountId, institution: account.institution });
 
       // Look up stored basiqUserId for API calls
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.id, ctx.portfolio.ownerId),
-      });
+      const user = await ctx.uow.user.findById(ctx.portfolio.ownerId);
 
       if (!user?.basiqUserId) {
         throw new TRPCError({
@@ -158,14 +155,11 @@ export const bankingRouter = router({
 
         // Run anomaly detection on new transactions
         if (transactionsAdded > 0) {
-          const recentTxns = await ctx.db.query.transactions.findMany({
-            where: and(
-              eq(transactions.userId, ctx.portfolio.ownerId),
-              eq(transactions.bankAccountId, account.id)
-            ),
-            orderBy: [desc(transactions.createdAt)],
-            limit: 100,
-          });
+          const recentTxns = await ctx.uow.transactions.findRecentByAccount(
+            ctx.portfolio.ownerId,
+            account.id,
+            100
+          );
 
           const knownMerchants = await getKnownMerchants(
             ctx.db,
@@ -235,16 +229,11 @@ export const bankingRouter = router({
           }
 
           // Run AI categorization on new uncategorized transactions
-          const uncategorizedTxns = await ctx.db.query.transactions.findMany({
-            where: and(
-              eq(transactions.userId, ctx.portfolio.ownerId),
-              eq(transactions.bankAccountId, account.id),
-              eq(transactions.category, "uncategorized"),
-              sql`${transactions.suggestionStatus} IS NULL`
-            ),
-            orderBy: [desc(transactions.createdAt)],
-            limit: 50,
-          });
+          const uncategorizedTxns = await ctx.uow.transactions.findUncategorizedByAccount(
+            ctx.portfolio.ownerId,
+            account.id,
+            50
+          );
 
           if (uncategorizedTxns.length > 0) {
             await batchCategorize(
@@ -376,20 +365,13 @@ export const bankingRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [account] = await ctx.db
-        .update(bankAccounts)
-        .set({
-          nickname: input.nickname || null,
-        })
-        .where(
-          and(
-            eq(bankAccounts.id, input.accountId),
-            eq(bankAccounts.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
-
-      return account;
+      const existing = await ctx.uow.bankAccount.findById(input.accountId, ctx.portfolio.ownerId);
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
+      }
+      return ctx.uow.bankAccount.update(input.accountId, {
+        nickname: input.nickname || null,
+      });
     }),
 
   linkAccountToProperty: writeProcedure
@@ -400,20 +382,13 @@ export const bankingRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [account] = await ctx.db
-        .update(bankAccounts)
-        .set({
-          defaultPropertyId: input.propertyId,
-        })
-        .where(
-          and(
-            eq(bankAccounts.id, input.accountId),
-            eq(bankAccounts.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
-
-      return account;
+      const existing = await ctx.uow.bankAccount.findById(input.accountId, ctx.portfolio.ownerId);
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
+      }
+      return ctx.uow.bankAccount.update(input.accountId, {
+        defaultPropertyId: input.propertyId,
+      });
     }),
 
   removeAccount: writeProcedure
@@ -436,9 +411,7 @@ export const bankingRouter = router({
     .input(z.object({ jobIds: z.array(z.string()).optional() }))
     .mutation(async ({ ctx }) => {
       // Look up stored basiqUserId
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.id, ctx.portfolio.ownerId),
-      });
+      const user = await ctx.uow.user.findById(ctx.portfolio.ownerId);
 
       if (!user?.basiqUserId) {
         throw new TRPCError({
@@ -489,10 +462,7 @@ export const bankingRouter = router({
 
       // Clear the pending property regardless of outcome
       if (pendingPropertyId) {
-        await ctx.db
-          .update(users)
-          .set({ pendingBankPropertyId: null })
-          .where(eq(users.id, ctx.portfolio.ownerId));
+        await ctx.uow.user.update(ctx.portfolio.ownerId, { pendingBankPropertyId: null });
       }
 
       return {
@@ -509,9 +479,7 @@ export const bankingRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       // Look up user's basiqUserId
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.id, ctx.portfolio.ownerId),
-      });
+      const user = await ctx.uow.user.findById(ctx.portfolio.ownerId);
 
       if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
@@ -530,10 +498,7 @@ export const bankingRouter = router({
 
       // Persist mobile on user record if new or changed
       if (input.mobile && input.mobile !== user.mobile) {
-        await ctx.db
-          .update(users)
-          .set({ mobile: input.mobile })
-          .where(eq(users.id, user.id));
+        await ctx.uow.user.update(user.id, { mobile: input.mobile });
       }
 
       // Store the pre-selected property for auto-assignment after Basiq callback,
@@ -543,15 +508,9 @@ export const bankingRouter = router({
         if (!property) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
         }
-        await ctx.db
-          .update(users)
-          .set({ pendingBankPropertyId: input.propertyId })
-          .where(eq(users.id, user.id));
+        await ctx.uow.user.update(user.id, { pendingBankPropertyId: input.propertyId });
       } else {
-        await ctx.db
-          .update(users)
-          .set({ pendingBankPropertyId: null })
-          .where(eq(users.id, user.id));
+        await ctx.uow.user.update(user.id, { pendingBankPropertyId: null });
       }
 
       // Create or update Basiq user with mobile (required for auth link / SMS verification)
@@ -569,10 +528,7 @@ export const bankingRouter = router({
           });
         }
 
-        await ctx.db
-          .update(users)
-          .set({ basiqUserId })
-          .where(eq(users.id, user.id));
+        await ctx.uow.user.update(user.id, { basiqUserId });
       } else {
         // Existing Basiq user — update mobile in case it changed or wasn't set
         try {
@@ -611,10 +567,7 @@ export const bankingRouter = router({
           const basiqUser = await basiqService.createUser(user.email, effectiveMobile);
           basiqUserId = basiqUser.id;
 
-          await ctx.db
-            .update(users)
-            .set({ basiqUserId })
-            .where(eq(users.id, user.id));
+          await ctx.uow.user.update(user.id, { basiqUserId });
 
           const { links } = await basiqService.createAuthLink(basiqUserId);
           // New Basiq user = fresh consent needed, no action param
@@ -639,9 +592,7 @@ export const bankingRouter = router({
       }
 
       // Look up stored basiqUserId
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.id, ctx.portfolio.ownerId),
-      });
+      const user = await ctx.uow.user.findById(ctx.portfolio.ownerId);
 
       if (!user?.basiqUserId) {
         throw new TRPCError({

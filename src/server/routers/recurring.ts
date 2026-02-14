@@ -6,7 +6,7 @@ import {
   expectedTransactions,
   transactions,
 } from "../db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
   generateExpectedTransactions,
   findMatchingTransactions,
@@ -39,7 +39,6 @@ const recurringSchema = z.object({
 });
 
 export const recurringRouter = router({
-  // List all recurring templates for user
   list: protectedProcedure
     .input(
       z
@@ -50,44 +49,16 @@ export const recurringRouter = router({
         .optional()
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(recurringTransactions.userId, ctx.portfolio.ownerId)];
-
-      if (input?.propertyId) {
-        conditions.push(eq(recurringTransactions.propertyId, input.propertyId));
-      }
-
-      if (input?.isActive !== undefined) {
-        conditions.push(eq(recurringTransactions.isActive, input.isActive));
-      }
-
-      return ctx.db.query.recurringTransactions.findMany({
-        where: and(...conditions),
-        with: {
-          property: true,
-          linkedBankAccount: true,
-        },
-        orderBy: (rt, { desc }) => [desc(rt.createdAt)],
+      return ctx.uow.recurring.findByOwner(ctx.portfolio.ownerId, {
+        propertyId: input?.propertyId,
+        isActive: input?.isActive,
       });
     }),
 
-  // Get a single recurring template
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const recurring = await ctx.db.query.recurringTransactions.findFirst({
-        where: and(
-          eq(recurringTransactions.id, input.id),
-          eq(recurringTransactions.userId, ctx.portfolio.ownerId)
-        ),
-        with: {
-          property: true,
-          linkedBankAccount: true,
-          expectedTransactions: {
-            orderBy: (et, { desc }) => [desc(et.expectedDate)],
-            limit: 10,
-          },
-        },
-      });
+      const recurring = await ctx.uow.recurring.findById(input.id, ctx.portfolio.ownerId);
 
       if (!recurring) {
         throw new Error("Recurring transaction not found");
@@ -96,52 +67,39 @@ export const recurringRouter = router({
       return recurring;
     }),
 
-  // Create a new recurring template
   create: writeProcedure
     .input(recurringSchema)
     .mutation(async ({ ctx, input }) => {
       // Verify property belongs to user
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(transactions.id, input.propertyId),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new Error("Property not found");
       }
 
-      const [recurring] = await ctx.db
-        .insert(recurringTransactions)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          propertyId: input.propertyId,
-          description: input.description,
-          amount: input.amount,
-          category: input.category as typeof recurringTransactions.$inferInsert.category,
-          transactionType: input.transactionType,
-          frequency: input.frequency,
-          dayOfMonth: input.dayOfMonth?.toString() ?? null,
-          dayOfWeek: input.dayOfWeek?.toString() ?? null,
-          startDate: input.startDate,
-          endDate: input.endDate ?? null,
-          linkedBankAccountId: input.linkedBankAccountId ?? null,
-          amountTolerance: input.amountTolerance,
-          dateTolerance: input.dateTolerance.toString(),
-          alertDelayDays: input.alertDelayDays.toString(),
-        })
-        .returning();
+      const recurring = await ctx.uow.recurring.create({
+        userId: ctx.portfolio.ownerId,
+        propertyId: input.propertyId,
+        description: input.description,
+        amount: input.amount,
+        category: input.category as typeof recurringTransactions.$inferInsert.category,
+        transactionType: input.transactionType,
+        frequency: input.frequency,
+        dayOfMonth: input.dayOfMonth?.toString() ?? null,
+        dayOfWeek: input.dayOfWeek?.toString() ?? null,
+        startDate: input.startDate,
+        endDate: input.endDate ?? null,
+        linkedBankAccountId: input.linkedBankAccountId ?? null,
+        amountTolerance: input.amountTolerance,
+        dateTolerance: input.dateTolerance.toString(),
+        alertDelayDays: input.alertDelayDays.toString(),
+      });
 
       // Generate initial expected transactions
-      const generated = generateExpectedTransactions(
-        recurring,
-        new Date(),
-        14
-      );
+      const generated = generateExpectedTransactions(recurring, new Date(), 14);
 
       if (generated.length > 0) {
-        await ctx.db.insert(expectedTransactions).values(
+        await ctx.uow.recurring.createExpected(
           generated.map((g) => ({
             recurringTransactionId: g.recurringTransactionId,
             userId: g.userId,
@@ -155,7 +113,6 @@ export const recurringRouter = router({
       return recurring;
     }),
 
-  // Update a recurring template
   update: writeProcedure
     .input(z.object({ id: z.string().uuid() }).merge(recurringSchema.partial()))
     .mutation(async ({ ctx, input }) => {
@@ -185,71 +142,33 @@ export const recurringRouter = router({
       if (data.alertDelayDays !== undefined)
         updateData.alertDelayDays = data.alertDelayDays.toString();
 
-      const [recurring] = await ctx.db
-        .update(recurringTransactions)
-        .set(updateData)
-        .where(
-          and(
-            eq(recurringTransactions.id, id),
-            eq(recurringTransactions.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
-
-      return recurring;
+      return ctx.uow.recurring.update(id, ctx.portfolio.ownerId, updateData);
     }),
 
-  // Delete a recurring template
   delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(recurringTransactions)
-        .where(
-          and(
-            eq(recurringTransactions.id, input.id),
-            eq(recurringTransactions.userId, ctx.portfolio.ownerId)
-          )
-        );
-
+      await ctx.uow.recurring.delete(input.id, ctx.portfolio.ownerId);
       return { success: true };
     }),
 
-  // Toggle active status
   toggleActive: writeProcedure
     .input(z.object({ id: z.string().uuid(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      const [recurring] = await ctx.db
-        .update(recurringTransactions)
-        .set({
-          isActive: input.isActive,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(recurringTransactions.id, input.id),
-            eq(recurringTransactions.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
-
-      return recurring;
+      return ctx.uow.recurring.update(input.id, ctx.portfolio.ownerId, {
+        isActive: input.isActive,
+        updatedAt: new Date(),
+      });
     }),
 
-  // Skip an expected transaction
   skip: writeProcedure
     .input(z.object({ expectedId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const [updated] = await ctx.db
-        .update(expectedTransactions)
-        .set({ status: "skipped" })
-        .where(
-          and(
-            eq(expectedTransactions.id, input.expectedId),
-            eq(expectedTransactions.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      const updated = await ctx.uow.recurring.updateExpected(
+        input.expectedId,
+        ctx.portfolio.ownerId,
+        { status: "skipped" }
+      );
 
       if (!updated) {
         throw new Error("Expected transaction not found");
@@ -258,7 +177,6 @@ export const recurringRouter = router({
       return updated;
     }),
 
-  // Manually match an expected transaction to an actual transaction
   matchManually: writeProcedure
     .input(
       z.object({
@@ -293,14 +211,14 @@ export const recurringRouter = router({
       }
 
       // Update expected transaction
-      const [updated] = await ctx.db
-        .update(expectedTransactions)
-        .set({
+      const updated = await ctx.uow.recurring.updateExpected(
+        input.expectedId,
+        ctx.portfolio.ownerId,
+        {
           status: "matched",
           matchedTransactionId: input.transactionId,
-        })
-        .where(eq(expectedTransactions.id, input.expectedId))
-        .returning();
+        }
+      );
 
       // Apply category/transactionType from template to the actual transaction
       if (expected.recurringTransaction) {
@@ -318,7 +236,6 @@ export const recurringRouter = router({
       return updated;
     }),
 
-  // Get expected transactions with optional filters
   getExpectedTransactions: protectedProcedure
     .input(
       z
@@ -332,51 +249,25 @@ export const recurringRouter = router({
         .optional()
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(expectedTransactions.userId, ctx.portfolio.ownerId)];
-
-      if (input?.status) {
-        conditions.push(eq(expectedTransactions.status, input.status));
-      }
-
-      if (input?.propertyId) {
-        conditions.push(eq(expectedTransactions.propertyId, input.propertyId));
-      }
-
-      if (input?.recurringTransactionId) {
-        conditions.push(
-          eq(
-            expectedTransactions.recurringTransactionId,
-            input.recurringTransactionId
-          )
-        );
-      }
-
-      return ctx.db.query.expectedTransactions.findMany({
-        where: and(...conditions),
-        with: {
-          recurringTransaction: true,
-          property: true,
-          matchedTransaction: true,
-        },
-        orderBy: (et, { desc }) => [desc(et.expectedDate)],
+      return ctx.uow.recurring.findExpected(ctx.portfolio.ownerId, {
+        status: input?.status,
+        propertyId: input?.propertyId,
+        recurringTransactionId: input?.recurringTransactionId,
       });
     }),
 
-  // Get pattern suggestions
+  // getSuggestions and runMatching use cross-domain queries (transactions + recurring)
+  // so they keep inline DB access for the transaction-domain parts
   getSuggestions: protectedProcedure.query(async ({ ctx }) => {
-    // Get recent transactions for the user
-    const recentTransactions = await ctx.db.query.transactions.findMany({
-      where: eq(transactions.userId, ctx.portfolio.ownerId),
-      orderBy: (t, { desc }) => [desc(t.date)],
-      limit: 500,
-    });
+    const [recentTransactions, existingTemplates] = await Promise.all([
+      ctx.db.query.transactions.findMany({
+        where: eq(transactions.userId, ctx.portfolio.ownerId),
+        orderBy: (t, { desc }) => [desc(t.date)],
+        limit: 500,
+      }),
+      ctx.uow.recurring.findByOwner(ctx.portfolio.ownerId),
+    ]);
 
-    // Get existing recurring templates to exclude
-    const existingTemplates = await ctx.db.query.recurringTransactions.findMany({
-      where: eq(recurringTransactions.userId, ctx.portfolio.ownerId),
-    });
-
-    // Filter out transactions that are already part of a recurring template
     const templatePropertyCategories = new Set(
       existingTemplates.map((t) => `${t.propertyId}:${t.category}`)
     );
@@ -389,20 +280,9 @@ export const recurringRouter = router({
     return detectPatterns(eligibleTransactions);
   }),
 
-  // Run matching for pending expected transactions
   runMatching: writeProcedure.mutation(async ({ ctx }) => {
-    // Get pending expected transactions
-    const pending = await ctx.db.query.expectedTransactions.findMany({
-      where: and(
-        eq(expectedTransactions.userId, ctx.portfolio.ownerId),
-        eq(expectedTransactions.status, "pending")
-      ),
-      with: {
-        recurringTransaction: true,
-      },
-    });
+    const pending = await ctx.uow.recurring.findPendingExpected(ctx.portfolio.ownerId);
 
-    // Get unmatched transactions (not linked to any expected transaction)
     const matchedIds = pending
       .filter((p) => p.matchedTransactionId)
       .map((p) => p.matchedTransactionId!);
@@ -421,7 +301,6 @@ export const recurringRouter = router({
       confidence: "high" | "medium" | "low" | null;
     }> = [];
 
-    // Collect batch updates to avoid N+1 sequential DB calls
     const expectedUpdates: Array<{ id: string; matchedTransactionId: string }> = [];
     const transactionUpdates: Array<{
       id: string;
@@ -444,7 +323,6 @@ export const recurringRouter = router({
       );
 
       if (matches.length > 0 && matches[0].confidence === "high") {
-        // Collect for batch update
         expectedUpdates.push({
           id: expected.id,
           matchedTransactionId: matches[0].transaction.id,
@@ -462,7 +340,6 @@ export const recurringRouter = router({
           confidence: "high",
         });
       } else if (matches.length > 0) {
-        // Flag for review
         results.push({
           expectedId: expected.id,
           matchedTransactionId: matches[0].transaction.id,

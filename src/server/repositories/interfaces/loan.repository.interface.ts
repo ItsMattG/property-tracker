@@ -1,10 +1,10 @@
-import type { Loan, NewLoan } from "../../db/schema";
+import type { Loan, NewLoan, Property, BankAccount } from "../../db/schema";
 import type { DB } from "../base";
 
 /** Loan with property and offset account relations */
 export type LoanWithRelations = Loan & {
-  property?: unknown;
-  offsetAccount?: unknown;
+  property: Property;
+  offsetAccount?: BankAccount | null;
 };
 
 export interface ILoanRepository {

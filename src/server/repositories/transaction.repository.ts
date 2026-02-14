@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte, inArray, isNotNull, sql } from "drizzle-orm";
 import { transactions } from "../db/schema";
 import type { Transaction, NewTransaction } from "../db/schema";
 import { BaseRepository, type DB } from "./base";
@@ -59,7 +59,7 @@ export class TransactionRepository
     });
 
     const [{ count: total }] = await this.db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql<number>`count(*)::int` })
       .from(transactions)
       .where(whereClause);
 
@@ -192,5 +192,115 @@ export class TransactionRepository
       cashIn: result?.cashIn ?? "0",
       cashOut: result?.cashOut ?? "0",
     };
+  }
+
+  async findRecentByAccount(
+    userId: string,
+    bankAccountId: string,
+    limit: number
+  ): Promise<Transaction[]> {
+    return this.db.query.transactions.findMany({
+      where: and(
+        eq(transactions.userId, userId),
+        eq(transactions.bankAccountId, bankAccountId)
+      ),
+      orderBy: [desc(transactions.createdAt)],
+      limit,
+    });
+  }
+
+  async findUncategorizedByAccount(
+    userId: string,
+    bankAccountId: string,
+    limit: number
+  ): Promise<Transaction[]> {
+    return this.db.query.transactions.findMany({
+      where: and(
+        eq(transactions.userId, userId),
+        eq(transactions.bankAccountId, bankAccountId),
+        eq(transactions.category, "uncategorized"),
+        sql`${transactions.suggestionStatus} IS NULL`
+      ),
+      orderBy: [desc(transactions.createdAt)],
+      limit,
+    });
+  }
+
+  async findPendingSuggestions(
+    userId: string,
+    filters: { confidenceFilter?: "all" | "high" | "low"; limit?: number; offset?: number }
+  ): Promise<{ transactions: TransactionWithRelations[]; total: number }> {
+    const conditions = [
+      eq(transactions.userId, userId),
+      eq(transactions.suggestionStatus, "pending"),
+      isNotNull(transactions.suggestedCategory),
+    ];
+
+    if (filters.confidenceFilter === "high") {
+      conditions.push(sql`${transactions.suggestionConfidence}::numeric >= 85`);
+    } else if (filters.confidenceFilter === "low") {
+      conditions.push(sql`${transactions.suggestionConfidence}::numeric < 60`);
+    }
+
+    const whereClause = and(...conditions);
+    const limit = filters.limit ?? 50;
+    const offset = filters.offset ?? 0;
+
+    const results = await this.db.query.transactions.findMany({
+      where: whereClause,
+      orderBy: [desc(transactions.date)],
+      limit,
+      offset,
+      with: {
+        property: true,
+        bankAccount: true,
+      },
+    });
+
+    const [{ count: total }] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(transactions)
+      .where(whereClause);
+
+    return { transactions: results as TransactionWithRelations[], total };
+  }
+
+  async countPendingSuggestions(userId: string): Promise<number> {
+    const [{ count }] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(transactions.suggestionStatus, "pending"),
+          isNotNull(transactions.suggestedCategory)
+        )
+      );
+    return count;
+  }
+
+  async findForCategorization(
+    userId: string,
+    opts?: { limit?: number }
+  ): Promise<Transaction[]> {
+    return this.db.query.transactions.findMany({
+      where: and(
+        eq(transactions.userId, userId),
+        eq(transactions.category, "uncategorized"),
+        sql`${transactions.suggestionStatus} IS NULL OR ${transactions.suggestionStatus} = 'failed'`
+      ),
+      limit: opts?.limit ?? 20,
+      orderBy: [desc(transactions.date)],
+    });
+  }
+
+  async findByIds(ids: string[], userId: string): Promise<Transaction[]> {
+    if (ids.length === 0) return [];
+    return this.db.query.transactions.findMany({
+      where: and(
+        eq(transactions.userId, userId),
+        inArray(transactions.id, ids)
+      ),
+    });
   }
 }

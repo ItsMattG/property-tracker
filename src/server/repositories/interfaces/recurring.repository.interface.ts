@@ -1,18 +1,18 @@
-import type { RecurringTransaction, NewRecurringTransaction, ExpectedTransaction, NewExpectedTransaction } from "../../db/schema";
+import type { RecurringTransaction, NewRecurringTransaction, ExpectedTransaction, NewExpectedTransaction, Property, BankAccount, Transaction } from "../../db/schema";
 import type { DB } from "../base";
 
 /** Recurring transaction with relations */
 export type RecurringWithRelations = RecurringTransaction & {
-  property?: unknown;
-  linkedBankAccount?: unknown;
+  property?: Property | null;
+  linkedBankAccount?: BankAccount | null;
   expectedTransactions?: ExpectedTransaction[];
 };
 
 /** Expected transaction with relations */
 export type ExpectedWithRelations = ExpectedTransaction & {
   recurringTransaction?: RecurringTransaction;
-  property?: unknown;
-  matchedTransaction?: unknown;
+  property?: Property | null;
+  matchedTransaction?: Transaction | null;
 };
 
 /** Filters for expected transactions */

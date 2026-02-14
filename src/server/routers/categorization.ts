@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { transactions, merchantCategories, categorizationExamples } from "../db/schema";
-import { eq, and, isNotNull, desc, sql, inArray } from "drizzle-orm";
+import type { Transaction } from "../db/schema";
+import { merchantCategories, categorizationExamples } from "../db/schema";
+import { eq, desc, sql } from "drizzle-orm";
 import {
   updateMerchantMemory,
   batchCategorize,
@@ -22,34 +23,14 @@ export const categorizationRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [
-        eq(transactions.userId, ctx.portfolio.ownerId),
-        eq(transactions.suggestionStatus, "pending"),
-        isNotNull(transactions.suggestedCategory),
-      ];
-
-      if (input.confidenceFilter === "high") {
-        conditions.push(sql`${transactions.suggestionConfidence}::numeric >= 85`);
-      } else if (input.confidenceFilter === "low") {
-        conditions.push(sql`${transactions.suggestionConfidence}::numeric < 60`);
-      }
-
-      const results = await ctx.db.query.transactions.findMany({
-        where: and(...conditions),
-        orderBy: [desc(transactions.date)],
-        limit: input.limit,
-        offset: input.offset,
-        with: {
-          property: true,
-          bankAccount: true,
-        },
-      });
-
-      // Get total count
-      const [{ count: total }] = await ctx.db
-        .select({ count: sql<number>`count(*)` })
-        .from(transactions)
-        .where(and(...conditions));
+      const { transactions: results, total } = await ctx.uow.transactions.findPendingSuggestions(
+        ctx.portfolio.ownerId,
+        {
+          confidenceFilter: input.confidenceFilter,
+          limit: input.limit,
+          offset: input.offset,
+        }
+      );
 
       // Group by normalized merchant name + suggested category for batch UI
       const grouped = new Map<string, typeof results>();
@@ -79,17 +60,7 @@ export const categorizationRouter = router({
 
   // Get pending review count (for badge)
   getPendingCount: protectedProcedure.query(async ({ ctx }) => {
-    const [{ count }] = await ctx.db
-      .select({ count: sql<number>`count(*)` })
-      .from(transactions)
-      .where(
-        and(
-          eq(transactions.userId, ctx.portfolio.ownerId),
-          eq(transactions.suggestionStatus, "pending"),
-          isNotNull(transactions.suggestedCategory)
-        )
-      );
-
+    const count = await ctx.uow.transactions.countPendingSuggestions(ctx.portfolio.ownerId);
     return { count };
   }),
 
@@ -101,12 +72,7 @@ export const categorizationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const txn = await ctx.db.query.transactions.findFirst({
-        where: and(
-          eq(transactions.id, input.transactionId),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const txn = await ctx.uow.transactions.findById(input.transactionId, ctx.portfolio.ownerId);
 
       if (!txn || !txn.suggestedCategory) {
         throw new TRPCError({
@@ -133,17 +99,14 @@ export const categorizationRouter = router({
 
       const isDeductible = !nonDeductibleCategories.includes(txn.suggestedCategory);
 
-      await ctx.db
-        .update(transactions)
-        .set({
-          category: txn.suggestedCategory,
-          transactionType,
-          isDeductible,
-          isVerified: true,
-          suggestionStatus: "accepted",
-          updatedAt: new Date(),
-        })
-        .where(eq(transactions.id, input.transactionId));
+      await ctx.uow.transactions.update(input.transactionId, ctx.portfolio.ownerId, {
+        category: txn.suggestedCategory as Transaction["category"],
+        transactionType,
+        isDeductible,
+        isVerified: true,
+        suggestionStatus: "accepted",
+        updatedAt: new Date(),
+      });
 
       // Update merchant memory
       await updateMerchantMemory(
@@ -165,12 +128,7 @@ export const categorizationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const txn = await ctx.db.query.transactions.findFirst({
-        where: and(
-          eq(transactions.id, input.transactionId),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const txn = await ctx.uow.transactions.findById(input.transactionId, ctx.portfolio.ownerId);
 
       if (!txn) {
         throw new TRPCError({
@@ -179,7 +137,6 @@ export const categorizationRouter = router({
         });
       }
 
-      // Apply the user's category
       const incomeCategories = ["rental_income", "other_rental_income"];
       const capitalCategories = ["stamp_duty", "conveyancing", "buyers_agent_fees", "initial_repairs"];
       const nonDeductibleCategories = [...capitalCategories, "transfer", "personal", "uncategorized"];
@@ -197,17 +154,14 @@ export const categorizationRouter = router({
 
       const isDeductible = !nonDeductibleCategories.includes(input.newCategory);
 
-      await ctx.db
-        .update(transactions)
-        .set({
-          category: input.newCategory as typeof transactions.category.enumValues[number],
-          transactionType,
-          isDeductible,
-          isVerified: true,
-          suggestionStatus: "rejected",
-          updatedAt: new Date(),
-        })
-        .where(eq(transactions.id, input.transactionId));
+      await ctx.uow.transactions.update(input.transactionId, ctx.portfolio.ownerId, {
+        category: input.newCategory as Transaction["category"],
+        transactionType,
+        isDeductible,
+        isVerified: true,
+        suggestionStatus: "rejected",
+        updatedAt: new Date(),
+      });
 
       // Update merchant memory with correction
       await updateMerchantMemory(
@@ -232,15 +186,9 @@ export const categorizationRouter = router({
 
       for (const id of input.transactionIds) {
         try {
-          const txn = await ctx.db.query.transactions.findFirst({
-            where: and(
-              eq(transactions.id, id),
-              eq(transactions.userId, ctx.portfolio.ownerId),
-              eq(transactions.suggestionStatus, "pending")
-            ),
-          });
+          const txn = await ctx.uow.transactions.findById(id, ctx.portfolio.ownerId);
 
-          if (txn?.suggestedCategory) {
+          if (txn?.suggestedCategory && txn.suggestionStatus === "pending") {
             const incomeCategories = ["rental_income", "other_rental_income"];
             const capitalCategories = ["stamp_duty", "conveyancing", "buyers_agent_fees", "initial_repairs"];
             const nonDeductibleCategories = [...capitalCategories, "transfer", "personal", "uncategorized"];
@@ -258,17 +206,14 @@ export const categorizationRouter = router({
 
             const isDeductible = !nonDeductibleCategories.includes(txn.suggestedCategory);
 
-            await ctx.db
-              .update(transactions)
-              .set({
-                category: txn.suggestedCategory,
-                transactionType,
-                isDeductible,
-                isVerified: true,
-                suggestionStatus: "accepted",
-                updatedAt: new Date(),
-              })
-              .where(eq(transactions.id, id));
+            await ctx.uow.transactions.update(id, ctx.portfolio.ownerId, {
+              category: txn.suggestedCategory as Transaction["category"],
+              transactionType,
+              isDeductible,
+              isVerified: true,
+              suggestionStatus: "accepted",
+              updatedAt: new Date(),
+            });
 
             // Only update merchant memory once per batch
             if (accepted === 0) {
@@ -309,22 +254,10 @@ export const categorizationRouter = router({
       let txnsToProcess;
 
       if (input.transactionIds?.length) {
-        txnsToProcess = await ctx.db.query.transactions.findMany({
-          where: and(
-            eq(transactions.userId, ctx.portfolio.ownerId),
-            inArray(transactions.id, input.transactionIds)
-          ),
-        });
+        txnsToProcess = await ctx.uow.transactions.findByIds(input.transactionIds, ctx.portfolio.ownerId);
       } else {
-        // Get uncategorized transactions without suggestions (exclude failed)
-        txnsToProcess = await ctx.db.query.transactions.findMany({
-          where: and(
-            eq(transactions.userId, ctx.portfolio.ownerId),
-            eq(transactions.category, "uncategorized"),
-            sql`${transactions.suggestionStatus} IS NULL OR ${transactions.suggestionStatus} = 'failed'`
-          ),
+        txnsToProcess = await ctx.uow.transactions.findForCategorization(ctx.portfolio.ownerId, {
           limit: input.limit,
-          orderBy: [desc(transactions.date)],
         });
       }
 

@@ -1,5 +1,4 @@
-import type { Property, Loan, Transaction, PropertyValue } from "../../db/schema";
-import type { DB } from "../base";
+import type { Property, Loan, Transaction } from "../../db/schema";
 
 /**
  * Portfolio repository — aggregate queries across properties, loans,
