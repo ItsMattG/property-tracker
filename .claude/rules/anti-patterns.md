@@ -1,3 +1,27 @@
+# Anti-Patterns
+
+## General Principles
+
+**Existing codebase patterns are NOT automatically correct.** This codebase is mid-refactor and contains known anti-patterns. Before implementing anything:
+
+1. **Query context7** for the current API of every library you touch
+2. **Check this file** for known DON'Ts
+3. **If existing code contradicts this file or context7 docs, the existing code is wrong** — fix it, don't replicate it
+4. **Every file you touch is an opportunity to fix** — if you're editing a file and notice anti-patterns in surrounding code, fix them
+
+## Cross-Cutting Anti-Patterns
+
+| DO | DON'T |
+|----|-------|
+| Use specific schema types (`Property`, `Transaction`, `Partial<Scenario>`) | `Record<string, unknown>` or `any` for DB update payloads |
+| Top-level static imports | Dynamic `await import(...)` for project modules |
+| `db: DB` (from `repositories/base`) | `db: any` |
+| `sql<number>\`COUNT(*)::int\`` | `sql\`COUNT(*)\`` (returns string) |
+| Explicit named re-exports in barrels | `export *` (breaks tree-shaking, hides API surface) |
+| Import server-only code from barrel in server files only | Import barrel containing DB code in `"use client"` components |
+| `Promise.all([q1, q2])` for independent queries | Sequential `await` for independent queries |
+| Repository methods with typed return values | Raw Drizzle queries scattered across routers |
+
 # Version-Specific Anti-Patterns
 
 ## Next.js 16 / React 19

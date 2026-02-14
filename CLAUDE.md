@@ -15,6 +15,17 @@
 | Utilities & clients | `src/lib/CLAUDE.md` | Formatting, Supabase, auth client, exports |
 | E2E testing | `e2e/CLAUDE.md` | Standards, auth fixture, failure protocol |
 
+## Anti-Pattern Zero Tolerance (Wave Refactoring)
+**NEVER copy patterns from existing codebase without verifying them against context7 docs and this file's rules.**
+
+The codebase contains known anti-patterns from before the refactor waves. When writing plans or implementing wave PRs:
+
+1. **Context7 is mandatory** — Before writing ANY implementation plan, query context7 for every technology the plan touches. Verify that patterns you're using match current library APIs, not stale codebase conventions.
+2. **Existing code is not a source of truth** — If surrounding code uses `db: any`, dynamic imports, `Record<string, unknown>` where a schema type exists, `COUNT(*)` without `::int`, or any pattern listed in `.claude/rules/anti-patterns.md` — **fix it, don't copy it**.
+3. **Plans must include a "Tech Notes" section** — Summarize what context7 confirmed for each dependency. This proves the plan was validated against real docs, not just existing code.
+4. **When moving code, audit it** — Every `git mv` is an opportunity. If the file being moved contains anti-patterns, fix them in the same PR. Don't move broken code to a new location.
+5. **Type safety is non-negotiable** — No `any`, no `unknown` where a real type exists, no `Record<string, unknown>` when Drizzle infer types are available. Use `typeof schema.$inferInsert` / `$inferSelect` or explicit schema types.
+
 ## Token Efficiency
 Always pick the token-efficient approach. Minimize unnecessary exploration and verbose output.
 
