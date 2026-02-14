@@ -2,13 +2,81 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Fix every CLAUDE.md anti-pattern violation in files changed by wave PRs #230–#239, then add lint rules to prevent regression.
+**Goal:** Fix every CLAUDE.md anti-pattern violation in files changed by wave PRs #230, #232, #233, #234, #236, #238, #239. Update rules files to prevent regression.
 
-**Architecture:** Category-by-category fixes (one commit each) across repositories, interfaces, and routers. ESLint `no-restricted-syntax` rules added last.
+**Architecture:** Category-by-category fixes (one commit each). Update CLAUDE.md/rules last.
 
 **Tech Stack:** TypeScript 5 strict, Drizzle ORM, tRPC v11, ESLint
 
 **Design doc:** `docs/plans/2026-02-15-wave-anti-pattern-audit-design.md`
+
+---
+
+## Scope — Files Changed by Wave PRs Only
+
+**Repositories (PR 233, 234, 236, 238, 239):**
+- `src/server/repositories/base.ts`
+- `src/server/repositories/bank-account.repository.ts`
+- `src/server/repositories/chat.repository.ts`
+- `src/server/repositories/compliance.repository.ts`
+- `src/server/repositories/document.repository.ts`
+- `src/server/repositories/email.repository.ts`
+- `src/server/repositories/loan.repository.ts`
+- `src/server/repositories/portfolio.repository.ts`
+- `src/server/repositories/property.repository.ts`
+- `src/server/repositories/recurring.repository.ts`
+- `src/server/repositories/scenario.repository.ts`
+- `src/server/repositories/transaction.repository.ts`
+- `src/server/repositories/unit-of-work.ts`
+- `src/server/repositories/user.repository.ts`
+- `src/server/repositories/__tests__/property.repository.test.ts`
+- `src/server/repositories/interfaces/*.ts` (14 interface files)
+
+**Routers (PR 230, 234, 236, 238, 239):**
+- `src/server/routers/banking.ts`
+- `src/server/routers/categorization.ts`
+- `src/server/routers/cgt.ts`
+- `src/server/routers/chat.ts`
+- `src/server/routers/compliance.ts`
+- `src/server/routers/documents.ts`
+- `src/server/routers/email.ts`
+- `src/server/routers/loan.ts`
+- `src/server/routers/loanComparison.ts`
+- `src/server/routers/notification.ts`
+- `src/server/routers/portfolio.ts`
+- `src/server/routers/property.ts`
+- `src/server/routers/propertyValue.ts`
+- `src/server/routers/recurring.ts`
+- `src/server/routers/scenario.ts`
+- `src/server/routers/transaction.ts`
+- `src/server/routers/user.ts`
+- `src/server/routers/__tests__/property.test.ts`
+- `src/server/routers/__tests__/recurring.test.ts`
+
+**Services (PR 230, 238, 239):**
+- `src/server/services/chat.ts`
+- `src/server/services/__tests__/chat.test.ts`
+- `src/server/services/basiq.ts`
+- `src/server/services/csv-import.ts`
+- `src/server/services/depreciation-extract.ts`
+- `src/server/services/document-extraction.ts`
+- `src/server/services/gmail-token.ts`
+- `src/server/services/loanPack.ts`
+- `src/server/services/property-manager/propertyme.ts`
+- `src/server/services/recurring.ts`
+- `src/server/services/tax-optimization.ts`
+- `src/server/services/tax-position.ts`
+- `src/server/services/valuation.ts`
+
+**Infrastructure (PR 232, 233):**
+- `src/server/trpc.ts`
+- `src/server/db/schema/*.ts` (all domain files)
+- `src/server/errors/domain-errors.ts`
+- `drizzle.config.ts`
+
+**NOT in scope** (not touched by wave PRs):
+- `src/server/routers/taxOptimization.ts` — has `count(*)` without `::int` at line 47 but was NOT changed by any wave PR. Leave for future wave.
+- `src/server/routers/task.ts`, `smsfCompliance.ts`, `forecast.ts`, `settlement.ts`, `trustCompliance.ts`, `similarProperties.ts` — have `Record<string, unknown>` but were NOT changed by any wave PR.
 
 ---
 
@@ -39,45 +107,49 @@ Expected: 0 errors (develop should be clean after PR #239 merge).
 
 **Rule:** `sql<number>\`count(*)::int\`` — never `count(*)` alone (returns string).
 
-### Task 1: Fix count(*) in categorization.ts
+### Task 1: Fix count(*) in wave PR files
 
 **Files:**
-- Modify: `src/server/routers/categorization.ts:287`
+- Modify: `src/server/routers/categorization.ts:287` (PR 239)
+- Modify: `src/server/services/tax-optimization.ts:313` (PR 230)
 
-**Step 1: Fix the cast**
+**Step 1: Fix categorization.ts line ~287**
 
-In `categorization.ts`, find line ~287:
 ```typescript
-const examples = await ctx.db
-  .select({ count: sql<number>`count(*)` })
-  .from(categorizationExamples)
+// Before:
+.select({ count: sql<number>`count(*)` })
+// After:
+.select({ count: sql<number>`count(*)::int` })
 ```
 
-Replace with:
+**Step 2: Fix tax-optimization.ts line ~313**
+
 ```typescript
-const examples = await ctx.db
-  .select({ count: sql<number>`count(*)::int` })
-  .from(categorizationExamples)
+// Before:
+.select({ count: sql<number>`count(*)` })
+// After:
+.select({ count: sql<number>`count(*)::int` })
 ```
 
-**Step 2: Search for any other uncast count(*) across the codebase**
+**Step 3: Verify no other uncast count(*) in wave PR files**
 
 ```bash
-grep -rn "count(\*)" src/server/ --include="*.ts" | grep -v "::int"
+grep -rn "count(\*)" src/server/routers/categorization.ts src/server/services/tax-optimization.ts --include="*.ts" | grep -v "::int"
 ```
 
-Fix any additional findings the same way.
+Should return empty.
 
-**Step 3: Verify**
+**Step 4: Verify**
 
 ```bash
 npx tsc --noEmit
 ```
 
-**Step 4: Commit**
+**Step 5: Commit**
 
 ```bash
-git add -A && git commit -m "fix: add ::int cast to all count(*) aggregations
+git add src/server/routers/categorization.ts src/server/services/tax-optimization.ts
+git commit -m "fix: add ::int cast to count(*) in categorization + tax-optimization
 
 Drizzle count(*) returns string without explicit cast.
 CLAUDE.md rule: always use sql<number>\`count(*)::int\`"
@@ -91,7 +163,7 @@ CLAUDE.md rule: always use sql<number>\`count(*)::int\`"
 
 ### Task 2: Fix interfaces (5 files)
 
-**Files:**
+**Files (all from PR 233):**
 - Modify: `src/server/repositories/interfaces/compliance.repository.interface.ts:18`
 - Modify: `src/server/repositories/interfaces/email.repository.interface.ts:43`
 - Modify: `src/server/repositories/interfaces/property.repository.interface.ts:15`
@@ -100,7 +172,7 @@ CLAUDE.md rule: always use sql<number>\`count(*)::int\`"
 
 **Step 1: Fix each interface**
 
-Each interface already imports its schema type. Replace `Record<string, unknown>` with `Partial<SchemaType>` in the update method signature:
+Each interface already imports its schema type. Replace `Record<string, unknown>` with `Partial<SchemaType>`:
 
 **compliance.repository.interface.ts** — line ~18:
 ```typescript
@@ -148,64 +220,32 @@ update(id: string, data: Partial<Scenario>, tx?: DB): Promise<Scenario>;
 npx tsc --noEmit
 ```
 
-Expected: 0 errors. The repository implementations accept `Record<string, unknown>` in their `.set()` calls, so `Partial<T>` (which is more specific) will still work because Drizzle's `.set()` accepts partial table types.
+### Task 3: Fix repository implementations + router callers
 
-### Task 3: Fix repository implementations (5 files)
-
-**Files:**
-- Modify: `src/server/repositories/compliance.repository.ts:65`
+**Files (PR 234, 238, 239):**
+- Modify: `src/server/repositories/compliance.repository.ts:64`
 - Modify: `src/server/repositories/email.repository.ts:193`
 - Modify: `src/server/repositories/property.repository.ts:42`
 - Modify: `src/server/repositories/recurring.repository.ts:83`
 - Modify: `src/server/repositories/scenario.repository.ts:62`
 
-**Step 1: Update each implementation to match interface**
+**Router callers (PR 230, 238, 239):**
+- Modify: `src/server/routers/scenario.ts:105`
+- Modify: `src/server/routers/recurring.ts:121`
+- Modify: `src/server/routers/property.ts:185`
+- Modify: `src/server/routers/compliance.ts:246`
 
-Same pattern — replace `Record<string, unknown>` with `Partial<SchemaType>` in parameter type. The implementations already import their schema types.
+**Step 1: Fix each repo implementation**
 
-**compliance.repository.ts:**
-```typescript
-// Before:
-async update(id: string, userId: string, data: Record<string, unknown>, tx?: DB)
-// After:
-async update(id: string, userId: string, data: Partial<ComplianceRecord>, tx?: DB)
-```
+Replace `Record<string, unknown>` with `Partial<SchemaType>` in parameter type (same as interface):
 
-**email.repository.ts:**
-```typescript
-// Before:
-async updateEmail(id: number, userId: string, data: Record<string, unknown>, tx?: DB)
-// After:
-async updateEmail(id: number, userId: string, data: Partial<PropertyEmail>, tx?: DB)
-```
+- `compliance.repository.ts`: `data: Partial<ComplianceRecord>`
+- `email.repository.ts`: `data: Partial<PropertyEmail>`
+- `property.repository.ts`: `data: Partial<Property>`
+- `recurring.repository.ts`: `data: Partial<RecurringTransaction>`
+- `scenario.repository.ts`: `data: Partial<Scenario>`
 
-**property.repository.ts:**
-```typescript
-// Before:
-async update(id: string, userId: string, data: Record<string, unknown>, tx?: DB)
-// After:
-async update(id: string, userId: string, data: Partial<Property>, tx?: DB)
-```
-
-**recurring.repository.ts:**
-```typescript
-// Before:
-async update(id: string, userId: string, data: Record<string, unknown>, tx?: DB)
-// After:
-async update(id: string, userId: string, data: Partial<RecurringTransaction>, tx?: DB)
-```
-
-**scenario.repository.ts:**
-```typescript
-// Before:
-async update(id: string, data: Record<string, unknown>, tx?: DB)
-// After:
-async update(id: string, data: Partial<Scenario>, tx?: DB)
-```
-
-**Step 2: Fix callers in routers**
-
-Two routers construct `Record<string, unknown>` objects inline:
+**Step 2: Fix router callers**
 
 **scenario.ts** — line ~105:
 ```typescript
@@ -214,7 +254,7 @@ const updates: Record<string, unknown> = { updatedAt: new Date() };
 // After:
 const updates: Partial<Scenario> = { updatedAt: new Date() };
 ```
-Add import at top: `import type { Scenario } from "../db/schema";`
+Add import: `import type { Scenario } from "../db/schema";`
 
 **recurring.ts** — line ~121:
 ```typescript
@@ -223,7 +263,25 @@ const updateData: Record<string, unknown> = { updatedAt: new Date() };
 // After:
 const updateData: Partial<RecurringTransaction> = { updatedAt: new Date() };
 ```
-Verify `RecurringTransaction` is already imported or add: `import type { RecurringTransaction } from "../db/schema";`
+Add `RecurringTransaction` to existing schema import if not already there.
+
+**property.ts** — line ~185:
+```typescript
+// Before:
+const updateData: Record<string, unknown> = { ... };
+// After:
+const updateData: Partial<Property> = { ... };
+```
+Verify `Property` is imported from `../db/schema`.
+
+**compliance.ts** — line ~246:
+```typescript
+// Before:
+const updates: Record<string, unknown> = { updatedAt: new Date() };
+// After:
+const updates: Partial<ComplianceRecord> = { updatedAt: new Date() };
+```
+Add import: `import type { ComplianceRecord } from "../db/schema";`
 
 **Step 3: Verify**
 
@@ -231,24 +289,25 @@ Verify `RecurringTransaction` is already imported or add: `import type { Recurri
 npx tsc --noEmit
 ```
 
-If type errors appear, they indicate the update objects contain fields not in the schema type — fix by aligning field names.
+If type errors appear, the update objects may contain fields not in the schema type. Fix by using `typeof table.$inferInsert` instead of the select type, or by aligning field names.
 
 **Step 4: Commit**
 
 ```bash
-git add -A && git commit -m "fix: replace Record<string, unknown> with Partial<SchemaType> in repos
+git add -A
+git commit -m "fix: replace Record<string, unknown> with Partial<SchemaType>
 
-5 interfaces + 5 implementations + 2 router callers updated.
+5 interfaces + 5 repo implementations + 4 router callers updated.
 CLAUDE.md rule: type-safe updates, never Record<string, unknown>"
 ```
 
 ---
 
-## Category 3: `Promise<unknown>` and weak `unknown` types
+## Category 3: `Promise<unknown>`, `Promise<any>`, and weak `unknown` types
 
-**Rule:** No `unknown` in interface method signatures or return types.
+**Rule:** No `unknown` or `any` in interface method signatures or return types.
 
-### Task 4: Fix chat repository types
+### Task 4: Fix chat repository types (PR 238, 239)
 
 **Files:**
 - Modify: `src/server/repositories/interfaces/chat.repository.interface.ts:22-23,43-44,46`
@@ -256,14 +315,15 @@ CLAUDE.md rule: type-safe updates, never Record<string, unknown>"
 
 **Step 1: Determine correct types**
 
-Read `src/server/db/schema/chat.ts` to find the `chatMessages` table definition and its column types for `toolCalls` and `toolResults`. These are likely `json` or `jsonb` columns.
-
-The return type of `addMessage` should be the inferred select type from `chatMessages`.
+Read `src/server/db/schema/chat.ts` to find the `chatMessages` table definition. Look at `toolCalls` and `toolResults` column types (likely `json` or `jsonb`). Get the inferred select type name (likely `ChatMessage` or use `typeof chatMessages.$inferSelect`).
 
 **Step 2: Fix interface**
 
 ```typescript
 // chat.repository.interface.ts
+// Add to imports:
+import type { ChatMessage } from "../../db/schema";
+
 // Before (lines 22-23, inside ConversationWithMessages):
 toolCalls: unknown;
 toolResults: unknown;
@@ -280,31 +340,19 @@ toolResults?: Record<string, unknown>[] | null,
 
 // Before (line 46, return type):
 ): Promise<unknown>;
-// After — use ChatMessage from schema:
+// After:
 ): Promise<ChatMessage>;
 ```
 
-Add to imports: `ChatMessage` from `../../db/schema`.
-
-**Note:** If `toolCalls`/`toolResults` have a more specific JSON shape, use that. Otherwise `Record<string, unknown>[] | null` is the minimum improvement over bare `unknown`.
+**Note:** If `toolCalls`/`toolResults` columns are typed more specifically in schema, use that type. `Record<string, unknown>[] | null` is the minimum improvement over bare `unknown`. Check schema first.
 
 **Step 3: Fix implementation**
 
 ```typescript
-// chat.repository.ts — update addMessage signature to match interface
-// Before:
-toolCalls?: unknown,
-toolResults?: unknown,
-// ...
-): Promise<unknown> {
-// After:
-toolCalls?: Record<string, unknown>[] | null,
-toolResults?: Record<string, unknown>[] | null,
-// ...
-): Promise<ChatMessage> {
+// chat.repository.ts — match interface signatures
+// Add ChatMessage to imports from "../db/schema"
+// Update addMessage signature to match interface
 ```
-
-Add `ChatMessage` import from `../db/schema`.
 
 **Step 4: Verify**
 
@@ -312,7 +360,7 @@ Add `ChatMessage` import from `../db/schema`.
 npx tsc --noEmit
 ```
 
-### Task 5: Fix bank-account interface
+### Task 5: Fix bank-account interface (PR 233)
 
 **Files:**
 - Modify: `src/server/repositories/interfaces/bank-account.repository.interface.ts:6`
@@ -326,7 +374,7 @@ defaultProperty?: unknown;
 defaultProperty?: Property | null;
 ```
 
-Verify `Property` is imported or add: `import type { Property } from "../../db/schema";`
+Add import: `import type { Property } from "../../db/schema";`
 
 **Step 2: Verify**
 
@@ -334,19 +382,19 @@ Verify `Property` is imported or add: `import type { Property } from "../../db/s
 npx tsc --noEmit
 ```
 
-### Task 6: Fix scenario interface
+### Task 6: Fix scenario interface (PR 233)
 
 **Files:**
 - Modify: `src/server/repositories/interfaces/scenario.repository.interface.ts:8`
 
-**Step 1: Fix type**
+**Step 1: Determine correct type**
 
-Read the `scenarios` table in `src/server/db/schema/scenarios.ts` to determine the `snapshot` column type (likely `jsonb`).
+Read `src/server/db/schema/scenarios.ts` to find the `snapshot` column type.
 
 ```typescript
 // Before:
 snapshot?: unknown;
-// After — use the column's actual type, likely:
+// After — use the column's actual type:
 snapshot?: Record<string, unknown> | null;
 ```
 
@@ -356,11 +404,11 @@ snapshot?: Record<string, unknown> | null;
 npx tsc --noEmit
 ```
 
-### Task 7: Fix user repository
+### Task 7: Fix user repository (PR 238, 239)
 
 **Files:**
 - Modify: `src/server/repositories/user.repository.ts:8,13`
-- Modify: `src/server/repositories/interfaces/user.repository.interface.ts` (if it has `any`)
+- Modify: `src/server/repositories/interfaces/user.repository.interface.ts` (match implementation)
 
 **Step 1: Fix return type**
 
@@ -384,7 +432,7 @@ async findById(id: string, columns?: Partial<Record<keyof User, true>>): Promise
   }
 ```
 
-Update the interface to match. Remove the `as Promise<any>` cast entirely.
+Remove the `as Promise<any>` cast entirely. Update the interface to match.
 
 **Step 2: Verify**
 
@@ -397,75 +445,22 @@ If callers expect specific fields, may need to narrow types at call sites. Fix a
 **Step 3: Commit**
 
 ```bash
-git add -A && git commit -m "fix: replace unknown/any types with proper schema types
+git add -A
+git commit -m "fix: replace unknown/any types with proper schema types
 
 Chat: toolCalls/toolResults typed, addMessage returns ChatMessage
 BankAccount: defaultProperty typed as Property | null
-Scenario: snapshot typed as Record
+Scenario: snapshot typed properly
 User: findById returns Partial<User> instead of any"
 ```
 
 ---
 
-## Category 4: Sequential awaits for independent queries
+## Category 4: Remaining direct `ctx.db` calls that should use `ctx.uow`
 
-**Rule:** Use `Promise.all()` for parallel independent queries.
+**Rule:** Routers that already use `ctx.uow` for some queries should use it consistently. Keep `ctx.db` only for cross-domain queries (with a comment explaining why).
 
-### Task 8: Fix email.ts sequential awaits
-
-**Files:**
-- Modify: `src/server/routers/email.ts`
-
-**Step 1: Identify sequential patterns**
-
-In `acceptMatch` and `rejectMatch` procedures (~lines 203-222, 230-245), there are sequential queries that fetch a match and then verify email ownership. These are independent and can run in parallel.
-
-```typescript
-// Before (acceptMatch ~lines 203-218):
-const [match] = await ctx.db
-  .select({ ... })
-  .from(propertyEmailInvoiceMatches)
-  .where(eq(propertyEmailInvoiceMatches.id, input.matchId));
-
-const [email] = await ctx.db
-  .select({ userId: propertyEmails.userId })
-  .from(propertyEmails)
-  .where(eq(propertyEmails.id, match.emailId));
-
-// After:
-const [[match], [email]] = await Promise.all([
-  ctx.db
-    .select({ ... })
-    .from(propertyEmailInvoiceMatches)
-    .where(eq(propertyEmailInvoiceMatches.id, input.matchId)),
-  // Note: we need match.emailId for the second query, so these are NOT independent
-]);
-```
-
-**Important:** If the second query depends on the first (needs `match.emailId`), they CANNOT be parallelized. Read the code carefully before changing. Only parallelize truly independent queries.
-
-**Step 2: Verify**
-
-```bash
-npx tsc --noEmit
-```
-
-**Step 3: Commit**
-
-```bash
-git add -A && git commit -m "perf: parallelize independent queries in email router
-
-Use Promise.all() for queries that don't depend on each other.
-CLAUDE.md rule: Promise.all() for parallel independent queries"
-```
-
----
-
-## Category 5: Remaining direct `ctx.db` calls that should use `ctx.uow`
-
-**Rule:** Use repository methods for all DB operations. Only keep `ctx.db` for cross-domain queries documented with a comment.
-
-### Task 9: Audit and migrate email.ts ctx.db calls
+### Task 8: Migrate email.ts ctx.db calls (PR 238, 239)
 
 **Files:**
 - Modify: `src/server/routers/email.ts`
@@ -474,48 +469,43 @@ CLAUDE.md rule: Promise.all() for parallel independent queries"
 
 **Step 1: Read email.ts end-to-end**
 
-Identify all `ctx.db` calls. For each one, determine:
-1. Can it be replaced by an existing `ctx.uow.email.*` method?
-2. Does a new method need to be added to IEmailRepository?
+Identify ALL `ctx.db` calls. For each one, determine:
+1. Can it use an existing `ctx.uow.email.*` method?
+2. Does a new repo method need to be added?
 3. Is it a cross-domain query that should stay inline (with a comment)?
 
-Known instances (approximate lines):
-- Line ~98: select from propertyEmails → should use existing repo method
-- Line ~179: select from propertyEmailSenders → may need new repo method
+Known instances:
+- Line ~98: select from propertyEmails
+- Line ~179: select from propertyEmailSenders
 - Line ~203-218: select from propertyEmailInvoiceMatches + propertyEmails
 - Line ~230-245: same pattern for rejectMatch
-- Line ~272: select from propertyEmails for ownership check
-- Line ~328: select from propertyEmails for ownership check
+- Line ~272: select from propertyEmails
+- Line ~328: select from propertyEmails
 
 **Step 2: Add missing repo methods if needed**
 
-If the email repository doesn't have methods for sender lookup or match lookup, add them.
+Add methods to IEmailRepository and EmailRepository for any lookups not already covered.
 
-**Step 3: Migrate calls**
+**Step 3: Migrate calls and clean up imports**
 
-Replace each `ctx.db` call with the appropriate `ctx.uow.email.*` call.
+Replace each `ctx.db` call with `ctx.uow.email.*`. Remove unused schema + drizzle-orm imports.
 
-**Step 4: Clean up imports**
-
-Remove unused schema table imports and drizzle-orm imports from email.ts.
-
-**Step 5: Verify**
+**Step 4: Verify**
 
 ```bash
 npx tsc --noEmit
 ```
 
-### Task 10: Audit and migrate documents.ts ctx.db calls
+### Task 9: Migrate documents.ts ctx.db calls (PR 238, 239)
 
 **Files:**
 - Modify: `src/server/routers/documents.ts`
 
 **Step 1: Identify ctx.db calls**
 
-Known instances:
 - Line ~48: `ctx.db.query.transactions.findFirst` → use `ctx.uow.transactions.findById()`
 - Line ~125: same pattern → use `ctx.uow.transactions.findById()`
-- Line ~177: `db.query.properties.findMany` inside background closure — this is in an async fire-and-forget with its own `db` reference. Mark with a comment explaining why it can't use UoW.
+- Line ~177: `db.query.properties.findMany` inside background closure — add comment explaining this runs outside request context so can't use UoW
 
 **Step 2: Migrate lines ~48 and ~125**
 
@@ -533,7 +523,7 @@ const transaction = await ctx.uow.transactions.findById(transactionId, ctx.portf
 
 **Step 3: Clean up imports**
 
-Remove `transactions` from schema imports and `eq, and` from drizzle-orm imports if no longer needed.
+Remove `transactions` from schema imports and drizzle-orm imports if no longer needed.
 
 **Step 4: Verify**
 
@@ -544,100 +534,232 @@ npx tsc --noEmit
 **Step 5: Commit**
 
 ```bash
-git add -A && git commit -m "refactor: migrate remaining ctx.db calls to ctx.uow repos
+git add -A
+git commit -m "refactor: migrate remaining ctx.db calls to ctx.uow in email + documents
 
-email.ts: all queries now use ctx.uow.email.*
-documents.ts: transaction lookups use ctx.uow.transactions.*
-CLAUDE.md rule: use repository methods for all DB operations"
+email.ts: queries now use ctx.uow.email.*
+documents.ts: transaction lookups use ctx.uow.transactions.*"
 ```
 
 ---
 
-## Category 6: ESLint rules to prevent regression
+## Category 5: Scan remaining PR 230 files for anti-patterns
 
-### Task 11: Add no-restricted-syntax rules
+PR 230 touched many service and router files. These need scanning for the same categories.
+
+### Task 10: Audit and fix PR 230 services + routers
+
+**Files to scan (PR 230 — read each end-to-end):**
+- `src/server/services/basiq.ts`
+- `src/server/services/csv-import.ts`
+- `src/server/services/depreciation-extract.ts`
+- `src/server/services/document-extraction.ts`
+- `src/server/services/gmail-token.ts`
+- `src/server/services/loanPack.ts`
+- `src/server/services/property-manager/propertyme.ts`
+- `src/server/services/recurring.ts`
+- `src/server/services/tax-position.ts`
+- `src/server/services/valuation.ts`
+- `src/server/routers/cgt.ts`
+- `src/server/routers/loanComparison.ts`
+- `src/server/routers/notification.ts`
+- `src/server/routers/propertyValue.ts`
+
+**Step 1: Read each file, check for:**
+- `count(*)` without `::int`
+- `Record<string, unknown>`
+- `Promise<unknown>` / `Promise<any>` / bare `unknown` types
+- Sequential awaits for independent queries (should be `Promise.all`)
+- Loops with individual DB queries (should use `inArray`)
+
+**Step 2: Fix any findings**
+
+Apply the same patterns from previous tasks.
+
+**Step 3: Verify**
+
+```bash
+npx tsc --noEmit
+```
+
+**Step 4: Commit** (if any changes)
+
+```bash
+git add -A
+git commit -m "fix: anti-pattern fixes in PR 230 services + routers"
+```
+
+---
+
+## Category 6: Update CLAUDE.md and rules files
+
+### Task 11: Strengthen anti-patterns.md
 
 **Files:**
-- Modify: `eslint.config.mjs` (or `.eslintrc.*` — check which format the project uses)
+- Modify: `.claude/rules/anti-patterns.md`
 
-**Step 1: Determine ESLint config format**
+**Step 1: Add Repository Layer section**
 
-```bash
-ls eslint.config.* .eslintrc.* 2>/dev/null
+Add a new section after the Drizzle section:
+
+```markdown
+## Repository Layer
+
+| DO | DON'T |
+|----|-------|
+| `Partial<SchemaType>` for update data params | `Record<string, unknown>` (bypasses type safety) |
+| Typed return values (`Promise<User \| null>`) | `Promise<unknown>` or `Promise<any>` |
+| Proper relation types (`Property \| null`) | `unknown` for relation fields in interfaces |
+| `ctx.uow.repo.method()` in routers | Direct `ctx.db` when a repo method exists |
+| Comment explaining why for cross-domain `ctx.db` | Mixing `ctx.uow` and `ctx.db` without explanation |
 ```
 
-**Step 2: Add rules**
+**Step 2: Verify the file is well-formed**
 
-Add `no-restricted-syntax` rules for the patterns we fixed:
+Read the file back, ensure markdown renders correctly.
 
-```javascript
-// In the server files override section:
-{
-  files: ["src/server/**/*.ts"],
-  rules: {
-    "no-restricted-syntax": [
-      "error",
-      {
-        selector: "TaggedTemplateExpression[tag.property.name='sql'] TemplateLiteral[quasis.0.value.raw=/count\\(\\*\\)(?!::int)/]",
-        message: "Use count(*)::int — bare count(*) returns string in Drizzle. See CLAUDE.md."
-      },
-      {
-        selector: "TSTypeReference[typeName.name='Record'][typeParameters.params.0.type='TSStringKeyword'][typeParameters.params.1.type='TSUnknownKeyword']",
-        message: "Use Partial<SchemaType> instead of Record<string, unknown>. See CLAUDE.md."
-      },
-    ],
-  },
-}
+### Task 12: Update src/server/CLAUDE.md
+
+**Files:**
+- Modify: `src/server/CLAUDE.md`
+
+**Step 1: Add Repository Pattern section**
+
+Add after the "Router Template" section:
+
+```markdown
+## Repository Pattern
+
+Routers access data via `ctx.uow` (Unit of Work), not `ctx.db` directly.
+
+```typescript
+// Good — typed, testable
+const property = await ctx.uow.property.findById(id, ctx.portfolio.ownerId);
+await ctx.uow.property.update(id, ctx.portfolio.ownerId, { name: input.name });
+
+// Bad — bypasses repository layer
+const property = await ctx.db.query.properties.findFirst({ ... });
 ```
 
-**Note:** The `count(*)` AST selector may not work perfectly on tagged template literals. Test it. If AST-based detection is unreliable, create a simple custom rule or just rely on grep in CI.
+**When `ctx.db` is acceptable:**
+- Cross-domain queries touching tables from multiple repositories (add a comment explaining why)
+- Background closures where UoW is not available
 
-**Alternative (simpler):** Add a CI script that greps for the patterns:
+**Interface rules:**
+- Update methods: `data: Partial<SchemaType>` — never `Record<string, unknown>`
+- Return types: always typed — never `Promise<unknown>` or `Promise<any>`
+- Relation fields: always typed — never `unknown`
+```
+
+**Step 2: Update the Key Anti-Patterns table**
+
+Add these rows to the existing table:
+
+```markdown
+| `Partial<SchemaType>` for repo updates | `Record<string, unknown>` (not type-safe) |
+| `ctx.uow.repo.method()` in routers | `ctx.db` when repo method exists |
+| Typed return values on repo methods | `Promise<unknown>` or `Promise<any>` |
+```
+
+**Step 3: Update the stale reference**
+
+The CLAUDE.md still references `src/server/db/schema.ts` as "~3300 lines, 80+ tables". After PR 232 split this into domain files. Update to:
+
+```markdown
+| `src/server/db/schema/index.ts` | Barrel re-export of domain schema modules |
+| `src/server/db/schema/*.ts` | Domain-split schema (auth, banking, properties, etc.) |
+```
+
+**Step 4: Commit**
 
 ```bash
-# scripts/check-anti-patterns.sh
+git add .claude/rules/anti-patterns.md src/server/CLAUDE.md
+git commit -m "docs: add repository layer rules to CLAUDE.md and anti-patterns.md
+
+Prevents Record<string, unknown>, Promise<unknown>, bare unknown types,
+and undocumented ctx.db usage in routers."
+```
+
+---
+
+## Category 7: Lint / CI check for automated enforcement
+
+### Task 13: Add CI anti-pattern check script
+
+**Files:**
+- Create: `scripts/check-anti-patterns.sh`
+
+**Step 1: Create the script**
+
+```bash
 #!/bin/bash
 set -e
-echo "Checking for anti-patterns..."
+echo "Checking for anti-patterns in server code..."
+FAIL=0
 
 # count(*) without ::int
-if grep -rn "count(\*)" src/server/ --include="*.ts" | grep -v "::int" | grep -v "node_modules"; then
+if grep -rn 'count(\*)' src/server/ --include="*.ts" | grep -v '::int' | grep -v 'node_modules' | grep -v 'CLAUDE.md'; then
   echo "ERROR: Found count(*) without ::int cast"
-  exit 1
+  FAIL=1
 fi
 
-# Record<string, unknown> in repo/interface files
-if grep -rn "Record<string, unknown>" src/server/repositories/ --include="*.ts"; then
-  echo "ERROR: Found Record<string, unknown> in repositories"
+# Record<string, unknown> in repository files
+if grep -rn 'Record<string, unknown>' src/server/repositories/ --include="*.ts"; then
+  echo "ERROR: Found Record<string, unknown> in repositories — use Partial<SchemaType>"
+  FAIL=1
+fi
+
+# Promise<unknown> in repository files
+if grep -rn 'Promise<unknown>' src/server/repositories/ --include="*.ts"; then
+  echo "ERROR: Found Promise<unknown> in repositories — use proper return types"
+  FAIL=1
+fi
+
+# Promise<any> in repository files
+if grep -rn 'Promise<any>' src/server/repositories/ --include="*.ts"; then
+  echo "ERROR: Found Promise<any> in repositories — use proper return types"
+  FAIL=1
+fi
+
+if [ $FAIL -eq 1 ]; then
+  echo "Anti-pattern check FAILED"
   exit 1
 fi
 
 echo "No anti-patterns found."
 ```
 
-**Step 3: Verify the rules work**
+**Step 2: Make executable**
 
-Temporarily introduce a violation and confirm lint catches it:
 ```bash
-npx eslint src/server/ --max-warnings 0
+chmod +x scripts/check-anti-patterns.sh
 ```
+
+**Step 3: Test it**
+
+```bash
+./scripts/check-anti-patterns.sh
+```
+
+Should pass (all patterns fixed in earlier tasks).
 
 **Step 4: Commit**
 
 ```bash
-git add -A && git commit -m "chore: add lint rules to catch CLAUDE.md anti-patterns
+git add scripts/check-anti-patterns.sh
+git commit -m "chore: add CI anti-pattern check script
 
-Prevents count(*) without ::int and Record<string, unknown> in repos.
-Automated enforcement of Drizzle best practices."
+Automated grep checks for count(*) without ::int, Record<string, unknown>,
+Promise<unknown>, and Promise<any> in repository files."
 ```
 
 ---
 
 ## Final Validation
 
-### Task 12: Full validation and PR
+### Task 14: Full validation and PR
 
-**Step 1: Full type check**
+**Step 1: Type check**
 
 ```bash
 npx tsc --noEmit
@@ -646,7 +768,7 @@ npx tsc --noEmit
 **Step 2: Lint**
 
 ```bash
-npx eslint src/server/ --max-warnings 0
+npx next lint
 ```
 
 **Step 3: Build**
@@ -655,45 +777,55 @@ npx eslint src/server/ --max-warnings 0
 npm run build
 ```
 
-**Step 4: Run unit tests**
+**Step 4: Unit tests**
 
 ```bash
 npm run test:unit
 ```
 
-**Step 5: Verify no anti-patterns remain**
+**Step 5: Run anti-pattern check**
 
 ```bash
-# count(*) without ::int
-grep -rn "count(\*)" src/server/ --include="*.ts" | grep -v "::int" | grep -v node_modules
+./scripts/check-anti-patterns.sh
+```
+
+**Step 6: Verify no anti-patterns remain in wave PR files**
+
+```bash
+# count(*) without ::int in wave files
+grep -rn "count(\*)" src/server/routers/categorization.ts src/server/services/tax-optimization.ts | grep -v "::int"
 # Record<string, unknown> in repos
 grep -rn "Record<string, unknown>" src/server/repositories/ --include="*.ts"
-# Promise<unknown> in repos
-grep -rn "Promise<unknown>" src/server/repositories/ --include="*.ts"
-# Promise<any> in repos
-grep -rn "Promise<any>" src/server/repositories/ --include="*.ts"
+# Promise<unknown> / Promise<any> in repos
+grep -rn "Promise<unknown>\|Promise<any>" src/server/repositories/ --include="*.ts"
+# unknown in interfaces
+grep -n "\bunknown\b" src/server/repositories/interfaces/*.ts | grep -v "Record<string, unknown>"
 ```
 
 All should return empty.
 
-**Step 6: Create PR**
+**Step 7: Create PR**
 
 ```bash
-gh pr create --base develop --title "fix: wave anti-pattern audit — type safety + lint rules" --body "$(cat <<'EOF'
+gh pr create --base develop --title "fix: wave anti-pattern audit — type safety + rules update" --body "$(cat <<'EOF'
 ## Summary
-- Fix `count(*)` without `::int` cast (returns string without it)
-- Replace all `Record<string, unknown>` with `Partial<SchemaType>` in 5 repos + 5 interfaces
-- Replace `Promise<unknown>` / `Promise<any>` / bare `unknown` types with proper schema types
-- Parallelize independent sequential queries
-- Migrate remaining direct `ctx.db` calls to `ctx.uow` repository methods
-- Add ESLint/CI rules to prevent regression
+- Fix `count(*)` without `::int` cast in categorization.ts + tax-optimization.ts
+- Replace `Record<string, unknown>` with `Partial<SchemaType>` in 5 repo interfaces, 5 repo implementations, 4 router callers
+- Replace `Promise<unknown>` / `Promise<any>` / bare `unknown` types with proper schema types in chat, bank-account, scenario, user repos
+- Migrate remaining `ctx.db` calls to `ctx.uow` in email.ts + documents.ts
+- Add Repository Layer rules to `.claude/rules/anti-patterns.md` and `src/server/CLAUDE.md`
+- Add `scripts/check-anti-patterns.sh` for CI enforcement
+- Scan and fix all PR 230 service + router files
+
+Covers files changed by PRs: #230, #232, #233, #234, #236, #238, #239
 
 ## Test plan
 - [ ] `tsc --noEmit` passes
-- [ ] `eslint src/server/` passes
+- [ ] `next lint` passes
 - [ ] `npm run build` passes
 - [ ] Unit tests pass
-- [ ] grep for anti-patterns returns empty
+- [ ] `./scripts/check-anti-patterns.sh` passes
+- [ ] Manual grep for anti-patterns returns empty
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
@@ -704,8 +836,8 @@ EOF
 
 ## Tech Notes
 
-**Drizzle `Partial<T>` in `.set()`:** Drizzle's `.set()` method accepts any object whose keys are column names and values are the column types. `Partial<T>` (where T is the inferred select type from the table) is compatible because select types have the same key/value shape. If a type error occurs, use `typeof table.$inferInsert` as the partial base instead of the select type.
+**Drizzle `Partial<T>` in `.set()`:** Drizzle's `.set()` accepts any object whose keys are column names. `Partial<T>` (where T is the inferred select type) is compatible. If type errors occur, try `Partial<typeof table.$inferInsert>` instead.
 
-**`count(*)::int`:** PostgreSQL `count()` returns `bigint`, which the pg driver serializes as a string. The `::int` cast converts it to a 4-byte integer that the driver returns as a JavaScript number. Without the cast, `sql<number>` lies about the runtime type.
+**`count(*)::int`:** PostgreSQL `count()` returns `bigint`, serialized as string by the pg driver. The `::int` cast converts it to a JS number. Without the cast, `sql<number>` lies about the runtime type.
 
-**ESLint AST selectors for tagged templates:** The `no-restricted-syntax` rule can match AST nodes, but tagged template literal content lives in `quasis[].value.raw` which has limited regex support in selectors. A grep-based CI check may be more reliable.
+**Out-of-scope anti-patterns:** Files not touched by wave PRs (taxOptimization.ts, task.ts, smsfCompliance.ts, forecast.ts, settlement.ts, trustCompliance.ts, similarProperties.ts) still have anti-patterns. These will be fixed when those files are touched by future waves.
