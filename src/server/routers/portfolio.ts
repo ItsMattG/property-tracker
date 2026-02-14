@@ -1,7 +1,5 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { properties, propertyValues, loans, transactions } from "../db/schema";
-import { eq, and, gte, lte, inArray, desc } from "drizzle-orm";
 import {
   calculateEquity,
   calculateLVR,
@@ -10,35 +8,6 @@ import {
   calculateNetYield,
   getDateRangeForPeriod,
 } from "../services/portfolio";
-
-/** Fetch the latest property value per property using DISTINCT ON to avoid N+1 */
-async function getLatestPropertyValues(
-  db: typeof import("../db")["db"],
-  userId: string,
-  propertyIds: string[]
-): Promise<Map<string, number>> {
-  if (propertyIds.length === 0) return new Map();
-
-  const rows = await db
-    .selectDistinctOn([propertyValues.propertyId], {
-      propertyId: propertyValues.propertyId,
-      estimatedValue: propertyValues.estimatedValue,
-    })
-    .from(propertyValues)
-    .where(
-      and(
-        eq(propertyValues.userId, userId),
-        inArray(propertyValues.propertyId, propertyIds)
-      )
-    )
-    .orderBy(propertyValues.propertyId, desc(propertyValues.valueDate));
-
-  const latestValues = new Map<string, number>();
-  for (const row of rows) {
-    latestValues.set(row.propertyId, Number(row.estimatedValue));
-  }
-  return latestValues;
-}
 
 const periodSchema = z.enum(["monthly", "quarterly", "annual"]);
 const sortBySchema = z.enum(["cashFlow", "equity", "lvr", "alphabetical"]);
@@ -57,10 +26,7 @@ export const portfolioRouter = router({
     .query(async ({ ctx, input }) => {
       const { startDate, endDate } = getDateRangeForPeriod(input.period);
 
-      // Get filtered properties
-      let propertyList = await ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ctx.portfolio.ownerId),
-      });
+      let propertyList = await ctx.uow.portfolio.findProperties(ctx.portfolio.ownerId);
 
       // Apply filters
       if (input.state) {
@@ -87,20 +53,15 @@ export const portfolioRouter = router({
 
       const propertyIds = propertyList.map((p) => p.id);
 
-      // Get latest value per property using DISTINCT ON (single row per property)
-      const latestValues = await getLatestPropertyValues(
-        ctx.db,
-        ctx.portfolio.ownerId,
-        propertyIds
-      );
-
-      // Get all loans
-      const allLoans = await ctx.db.query.loans.findMany({
-        where: and(
-          eq(loans.userId, ctx.portfolio.ownerId),
-          inArray(loans.propertyId, propertyIds)
+      const [latestValues, allLoans, periodTransactions] = await Promise.all([
+        ctx.uow.portfolio.getLatestPropertyValues(ctx.portfolio.ownerId, propertyIds),
+        ctx.uow.portfolio.findLoansByProperties(ctx.portfolio.ownerId, propertyIds),
+        ctx.uow.portfolio.findTransactionsInRange(
+          ctx.portfolio.ownerId,
+          startDate.toISOString().split("T")[0],
+          endDate.toISOString().split("T")[0]
         ),
-      });
+      ]);
 
       // Sum loans per property
       const loansByProperty = new Map<string, number>();
@@ -108,15 +69,6 @@ export const portfolioRouter = router({
         const current = loansByProperty.get(loan.propertyId) || 0;
         loansByProperty.set(loan.propertyId, current + Number(loan.currentBalance));
       }
-
-      // Get transactions in period
-      const periodTransactions = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.userId, ctx.portfolio.ownerId),
-          gte(transactions.date, startDate.toISOString().split("T")[0]),
-          lte(transactions.date, endDate.toISOString().split("T")[0])
-        ),
-      });
 
       // Filter to only transactions for our properties
       const filteredTransactions = periodTransactions.filter(
@@ -130,7 +82,6 @@ export const portfolioRouter = router({
       const portfolioLVR = calculateLVR(totalDebt, totalValue);
       const cashFlow = calculateCashFlow(filteredTransactions);
 
-      // Calculate average yield (weighted by value)
       const incomeTransactions = filteredTransactions.filter(
         (t) => t.transactionType === "income"
       );
@@ -138,7 +89,6 @@ export const portfolioRouter = router({
         (sum, t) => sum + Number(t.amount),
         0
       );
-      // Annualize based on period
       const multiplier = input.period === "monthly" ? 12 : input.period === "quarterly" ? 4 : 1;
       const totalAnnualIncome = periodIncome * multiplier;
 
@@ -165,10 +115,7 @@ export const portfolioRouter = router({
     .query(async ({ ctx, input }) => {
       const { startDate, endDate } = getDateRangeForPeriod(input.period);
 
-      // Get filtered properties
-      let propertyList = await ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ctx.portfolio.ownerId),
-      });
+      let propertyList = await ctx.uow.portfolio.findProperties(ctx.portfolio.ownerId);
 
       if (input.state) {
         propertyList = propertyList.filter((p) => p.state === input.state);
@@ -186,35 +133,21 @@ export const portfolioRouter = router({
 
       const propertyIds = propertyList.map((p) => p.id);
 
-      // Get latest value per property using DISTINCT ON (single row per property)
-      const latestValues = await getLatestPropertyValues(
-        ctx.db,
-        ctx.portfolio.ownerId,
-        propertyIds
-      );
-
-      // Get all loans
-      const allLoans = await ctx.db.query.loans.findMany({
-        where: and(
-          eq(loans.userId, ctx.portfolio.ownerId),
-          inArray(loans.propertyId, propertyIds)
+      const [latestValues, allLoans, periodTransactions] = await Promise.all([
+        ctx.uow.portfolio.getLatestPropertyValues(ctx.portfolio.ownerId, propertyIds),
+        ctx.uow.portfolio.findLoansByProperties(ctx.portfolio.ownerId, propertyIds),
+        ctx.uow.portfolio.findTransactionsInRange(
+          ctx.portfolio.ownerId,
+          startDate.toISOString().split("T")[0],
+          endDate.toISOString().split("T")[0]
         ),
-      });
+      ]);
 
       const loansByProperty = new Map<string, number>();
       for (const loan of allLoans) {
         const current = loansByProperty.get(loan.propertyId) || 0;
         loansByProperty.set(loan.propertyId, current + Number(loan.currentBalance));
       }
-
-      // Get transactions in period
-      const periodTransactions = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.userId, ctx.portfolio.ownerId),
-          gte(transactions.date, startDate.toISOString().split("T")[0]),
-          lte(transactions.date, endDate.toISOString().split("T")[0])
-        ),
-      });
 
       // Group transactions by property
       const transactionsByProperty = new Map<string, typeof periodTransactions>();
@@ -226,7 +159,6 @@ export const portfolioRouter = router({
         }
       }
 
-      // Calculate metrics for each property
       const multiplier = input.period === "monthly" ? 12 : input.period === "quarterly" ? 4 : 1;
 
       const metrics = propertyList.map((property) => {

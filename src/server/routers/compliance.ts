@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { complianceRecords, properties } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
 import {
   getRequirementsForState,
   getRequirementById,
@@ -11,20 +9,10 @@ import {
 import { calculateNextDueDate, calculateComplianceStatus } from "../services/compliance";
 
 export const complianceRouter = router({
-  /**
-   * Get compliance status for a specific property
-   * Returns all requirements for the property's state with current status
-   */
   getPropertyCompliance: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      // Get property to verify ownership and get state
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new TRPCError({
@@ -33,21 +21,10 @@ export const complianceRouter = router({
         });
       }
 
-      // Get requirements for the property's state
       const requirements = getRequirementsForState(property.state as AustralianState);
+      const records = await ctx.uow.compliance.findByProperty(input.propertyId, ctx.portfolio.ownerId);
 
-      // Get existing compliance records for this property
-      const records = await ctx.db.query.complianceRecords.findMany({
-        where: and(
-          eq(complianceRecords.propertyId, input.propertyId),
-          eq(complianceRecords.userId, ctx.portfolio.ownerId)
-        ),
-        orderBy: [desc(complianceRecords.completedAt)],
-      });
-
-      // Build compliance items with status
       const items = requirements.map((requirement) => {
-        // Find the most recent record for this requirement
         const lastRecord = records.find((r) => r.requirementId === requirement.id);
 
         let nextDueAt: Date | null = null;
@@ -75,14 +52,8 @@ export const complianceRouter = router({
       };
     }),
 
-  /**
-   * Get aggregated compliance status across all properties in the portfolio
-   */
   getPortfolioCompliance: protectedProcedure.query(async ({ ctx }) => {
-    // Get all properties for the user
-    const userProperties = await ctx.db.query.properties.findMany({
-      where: eq(properties.userId, ctx.portfolio.ownerId),
-    });
+    const userProperties = await ctx.uow.property.findByOwner(ctx.portfolio.ownerId);
 
     if (userProperties.length === 0) {
       return {
@@ -98,13 +69,8 @@ export const complianceRouter = router({
       };
     }
 
-    // Get all compliance records for user's properties
-    const allRecords = await ctx.db.query.complianceRecords.findMany({
-      where: eq(complianceRecords.userId, ctx.portfolio.ownerId),
-      orderBy: [desc(complianceRecords.nextDueAt)],
-    });
+    const allRecords = await ctx.uow.compliance.findByOwner(ctx.portfolio.ownerId);
 
-    // Build compliance items for all properties
     const allItems: Array<{
       propertyId: string;
       propertyAddress: string;
@@ -121,24 +87,21 @@ export const complianceRouter = router({
       recordsByProperty.set(record.propertyId, existing);
     }
 
-    // Cache requirements by state to avoid redundant calls
+    // Cache requirements by state
     const requirementsByState = new Map<string, ReturnType<typeof getRequirementsForState>>();
 
     for (const property of userProperties) {
-      // Get cached requirements or fetch and cache
       let requirements = requirementsByState.get(property.state);
       if (!requirements) {
         requirements = getRequirementsForState(property.state as AustralianState);
         requirementsByState.set(property.state, requirements);
       }
 
-      // O(1) lookup instead of O(n) filter
       const propertyRecords = recordsByProperty.get(property.id) ?? [];
 
-      // Pre-index property records by requirementId for O(1) lookup
+      // Pre-index by requirementId
       const recordsByRequirement = new Map<string, (typeof allRecords)[0]>();
       for (const record of propertyRecords) {
-        // Keep most recent (already sorted by nextDueAt desc)
         if (!recordsByRequirement.has(record.requirementId)) {
           recordsByRequirement.set(record.requirementId, record);
         }
@@ -162,7 +125,6 @@ export const complianceRouter = router({
       }
     }
 
-    // Calculate summary
     const summary = {
       total: allItems.length,
       compliant: allItems.filter((i) => i.status === "compliant").length,
@@ -171,12 +133,10 @@ export const complianceRouter = router({
       overdue: allItems.filter((i) => i.status === "overdue").length,
     };
 
-    // Get upcoming items (within 30 days) sorted by due date
     const upcomingItems = allItems
       .filter((i) => i.status === "upcoming" || i.status === "due_soon")
       .sort((a, b) => new Date(a.nextDueAt).getTime() - new Date(b.nextDueAt).getTime());
 
-    // Get overdue items sorted by most overdue first
     const overdueItems = allItems
       .filter((i) => i.status === "overdue")
       .sort((a, b) => new Date(a.nextDueAt).getTime() - new Date(b.nextDueAt).getTime());
@@ -188,9 +148,6 @@ export const complianceRouter = router({
     };
   }),
 
-  /**
-   * Record completion of a compliance requirement
-   */
   recordCompletion: writeProcedure
     .input(
       z.object({
@@ -202,13 +159,7 @@ export const complianceRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify property belongs to user
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new TRPCError({
@@ -217,7 +168,6 @@ export const complianceRouter = router({
         });
       }
 
-      // Verify requirement is valid for the property's state
       const requirements = getRequirementsForState(property.state as AustralianState);
       const requirement = requirements.find((r) => r.id === input.requirementId);
 
@@ -228,23 +178,18 @@ export const complianceRouter = router({
         });
       }
 
-      // Calculate next due date
       const completedAt = new Date(input.completedAt);
       const nextDueAt = calculateNextDueDate(completedAt, requirement.frequencyMonths);
 
-      // Create compliance record
-      const [record] = await ctx.db
-        .insert(complianceRecords)
-        .values({
-          propertyId: input.propertyId,
-          userId: ctx.portfolio.ownerId,
-          requirementId: input.requirementId,
-          completedAt: completedAt.toISOString().split("T")[0],
-          nextDueAt: nextDueAt.toISOString().split("T")[0],
-          notes: input.notes,
-          documentId: input.documentId,
-        })
-        .returning();
+      const record = await ctx.uow.compliance.create({
+        propertyId: input.propertyId,
+        userId: ctx.portfolio.ownerId,
+        requirementId: input.requirementId,
+        completedAt: completedAt.toISOString().split("T")[0],
+        nextDueAt: nextDueAt.toISOString().split("T")[0],
+        notes: input.notes,
+        documentId: input.documentId,
+      });
 
       return {
         record,
@@ -252,9 +197,6 @@ export const complianceRouter = router({
       };
     }),
 
-  /**
-   * Get history of compliance records for a specific requirement on a property
-   */
   getHistory: protectedProcedure
     .input(
       z.object({
@@ -263,13 +205,7 @@ export const complianceRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      // Verify property belongs to user
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new TRPCError({
@@ -278,25 +214,13 @@ export const complianceRouter = router({
         });
       }
 
-      // Get all records for this property and requirement
-      const records = await ctx.db.query.complianceRecords.findMany({
-        where: and(
-          eq(complianceRecords.propertyId, input.propertyId),
-          eq(complianceRecords.requirementId, input.requirementId),
-          eq(complianceRecords.userId, ctx.portfolio.ownerId)
-        ),
-        orderBy: [desc(complianceRecords.completedAt)],
-        with: {
-          document: true,
-        },
-      });
-
-      return records;
+      return ctx.uow.compliance.findHistory(
+        input.propertyId,
+        input.requirementId,
+        ctx.portfolio.ownerId
+      );
     }),
 
-  /**
-   * Update an existing compliance record
-   */
   updateRecord: writeProcedure
     .input(
       z.object({
@@ -307,13 +231,10 @@ export const complianceRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Get existing record
-      const existingRecord = await ctx.db.query.complianceRecords.findFirst({
-        where: and(
-          eq(complianceRecords.id, input.recordId),
-          eq(complianceRecords.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      // We need the existing record for the propertyId to recalculate nextDueAt
+      // Use direct DB since compliance.findById isn't in the interface
+      const existingRecords = await ctx.uow.compliance.findByOwner(ctx.portfolio.ownerId);
+      const existingRecord = existingRecords.find((r) => r.id === input.recordId);
 
       if (!existingRecord) {
         throw new TRPCError({
@@ -322,7 +243,6 @@ export const complianceRouter = router({
         });
       }
 
-      // Build update object
       const updates: Record<string, unknown> = {
         updatedAt: new Date(),
       };
@@ -335,11 +255,8 @@ export const complianceRouter = router({
         updates.documentId = input.documentId;
       }
 
-      // If completedAt changed, recalculate nextDueAt
       if (input.completedAt !== undefined) {
-        const property = await ctx.db.query.properties.findFirst({
-          where: eq(properties.id, existingRecord.propertyId),
-        });
+        const property = await ctx.uow.property.findById(existingRecord.propertyId, ctx.portfolio.ownerId);
 
         if (!property) {
           throw new TRPCError({
@@ -352,7 +269,6 @@ export const complianceRouter = router({
         const requirement = requirements.find((r) => r.id === existingRecord.requirementId);
 
         if (!requirement) {
-          // Fallback to base requirement
           const baseRequirement = getRequirementById(existingRecord.requirementId);
           if (!baseRequirement) {
             throw new TRPCError({
@@ -372,34 +288,15 @@ export const complianceRouter = router({
         }
       }
 
-      // Update record
-      const [updatedRecord] = await ctx.db
-        .update(complianceRecords)
-        .set(updates)
-        .where(
-          and(
-            eq(complianceRecords.id, input.recordId),
-            eq(complianceRecords.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
-
-      return updatedRecord;
+      return ctx.uow.compliance.update(input.recordId, ctx.portfolio.ownerId, updates);
     }),
 
-  /**
-   * Delete a compliance record
-   */
   deleteRecord: writeProcedure
     .input(z.object({ recordId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Verify record exists and belongs to user
-      const existingRecord = await ctx.db.query.complianceRecords.findFirst({
-        where: and(
-          eq(complianceRecords.id, input.recordId),
-          eq(complianceRecords.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const allRecords = await ctx.uow.compliance.findByOwner(ctx.portfolio.ownerId);
+      const existingRecord = allRecords.find((r) => r.id === input.recordId);
 
       if (!existingRecord) {
         throw new TRPCError({
@@ -408,14 +305,7 @@ export const complianceRouter = router({
         });
       }
 
-      await ctx.db
-        .delete(complianceRecords)
-        .where(
-          and(
-            eq(complianceRecords.id, input.recordId),
-            eq(complianceRecords.userId, ctx.portfolio.ownerId)
-          )
-        );
+      await ctx.uow.compliance.delete(input.recordId, ctx.portfolio.ownerId);
 
       return { success: true };
     }),

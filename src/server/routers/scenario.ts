@@ -2,14 +2,11 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import {
-  scenarios,
-  scenarioFactors,
-  scenarioProjections,
   properties,
   loans,
   recurringTransactions,
 } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
   runProjection,
   type PortfolioState,
@@ -33,31 +30,13 @@ const factorConfigSchema = z.object({
 
 export const scenarioRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.scenarios.findMany({
-      where: eq(scenarios.userId, ctx.portfolio.ownerId),
-      orderBy: [desc(scenarios.updatedAt)],
-      with: {
-        factors: true,
-        projection: true,
-      },
-    });
+    return ctx.uow.scenario.findByOwner(ctx.portfolio.ownerId);
   }),
 
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const scenario = await ctx.db.query.scenarios.findFirst({
-        where: and(
-          eq(scenarios.id, input.id),
-          eq(scenarios.userId, ctx.portfolio.ownerId)
-        ),
-        with: {
-          factors: true,
-          projection: true,
-          snapshot: true,
-          parentScenario: true,
-        },
-      });
+      const scenario = await ctx.uow.scenario.findById(input.id, ctx.portfolio.ownerId);
 
       if (!scenario) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
@@ -78,29 +57,28 @@ export const scenarioRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [scenario] = await ctx.db
-        .insert(scenarios)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          name: input.name,
-          description: input.description,
-          timeHorizonMonths: String(input.timeHorizonMonths),
-          marginalTaxRate: String(input.marginalTaxRate),
-          parentScenarioId: input.parentScenarioId,
-          status: "draft",
-        })
-        .returning();
+      const scenario = await ctx.uow.scenario.create({
+        userId: ctx.portfolio.ownerId,
+        name: input.name,
+        description: input.description,
+        timeHorizonMonths: String(input.timeHorizonMonths),
+        marginalTaxRate: String(input.marginalTaxRate),
+        parentScenarioId: input.parentScenarioId,
+        status: "draft",
+      });
 
       if (input.factors && input.factors.length > 0) {
-        await ctx.db.insert(scenarioFactors).values(
-          input.factors.map((f) => ({
-            scenarioId: scenario.id,
-            factorType: f.factorType,
-            config: JSON.stringify(f.config),
-            propertyId: f.propertyId,
-            startMonth: String(f.startMonth),
-            durationMonths: f.durationMonths ? String(f.durationMonths) : null,
-          }))
+        await Promise.all(
+          input.factors.map((f) =>
+            ctx.uow.scenario.createFactor({
+              scenarioId: scenario.id,
+              factorType: f.factorType,
+              config: JSON.stringify(f.config),
+              propertyId: f.propertyId,
+              startMonth: String(f.startMonth),
+              durationMonths: f.durationMonths ? String(f.durationMonths) : null,
+            })
+          )
         );
       }
 
@@ -118,12 +96,7 @@ export const scenarioRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db.query.scenarios.findFirst({
-        where: and(
-          eq(scenarios.id, input.id),
-          eq(scenarios.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const existing = await ctx.uow.scenario.findById(input.id, ctx.portfolio.ownerId);
 
       if (!existing) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
@@ -135,17 +108,10 @@ export const scenarioRouter = router({
       if (input.timeHorizonMonths) updates.timeHorizonMonths = String(input.timeHorizonMonths);
       if (input.marginalTaxRate !== undefined) updates.marginalTaxRate = String(input.marginalTaxRate);
 
-      const [updated] = await ctx.db
-        .update(scenarios)
-        .set(updates)
-        .where(eq(scenarios.id, input.id))
-        .returning();
+      const updated = await ctx.uow.scenario.update(input.id, updates);
 
       // Mark projection as stale
-      await ctx.db
-        .update(scenarioProjections)
-        .set({ isStale: true })
-        .where(eq(scenarioProjections.scenarioId, input.id));
+      await ctx.uow.scenario.markProjectionStale(input.id);
 
       return updated;
     }),
@@ -153,15 +119,7 @@ export const scenarioRouter = router({
   delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const [deleted] = await ctx.db
-        .delete(scenarios)
-        .where(
-          and(
-            eq(scenarios.id, input.id),
-            eq(scenarios.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      const deleted = await ctx.uow.scenario.delete(input.id, ctx.portfolio.ownerId);
 
       if (!deleted) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
@@ -178,36 +136,24 @@ export const scenarioRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const scenario = await ctx.db.query.scenarios.findFirst({
-        where: and(
-          eq(scenarios.id, input.scenarioId),
-          eq(scenarios.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const scenario = await ctx.uow.scenario.findById(input.scenarioId, ctx.portfolio.ownerId);
 
       if (!scenario) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
       }
 
-      const [factor] = await ctx.db
-        .insert(scenarioFactors)
-        .values({
-          scenarioId: input.scenarioId,
-          factorType: input.factor.factorType,
-          config: JSON.stringify(input.factor.config),
-          propertyId: input.factor.propertyId,
-          startMonth: String(input.factor.startMonth),
-          durationMonths: input.factor.durationMonths
-            ? String(input.factor.durationMonths)
-            : null,
-        })
-        .returning();
+      const factor = await ctx.uow.scenario.createFactor({
+        scenarioId: input.scenarioId,
+        factorType: input.factor.factorType,
+        config: JSON.stringify(input.factor.config),
+        propertyId: input.factor.propertyId,
+        startMonth: String(input.factor.startMonth),
+        durationMonths: input.factor.durationMonths
+          ? String(input.factor.durationMonths)
+          : null,
+      });
 
-      // Mark projection as stale
-      await ctx.db
-        .update(scenarioProjections)
-        .set({ isStale: true })
-        .where(eq(scenarioProjections.scenarioId, input.scenarioId));
+      await ctx.uow.scenario.markProjectionStale(input.scenarioId);
 
       return factor;
     }),
@@ -215,38 +161,23 @@ export const scenarioRouter = router({
   removeFactor: writeProcedure
     .input(z.object({ factorId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const factor = await ctx.db.query.scenarioFactors.findFirst({
-        where: eq(scenarioFactors.id, input.factorId),
-        with: { scenario: true },
-      });
+      const factor = await ctx.uow.scenario.findFactor(input.factorId);
 
       if (!factor || factor.scenario.userId !== ctx.portfolio.ownerId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Factor not found" });
       }
 
-      await ctx.db.delete(scenarioFactors).where(eq(scenarioFactors.id, input.factorId));
-
-      // Mark projection as stale
-      await ctx.db
-        .update(scenarioProjections)
-        .set({ isStale: true })
-        .where(eq(scenarioProjections.scenarioId, factor.scenarioId));
+      await ctx.uow.scenario.deleteFactor(input.factorId);
+      await ctx.uow.scenario.markProjectionStale(factor.scenarioId);
 
       return { success: true };
     }),
 
+  // run uses cross-domain queries (properties, loans, recurring) for portfolio state
   run: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const scenario = await ctx.db.query.scenarios.findFirst({
-        where: and(
-          eq(scenarios.id, input.id),
-          eq(scenarios.userId, ctx.portfolio.ownerId)
-        ),
-        with: {
-          factors: true,
-        },
-      });
+      const scenario = await ctx.uow.scenario.findById(input.id, ctx.portfolio.ownerId);
 
       if (!scenario) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
@@ -304,7 +235,6 @@ export const scenarioRouter = router({
           durationMonths: f.durationMonths ? Number(f.durationMonths) : undefined,
         };
 
-        // For sell_property, attach property data for CGT calculation
         if (f.factorType === "sell_property" && f.propertyId) {
           const property = userProperties.find((p) => p.id === f.propertyId);
           if (property) {
@@ -313,8 +243,8 @@ export const scenarioRouter = router({
               propertyData: {
                 id: property.id,
                 purchasePrice: Number(property.purchasePrice),
-                improvements: 0, // Could be enhanced with depreciation schedule
-                depreciationClaimed: 0, // Could be enhanced with depreciation schedule
+                improvements: 0,
+                depreciationClaimed: 0,
                 purchaseDate: new Date(property.purchaseDate),
               },
               marginalTaxRate,
@@ -333,30 +263,13 @@ export const scenarioRouter = router({
       );
 
       // Save or update projection
-      const existingProjection = await ctx.db.query.scenarioProjections.findFirst({
-        where: eq(scenarioProjections.scenarioId, scenario.id),
+      await ctx.uow.scenario.upsertProjection(scenario.id, {
+        calculatedAt: new Date(),
+        timeHorizonMonths: scenario.timeHorizonMonths,
+        monthlyResults: JSON.stringify(result.monthlyResults),
+        summaryMetrics: JSON.stringify(result.summaryMetrics),
+        isStale: false,
       });
-
-      if (existingProjection) {
-        await ctx.db
-          .update(scenarioProjections)
-          .set({
-            calculatedAt: new Date(),
-            timeHorizonMonths: scenario.timeHorizonMonths,
-            monthlyResults: JSON.stringify(result.monthlyResults),
-            summaryMetrics: JSON.stringify(result.summaryMetrics),
-            isStale: false,
-          })
-          .where(eq(scenarioProjections.scenarioId, scenario.id));
-      } else {
-        await ctx.db.insert(scenarioProjections).values({
-          scenarioId: scenario.id,
-          timeHorizonMonths: scenario.timeHorizonMonths,
-          monthlyResults: JSON.stringify(result.monthlyResults),
-          summaryMetrics: JSON.stringify(result.summaryMetrics),
-          isStale: false,
-        });
-      }
 
       return result;
     }),

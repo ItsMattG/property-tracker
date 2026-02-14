@@ -321,8 +321,8 @@ describe("recurring router", () => {
         transactionId: "990e8400-e29b-41d4-a716-446655440003",
       });
 
-      expect(result.status).toBe("matched");
-      expect(result.matchedTransactionId).toBe(mockTransaction.id);
+      expect(result!.status).toBe("matched");
+      expect(result!.matchedTransactionId).toBe(mockTransaction.id);
     });
 
     it("throws error for non-existent expected transaction", async () => {

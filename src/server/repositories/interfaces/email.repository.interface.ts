@@ -1,11 +1,16 @@
+import type { PropertyEmail, PropertyEmailAttachment, PropertyEmailInvoiceMatch, PropertyEmailSender } from "../../db/schema";
 import type { DB } from "../base";
 
-/**
- * Email repository interface.
- *
- * Note: propertyEmails uses numeric IDs (serial), not UUID.
- * Method signatures use number for email/attachment/sender IDs accordingly.
- */
+/** Subset of email fields returned in list queries */
+export type EmailListItem = Pick<PropertyEmail,
+  "id" | "propertyId" | "fromAddress" | "fromName" | "subject" | "status" | "isRead" | "threadId" | "receivedAt"
+>;
+
+/** Subset of email fields returned in unassigned list queries */
+export type UnassignedEmailItem = Pick<PropertyEmail,
+  "id" | "fromAddress" | "fromName" | "subject" | "bodyText" | "isRead" | "receivedAt" | "source"
+>;
+
 export interface IEmailRepository {
   /** List emails for a user with optional filters and cursor pagination */
   findByOwner(
@@ -17,13 +22,13 @@ export interface IEmailRepository {
       limit?: number;
       cursor?: number;
     }
-  ): Promise<{ emails: unknown[]; nextCursor?: number }>;
+  ): Promise<{ emails: EmailListItem[]; nextCursor?: number }>;
 
   /** List unassigned emails (no property) for a user */
-  findUnassigned(userId: string, opts?: { limit?: number; cursor?: number }): Promise<{ items: unknown[]; nextCursor?: number }>;
+  findUnassigned(userId: string, opts?: { limit?: number; cursor?: number }): Promise<{ items: UnassignedEmailItem[]; nextCursor?: number }>;
 
   /** Get a single email with attachments and invoice matches */
-  findById(id: number, userId: string): Promise<{ email: unknown; attachments: unknown[]; invoiceMatches: unknown[] } | null>;
+  findById(id: number, userId: string): Promise<{ email: PropertyEmail; attachments: PropertyEmailAttachment[]; invoiceMatches: PropertyEmailInvoiceMatch[] } | null>;
 
   /** Mark emails as read */
   markRead(ids: number[], userId: string, tx?: DB): Promise<void>;
@@ -38,10 +43,10 @@ export interface IEmailRepository {
   updateEmail(id: number, userId: string, data: Record<string, unknown>, tx?: DB): Promise<void>;
 
   /** List approved senders for a property */
-  findSenders(propertyId: string): Promise<unknown[]>;
+  findSenders(propertyId: string): Promise<PropertyEmailSender[]>;
 
   /** Add a sender to the allowlist */
-  createSender(data: { propertyId: string; emailPattern: string; label?: string }, tx?: DB): Promise<void>;
+  createSender(data: { propertyId: string; emailPattern: string; label?: string | null }, tx?: DB): Promise<void>;
 
   /** Remove a sender from the allowlist */
   deleteSender(id: number, tx?: DB): Promise<void>;
@@ -50,5 +55,5 @@ export interface IEmailRepository {
   updateInvoiceMatch(id: number, status: string, tx?: DB): Promise<void>;
 
   /** Get an attachment by id */
-  findAttachment(id: number): Promise<unknown | null>;
+  findAttachment(id: number): Promise<Pick<PropertyEmailAttachment, "id" | "storagePath" | "filename" | "contentType" | "emailId"> | null>;
 }
