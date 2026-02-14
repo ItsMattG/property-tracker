@@ -270,7 +270,7 @@ export const propertyValueRouter = router({
 
       // Equity and LVR (if loan data exists)
       const loanResult = await ctx.db
-        .select({ total: sql<string>`COALESCE(SUM(current_balance), 0)` })
+        .select({ total: sql<number>`COALESCE(SUM(current_balance), 0)::int` })
         .from(loans)
         .where(eq(loans.propertyId, input.propertyId));
 
