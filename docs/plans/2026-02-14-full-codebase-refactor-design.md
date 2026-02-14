@@ -152,11 +152,9 @@ src/
 - `index.ts` re-exports everything for backwards compatibility (zero import changes)
 - Domain files: auth, properties, banking, loans, recurring, compliance, documents, scenarios, communication, features, entities, portfolio, property-manager, chat, enums
 
-**PR 1.2 — Co-locate relations using defineRelationsPart**
-- Use Drizzle's `defineRelationsPart()` API to split relation configs into domain modules
-- Each domain schema file exports a relation part via `defineRelationsPart(schema, (r) => ({...}))`
-- Parts are merged in `db/index.ts` via `drizzle({ relations: { ...authRelations, ...propertyRelations, ... } })`
-- This is the official Drizzle pattern for modular schemas (confirmed via context7, Feb 2026)
+**PR 1.2 — Co-locate relations**
+- Move relation definitions into their respective domain schema files
+- Each module exports tables + relations together
 
 ### Wave 2: Repository Layer (4 PRs, ~1-2 sessions)
 
@@ -296,36 +294,15 @@ For every PR, verify:
 - [ ] No new `any` types introduced
 - [ ] Lint + build + type-check pass
 
-## Mandatory: context7 Consultation Per Wave
-
-**Every wave plan MUST consult context7 before writing the implementation plan.** This is non-negotiable.
-
-For each wave, query context7 for the latest docs on every technology that wave touches:
-
-| Wave | context7 queries required |
-|------|--------------------------|
-| 0 | Zod 4 (string/regex API changes), tRPC 11 (error handling), Vitest (test patterns) |
-| 1 | Drizzle ORM (schema splitting, defineRelationsPart, multi-file schema), PostgreSQL pgvector |
-| 2 | Drizzle ORM (query composition, prepared statements, repository patterns), TypeScript (generics for DB type) |
-| 3 | tRPC 11 (middleware, procedure composition), Drizzle ORM (banking queries), Basiq API |
-| 4 | Per-domain: Stripe SDK, Gmail API, Anthropic SDK (AI integration), Supabase storage |
-| 5 | React 19 (hooks, composition), React Hook Form (useForm patterns), shadcn/ui (Dialog), TanStack React Query (cache utils) |
-| 6 | React 19 (component splitting, memo, useMemo), Recharts (chart components), TanStack Table |
-| 7 | Anthropic SDK (streaming, tool use), TypeScript 5 (strict mode, type narrowing) |
-
-**Process:** Before writing any wave plan, run `resolve-library-id` + `query-docs` for each technology in that wave's row. Include a "Tech Notes" section in the plan summarizing findings and any API changes that affect implementation.
-
 ## Session Execution Strategy
 
 Each session:
 1. Pick the next wave/PR from this plan
-2. **Consult context7** for all technologies that wave touches (see table above)
-3. Write the detailed wave implementation plan (if not already written)
-4. Create worktree: `git worktree add ~/worktrees/property-tracker/refactor-wave-X-pr-Y`
-5. Implement the refactor
-6. Run full test suite
-7. Create PR targeting `develop`
-8. Run code review
-9. Merge and clean up worktree
+2. Create worktree: `git worktree add ~/worktrees/property-tracker/refactor-wave-X-pr-Y`
+3. Implement the refactor
+4. Run full test suite
+5. Create PR targeting `develop`
+6. Run code review
+7. Merge and clean up worktree
 
 Sessions can stop after any wave. The codebase is always in a better state than before.
