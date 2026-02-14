@@ -59,4 +59,25 @@ export interface ITransactionRepository {
 
   /** Get monthly cash in/out for an account */
   getMonthlyCashFlow(bankAccountId: string, userId: string, monthStart: string): Promise<{ cashIn: string; cashOut: string }>;
+
+  /** Find recent transactions for a bank account (for anomaly detection) */
+  findRecentByAccount(userId: string, bankAccountId: string, limit: number): Promise<Transaction[]>;
+
+  /** Find uncategorized transactions for a bank account (post-sync AI categorization) */
+  findUncategorizedByAccount(userId: string, bankAccountId: string, limit: number): Promise<Transaction[]>;
+
+  /** Find transactions with pending AI suggestions (paginated, with relations) */
+  findPendingSuggestions(
+    userId: string,
+    filters: { confidenceFilter?: "all" | "high" | "low"; limit?: number; offset?: number }
+  ): Promise<{ transactions: TransactionWithRelations[]; total: number }>;
+
+  /** Count transactions with pending AI suggestions */
+  countPendingSuggestions(userId: string): Promise<number>;
+
+  /** Find uncategorized transactions for manual AI categorization trigger */
+  findForCategorization(userId: string, opts?: { limit?: number }): Promise<Transaction[]>;
+
+  /** Find multiple transactions by IDs scoped to user */
+  findByIds(ids: string[], userId: string): Promise<Transaction[]>;
 }
