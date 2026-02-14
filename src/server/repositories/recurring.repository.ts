@@ -80,7 +80,7 @@ export class RecurringRepository
   async update(
     id: string,
     userId: string,
-    data: Record<string, unknown>,
+    data: Partial<RecurringTransaction>,
     tx?: DB
   ): Promise<RecurringTransaction> {
     const client = this.resolve(tx);

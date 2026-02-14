@@ -40,7 +40,7 @@ export interface IEmailRepository {
   getUnreadCount(userId: string, propertyId?: string): Promise<number>;
 
   /** Update an email */
-  updateEmail(id: number, userId: string, data: Record<string, unknown>, tx?: DB): Promise<void>;
+  updateEmail(id: number, userId: string, data: Partial<PropertyEmail>, tx?: DB): Promise<void>;
 
   /** List approved senders for a property */
   findSenders(propertyId: string): Promise<PropertyEmailSender[]>;

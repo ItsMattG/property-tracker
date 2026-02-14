@@ -190,7 +190,7 @@ export class EmailRepository
   async updateEmail(
     id: number,
     userId: string,
-    data: Record<string, unknown>,
+    data: Partial<PropertyEmail>,
     tx?: DB
   ): Promise<void> {
     const client = this.resolve(tx);

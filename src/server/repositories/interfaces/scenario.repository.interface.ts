@@ -20,7 +20,7 @@ export interface IScenarioRepository {
   create(data: NewScenario, tx?: DB): Promise<Scenario>;
 
   /** Update a scenario */
-  update(id: string, data: Record<string, unknown>, tx?: DB): Promise<Scenario>;
+  update(id: string, data: Partial<Scenario>, tx?: DB): Promise<Scenario>;
 
   /** Delete a scenario */
   delete(id: string, userId: string, tx?: DB): Promise<Scenario | null>;

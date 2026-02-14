@@ -7,6 +7,7 @@ import {
   type AustralianState,
 } from "@/lib/compliance-requirements";
 import { calculateNextDueDate, calculateComplianceStatus } from "../services/compliance";
+import type { ComplianceRecord } from "../db/schema";
 
 export const complianceRouter = router({
   getPropertyCompliance: protectedProcedure
@@ -243,7 +244,7 @@ export const complianceRouter = router({
         });
       }
 
-      const updates: Record<string, unknown> = {
+      const updates: Partial<ComplianceRecord> = {
         updatedAt: new Date(),
       };
 

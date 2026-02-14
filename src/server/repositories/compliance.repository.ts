@@ -61,7 +61,7 @@ export class ComplianceRepository
   async update(
     id: string,
     userId: string,
-    data: Record<string, unknown>,
+    data: Partial<ComplianceRecord>,
     tx?: DB
   ): Promise<ComplianceRecord> {
     const client = this.resolve(tx);
