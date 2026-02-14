@@ -33,22 +33,12 @@ import { getCategoryLabel, getCategoryInfo } from "@/lib/categories";
 import { format } from "date-fns";
 import { Check, X, MoreHorizontal, Sparkles, MessageSquare, ExternalLink } from "lucide-react";
 import type { Transaction, Property, BankAccount } from "@/server/db/schema";
+import type { Serialized } from "@/lib/types";
 
 // When serialized through tRPC, Date fields become strings
-type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
-  createdAt: Date | string;
-  updatedAt: Date | string;
-};
-
-type SerializedTransaction = Omit<Transaction, "createdAt" | "updatedAt"> & {
-  createdAt: Date | string;
-  updatedAt: Date | string;
-};
-
-type SerializedBankAccount = Omit<BankAccount, "createdAt" | "lastSyncedAt"> & {
-  createdAt: Date | string;
-  lastSyncedAt: Date | string | null;
-};
+type SerializedProperty = Serialized<Property>;
+type SerializedTransaction = Serialized<Transaction>;
+type SerializedBankAccount = Serialized<BankAccount>;
 
 interface TransactionWithRelations extends SerializedTransaction {
   property: SerializedProperty | null;
