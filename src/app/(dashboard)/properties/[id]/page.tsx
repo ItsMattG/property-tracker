@@ -28,18 +28,9 @@ import { PropertyCashFlowChart } from "@/components/properties/PropertyCashFlowC
 import { featureFlags } from "@/config/feature-flags";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign, BarChart3, FileText } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
-
-const formatCurrency = (value: string | number) => {
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(num);
-};
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -200,7 +191,7 @@ export default function PropertyDetailPage() {
             <DollarSign className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
             <div>
               <p className="text-sm text-muted-foreground">Purchase Price</p>
-              <p className="font-medium">{formatCurrency(property.purchasePrice)}</p>
+              <p className="font-medium">{formatCurrency(parseFloat(property.purchasePrice))}</p>
             </div>
           </div>
 
@@ -316,7 +307,7 @@ export default function PropertyDetailPage() {
                     <p className="text-xs text-muted-foreground">{txn.date}</p>
                   </div>
                   <p className={cn("text-sm font-medium", Number(txn.amount) >= 0 ? "text-green-600" : "text-red-600")}>
-                    {formatCurrency(txn.amount)}
+                    {formatCurrency(parseFloat(txn.amount))}
                   </p>
                 </div>
               ))}
@@ -347,7 +338,7 @@ export default function PropertyDetailPage() {
                     <p className="text-xs text-muted-foreground">{loan.loanType} · {loan.rateType}</p>
                   </div>
                   <p className="text-sm font-medium">
-                    {formatCurrency(loan.currentBalance)}
+                    {formatCurrency(parseFloat(loan.currentBalance))}
                   </p>
                 </div>
               ))}

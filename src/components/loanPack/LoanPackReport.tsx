@@ -4,11 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { LoanPackSnapshot } from "@/server/services/loanPack";
 import { Building2, TrendingUp, TrendingDown, Shield, Trophy, Wallet } from "lucide-react";
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(value);
-
-const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+import { formatCurrency, formatPercent } from "@/lib/utils";
 
 export function LoanPackReport({ data }: { data: LoanPackSnapshot }) {
   const { portfolio, income, expenses, compliance, milestones, cashFlow } = data;

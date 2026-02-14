@@ -14,16 +14,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import type { Property } from "@/server/db/schema";
+import type { Serialized } from "@/lib/types";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { featureFlags } from "@/config/feature-flags";
 import { PerformanceBadge } from "./PerformanceBadge";
 
 // When serialized through tRPC, Date fields become strings
-type SerializedProperty = Omit<Property, "createdAt" | "updatedAt"> & {
-  createdAt: Date | string;
-  updatedAt: Date | string;
-};
+type SerializedProperty = Serialized<Property>;
 
 interface PropertyMetrics {
   currentValue: number;

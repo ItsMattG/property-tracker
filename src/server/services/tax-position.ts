@@ -1,5 +1,6 @@
 // src/server/services/tax-position.ts
 
+import { ValidationError } from "@/server/errors";
 import { getTaxTable, type TaxTable } from "@/lib/tax-tables";
 
 export type FamilyStatus = "single" | "couple" | "family";
@@ -167,7 +168,7 @@ function calculateHECS(
 export function calculateTaxPosition(input: TaxPositionInput): TaxPositionResult {
   const table = getTaxTable(input.financialYear);
   if (!table) {
-    throw new Error(`Tax tables not available for FY${input.financialYear}`);
+    throw new ValidationError(`Tax tables not available for FY${input.financialYear}`);
   }
 
   // Calculate taxable income

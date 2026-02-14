@@ -14,14 +14,7 @@ import {
 import { trpc } from "@/lib/trpc/client";
 import { TrendingUp } from "lucide-react";
 import { TimeRangeToggle } from "./TimeRangeToggle";
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+import { formatCurrency } from "@/lib/utils";
 
 function formatCompact(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;

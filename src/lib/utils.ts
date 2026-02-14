@@ -15,6 +15,41 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * Format currency with cents (e.g., "$1,000.50"). Use for transaction amounts
+ * where cent precision matters.
+ */
+export function formatCurrencyWithCents(amount: number | string): string {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+}
+
+/**
+ * Format currency in compact notation (e.g., "$1.5M", "$50K").
+ * Use for dashboard widgets and charts where space is limited.
+ */
+export function formatCurrencyCompact(amount: number): string {
+  if (Math.abs(amount) >= 1_000_000) {
+    return `$${(amount / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  }
+  if (Math.abs(amount) >= 1_000) {
+    return `$${(amount / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  }
+  return `$${amount}`;
+}
+
+/**
+ * Format a percentage (e.g., "5.5%").
+ */
+export function formatPercent(value: number): string {
+  return `${value.toFixed(1)}%`;
+}
+
+/**
  * Format a date for display (e.g., "15 Jan 2024")
  */
 export function formatDate(date: Date | string): string {

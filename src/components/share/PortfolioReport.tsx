@@ -11,20 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatCurrency } from "@/lib/utils";
 
 interface PortfolioReportProps {
   data: PortfolioSnapshot;
   privacyMode: string;
-}
-
-function formatCurrency(value: number | undefined): string {
-  if (value === undefined) return "-";
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }
 
 function formatPercent(value: number | undefined): string {
@@ -74,12 +65,12 @@ export function PortfolioReport({ data, privacyMode }: PortfolioReportProps) {
               </div>
             ) : (
               <div className="text-2xl font-bold">
-                {formatCurrency(summary.totalEquity)}
+                {summary.totalEquity === undefined ? "-" : formatCurrency(summary.totalEquity)}
               </div>
             )}
             {!isRedacted && summary.totalValue !== undefined && (
               <p className="text-xs text-muted-foreground">
-                of {formatCurrency(summary.totalValue)} value
+                of {summary.totalValue === undefined ? "-" : formatCurrency(summary.totalValue)} value
               </p>
             )}
           </CardContent>
@@ -128,7 +119,7 @@ export function PortfolioReport({ data, privacyMode }: PortfolioReportProps) {
                 </div>
                 {summary.cashFlow !== undefined && (
                   <p className="text-xs text-muted-foreground">
-                    {formatCurrency(summary.cashFlow)}/yr cash flow
+                    {summary.cashFlow === undefined ? "-" : formatCurrency(summary.cashFlow)}/yr cash flow
                   </p>
                 )}
               </>
@@ -174,7 +165,7 @@ export function PortfolioReport({ data, privacyMode }: PortfolioReportProps) {
                     </TableCell>
                     {!isRedacted && (
                       <TableCell className="text-right">
-                        {formatCurrency(property.currentValue)}
+                        {property.currentValue === undefined ? "-" : formatCurrency(property.currentValue)}
                       </TableCell>
                     )}
                     <TableCell className="text-right">

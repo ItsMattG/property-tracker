@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatCurrencyWithCents } from "@/lib/utils";
 
 interface PropertyReport {
   property: {
@@ -52,13 +53,6 @@ interface TaxReportViewProps {
   data: TaxReportData;
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  }).format(amount);
-}
-
 export function TaxReportView({ data }: TaxReportViewProps) {
   return (
     <div className="space-y-6">
@@ -72,25 +66,25 @@ export function TaxReportView({ data }: TaxReportViewProps) {
             <div>
               <p className="text-sm text-muted-foreground">Total Income</p>
               <p className="text-2xl font-bold text-green-600">
-                {formatCurrency(data.totals.totalIncome)}
+                {formatCurrencyWithCents(data.totals.totalIncome)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Expenses</p>
               <p className="text-2xl font-bold text-red-600">
-                {formatCurrency(data.totals.totalExpenses)}
+                {formatCurrencyWithCents(data.totals.totalExpenses)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Net Income</p>
               <p className="text-2xl font-bold">
-                {formatCurrency(data.totals.netIncome)}
+                {formatCurrencyWithCents(data.totals.netIncome)}
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Deductible</p>
               <p className="text-2xl font-bold text-blue-600">
-                {formatCurrency(data.totals.totalDeductible)}
+                {formatCurrencyWithCents(data.totals.totalDeductible)}
               </p>
             </div>
           </div>
@@ -128,14 +122,14 @@ export function TaxReportView({ data }: TaxReportViewProps) {
                       <TableRow key={item.category}>
                         <TableCell>{item.label}</TableCell>
                         <TableCell className="text-right text-green-600">
-                          {formatCurrency(item.amount)}
+                          {formatCurrencyWithCents(item.amount)}
                         </TableCell>
                       </TableRow>
                     ))}
                   <TableRow className="font-bold">
                     <TableCell>Total Income</TableCell>
                     <TableCell className="text-right text-green-600">
-                      {formatCurrency(report.metrics.totalIncome)}
+                      {formatCurrencyWithCents(report.metrics.totalIncome)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -163,7 +157,7 @@ export function TaxReportView({ data }: TaxReportViewProps) {
                         </TableCell>
                         <TableCell>{item.label}</TableCell>
                         <TableCell className="text-right">
-                          {formatCurrency(Math.abs(item.amount))}
+                          {formatCurrencyWithCents(Math.abs(item.amount))}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -171,7 +165,7 @@ export function TaxReportView({ data }: TaxReportViewProps) {
                     <TableCell></TableCell>
                     <TableCell>Total Deductions</TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(report.metrics.totalDeductible)}
+                      {formatCurrencyWithCents(report.metrics.totalDeductible)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -189,7 +183,7 @@ export function TaxReportView({ data }: TaxReportViewProps) {
                       : "text-red-600"
                   }`}
                 >
-                  {formatCurrency(report.metrics.netIncome)}
+                  {formatCurrencyWithCents(report.metrics.netIncome)}
                 </span>
               </div>
             </div>

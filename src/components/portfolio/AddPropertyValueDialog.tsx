@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { positiveAmountSchema } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -28,7 +29,7 @@ import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 
 const formSchema = z.object({
-  estimatedValue: z.string().regex(/^\d+\.?\d*$/, "Invalid value"),
+  estimatedValue: positiveAmountSchema,
   valueDate: z.string().min(1, "Date is required"),
   notes: z.string().optional(),
 });

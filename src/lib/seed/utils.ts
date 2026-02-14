@@ -49,12 +49,8 @@ export function generateSporadicDates(
   return dates.sort((a, b) => a.getTime() - b.getTime());
 }
 
-/**
- * Format date as YYYY-MM-DD string.
- */
-export function formatDate(date: Date): string {
-  return date.toISOString().split("T")[0];
-}
+// Re-export formatDateISO as formatDate for backward compatibility with seed scripts
+export { formatDateISO as formatDate } from "@/lib/utils";
 
 /**
  * Add months to a date.

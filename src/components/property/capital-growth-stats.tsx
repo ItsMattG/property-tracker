@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Percent, Landmark, ShieldCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/utils";
 
 interface Stats {
   totalGain: number;
@@ -17,13 +18,6 @@ interface CapitalGrowthStatsProps {
   stats: Stats | null | undefined;
   isLoading: boolean;
 }
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(value);
 
 export function CapitalGrowthStats({ stats, isLoading }: CapitalGrowthStatsProps) {
   if (isLoading) {

@@ -27,6 +27,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { CategorySelect } from "@/components/transactions/CategorySelect";
 import { TransactionTableSkeleton } from "@/components/skeletons";
 import { trpc } from "@/lib/trpc/client";
+import { formatCurrencyWithCents } from "@/lib/utils";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 import { getCategoryInfo } from "@/lib/categories";
@@ -44,14 +45,6 @@ import {
 } from "lucide-react";
 
 const PAGE_SIZE = 50;
-
-function formatCurrency(amount: string | number) {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  }).format(num);
-}
 
 export default function ReconcilePage() {
   const params = useParams<{ accountId: string }>();
@@ -233,7 +226,7 @@ export default function ReconcilePage() {
                 BrickTrack Balance
               </div>
               <div className="text-xl font-semibold">
-                {formatCurrency(summary.reconciledBalance)}
+                {formatCurrencyWithCents(summary.reconciledBalance)}
               </div>
             </CardContent>
           </Card>
@@ -245,7 +238,7 @@ export default function ReconcilePage() {
               </div>
               <div className="text-xl font-semibold">
                 {summary.bankBalance
-                  ? formatCurrency(summary.bankBalance)
+                  ? formatCurrencyWithCents(summary.bankBalance)
                   : <span className="text-muted-foreground text-sm">Not available</span>}
               </div>
             </CardContent>
@@ -257,7 +250,7 @@ export default function ReconcilePage() {
                 Cash In
               </div>
               <div className="text-xl font-semibold text-success">
-                {formatCurrency(summary.cashIn)}
+                {formatCurrencyWithCents(summary.cashIn)}
               </div>
             </CardContent>
           </Card>
@@ -268,7 +261,7 @@ export default function ReconcilePage() {
                 Cash Out
               </div>
               <div className="text-xl font-semibold text-destructive">
-                {formatCurrency(Math.abs(parseFloat(summary.cashOut)))}
+                {formatCurrencyWithCents(Math.abs(parseFloat(summary.cashOut)))}
               </div>
             </CardContent>
           </Card>
@@ -427,13 +420,13 @@ export default function ReconcilePage() {
                         </TableCell>
                         <TableCell className="font-medium">
                           <div className={isIncome ? "text-success" : ""}>
-                            {formatCurrency(transaction.amount)}
+                            {formatCurrencyWithCents(transaction.amount)}
                           </div>
                           {transaction.category === "uncategorized" ? (
                             <div className="text-xs mt-0.5">
                               <span className="text-muted-foreground">$0.00</span>
                               <span className="text-muted-foreground/60">
-                                {" "}of {formatCurrency(transaction.amount)} allocated
+                                {" "}of {formatCurrencyWithCents(transaction.amount)} allocated
                               </span>
                             </div>
                           ) : (

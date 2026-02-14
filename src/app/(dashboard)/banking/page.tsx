@@ -52,6 +52,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
 import { SyncButton } from "@/components/banking/SyncButton";
 import { AccountStatusIndicator } from "@/components/banking/AccountStatusIndicator";
+import { formatCurrencyWithCents } from "@/lib/utils";
 import { toast } from "sonner";
 
 function EditableName({
@@ -124,14 +125,6 @@ const alertTypeMessages: Record<string, string> = {
   requires_reauth: "Re-authentication required — your bank session has expired",
   sync_failed: "Sync failed — try again or reconnect your account",
 };
-
-function formatCurrency(amount: string | number) {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  }).format(num);
-}
 
 export default function BankingPage() {
   const utils = trpc.useUtils();
@@ -335,7 +328,7 @@ export default function BankingPage() {
                 BrickTrack Balance
               </div>
               <div className="text-xl font-semibold">
-                {formatCurrency(totals.totalReconciled)}
+                {formatCurrencyWithCents(totals.totalReconciled)}
               </div>
             </CardContent>
           </Card>
@@ -347,7 +340,7 @@ export default function BankingPage() {
               </div>
               <div className="text-xl font-semibold">
                 {totals.totalBankBalance > 0
-                  ? formatCurrency(totals.totalBankBalance)
+                  ? formatCurrencyWithCents(totals.totalBankBalance)
                   : <span className="text-muted-foreground text-sm">Not available</span>}
               </div>
             </CardContent>
@@ -359,7 +352,7 @@ export default function BankingPage() {
                 Cash In (This Month)
               </div>
               <div className="text-xl font-semibold text-success">
-                {formatCurrency(totals.totalCashIn)}
+                {formatCurrencyWithCents(totals.totalCashIn)}
               </div>
             </CardContent>
           </Card>
@@ -370,7 +363,7 @@ export default function BankingPage() {
                 Cash Out (This Month)
               </div>
               <div className="text-xl font-semibold text-destructive">
-                {formatCurrency(Math.abs(totals.totalCashOut))}
+                {formatCurrencyWithCents(Math.abs(totals.totalCashOut))}
               </div>
             </CardContent>
           </Card>
@@ -594,27 +587,27 @@ export default function BankingPage() {
                                 <div>
                                   <span className="text-muted-foreground">BrickTrack: </span>
                                   <span className="font-medium">
-                                    {formatCurrency(summary.reconciledBalance)}
+                                    {formatCurrencyWithCents(summary.reconciledBalance)}
                                   </span>
                                 </div>
                                 {summary.bankBalance && (
                                   <div>
                                     <span className="text-muted-foreground">Bank: </span>
                                     <span className="font-medium">
-                                      {formatCurrency(summary.bankBalance)}
+                                      {formatCurrencyWithCents(summary.bankBalance)}
                                     </span>
                                   </div>
                                 )}
                                 <div>
                                   <span className="text-muted-foreground">In: </span>
                                   <span className="font-medium text-success">
-                                    {formatCurrency(summary.cashIn)}
+                                    {formatCurrencyWithCents(summary.cashIn)}
                                   </span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">Out: </span>
                                   <span className="font-medium text-destructive">
-                                    {formatCurrency(Math.abs(parseFloat(summary.cashOut)))}
+                                    {formatCurrencyWithCents(Math.abs(parseFloat(summary.cashOut)))}
                                   </span>
                                 </div>
                               </div>

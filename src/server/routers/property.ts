@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { positiveAmountSchema, australianPostcodeSchema } from "@/lib/validation";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { properties, equityMilestones, referrals, referralCredits, subscriptions, users } from "../db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -10,8 +11,8 @@ const propertySchema = z.object({
   address: z.string().min(1, "Address is required"),
   suburb: z.string().min(1, "Suburb is required"),
   state: z.enum(["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"]),
-  postcode: z.string().regex(/^\d{4}$/, "Invalid postcode"),
-  purchasePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid price"),
+  postcode: australianPostcodeSchema,
+  purchasePrice: positiveAmountSchema,
   contractDate: z.string().min(1, "Contract date is required"),
   settlementDate: z.string().optional(),
   entityName: z.string().optional(),

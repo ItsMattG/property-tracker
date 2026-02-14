@@ -1,10 +1,6 @@
 import jsPDF from "jspdf";
 import type { LoanPackSnapshot } from "@/server/services/loanPack";
-
-const formatCurrency = (amount: number): string =>
-  new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(amount);
-
-const formatPercent = (value: number): string => `${value.toFixed(1)}%`;
+import { formatCurrency, formatPercent } from "@/lib/utils";
 
 export function generateLoanPackPDF(data: LoanPackSnapshot): Blob {
   const doc = new jsPDF();

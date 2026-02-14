@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrencyWithCents } from "@/lib/utils";
 import { getCategoryLabel } from "@/lib/categories";
 import Link from "next/link";
 
@@ -17,15 +17,6 @@ interface TransactionCardItem {
 
 interface TransactionCardListProps {
   transactions: TransactionCardItem[];
-}
-
-function formatCurrency(value: string | number): string {
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 2,
-  }).format(num);
 }
 
 function formatDate(dateString: string): string {
@@ -69,7 +60,7 @@ export function TransactionCardList({ transactions }: TransactionCardListProps) 
                       isIncome ? "text-green-600" : "text-foreground"
                     )}
                   >
-                    {formatCurrency(txn.amount)}
+                    {formatCurrencyWithCents(txn.amount)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 mt-1">

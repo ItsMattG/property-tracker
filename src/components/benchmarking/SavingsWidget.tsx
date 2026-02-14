@@ -5,14 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PiggyBank } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { featureFlags } from "@/config/feature-flags";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+import { formatCurrency } from "@/lib/utils";
 
 export function SavingsWidget() {
   const { data: summary, isLoading } =

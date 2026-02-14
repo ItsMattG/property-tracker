@@ -23,14 +23,7 @@ import {
 import { trpc } from "@/lib/trpc/client";
 import { Wallet } from "lucide-react";
 import { TimeRangeToggle } from "./TimeRangeToggle";
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+import { formatCurrency } from "@/lib/utils";
 
 function formatCompact(value: number): string {
   if (Math.abs(value) >= 1_000_000)

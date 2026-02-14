@@ -14,12 +14,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import type { AnomalyAlert } from "@/server/db/schema";
+import type { Serialized } from "@/lib/types";
 
 type AlertCardProps = {
-  alert: Omit<AnomalyAlert, 'createdAt' | 'dismissedAt' | 'resolvedAt'> & {
-    createdAt: Date | string;
-    dismissedAt?: Date | string | null;
-    resolvedAt?: Date | string | null;
+  alert: Serialized<AnomalyAlert> & {
     property?: { address: string } | null;
     transaction?: { id: string } | null;
   };

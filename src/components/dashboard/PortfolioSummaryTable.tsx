@@ -11,13 +11,8 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, formatPercent } from "@/lib/utils";
 import { TableProperties } from "lucide-react";
-
-function formatPercent(value: number | null): string {
-  if (value === null || value === undefined) return "—";
-  return `${value.toFixed(1)}%`;
-}
 
 export function PortfolioSummaryTable() {
   const { data: metrics, isLoading } = trpc.portfolio.getPropertyMetrics.useQuery(
@@ -103,7 +98,7 @@ export function PortfolioSummaryTable() {
                       m.lvr !== null && m.lvr > 80 && "text-amber-600 dark:text-amber-400"
                     )}
                   >
-                    {formatPercent(m.lvr)}
+                    {m.lvr === null ? "\u2014" : formatPercent(m.lvr)}
                   </TableCell>
                   <TableCell
                     className={cn(
@@ -135,7 +130,7 @@ export function PortfolioSummaryTable() {
                     totalLvr !== null && totalLvr > 80 && "text-amber-600 dark:text-amber-400"
                   )}
                 >
-                  {formatPercent(totalLvr)}
+                  {totalLvr === null ? "\u2014" : formatPercent(totalLvr)}
                 </TableCell>
                 <TableCell
                   className={cn(

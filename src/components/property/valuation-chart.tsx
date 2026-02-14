@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/utils";
 
 interface ValuationRecord {
   id: string;
@@ -27,13 +28,6 @@ interface ValuationChartProps {
   purchasePrice: number;
   isLoading: boolean;
 }
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(value);
 
 const formatMonth = (dateString: string) => {
   const date = new Date(dateString);

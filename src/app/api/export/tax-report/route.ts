@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import jsPDF from "jspdf";
+import { formatCurrencyWithCents } from "@/lib/utils";
 
 interface TaxReportData {
   financialYear: string;
@@ -32,13 +33,6 @@ interface TaxReportData {
   };
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  }).format(amount);
-}
-
 export async function POST(req: NextRequest) {
   const session = await getAuthSession();
   if (!session?.user) {
@@ -62,16 +56,16 @@ export async function POST(req: NextRequest) {
     y += 10;
 
     doc.setFontSize(10);
-    doc.text(`Total Income: ${formatCurrency(data.totals.totalIncome)}`, 20, y);
+    doc.text(`Total Income: ${formatCurrencyWithCents(data.totals.totalIncome)}`, 20, y);
     y += 6;
     doc.text(
-      `Total Deductions: ${formatCurrency(data.totals.totalDeductible)}`,
+      `Total Deductions: ${formatCurrencyWithCents(data.totals.totalDeductible)}`,
       20,
       y
     );
     y += 6;
     doc.text(
-      `Net Rental Income: ${formatCurrency(data.totals.netIncome)}`,
+      `Net Rental Income: ${formatCurrencyWithCents(data.totals.netIncome)}`,
       20,
       y
     );
@@ -104,7 +98,7 @@ export async function POST(req: NextRequest) {
         doc.text("Income:", 20, y);
         y += 5;
         for (const item of income) {
-          doc.text(`  ${item.label}: ${formatCurrency(item.amount)}`, 20, y);
+          doc.text(`  ${item.label}: ${formatCurrencyWithCents(item.amount)}`, 20, y);
           y += 5;
         }
       }
@@ -119,7 +113,7 @@ export async function POST(req: NextRequest) {
         for (const item of deductions) {
           const ref = item.atoReference ? `[${item.atoReference}] ` : "";
           doc.text(
-            `  ${ref}${item.label}: ${formatCurrency(Math.abs(item.amount))}`,
+            `  ${ref}${item.label}: ${formatCurrencyWithCents(Math.abs(item.amount))}`,
             20,
             y
           );
@@ -127,7 +121,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      doc.text(`Net: ${formatCurrency(report.metrics.netIncome)}`, 20, y);
+      doc.text(`Net: ${formatCurrencyWithCents(report.metrics.netIncome)}`, 20, y);
       y += 15;
     }
 

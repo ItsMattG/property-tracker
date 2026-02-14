@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ValidationError } from "@/server/errors";
 import { categories } from "@/lib/categories";
 
 const MAX_FIELD_LENGTH = 500;
@@ -231,7 +232,7 @@ function normalizeDate(dateStr: string): string {
     }
   }
 
-  throw new Error(`Could not parse date: ${dateStr}`);
+  throw new ValidationError(`Could not parse date: ${dateStr}`);
 }
 
 /**
@@ -250,7 +251,7 @@ function tryNormalizeDate(dateStr: string): string | null {
 export function parseCSV(csvContent: string): CSVRow[] {
   const lines = csvContent.trim().split("\n");
   if (lines.length < 2) {
-    throw new Error("CSV must have at least a header row and one data row");
+    throw new ValidationError("CSV must have at least a header row and one data row");
   }
 
   const headerLine = lines[0];
@@ -269,10 +270,10 @@ export function parseCSV(csvContent: string): CSVRow[] {
   const debitIdx = headers.findIndex((h) => ["debit", "withdrawal"].includes(h));
   const creditIdx = headers.findIndex((h) => ["credit", "deposit"].includes(h));
 
-  if (dateIdx === -1) throw new Error("Could not find date column");
-  if (descIdx === -1) throw new Error("Could not find description column");
+  if (dateIdx === -1) throw new ValidationError("Could not find date column");
+  if (descIdx === -1) throw new ValidationError("Could not find description column");
   if (amountIdx === -1 && (debitIdx === -1 || creditIdx === -1)) {
-    throw new Error("Could not find amount column(s)");
+    throw new ValidationError("Could not find amount column(s)");
   }
 
   const rows: CSVRow[] = [];

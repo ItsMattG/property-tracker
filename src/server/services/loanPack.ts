@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { NotFoundError } from "@/server/errors";
 import { db } from "@/server/db";
 import {
   properties,
@@ -80,12 +81,12 @@ export function generateLoanPackToken(): string {
 
 export async function generateLoanPackSnapshot(userId: string): Promise<LoanPackSnapshot> {
   const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-  if (!user) throw new Error("User not found");
+  if (!user) throw new NotFoundError("User not found");
 
   const userProperties = await db.query.properties.findMany({
     where: and(eq(properties.userId, userId), eq(properties.status, "active")),
   });
-  if (userProperties.length === 0) throw new Error("No properties found");
+  if (userProperties.length === 0) throw new NotFoundError("No properties found for this user");
 
   const propertyIds = userProperties.map((p) => p.id);
 
