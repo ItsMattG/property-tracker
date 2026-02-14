@@ -1,11 +1,11 @@
-import type { Scenario, NewScenario, ScenarioFactor, NewScenarioFactor, ScenarioProjection } from "../../db/schema";
+import type { Scenario, NewScenario, ScenarioFactor, NewScenarioFactor, ScenarioProjection, ScenarioSnapshot } from "../../db/schema";
 import type { DB } from "../base";
 
 /** Scenario with factors and projection */
 export type ScenarioWithRelations = Scenario & {
   factors: ScenarioFactor[];
   projection?: ScenarioProjection | null;
-  snapshot?: unknown;
+  snapshot?: ScenarioSnapshot | null;
   parentScenario?: Scenario | null;
 };
 

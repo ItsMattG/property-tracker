@@ -114,3 +114,5 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
 // Type exports
 export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type ChatConversation = typeof chatConversations.$inferSelect;

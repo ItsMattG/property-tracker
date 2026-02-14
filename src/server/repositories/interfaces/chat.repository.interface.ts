@@ -1,3 +1,4 @@
+import type { ChatMessage } from "../../db/schema";
 import type { DB } from "../base";
 
 /** Chat conversation summary (without messages) */
@@ -19,8 +20,8 @@ export interface ConversationWithMessages {
     id: string;
     role: string;
     content: string;
-    toolCalls: unknown;
-    toolResults: unknown;
+    toolCalls: Record<string, unknown>[] | null;
+    toolResults: Record<string, unknown>[] | null;
     createdAt: Date;
   }>;
 }
@@ -40,10 +41,10 @@ export interface IChatRepository {
     conversationId: string,
     role: "user" | "assistant",
     content: string,
-    toolCalls?: unknown,
-    toolResults?: unknown,
+    toolCalls?: Record<string, unknown>[] | null,
+    toolResults?: Record<string, unknown>[] | null,
     tx?: DB,
-  ): Promise<unknown>;
+  ): Promise<ChatMessage>;
 
   /** Delete a conversation and its messages */
   deleteConversation(conversationId: string, userId: string, tx?: DB): Promise<void>;
