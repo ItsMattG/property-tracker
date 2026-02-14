@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc/client";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { Trash2, History } from "lucide-react";
 
@@ -18,23 +19,6 @@ interface ValuationHistoryModalProps {
   onOpenChange: (open: boolean) => void;
   propertyId: string;
 }
-
-const formatCurrency = (value: string | number) => {
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(num);
-};
-
-const formatDate = (dateStr: string) => {
-  return new Date(dateStr).toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-};
 
 const getSourceLabel = (source: string): string => {
   const labels: Record<string, string> = {
@@ -130,7 +114,7 @@ export function ValuationHistoryModal({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-lg">
-                          {formatCurrency(valuation.estimatedValue)}
+                          {formatCurrency(parseFloat(valuation.estimatedValue))}
                         </span>
                         <Badge variant={getSourceVariant(valuation.source)}>
                           {getSourceLabel(valuation.source)}
@@ -157,8 +141,8 @@ export function ValuationHistoryModal({
 
                   {valuation.confidenceLow && valuation.confidenceHigh && (
                     <p className="text-sm text-muted-foreground">
-                      Range: {formatCurrency(valuation.confidenceLow)} -{" "}
-                      {formatCurrency(valuation.confidenceHigh)}
+                      Range: {formatCurrency(parseFloat(valuation.confidenceLow))} -{" "}
+                      {formatCurrency(parseFloat(valuation.confidenceHigh))}
                     </p>
                   )}
 

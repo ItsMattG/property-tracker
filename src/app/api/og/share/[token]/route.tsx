@@ -3,17 +3,11 @@ import { db } from "@/server/db";
 import { portfolioShares } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import type { PortfolioSnapshot, PrivacyMode } from "@/server/services/share";
+import { formatCurrencyCompact } from "@/lib/utils";
 
 export const runtime = "nodejs";
 
 const FALLBACK_URL = "/og-image.svg";
-
-function formatCurrency(value: number): string {
-  if (value >= 1_000_000) {
-    return `$${(value / 1_000_000).toFixed(1)}M`;
-  }
-  return `$${(value / 1000).toFixed(0)}K`;
-}
 
 function getEquityLabel(snapshot: PortfolioSnapshot): string | null {
   const { totalValue, totalDebt } = snapshot.summary;
@@ -88,7 +82,7 @@ export async function GET(
             {showValue ? (
               <>
                 <div style={{ fontSize: "72px", fontWeight: 700 }}>
-                  {formatCurrency(summary.totalValue!)}
+                  {formatCurrencyCompact(summary.totalValue!)}
                 </div>
                 <div style={{ fontSize: "28px", opacity: 0.8 }}>Portfolio Value</div>
               </>

@@ -11,7 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronRight, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrencyWithCents } from "@/lib/utils";
 import type { MyTaxReport, MyTaxPropertyReport, MyTaxLineItem } from "@/server/services/mytax";
 
 interface MyTaxChecklistProps {
@@ -44,13 +44,6 @@ function saveState(fy: number, state: ChecklistState) {
   }
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  }).format(amount);
-}
-
 function LineItemRow({
   item,
   itemKey,
@@ -81,7 +74,7 @@ function LineItemRow({
           </span>
         </div>
         <span className="text-sm font-medium tabular-nums">
-          {formatCurrency(item.amount)}
+          {formatCurrencyWithCents(item.amount)}
         </span>
       </div>
     </div>
@@ -129,7 +122,7 @@ function PropertySection({
                     {prop.address}, {prop.suburb} {prop.state}
                   </CardTitle>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {prop.entityName} · Net: {formatCurrency(prop.netResult)}
+                    {prop.entityName} · Net: {formatCurrencyWithCents(prop.netResult)}
                   </p>
                 </div>
               </div>
@@ -223,7 +216,7 @@ function PropertySection({
             <div className="pt-2 border-t flex justify-between text-sm font-medium">
               <span>Net Result</span>
               <span className={cn(prop.netResult < 0 ? "text-red-600" : "text-green-600")}>
-                {formatCurrency(prop.netResult)}
+                {formatCurrencyWithCents(prop.netResult)}
               </span>
             </div>
           </CardContent>
@@ -292,16 +285,16 @@ export function MyTaxChecklist({ report }: MyTaxChecklistProps) {
         <CardContent>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold">{formatCurrency(report.totalIncome)}</p>
+              <p className="text-2xl font-bold">{formatCurrencyWithCents(report.totalIncome)}</p>
               <p className="text-xs text-muted-foreground">Total Income</p>
             </div>
             <div>
-              <p className="text-2xl font-bold">{formatCurrency(report.totalDeductions)}</p>
+              <p className="text-2xl font-bold">{formatCurrencyWithCents(report.totalDeductions)}</p>
               <p className="text-xs text-muted-foreground">Total Deductions</p>
             </div>
             <div>
               <p className={cn("text-2xl font-bold", report.netRentalResult < 0 ? "text-red-600" : "text-green-600")}>
-                {formatCurrency(report.netRentalResult)}
+                {formatCurrencyWithCents(report.netRentalResult)}
               </p>
               <p className="text-xs text-muted-foreground">Net Rental Result</p>
             </div>
@@ -335,16 +328,16 @@ export function MyTaxChecklist({ report }: MyTaxChecklistProps) {
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Salary/Wages</span>
-              <span>{formatCurrency(report.personalSummary.grossSalary)}</span>
+              <span>{formatCurrencyWithCents(report.personalSummary.grossSalary)}</span>
             </div>
             <div className="flex justify-between">
               <span>PAYG Withheld</span>
-              <span>{formatCurrency(report.personalSummary.paygWithheld)}</span>
+              <span>{formatCurrencyWithCents(report.personalSummary.paygWithheld)}</span>
             </div>
             <div className="flex justify-between">
               <span>Net Rental Result</span>
               <span className={cn(report.netRentalResult < 0 ? "text-red-600" : "text-green-600")}>
-                {formatCurrency(report.netRentalResult)}
+                {formatCurrencyWithCents(report.netRentalResult)}
               </span>
             </div>
             {report.personalSummary.taxPosition && (
@@ -352,7 +345,7 @@ export function MyTaxChecklist({ report }: MyTaxChecklistProps) {
                 <div className="border-t pt-2 mt-2">
                   <div className="flex justify-between font-medium">
                     <span>Estimated Taxable Income</span>
-                    <span>{formatCurrency(report.personalSummary.taxPosition.taxableIncome)}</span>
+                    <span>{formatCurrencyWithCents(report.personalSummary.taxPosition.taxableIncome)}</span>
                   </div>
                 </div>
                 <div className="flex justify-between font-medium">
@@ -368,7 +361,7 @@ export function MyTaxChecklist({ report }: MyTaxChecklistProps) {
                         : "text-red-600"
                     )}
                   >
-                    {formatCurrency(
+                    {formatCurrencyWithCents(
                       Math.abs(report.personalSummary.taxPosition.refundOrOwing)
                     )}
                   </span>

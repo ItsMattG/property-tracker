@@ -1,15 +1,7 @@
 "use client";
 
+import { formatCurrency } from "@/lib/utils";
 import { TrendingUp } from "lucide-react";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
-}
 
 interface ForecastAnnotationProps {
   actual: number;
@@ -23,7 +15,7 @@ export function ForecastAnnotation({ actual, forecast }: ForecastAnnotationProps
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground ml-2">
       <TrendingUp className="h-3 w-3" />
-      <span>&rarr; {formatCurrency(forecast)} projected</span>
+      <span>&rarr; {formatCurrency(Math.abs(forecast))} projected</span>
     </span>
   );
 }
