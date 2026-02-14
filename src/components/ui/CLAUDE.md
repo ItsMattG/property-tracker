@@ -1,6 +1,6 @@
 # UI Components Quick Reference
 
-> Import all UI components from `@/components/ui/<name>`. See `docs/codebase-patterns.md` for full usage patterns.
+> Import all UI components from `@/components/ui/<name>`. See `src/components/CLAUDE.md` for full usage patterns.
 
 ## Component Table
 
@@ -9,8 +9,8 @@
 | **Button** | `@/components/ui/button` | `variant` (default/destructive/outline/secondary/ghost/link), `size` (default/sm/lg/icon/icon-sm/icon-lg), `asChild` | `<Button variant="destructive" size="sm">Delete</Button>` |
 | **Badge** | `@/components/ui/badge` | `variant` (default/secondary/destructive/outline/warning), `asChild` | `<Badge variant="warning">Pending</Badge>` |
 | **Card** | `@/components/ui/card` | Compound: `Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent, CardFooter` | `<Card><CardHeader><CardTitle>Title</CardTitle></CardHeader><CardContent>...</CardContent></Card>` |
-| **Dialog** | `@/components/ui/dialog` | `open, onOpenChange`. Content: `showCloseButton` (default true) | See codebase-patterns.md section 6 |
-| **AlertDialog** | `@/components/ui/alert-dialog` | Content: `size` ("default"/"sm"). Action/Cancel: `variant, size` | See codebase-patterns.md section 6 |
+| **Dialog** | `@/components/ui/dialog` | `open, onOpenChange`. Content: `showCloseButton` (default true) | See `src/components/CLAUDE.md` modals section |
+| **AlertDialog** | `@/components/ui/alert-dialog` | Content: `size` ("default"/"sm"). Action/Cancel: `variant, size` | See `src/components/CLAUDE.md` modals section |
 | **Sheet** | `@/components/ui/sheet` | Content: `side` (right/left/top/bottom) | `<SheetContent side="right">...</SheetContent>` |
 | **Select** | `@/components/ui/select` | Trigger: `size` ("sm"/"default"). Compound: Select, SelectTrigger, SelectValue, SelectContent, SelectItem | Wrap in FormControl for forms |
 | **DropdownMenu** | `@/components/ui/dropdown-menu` | Compound: DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem | Trigger uses `asChild` with Button |
@@ -19,7 +19,7 @@
 | **Textarea** | `@/components/ui/textarea` | Standard `<textarea>` props | `<Textarea rows={4} {...field} />` |
 | **Table** | `@/components/ui/table` | Compound: Table, TableHeader, TableBody, TableRow, TableHead, TableCell | Standard HTML table structure |
 | **Tabs** | `@/components/ui/tabs` | TabsList: `variant` ("default"/"line"). Compound: Tabs, TabsList, TabsTrigger, TabsContent | `<Tabs defaultValue="tab1">...</Tabs>` |
-| **Form** | `@/components/ui/form` | Compound: Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription | See codebase-patterns.md section 3 |
+| **Form** | `@/components/ui/form` | Compound: Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription | See `src/components/CLAUDE.md` forms section |
 | **Skeleton** | `@/components/ui/skeleton` | Base: `className` | `<Skeleton className="h-4 w-full" />` |
 | **DataSkeleton** | `@/components/ui/data-skeleton` | `variant` ("card"/"list"/"table"), `count` | `<DataSkeleton variant="card" count={3} />` |
 | **ChartSkeleton** | `@/components/ui/chart-skeleton` | `height` | `<ChartSkeleton height={300} />` |
