@@ -1,4 +1,4 @@
-import type { Transaction, NewTransaction } from "../../db/schema";
+import type { Transaction, NewTransaction, Property, BankAccount } from "../../db/schema";
 import type { DB } from "../base";
 
 /** Filters for listing transactions */
@@ -15,8 +15,8 @@ export interface TransactionFilters {
 
 /** Transaction with property and bank account relations */
 export type TransactionWithRelations = Transaction & {
-  property?: unknown;
-  bankAccount?: unknown;
+  property?: Property | null;
+  bankAccount?: BankAccount | null;
 };
 
 /** Paginated transaction result (includes relations from joins) */
