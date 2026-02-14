@@ -1,6 +1,6 @@
 // Billing domain: referrals, subscriptions, monitoring + types
 import {
-  pgTable, uuid, text, timestamp, integer, boolean, index,
+  pgTable, uuid, text, timestamp, integer, boolean, jsonb, index,
 } from "./_common";
 import { referralStatusEnum, subscriptionPlanEnum, subscriptionStatusEnum } from "./enums";
 import { users } from "./auth";
@@ -71,16 +71,18 @@ export const subscriptions = pgTable("subscriptions", {
 
 export const cronHeartbeats = pgTable("cron_heartbeats", {
   id: uuid("id").primaryKey().defaultRandom(),
-  jobName: text("job_name").notNull(),
-  status: text("status").notNull(),
-  executionTimeMs: integer("execution_time_ms"),
-  details: text("details"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  cronName: text("cron_name").notNull().unique(),
+  lastRunAt: timestamp("last_run_at").notNull(),
+  status: text("status").notNull(), // "success" | "failure"
+  durationMs: integer("duration_ms").notNull(),
+  metadata: jsonb("metadata"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const monitorState = pgTable("monitor_state", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  key: text("key").notNull().unique(),
-  value: text("value").notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  id: text("id").primaryKey(), // "uptime"
+  lastStatus: text("last_status").notNull(), // "healthy" | "unhealthy"
+  lastCheckedAt: timestamp("last_checked_at").notNull(),
+  failingSince: timestamp("failing_since"),
+  consecutiveFailures: integer("consecutive_failures").default(0).notNull(),
 });
