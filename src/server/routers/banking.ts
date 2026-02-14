@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure, bankProcedure } from "../trpc";
-import { anomalyAlerts, bankAccounts, connectionAlerts, properties, transactions, users } from "../db/schema";
+import { anomalyAlerts, bankAccounts, properties, transactions, users } from "../db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { batchCategorize } from "../services/categorization";
 import { TRPCError } from "@trpc/server";
@@ -20,23 +20,15 @@ import { logger } from "@/lib/logger";
 
 export const bankingRouter = router({
   listAccounts: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.bankAccounts.findMany({
-      where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
-      with: {
-        defaultProperty: true,
-        alerts: {
-          where: eq(connectionAlerts.status, "active"),
-        },
-      },
+    return ctx.uow.bankAccount.findByOwner(ctx.portfolio.ownerId, {
+      withProperty: true,
+      withAlerts: true,
     });
   }),
 
   getAccountSummaries: protectedProcedure.query(async ({ ctx }) => {
-    const accounts = await ctx.db.query.bankAccounts.findMany({
-      where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
-      with: {
-        defaultProperty: true,
-      },
+    const accounts = await ctx.uow.bankAccount.findByOwner(ctx.portfolio.ownerId, {
+      withProperty: true,
     });
 
     const now = new Date();
@@ -46,44 +38,11 @@ export const bankingRouter = router({
 
     const summaries = await Promise.all(
       accounts.map(async (account) => {
-        // Get unreconciled count
-        const [unreconciledResult] = await ctx.db
-          .select({ count: sql<number>`count(*)` })
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.bankAccountId, account.id),
-              eq(transactions.userId, ctx.portfolio.ownerId),
-              eq(transactions.category, "uncategorized")
-            )
-          );
-
-        // Get reconciled balance
-        const [reconciledResult] = await ctx.db
-          .select({ total: sql<string>`COALESCE(SUM(CAST(amount AS NUMERIC)), 0)` })
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.bankAccountId, account.id),
-              eq(transactions.userId, ctx.portfolio.ownerId),
-              sql`${transactions.category} != 'uncategorized'`
-            )
-          );
-
-        // Get this month's cash in/out
-        const [monthlyResult] = await ctx.db
-          .select({
-            cashIn: sql<string>`COALESCE(SUM(CASE WHEN CAST(amount AS NUMERIC) > 0 THEN CAST(amount AS NUMERIC) ELSE 0 END), 0)`,
-            cashOut: sql<string>`COALESCE(SUM(CASE WHEN CAST(amount AS NUMERIC) < 0 THEN CAST(amount AS NUMERIC) ELSE 0 END), 0)`,
-          })
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.bankAccountId, account.id),
-              eq(transactions.userId, ctx.portfolio.ownerId),
-              sql`${transactions.date} >= ${monthStart}`
-            )
-          );
+        const [unreconciledCount, reconciledBalance, monthlyCashFlow] = await Promise.all([
+          ctx.uow.transactions.countUncategorized(account.id, ctx.portfolio.ownerId),
+          ctx.uow.transactions.getReconciledBalance(account.id, ctx.portfolio.ownerId),
+          ctx.uow.transactions.getMonthlyCashFlow(account.id, ctx.portfolio.ownerId, monthStart),
+        ]);
 
         return {
           id: account.id,
@@ -96,10 +55,10 @@ export const bankingRouter = router({
           lastSyncedAt: account.lastSyncedAt,
           bankBalance: account.balance,
           property: account.defaultProperty,
-          unreconciledCount: Number(unreconciledResult?.count ?? 0),
-          reconciledBalance: reconciledResult?.total ?? "0",
-          cashIn: monthlyResult?.cashIn ?? "0",
-          cashOut: monthlyResult?.cashOut ?? "0",
+          unreconciledCount,
+          reconciledBalance,
+          cashIn: monthlyCashFlow.cashIn,
+          cashOut: monthlyCashFlow.cashOut,
         };
       })
     );
@@ -108,13 +67,8 @@ export const bankingRouter = router({
   }),
 
   getConnectionStatus: protectedProcedure.query(async ({ ctx }) => {
-    const accounts = await ctx.db.query.bankAccounts.findMany({
-      where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
-      with: {
-        alerts: {
-          where: eq(connectionAlerts.status, "active"),
-        },
-      },
+    const accounts = await ctx.uow.bankAccount.findByOwner(ctx.portfolio.ownerId, {
+      withAlerts: true,
     });
 
     return accounts.map((account) => ({
@@ -125,7 +79,7 @@ export const bankingRouter = router({
       lastSyncStatus: account.lastSyncStatus,
       lastSyncedAt: account.lastSyncedAt,
       lastManualSyncAt: account.lastManualSyncAt,
-      activeAlertCount: account.alerts.length,
+      activeAlertCount: account.alerts?.length ?? 0,
     }));
   }),
 
@@ -133,12 +87,7 @@ export const bankingRouter = router({
     .input(z.object({ accountId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Verify account belongs to user
-      const account = await ctx.db.query.bankAccounts.findFirst({
-        where: and(
-          eq(bankAccounts.id, input.accountId),
-          eq(bankAccounts.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const account = await ctx.uow.bankAccount.findById(input.accountId, ctx.portfolio.ownerId);
 
       if (!account) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
@@ -155,13 +104,10 @@ export const bankingRouter = router({
       }
 
       // Update sync status to pending
-      await ctx.db
-        .update(bankAccounts)
-        .set({
-          lastManualSyncAt: new Date(),
-          lastSyncStatus: "pending",
-        })
-        .where(eq(bankAccounts.id, input.accountId));
+      await ctx.uow.bankAccount.update(input.accountId, {
+        lastManualSyncAt: new Date(),
+        lastSyncStatus: "pending",
+      });
 
       const syncStartTime = Date.now();
       logger.info("Bank sync started", { accountId: input.accountId, institution: account.institution });
@@ -194,7 +140,7 @@ export const bankingRouter = router({
         let transactionsAdded = 0;
         for (const txn of basiqTransactions) {
           try {
-            await ctx.db.insert(transactions).values({
+            await ctx.uow.transactions.create({
               userId: ctx.portfolio.ownerId,
               bankAccountId: account.id,
               basiqTransactionId: txn.id,
@@ -313,29 +259,15 @@ export const bankingRouter = router({
         }
 
         // Update account status to success
-        await ctx.db
-          .update(bankAccounts)
-          .set({
-            connectionStatus: "connected",
-            lastSyncStatus: "success",
-            lastSyncError: null,
-            lastSyncedAt: new Date(),
-          })
-          .where(eq(bankAccounts.id, input.accountId));
+        await ctx.uow.bankAccount.update(input.accountId, {
+          connectionStatus: "connected",
+          lastSyncStatus: "success",
+          lastSyncError: null,
+          lastSyncedAt: new Date(),
+        });
 
         // Resolve any active alerts
-        await ctx.db
-          .update(connectionAlerts)
-          .set({
-            status: "resolved",
-            resolvedAt: new Date(),
-          })
-          .where(
-            and(
-              eq(connectionAlerts.bankAccountId, input.accountId),
-              eq(connectionAlerts.status, "active")
-            )
-          );
+        await ctx.uow.bankAccount.resolveAlertsByAccount(input.accountId);
 
         // Track successful sync for monitoring
         const syncDuration = Date.now() - syncStartTime;
@@ -361,25 +293,17 @@ export const bankingRouter = router({
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
         // Update account status
-        await ctx.db
-          .update(bankAccounts)
-          .set({
-            connectionStatus,
-            lastSyncStatus: "failed",
-            lastSyncError: errorMessage,
-          })
-          .where(eq(bankAccounts.id, input.accountId));
-
-        // Check if we should create a new alert
-        const activeAlerts = await ctx.db.query.connectionAlerts.findMany({
-          where: and(
-            eq(connectionAlerts.bankAccountId, input.accountId),
-            eq(connectionAlerts.status, "active")
-          ),
+        await ctx.uow.bankAccount.update(input.accountId, {
+          connectionStatus,
+          lastSyncStatus: "failed",
+          lastSyncError: errorMessage,
         });
 
+        // Check if we should create a new alert
+        const activeAlerts = await ctx.uow.bankAccount.findActiveAlertsByAccount(input.accountId);
+
         if (shouldCreateAlert(activeAlerts, alertType)) {
-          await ctx.db.insert(connectionAlerts).values({
+          await ctx.uow.bankAccount.createAlert({
             userId: ctx.portfolio.ownerId,
             bankAccountId: input.accountId,
             alertType,
@@ -412,34 +336,13 @@ export const bankingRouter = router({
     }),
 
   listAlerts: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.connectionAlerts.findMany({
-      where: and(
-        eq(connectionAlerts.userId, ctx.portfolio.ownerId),
-        eq(connectionAlerts.status, "active")
-      ),
-      with: {
-        bankAccount: true,
-      },
-      orderBy: [desc(connectionAlerts.createdAt)],
-    });
+    return ctx.uow.bankAccount.findActiveAlerts(ctx.portfolio.ownerId);
   }),
 
   dismissAlert: writeProcedure
     .input(z.object({ alertId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const [alert] = await ctx.db
-        .update(connectionAlerts)
-        .set({
-          status: "dismissed",
-          dismissedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(connectionAlerts.id, input.alertId),
-            eq(connectionAlerts.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      const alert = await ctx.uow.bankAccount.dismissAlert(input.alertId, ctx.portfolio.ownerId);
 
       if (!alert) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Alert not found" });
@@ -456,17 +359,11 @@ export const bankingRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(bankAccounts)
-        .set({
-          institutionNickname: input.nickname || null,
-        })
-        .where(
-          and(
-            eq(bankAccounts.institution, input.institution),
-            eq(bankAccounts.userId, ctx.portfolio.ownerId)
-          )
-        );
+      await ctx.uow.bankAccount.updateByInstitution(
+        input.institution,
+        ctx.portfolio.ownerId,
+        { institutionNickname: input.nickname || null }
+      );
 
       return { success: true };
     }),
@@ -523,19 +420,14 @@ export const bankingRouter = router({
     .input(z.object({ accountId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
-      const account = await ctx.db.query.bankAccounts.findFirst({
-        where: and(
-          eq(bankAccounts.id, input.accountId),
-          eq(bankAccounts.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const account = await ctx.uow.bankAccount.findById(input.accountId, ctx.portfolio.ownerId);
 
       if (!account) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
       }
 
       // Delete bank account — transactions and connection_alerts cascade-delete via FK
-      await ctx.db.delete(bankAccounts).where(eq(bankAccounts.id, input.accountId));
+      await ctx.uow.bankAccount.delete(input.accountId);
 
       return { success: true };
     }),
@@ -559,9 +451,7 @@ export const bankingRouter = router({
       const { data: basiqAccounts } = await basiqService.getAccounts(user.basiqUserId);
 
       // Get existing accounts to avoid duplicates
-      const existingAccounts = await ctx.db.query.bankAccounts.findMany({
-        where: eq(bankAccounts.userId, ctx.portfolio.ownerId),
-      });
+      const existingAccounts = await ctx.uow.bankAccount.findByOwner(ctx.portfolio.ownerId);
       const existingBasiqIds = new Set(existingAccounts.map((a) => a.basiqAccountId));
 
       let accountsAdded = 0;
@@ -574,7 +464,7 @@ export const bankingRouter = router({
           ? acct.class.type
           : "transaction") as "transaction";
 
-        const [inserted] = await ctx.db.insert(bankAccounts).values({
+        const created = await ctx.uow.bankAccount.create({
           userId: ctx.portfolio.ownerId,
           basiqAccountId: acct.id,
           basiqConnectionId: acct.connection,
@@ -583,10 +473,10 @@ export const bankingRouter = router({
           accountType,
           institution: acct.institution,
           connectionStatus: "connected",
-        }).returning({ id: bankAccounts.id });
+        });
 
         newAccounts.push({
-          id: inserted.id,
+          id: created.id,
           accountName: acct.name,
           institution: acct.institution,
           accountType,
@@ -649,12 +539,7 @@ export const bankingRouter = router({
       // Store the pre-selected property for auto-assignment after Basiq callback,
       // or clear any stale value so the callback routes to the assign page
       if (input.propertyId) {
-        const property = await ctx.db.query.properties.findFirst({
-          where: and(
-            eq(properties.id, input.propertyId),
-            eq(properties.userId, ctx.portfolio.ownerId)
-          ),
-        });
+        const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
         if (!property) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
         }
@@ -747,12 +632,7 @@ export const bankingRouter = router({
   reconnect: bankProcedure
     .input(z.object({ accountId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const account = await ctx.db.query.bankAccounts.findFirst({
-        where: and(
-          eq(bankAccounts.id, input.accountId),
-          eq(bankAccounts.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const account = await ctx.uow.bankAccount.findById(input.accountId, ctx.portfolio.ownerId);
 
       if (!account) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
