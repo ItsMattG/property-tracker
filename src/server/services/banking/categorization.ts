@@ -297,6 +297,7 @@ export async function batchCategorize(
 ): Promise<Map<string, CategorizationResult | null>> {
   const results = new Map<string, CategorizationResult | null>();
 
+  // Sequential intentionally — each call may hit Anthropic API with rate limits
   for (const txn of transactionData) {
     const result = await categorizeTransaction(
       userId,
