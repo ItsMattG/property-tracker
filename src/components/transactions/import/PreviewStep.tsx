@@ -5,7 +5,7 @@ import {
   type ParsedCSVRow,
   matchCategory,
   matchTransactionType,
-} from "@/server/services/csv-import";
+} from "@/server/services/banking/csv-import";
 import { categories } from "@/lib/categories";
 import {
   Table,

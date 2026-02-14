@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { db } from "../db";
-import { merchantCategories, categorizationExamples, transactions } from "../db/schema";
+import { db } from "../../db";
+import { merchantCategories, categorizationExamples, transactions } from "../../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { categories } from "@/lib/categories";
 
@@ -297,6 +297,7 @@ export async function batchCategorize(
 ): Promise<Map<string, CategorizationResult | null>> {
   const results = new Map<string, CategorizationResult | null>();
 
+  // Sequential intentionally — each call may hit Anthropic API with rate limits
   for (const txn of transactionData) {
     const result = await categorizeTransaction(
       userId,

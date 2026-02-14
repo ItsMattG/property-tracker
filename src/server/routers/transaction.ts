@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { transactionNotes } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { parseCSV } from "../services/csv-import";
+import { parseCSV } from "../services/banking";
 import { metrics } from "@/lib/metrics";
 import { getCategoryLabel } from "@/lib/categories";
 

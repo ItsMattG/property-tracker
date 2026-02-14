@@ -10,7 +10,7 @@
 | `src/server/db/schema/index.ts` | Barrel re-export of domain schema modules |
 | `src/server/db/schema/*.ts` | Domain-split schema (auth, banking, properties, etc.) |
 | `src/app/api/trpc/[trpc]/route.ts` | API route handler + error sanitization |
-| `src/server/services/categorization.ts` | AI categorization service (Anthropic SDK) |
+| `src/server/services/banking/categorization.ts` | AI categorization service (Anthropic SDK) |
 | `src/app/api/chat/route.ts` | AI chat route (Vercel AI SDK) |
 
 ## Procedure Types
@@ -227,7 +227,7 @@ These automatically check subscription status and throw `FORBIDDEN` if insuffici
 - Gated behind `featureFlags.aiAssistant` (currently false)
 
 ### Categorization (Anthropic SDK)
-- Service: `src/server/services/categorization.ts`
+- Service: `src/server/services/banking/categorization.ts`
 - Model: `claude-3-haiku-20240307` for cost
 - Two-tier: merchant memory first, Claude API fallback
 - Direct `@anthropic-ai/sdk` usage (not Vercel AI SDK)
