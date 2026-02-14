@@ -1,9 +1,9 @@
-import type { BankAccount, NewBankAccount, ConnectionAlert, NewConnectionAlert } from "../../db/schema";
+import type { BankAccount, NewBankAccount, ConnectionAlert, NewConnectionAlert, Property } from "../../db/schema";
 import type { DB } from "../base";
 
 /** Bank account with optional relations loaded */
 export type BankAccountWithRelations = BankAccount & {
-  defaultProperty?: unknown;
+  defaultProperty?: Property | null;
   alerts?: ConnectionAlert[];
 };
 

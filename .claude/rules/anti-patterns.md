@@ -31,6 +31,16 @@
 | `sql<number>\`count(*)::int\`` for aggregations | `sql\`count(*)\`` (returns string without cast) |
 | `eq(properties.userId, ctx.portfolio.ownerId)` (always scope by user) | Query without user ID filter |
 
+## Repository Layer
+
+| DO | DON'T |
+|----|-------|
+| `Partial<SchemaType>` for update data params | `Record<string, unknown>` (bypasses type safety) |
+| Typed return values (`Promise<User \| null>`) | `Promise<unknown>` or `Promise<any>` |
+| Proper relation types (`Property \| null`) | `unknown` for relation fields in interfaces |
+| `ctx.uow.repo.method()` in routers | Direct `ctx.db` when a repo method exists |
+| Comment explaining why for cross-domain `ctx.db` | Mixing `ctx.uow` and `ctx.db` without explanation |
+
 ## BetterAuth v1
 
 | DO | DON'T |

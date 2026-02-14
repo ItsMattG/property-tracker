@@ -12,7 +12,7 @@ export interface IPropertyRepository {
   create(data: NewProperty, tx?: DB): Promise<Property>;
 
   /** Update a property's fields — returns null if no matching property */
-  update(id: string, userId: string, data: Record<string, unknown>, tx?: DB): Promise<Property | null>;
+  update(id: string, userId: string, data: Partial<Property>, tx?: DB): Promise<Property | null>;
 
   /** Delete a property */
   delete(id: string, userId: string, tx?: DB): Promise<void>;

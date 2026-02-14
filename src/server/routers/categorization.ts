@@ -284,7 +284,7 @@ export const categorizationRouter = router({
     });
 
     const examples = await ctx.db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql<number>`count(*)::int` })
       .from(categorizationExamples)
       .where(eq(categorizationExamples.userId, ctx.portfolio.ownerId));
 

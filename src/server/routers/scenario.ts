@@ -6,6 +6,7 @@ import {
   loans,
   recurringTransactions,
 } from "../db/schema";
+import type { Scenario } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import {
   runProjection,
@@ -102,7 +103,7 @@ export const scenarioRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
       }
 
-      const updates: Record<string, unknown> = { updatedAt: new Date() };
+      const updates: Partial<Scenario> = { updatedAt: new Date() };
       if (input.name) updates.name = input.name;
       if (input.description !== undefined) updates.description = input.description;
       if (input.timeHorizonMonths) updates.timeHorizonMonths = String(input.timeHorizonMonths);

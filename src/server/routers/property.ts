@@ -2,6 +2,7 @@ import { z } from "zod";
 import { positiveAmountSchema, australianPostcodeSchema } from "@/lib/validation";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { referrals, referralCredits, subscriptions, users } from "../db/schema";
+import type { Property } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getClimateRisk } from "../services/climate-risk";
@@ -182,7 +183,7 @@ export const propertyRouter = router({
       const { id, ...data } = input;
 
       // If contract date changes, keep purchaseDate in sync
-      const updateData: Record<string, unknown> = {
+      const updateData: Partial<Property> = {
         ...data,
         updatedAt: new Date(),
       };

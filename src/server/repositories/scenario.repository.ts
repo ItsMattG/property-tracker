@@ -59,7 +59,7 @@ export class ScenarioRepository
 
   async update(
     id: string,
-    data: Record<string, unknown>,
+    data: Partial<Scenario>,
     tx?: DB
   ): Promise<Scenario> {
     const client = this.resolve(tx);

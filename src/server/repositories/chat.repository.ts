@@ -1,5 +1,6 @@
 import { eq, and, desc } from "drizzle-orm";
 import { chatConversations, chatMessages } from "../db/schema";
+import type { ChatMessage } from "../db/schema";
 import { BaseRepository, type DB } from "./base";
 import type {
   IChatRepository,
@@ -54,10 +55,10 @@ export class ChatRepository
     conversationId: string,
     role: "user" | "assistant",
     content: string,
-    toolCalls?: unknown,
-    toolResults?: unknown,
+    toolCalls?: Record<string, unknown>[] | null,
+    toolResults?: Record<string, unknown>[] | null,
     tx?: DB
-  ): Promise<unknown> {
+  ): Promise<ChatMessage> {
     const client = this.resolve(tx);
     const [message] = await client
       .insert(chatMessages)

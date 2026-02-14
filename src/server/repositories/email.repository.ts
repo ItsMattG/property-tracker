@@ -190,7 +190,7 @@ export class EmailRepository
   async updateEmail(
     id: number,
     userId: string,
-    data: Record<string, unknown>,
+    data: Partial<PropertyEmail>,
     tx?: DB
   ): Promise<void> {
     const client = this.resolve(tx);
@@ -259,5 +259,33 @@ export class EmailRepository
       .where(eq(propertyEmailAttachments.id, id));
 
     return attachment ?? null;
+  }
+
+  async findSenderById(
+    id: number
+  ): Promise<Pick<PropertyEmailSender, "id" | "propertyId"> | null> {
+    const [sender] = await this.db
+      .select({
+        id: propertyEmailSenders.id,
+        propertyId: propertyEmailSenders.propertyId,
+      })
+      .from(propertyEmailSenders)
+      .where(eq(propertyEmailSenders.id, id));
+
+    return sender ?? null;
+  }
+
+  async findInvoiceMatchById(
+    id: number
+  ): Promise<Pick<PropertyEmailInvoiceMatch, "id" | "emailId"> | null> {
+    const [match] = await this.db
+      .select({
+        id: propertyEmailInvoiceMatches.id,
+        emailId: propertyEmailInvoiceMatches.emailId,
+      })
+      .from(propertyEmailInvoiceMatches)
+      .where(eq(propertyEmailInvoiceMatches.id, id));
+
+    return match ?? null;
   }
 }
