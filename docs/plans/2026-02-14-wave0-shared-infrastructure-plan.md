@@ -10,6 +10,11 @@
 
 **Design Doc:** `docs/plans/2026-02-14-full-codebase-refactor-design.md`
 
+**Tech Notes (from context7, Feb 2026):**
+- **Zod 4**: Format validators (`.email()`, `.uuid()`, `.url()`) have moved to top-level (`z.email()`, `z.uuid()`), but `.regex()` on `z.string()` is still the correct API for custom patterns. Our validation schemas use `.regex()` and are up-to-date.
+- **tRPC 11**: `TRPCError({ code, message, cause })` is the standard error pattern. Our domain error → TRPCError mapper is aligned with current best practices.
+- **Drizzle ORM**: Schema splitting across files is supported via `{ ...schema1, ...schema2 }` spread syntax. For Wave 1, use `defineRelationsPart()` from `drizzle-orm` for modular relation definitions.
+
 ---
 
 ## PR 0.1: Shared Validation Schemas

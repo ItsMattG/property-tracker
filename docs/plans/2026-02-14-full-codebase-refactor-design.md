@@ -152,9 +152,11 @@ src/
 - `index.ts` re-exports everything for backwards compatibility (zero import changes)
 - Domain files: auth, properties, banking, loans, recurring, compliance, documents, scenarios, communication, features, entities, portfolio, property-manager, chat, enums
 
-**PR 1.2 — Co-locate relations**
-- Move relation definitions into their respective domain schema files
-- Each module exports tables + relations together
+**PR 1.2 — Co-locate relations using defineRelationsPart**
+- Use Drizzle's `defineRelationsPart()` API to split relation configs into domain modules
+- Each domain schema file exports a relation part via `defineRelationsPart(schema, (r) => ({...}))`
+- Parts are merged in `db/index.ts` via `drizzle({ relations: { ...authRelations, ...propertyRelations, ... } })`
+- This is the official Drizzle pattern for modular schemas (confirmed via context7, Feb 2026)
 
 ### Wave 2: Repository Layer (4 PRs, ~1-2 sessions)
 
