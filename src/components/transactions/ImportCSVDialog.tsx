@@ -19,7 +19,7 @@ import {
   splitCSVLine,
   type CSVColumnMap,
   type ParsedCSVRow,
-} from "@/server/services/banking";
+} from "@/server/services/banking/csv-import";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
