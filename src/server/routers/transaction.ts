@@ -2,8 +2,8 @@ import { z } from "zod";
 import { signedAmountSchema } from "@/lib/validation";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { transactions, transactionNotes } from "../db/schema";
-import { eq, and, desc, gte, lte, inArray, sql, count } from "drizzle-orm";
+import { transactionNotes } from "../db/schema";
+import { eq, and, desc } from "drizzle-orm";
 import { parseCSV } from "../services/csv-import";
 import { metrics } from "@/lib/metrics";
 import { getCategoryLabel } from "@/lib/categories";
@@ -38,6 +38,39 @@ const categoryValues = [
   "uncategorized",
 ] as const;
 
+/** Derive transaction type and deductibility from a category */
+function deriveTransactionFields(category: string) {
+  const incomeCategories = ["rental_income", "other_rental_income"];
+  const capitalCategories = [
+    "stamp_duty",
+    "conveyancing",
+    "buyers_agent_fees",
+    "initial_repairs",
+  ];
+  const nonDeductibleCategories = [
+    ...capitalCategories,
+    "transfer",
+    "personal",
+    "uncategorized",
+  ];
+
+  let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
+    "expense";
+  if (incomeCategories.includes(category)) {
+    transactionType = "income";
+  } else if (capitalCategories.includes(category)) {
+    transactionType = "capital";
+  } else if (category === "transfer") {
+    transactionType = "transfer";
+  } else if (category === "personal") {
+    transactionType = "personal";
+  }
+
+  const isDeductible = !nonDeductibleCategories.includes(category);
+
+  return { transactionType, isDeductible };
+}
+
 export const transactionRouter = router({
   list: protectedProcedure
     .input(
@@ -53,54 +86,7 @@ export const transactionRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(transactions.userId, ctx.portfolio.ownerId)];
-
-      if (input.propertyId) {
-        conditions.push(eq(transactions.propertyId, input.propertyId));
-      }
-      if (input.category) {
-        conditions.push(eq(transactions.category, input.category));
-      }
-      if (input.isVerified !== undefined) {
-        conditions.push(eq(transactions.isVerified, input.isVerified));
-      }
-      if (input.startDate) {
-        conditions.push(gte(transactions.date, input.startDate));
-      }
-      if (input.endDate) {
-        conditions.push(lte(transactions.date, input.endDate));
-      }
-      if (input.bankAccountId) {
-        conditions.push(eq(transactions.bankAccountId, input.bankAccountId));
-      }
-
-      const whereClause = and(...conditions);
-
-      // Get paginated results
-      const results = await ctx.db.query.transactions.findMany({
-        where: whereClause,
-        orderBy: [desc(transactions.date)],
-        limit: input.limit,
-        offset: input.offset,
-        with: {
-          property: true,
-          bankAccount: true,
-        },
-      });
-
-      // Get total count
-      const [{ count: total }] = await ctx.db
-        .select({ count: sql<number>`count(*)` })
-        .from(transactions)
-        .where(whereClause);
-
-      const hasMore = input.offset + results.length < total;
-
-      return {
-        transactions: results,
-        total,
-        hasMore,
-      };
+      return ctx.uow.transactions.findByOwner(ctx.portfolio.ownerId, input);
     }),
 
   exportCSV: protectedProcedure
@@ -115,34 +101,7 @@ export const transactionRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(transactions.userId, ctx.portfolio.ownerId)];
-
-      if (input.propertyId) {
-        conditions.push(eq(transactions.propertyId, input.propertyId));
-      }
-      if (input.category) {
-        conditions.push(eq(transactions.category, input.category));
-      }
-      if (input.isVerified !== undefined) {
-        conditions.push(eq(transactions.isVerified, input.isVerified));
-      }
-      if (input.startDate) {
-        conditions.push(gte(transactions.date, input.startDate));
-      }
-      if (input.endDate) {
-        conditions.push(lte(transactions.date, input.endDate));
-      }
-      if (input.bankAccountId) {
-        conditions.push(eq(transactions.bankAccountId, input.bankAccountId));
-      }
-
-      const results = await ctx.db.query.transactions.findMany({
-        where: and(...conditions),
-        orderBy: [desc(transactions.date)],
-        with: {
-          property: true,
-        },
-      });
+      const results = await ctx.uow.transactions.findAllByOwner(ctx.portfolio.ownerId, input);
 
       const header = "Date,Description,Amount,Category,Transaction Type,Property,Is Deductible,Is Verified,Notes";
       const rows = results.map((t) => {
@@ -152,13 +111,14 @@ export const transactionRouter = router({
           }
           return val;
         };
+        const prop = t.property as { address?: string } | null | undefined;
         return [
           t.date,
           escapeCsv(t.description),
           t.amount,
           getCategoryLabel(t.category),
           t.transactionType,
-          t.property?.address ?? "",
+          prop?.address ?? "",
           t.isDeductible ? "Yes" : "No",
           t.isVerified ? "Yes" : "No",
           escapeCsv(t.notes ?? ""),
@@ -175,12 +135,7 @@ export const transactionRouter = router({
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const transaction = await ctx.db.query.transactions.findFirst({
-        where: and(
-          eq(transactions.id, input.id),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const transaction = await ctx.uow.transactions.findById(input.id, ctx.portfolio.ownerId);
       if (!transaction) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }
@@ -202,52 +157,19 @@ export const transactionRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
       const numericAmount = parseFloat(data.amount);
+      const { transactionType, isDeductible } = deriveTransactionFields(data.category);
 
-      const incomeCategories = ["rental_income", "other_rental_income"];
-      const capitalCategories = [
-        "stamp_duty",
-        "conveyancing",
-        "buyers_agent_fees",
-        "initial_repairs",
-      ];
-      const nonDeductibleCategories = [
-        ...capitalCategories,
-        "transfer",
-        "personal",
-        "uncategorized",
-      ];
-
-      let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
-        "expense";
-      if (incomeCategories.includes(data.category)) {
-        transactionType = "income";
-      } else if (capitalCategories.includes(data.category)) {
-        transactionType = "capital";
-      } else if (data.category === "transfer") {
-        transactionType = "transfer";
-      } else if (data.category === "personal") {
-        transactionType = "personal";
-      }
-
-      const isDeductible = !nonDeductibleCategories.includes(data.category);
-
-      const [transaction] = await ctx.db
-        .update(transactions)
-        .set({
-          propertyId: data.propertyId,
-          date: data.date,
-          description: data.description,
-          amount: String(numericAmount),
-          category: data.category,
-          transactionType,
-          isDeductible,
-          notes: data.notes,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(eq(transactions.id, id), eq(transactions.userId, ctx.portfolio.ownerId))
-        )
-        .returning();
+      const transaction = await ctx.uow.transactions.update(id, ctx.portfolio.ownerId, {
+        propertyId: data.propertyId,
+        date: data.date,
+        description: data.description,
+        amount: String(numericAmount),
+        category: data.category,
+        transactionType,
+        isDeductible,
+        notes: data.notes,
+        updatedAt: new Date(),
+      });
 
       return transaction;
     }),
@@ -262,56 +184,16 @@ export const transactionRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Get existing transaction to track category changes
-      const existingTx = await ctx.db.query.transactions.findFirst({
-        where: and(
-          eq(transactions.id, input.id),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
-        columns: { category: true },
+      const existingTx = await ctx.uow.transactions.findById(input.id, ctx.portfolio.ownerId);
+      const { transactionType, isDeductible } = deriveTransactionFields(input.category);
+
+      const transaction = await ctx.uow.transactions.update(input.id, ctx.portfolio.ownerId, {
+        category: input.category,
+        transactionType,
+        isDeductible,
+        propertyId: input.propertyId,
+        updatedAt: new Date(),
       });
-
-      // Determine transaction type and deductibility based on category
-      const incomeCategories = ["rental_income", "other_rental_income"];
-      const capitalCategories = [
-        "stamp_duty",
-        "conveyancing",
-        "buyers_agent_fees",
-        "initial_repairs",
-      ];
-      const nonDeductibleCategories = [
-        ...capitalCategories,
-        "transfer",
-        "personal",
-        "uncategorized",
-      ];
-
-      let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
-        "expense";
-      if (incomeCategories.includes(input.category)) {
-        transactionType = "income";
-      } else if (capitalCategories.includes(input.category)) {
-        transactionType = "capital";
-      } else if (input.category === "transfer") {
-        transactionType = "transfer";
-      } else if (input.category === "personal") {
-        transactionType = "personal";
-      }
-
-      const isDeductible = !nonDeductibleCategories.includes(input.category);
-
-      const [transaction] = await ctx.db
-        .update(transactions)
-        .set({
-          category: input.category,
-          transactionType,
-          isDeductible,
-          propertyId: input.propertyId,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.portfolio.ownerId))
-        )
-        .returning();
 
       // Track category override for monitoring
       if (existingTx && existingTx.category !== input.category) {
@@ -330,49 +212,15 @@ export const transactionRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const incomeCategories = ["rental_income", "other_rental_income"];
-      const capitalCategories = [
-        "stamp_duty",
-        "conveyancing",
-        "buyers_agent_fees",
-        "initial_repairs",
-      ];
-      const nonDeductibleCategories = [
-        ...capitalCategories,
-        "transfer",
-        "personal",
-        "uncategorized",
-      ];
+      const { transactionType, isDeductible } = deriveTransactionFields(input.category);
 
-      let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
-        "expense";
-      if (incomeCategories.includes(input.category)) {
-        transactionType = "income";
-      } else if (capitalCategories.includes(input.category)) {
-        transactionType = "capital";
-      } else if (input.category === "transfer") {
-        transactionType = "transfer";
-      } else if (input.category === "personal") {
-        transactionType = "personal";
-      }
-
-      const isDeductible = !nonDeductibleCategories.includes(input.category);
-
-      await ctx.db
-        .update(transactions)
-        .set({
-          category: input.category,
-          transactionType,
-          isDeductible,
-          propertyId: input.propertyId,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            inArray(transactions.id, input.ids),
-            eq(transactions.userId, ctx.portfolio.ownerId)
-          )
-        );
+      await ctx.uow.transactions.updateMany(input.ids, ctx.portfolio.ownerId, {
+        category: input.category,
+        transactionType,
+        isDeductible,
+        propertyId: input.propertyId,
+        updatedAt: new Date(),
+      });
 
       return { success: true, count: input.ids.length };
     }),
@@ -380,25 +228,16 @@ export const transactionRouter = router({
   toggleVerified: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db.query.transactions.findFirst({
-        where: and(
-          eq(transactions.id, input.id),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const existing = await ctx.uow.transactions.findById(input.id, ctx.portfolio.ownerId);
 
       if (!existing) {
         throw new Error("Transaction not found");
       }
 
-      const [transaction] = await ctx.db
-        .update(transactions)
-        .set({
-          isVerified: !existing.isVerified,
-          updatedAt: new Date(),
-        })
-        .where(eq(transactions.id, input.id))
-        .returning();
+      const transaction = await ctx.uow.transactions.update(input.id, ctx.portfolio.ownerId, {
+        isVerified: !existing.isVerified,
+        updatedAt: new Date(),
+      });
 
       return transaction;
     }),
@@ -406,16 +245,10 @@ export const transactionRouter = router({
   updateNotes: writeProcedure
     .input(z.object({ id: z.string().uuid(), notes: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const [transaction] = await ctx.db
-        .update(transactions)
-        .set({
-          notes: input.notes,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.portfolio.ownerId))
-        )
-        .returning();
+      const transaction = await ctx.uow.transactions.update(input.id, ctx.portfolio.ownerId, {
+        notes: input.notes,
+        updatedAt: new Date(),
+      });
 
       return transaction;
     }),
@@ -432,48 +265,19 @@ export const transactionRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const incomeCategories = ["rental_income", "other_rental_income"];
-      const capitalCategories = [
-        "stamp_duty",
-        "conveyancing",
-        "buyers_agent_fees",
-        "initial_repairs",
-      ];
-      const nonDeductibleCategories = [
-        ...capitalCategories,
-        "transfer",
-        "personal",
-        "uncategorized",
-      ];
+      const { transactionType, isDeductible } = deriveTransactionFields(input.category);
 
-      let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
-        "expense";
-      if (incomeCategories.includes(input.category)) {
-        transactionType = "income";
-      } else if (capitalCategories.includes(input.category)) {
-        transactionType = "capital";
-      } else if (input.category === "transfer") {
-        transactionType = "transfer";
-      } else if (input.category === "personal") {
-        transactionType = "personal";
-      }
-
-      const isDeductible = !nonDeductibleCategories.includes(input.category);
-
-      const [transaction] = await ctx.db
-        .insert(transactions)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          propertyId: input.propertyId,
-          date: input.date,
-          description: input.description,
-          amount: input.amount,
-          category: input.category,
-          transactionType,
-          isDeductible,
-          notes: input.notes,
-        })
-        .returning();
+      const transaction = await ctx.uow.transactions.create({
+        userId: ctx.portfolio.ownerId,
+        propertyId: input.propertyId,
+        date: input.date,
+        description: input.description,
+        amount: input.amount,
+        category: input.category,
+        transactionType,
+        isDeductible,
+        notes: input.notes,
+      });
 
       return transaction;
     }),
@@ -481,11 +285,7 @@ export const transactionRouter = router({
   delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(transactions)
-        .where(
-          and(eq(transactions.id, input.id), eq(transactions.userId, ctx.portfolio.ownerId))
-        );
+      await ctx.uow.transactions.delete(input.id, ctx.portfolio.ownerId);
 
       return { success: true };
     }),
@@ -505,19 +305,16 @@ export const transactionRouter = router({
 
       for (const row of rows) {
         try {
-          const [transaction] = await ctx.db
-            .insert(transactions)
-            .values({
-              userId: ctx.portfolio.ownerId,
-              propertyId: input.propertyId,
-              date: row.date,
-              description: row.description,
-              amount: row.amount,
-              category: "uncategorized",
-              transactionType: parseFloat(row.amount) >= 0 ? "income" : "expense",
-              isDeductible: false,
-            })
-            .returning();
+          const transaction = await ctx.uow.transactions.create({
+            userId: ctx.portfolio.ownerId,
+            propertyId: input.propertyId,
+            date: row.date,
+            description: row.description,
+            amount: row.amount,
+            category: "uncategorized",
+            transactionType: parseFloat(row.amount) >= 0 ? "income" : "expense",
+            isDeductible: false,
+          });
 
           imported.push(transaction.id);
         } catch (error) {
@@ -557,22 +354,19 @@ export const transactionRouter = router({
 
       for (const row of input.rows) {
         try {
-          const [transaction] = await ctx.db
-            .insert(transactions)
-            .values({
-              userId: ctx.portfolio.ownerId,
-              propertyId: row.propertyId,
-              date: row.date,
-              description: row.description,
-              amount: row.amount.toString(),
-              category: row.category,
-              transactionType: row.transactionType,
-              isDeductible: row.isDeductible,
-              notes: row.notes,
-              invoiceUrl: row.invoiceUrl,
-              invoicePresent: row.invoicePresent,
-            })
-            .returning();
+          const transaction = await ctx.uow.transactions.create({
+            userId: ctx.portfolio.ownerId,
+            propertyId: row.propertyId,
+            date: row.date,
+            description: row.description,
+            amount: row.amount.toString(),
+            category: row.category,
+            transactionType: row.transactionType,
+            isDeductible: row.isDeductible,
+            notes: row.notes,
+            invoiceUrl: row.invoiceUrl,
+            invoicePresent: row.invoicePresent,
+          });
 
           imported.push(transaction.id);
         } catch (error) {
@@ -597,51 +391,16 @@ export const transactionRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const incomeCategories = ["rental_income", "other_rental_income"];
-      const capitalCategories = [
-        "stamp_duty",
-        "conveyancing",
-        "buyers_agent_fees",
-        "initial_repairs",
-      ];
-      const nonDeductibleCategories = [
-        ...capitalCategories,
-        "transfer",
-        "personal",
-        "uncategorized",
-      ];
+      const { transactionType, isDeductible } = deriveTransactionFields(input.category);
 
-      let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
-        "expense";
-      if (incomeCategories.includes(input.category)) {
-        transactionType = "income";
-      } else if (capitalCategories.includes(input.category)) {
-        transactionType = "capital";
-      } else if (input.category === "transfer") {
-        transactionType = "transfer";
-      } else if (input.category === "personal") {
-        transactionType = "personal";
-      }
-
-      const isDeductible = !nonDeductibleCategories.includes(input.category);
-
-      const [transaction] = await ctx.db
-        .update(transactions)
-        .set({
-          category: input.category,
-          transactionType,
-          isDeductible,
-          propertyId: input.propertyId ?? null,
-          claimPercent: String(input.claimPercent),
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(transactions.id, input.id),
-            eq(transactions.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      const transaction = await ctx.uow.transactions.update(input.id, ctx.portfolio.ownerId, {
+        category: input.category,
+        transactionType,
+        isDeductible,
+        propertyId: input.propertyId ?? null,
+        claimPercent: String(input.claimPercent),
+        updatedAt: new Date(),
+      });
 
       if (!transaction) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
@@ -650,17 +409,12 @@ export const transactionRouter = router({
       return transaction;
     }),
 
-  // Discussion notes CRUD
+  // Discussion notes CRUD — transactionNotes stay as direct db calls (no notes repository)
   listNotes: protectedProcedure
     .input(z.object({ transactionId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       // Verify the transaction belongs to this user
-      const tx = await ctx.db.query.transactions.findFirst({
-        where: and(
-          eq(transactions.id, input.transactionId),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const tx = await ctx.uow.transactions.findById(input.transactionId, ctx.portfolio.ownerId);
       if (!tx) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }
@@ -686,12 +440,7 @@ export const transactionRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify the transaction belongs to this user
-      const tx = await ctx.db.query.transactions.findFirst({
-        where: and(
-          eq(transactions.id, input.transactionId),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const tx = await ctx.uow.transactions.findById(input.transactionId, ctx.portfolio.ownerId);
       if (!tx) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }

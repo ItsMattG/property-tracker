@@ -16,8 +16,8 @@ import type {
 
 // Concrete imports — uncommented as each repository is implemented in PRs 2.2-2.4
 import { PropertyRepository } from "./property.repository";
-// import { BankAccountRepository } from "./bank-account.repository";
-// import { TransactionRepository } from "./transaction.repository";
+import { BankAccountRepository } from "./bank-account.repository";
+import { TransactionRepository } from "./transaction.repository";
 // import { LoanRepository } from "./loan.repository";
 // import { RecurringRepository } from "./recurring.repository";
 // import { DocumentRepository } from "./document.repository";
@@ -32,7 +32,7 @@ export class UnitOfWork {
   // Private backing fields for lazy instantiation
   private _property?: IPropertyRepository;
   private _bankAccount?: IBankAccountRepository;
-  private _transaction?: ITransactionRepository;
+  private _transactions?: ITransactionRepository;
   private _loan?: ILoanRepository;
   private _recurring?: IRecurringRepository;
   private _document?: IDocumentRepository;
@@ -49,12 +49,12 @@ export class UnitOfWork {
   get property(): IPropertyRepository {
     return (this._property ??= new PropertyRepository(this.db));
   }
-  // get bankAccount(): IBankAccountRepository {
-  //   return (this._bankAccount ??= new BankAccountRepository(this.db));
-  // }
-  // get transaction(): ITransactionRepository {
-  //   return (this._transaction ??= new TransactionRepository(this.db));
-  // }
+  get bankAccount(): IBankAccountRepository {
+    return (this._bankAccount ??= new BankAccountRepository(this.db));
+  }
+  get transactions(): ITransactionRepository {
+    return (this._transactions ??= new TransactionRepository(this.db));
+  }
   // get loan(): ILoanRepository {
   //   return (this._loan ??= new LoanRepository(this.db));
   // }

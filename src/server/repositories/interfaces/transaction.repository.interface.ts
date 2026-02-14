@@ -13,18 +13,18 @@ export interface TransactionFilters {
   offset?: number;
 }
 
-/** Paginated transaction result */
-export interface PaginatedTransactions {
-  transactions: Transaction[];
-  total: number;
-  hasMore: boolean;
-}
-
 /** Transaction with property and bank account relations */
 export type TransactionWithRelations = Transaction & {
   property?: unknown;
   bankAccount?: unknown;
 };
+
+/** Paginated transaction result (includes relations from joins) */
+export interface PaginatedTransactions {
+  transactions: TransactionWithRelations[];
+  total: number;
+  hasMore: boolean;
+}
 
 export interface ITransactionRepository {
   /** List transactions with filters and pagination */
