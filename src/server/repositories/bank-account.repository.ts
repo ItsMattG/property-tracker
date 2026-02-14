@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { bankAccounts, connectionAlerts } from "../db/schema";
 import type { BankAccount, NewBankAccount, ConnectionAlert, NewConnectionAlert } from "../db/schema";
 import { BaseRepository, type DB } from "./base";

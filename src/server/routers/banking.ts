@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure, bankProcedure } from "../trpc";
-import { anomalyAlerts, bankAccounts, properties, transactions, users } from "../db/schema";
+import { anomalyAlerts, bankAccounts, transactions, users } from "../db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { batchCategorize } from "../services/categorization";
 import { TRPCError } from "@trpc/server";
@@ -434,7 +434,7 @@ export const bankingRouter = router({
 
   processConnection: bankProcedure
     .input(z.object({ jobIds: z.array(z.string()).optional() }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ ctx }) => {
       // Look up stored basiqUserId
       const user = await ctx.db.query.users.findFirst({
         where: eq(users.id, ctx.portfolio.ownerId),

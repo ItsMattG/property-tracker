@@ -1,5 +1,5 @@
 import { eq, and, desc, gte, lte, inArray, sql } from "drizzle-orm";
-import { transactions, transactionNotes } from "../db/schema";
+import { transactions } from "../db/schema";
 import type { Transaction, NewTransaction } from "../db/schema";
 import { BaseRepository, type DB } from "./base";
 import type {
