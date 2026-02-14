@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { positiveAmountSchema } from "@/lib/validation";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { propertyValues, properties, loans } from "../db/schema";
@@ -131,12 +132,12 @@ export const propertyValueRouter = router({
     .input(
       z.object({
         propertyId: z.string().uuid(),
-        estimatedValue: z.string().regex(/^\d+\.?\d*$/, "Invalid value"),
+        estimatedValue: positiveAmountSchema,
         valueDate: z.string(),
         source: z.enum(["manual", "mock", "corelogic", "proptrack"]).default("manual"),
         notes: z.string().optional(),
-        confidenceLow: z.string().regex(/^\d+\.?\d*$/).optional(),
-        confidenceHigh: z.string().regex(/^\d+\.?\d*$/).optional(),
+        confidenceLow: positiveAmountSchema.optional(),
+        confidenceHigh: positiveAmountSchema.optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

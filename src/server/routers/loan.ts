@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { positiveAmountSchema } from "@/lib/validation";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { loans } from "../db/schema";
 import { eq, and, lt } from "drizzle-orm";
@@ -9,11 +10,11 @@ const loanSchema = z.object({
   accountNumberMasked: z.string().optional(),
   loanType: z.enum(["principal_and_interest", "interest_only"]),
   rateType: z.enum(["variable", "fixed", "split"]),
-  originalAmount: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
-  currentBalance: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
-  interestRate: z.string().regex(/^\d+\.?\d*$/, "Invalid rate"),
+  originalAmount: positiveAmountSchema,
+  currentBalance: positiveAmountSchema,
+  interestRate: positiveAmountSchema,
   fixedRateExpiry: z.string().optional(),
-  repaymentAmount: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
+  repaymentAmount: positiveAmountSchema,
   repaymentFrequency: z.enum(["weekly", "fortnightly", "monthly"]),
   offsetAccountId: z.string().uuid().optional(),
 });
@@ -126,7 +127,7 @@ export const loanRouter = router({
     .input(
       z.object({
         id: z.string().uuid(),
-        currentBalance: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
+        currentBalance: positiveAmountSchema,
       })
     )
     .mutation(async ({ ctx, input }) => {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { timeSchema } from "@/lib/validation";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import {
   notificationPreferences,
@@ -40,8 +41,8 @@ export const notificationRouter = router({
         syncFailed: z.boolean().optional(),
         anomalyDetected: z.boolean().optional(),
         weeklyDigest: z.boolean().optional(),
-        quietHoursStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-        quietHoursEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+        quietHoursStart: timeSchema.optional(),
+        quietHoursEnd: timeSchema.optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

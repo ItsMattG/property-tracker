@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { signedAmountSchema } from "@/lib/validation";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { transactions, transactionNotes } from "../db/schema";
@@ -193,7 +194,7 @@ export const transactionRouter = router({
         propertyId: z.string().uuid(),
         date: z.string(),
         description: z.string().min(1, "Description is required"),
-        amount: z.string().regex(/^-?\d+\.?\d*$/, "Invalid amount"),
+        amount: signedAmountSchema,
         category: z.enum(categoryValues).default("uncategorized"),
         notes: z.string().optional(),
       })
@@ -425,7 +426,7 @@ export const transactionRouter = router({
         propertyId: z.string().uuid(),
         date: z.string(),
         description: z.string().min(1, "Description is required"),
-        amount: z.string().regex(/^-?\d+\.?\d*$/, "Invalid amount"),
+        amount: signedAmountSchema,
         category: z.enum(categoryValues).default("uncategorized"),
         notes: z.string().optional(),
       })

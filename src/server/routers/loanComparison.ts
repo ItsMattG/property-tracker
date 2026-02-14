@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { positiveAmountSchema } from "@/lib/validation";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { loanComparisons, loans, refinanceAlerts } from "../db/schema";
 import { eq, and } from "drizzle-orm";
@@ -85,9 +86,9 @@ export const loanComparisonRouter = router({
       z.object({
         loanId: z.string().uuid(),
         name: z.string().min(1),
-        newRate: z.string().regex(/^\d+\.?\d*$/),
+        newRate: positiveAmountSchema,
         newLender: z.string().optional(),
-        switchingCosts: z.string().regex(/^\d+\.?\d*$/).default("0"),
+        switchingCosts: positiveAmountSchema.default("0"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -176,7 +177,7 @@ export const loanComparisonRouter = router({
       z.object({
         loanId: z.string().uuid(),
         enabled: z.boolean(),
-        rateGapThreshold: z.string().regex(/^\d+\.?\d*$/),
+        rateGapThreshold: positiveAmountSchema,
         notifyOnCashRateChange: z.boolean(),
       })
     )
