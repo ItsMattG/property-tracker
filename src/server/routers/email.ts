@@ -1,12 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import {
-  propertyEmails,
-  propertyEmailSenders,
-  propertyEmailInvoiceMatches,
-} from "../db/schema";
-import { eq, and } from "drizzle-orm";
 import { recordSenderPropertyMatch } from "../services/gmail-sync";
 import {
   ensureForwardingAddress,
@@ -95,20 +89,13 @@ export const emailRouter = router({
   approveSender: writeProcedure
     .input(z.object({ emailId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const [email] = await ctx.db
-        .select()
-        .from(propertyEmails)
-        .where(
-          and(
-            eq(propertyEmails.id, input.emailId),
-            eq(propertyEmails.userId, ctx.portfolio.ownerId),
-            eq(propertyEmails.status, "quarantined")
-          )
-        );
+      const result = await ctx.uow.email.findById(input.emailId, ctx.portfolio.ownerId);
 
-      if (!email) {
+      if (!result || result.email.status !== "quarantined") {
         throw new TRPCError({ code: "NOT_FOUND", message: "Email not found" });
       }
+
+      const { email } = result;
 
       if (!email.propertyId) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot approve email without property assignment" });
@@ -176,13 +163,7 @@ export const emailRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       // Verify the sender belongs to a property the user owns
-      const [sender] = await ctx.db
-        .select({
-          id: propertyEmailSenders.id,
-          propertyId: propertyEmailSenders.propertyId,
-        })
-        .from(propertyEmailSenders)
-        .where(eq(propertyEmailSenders.id, input.id));
+      const sender = await ctx.uow.email.findSenderById(input.id);
 
       if (!sender) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Sender not found" });
@@ -200,24 +181,16 @@ export const emailRouter = router({
   acceptMatch: writeProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const [match] = await ctx.db
-        .select({
-          id: propertyEmailInvoiceMatches.id,
-          emailId: propertyEmailInvoiceMatches.emailId,
-        })
-        .from(propertyEmailInvoiceMatches)
-        .where(eq(propertyEmailInvoiceMatches.id, input.id));
+      const match = await ctx.uow.email.findInvoiceMatchById(input.id);
 
       if (!match) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Match not found" });
       }
 
-      const [email] = await ctx.db
-        .select({ userId: propertyEmails.userId })
-        .from(propertyEmails)
-        .where(eq(propertyEmails.id, match.emailId));
+      // Verify the match's email belongs to the current user
+      const emailResult = await ctx.uow.email.findById(match.emailId, ctx.portfolio.ownerId);
 
-      if (email?.userId !== ctx.portfolio.ownerId) {
+      if (!emailResult) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Match not found" });
       }
 
@@ -227,24 +200,16 @@ export const emailRouter = router({
   rejectMatch: writeProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const [match] = await ctx.db
-        .select({
-          id: propertyEmailInvoiceMatches.id,
-          emailId: propertyEmailInvoiceMatches.emailId,
-        })
-        .from(propertyEmailInvoiceMatches)
-        .where(eq(propertyEmailInvoiceMatches.id, input.id));
+      const match = await ctx.uow.email.findInvoiceMatchById(input.id);
 
       if (!match) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Match not found" });
       }
 
-      const [email] = await ctx.db
-        .select({ userId: propertyEmails.userId })
-        .from(propertyEmails)
-        .where(eq(propertyEmails.id, match.emailId));
+      // Verify the match's email belongs to the current user
+      const emailResult = await ctx.uow.email.findById(match.emailId, ctx.portfolio.ownerId);
 
-      if (email?.userId !== ctx.portfolio.ownerId) {
+      if (!emailResult) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Match not found" });
       }
 
@@ -254,13 +219,7 @@ export const emailRouter = router({
   downloadAttachment: protectedProcedure
     .input(z.object({ attachmentId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const attachment = await ctx.uow.email.findAttachment(input.attachmentId) as {
-        id: number;
-        storagePath: string;
-        filename: string;
-        contentType: string;
-        emailId: number;
-      } | null;
+      const attachment = await ctx.uow.email.findAttachment(input.attachmentId);
 
       if (!attachment) {
         throw new TRPCError({
@@ -269,12 +228,10 @@ export const emailRouter = router({
         });
       }
 
-      const [email] = await ctx.db
-        .select({ userId: propertyEmails.userId })
-        .from(propertyEmails)
-        .where(eq(propertyEmails.id, attachment.emailId));
+      // Verify the attachment's email belongs to the current user
+      const emailResult = await ctx.uow.email.findById(attachment.emailId, ctx.portfolio.ownerId);
 
-      if (email?.userId !== ctx.portfolio.ownerId) {
+      if (!emailResult) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Attachment not found",
@@ -325,20 +282,9 @@ export const emailRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify email belongs to user
-      const [email] = await ctx.db
-        .select({
-          id: propertyEmails.id,
-          fromAddress: propertyEmails.fromAddress,
-        })
-        .from(propertyEmails)
-        .where(
-          and(
-            eq(propertyEmails.id, input.emailId),
-            eq(propertyEmails.userId, ctx.portfolio.ownerId)
-          )
-        );
+      const result = await ctx.uow.email.findById(input.emailId, ctx.portfolio.ownerId);
 
-      if (!email) {
+      if (!result) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Email not found",
@@ -356,10 +302,10 @@ export const emailRouter = router({
 
       await ctx.uow.email.updateEmail(input.emailId, ctx.portfolio.ownerId, { propertyId: input.propertyId });
 
-      if (input.rememberSender && email.fromAddress) {
+      if (input.rememberSender && result.email.fromAddress) {
         await recordSenderPropertyMatch(
           ctx.portfolio.ownerId,
-          email.fromAddress,
+          result.email.fromAddress,
           input.propertyId,
           1.0
         );

@@ -56,4 +56,10 @@ export interface IEmailRepository {
 
   /** Get an attachment by id */
   findAttachment(id: number): Promise<Pick<PropertyEmailAttachment, "id" | "storagePath" | "filename" | "contentType" | "emailId"> | null>;
+
+  /** Find a sender by id */
+  findSenderById(id: number): Promise<Pick<PropertyEmailSender, "id" | "propertyId"> | null>;
+
+  /** Find an invoice match by id with its associated emailId */
+  findInvoiceMatchById(id: number): Promise<Pick<PropertyEmailInvoiceMatch, "id" | "emailId"> | null>;
 }
