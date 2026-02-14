@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { properties, propertyValues, loans, transactions } from "../db/schema";
-import { eq, and, gte, lte, inArray, desc } from "drizzle-orm";
+import { properties, loans, transactions } from "../db/schema";
+import { eq, and, gte, lte, inArray } from "drizzle-orm";
+import { getLatestPropertyValues } from "./portfolio-helpers";
 import {
   calculateEquity,
   calculateLVR,
@@ -10,35 +11,6 @@ import {
   calculateNetYield,
   getDateRangeForPeriod,
 } from "../services/portfolio";
-
-/** Fetch the latest property value per property using DISTINCT ON to avoid N+1 */
-async function getLatestPropertyValues(
-  db: typeof import("../db")["db"],
-  userId: string,
-  propertyIds: string[]
-): Promise<Map<string, number>> {
-  if (propertyIds.length === 0) return new Map();
-
-  const rows = await db
-    .selectDistinctOn([propertyValues.propertyId], {
-      propertyId: propertyValues.propertyId,
-      estimatedValue: propertyValues.estimatedValue,
-    })
-    .from(propertyValues)
-    .where(
-      and(
-        eq(propertyValues.userId, userId),
-        inArray(propertyValues.propertyId, propertyIds)
-      )
-    )
-    .orderBy(propertyValues.propertyId, desc(propertyValues.valueDate));
-
-  const latestValues = new Map<string, number>();
-  for (const row of rows) {
-    latestValues.set(row.propertyId, Number(row.estimatedValue));
-  }
-  return latestValues;
-}
 
 const periodSchema = z.enum(["monthly", "quarterly", "annual"]);
 const sortBySchema = z.enum(["cashFlow", "equity", "lvr", "alphabetical"]);
