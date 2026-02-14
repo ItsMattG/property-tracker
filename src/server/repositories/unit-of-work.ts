@@ -15,7 +15,7 @@ import type {
 } from "./interfaces";
 
 // Concrete imports — uncommented as each repository is implemented in PRs 2.2-2.4
-// import { PropertyRepository } from "./property.repository";
+import { PropertyRepository } from "./property.repository";
 // import { BankAccountRepository } from "./bank-account.repository";
 // import { TransactionRepository } from "./transaction.repository";
 // import { LoanRepository } from "./loan.repository";
@@ -46,9 +46,9 @@ export class UnitOfWork {
   constructor(private readonly db: DB) {}
 
   // Lazy getters — uncommented as each concrete repository is implemented
-  // get property(): IPropertyRepository {
-  //   return (this._property ??= new PropertyRepository(this.db));
-  // }
+  get property(): IPropertyRepository {
+    return (this._property ??= new PropertyRepository(this.db));
+  }
   // get bankAccount(): IBankAccountRepository {
   //   return (this._bankAccount ??= new BankAccountRepository(this.db));
   // }

@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { positiveAmountSchema, australianPostcodeSchema } from "@/lib/validation";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { properties, equityMilestones, referrals, referralCredits, subscriptions, users } from "../db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { referrals, referralCredits, subscriptions, users } from "../db/schema";
+import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getClimateRisk } from "../services/climate-risk";
 import { getPlanFromSubscription, PLAN_LIMITS, type Plan } from "../services/subscription";
@@ -36,32 +36,15 @@ export const propertyRouter = router({
       currentPlan = "pro";
     }
 
-    // Free users cannot see locked properties
-    if (currentPlan === "free") {
-      return ctx.db.query.properties.findMany({
-        where: and(
-          eq(properties.userId, ctx.portfolio.ownerId),
-          eq(properties.locked, false)
-        ),
-        orderBy: (properties, { desc }) => [desc(properties.createdAt)],
-      });
-    }
-
-    return ctx.db.query.properties.findMany({
-      where: eq(properties.userId, ctx.portfolio.ownerId),
-      orderBy: (properties, { desc }) => [desc(properties.createdAt)],
+    return ctx.uow.property.findByOwner(ctx.portfolio.ownerId, {
+      excludeLocked: currentPlan === "free",
     });
   }),
 
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.id),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(input.id, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new Error("Property not found");
@@ -117,12 +100,9 @@ export const propertyRouter = router({
       const limit = PLAN_LIMITS[currentPlan].maxProperties;
 
       if (limit !== Infinity) {
-        const [propertyCount] = await ctx.db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(properties)
-          .where(eq(properties.userId, ctx.portfolio.ownerId));
+        const propertyCount = await ctx.uow.property.countByOwner(ctx.portfolio.ownerId);
 
-        if ((propertyCount?.count ?? 0) >= limit) {
+        if (propertyCount >= limit) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: `Your ${currentPlan} plan allows up to ${limit} property. Upgrade to Pro for unlimited properties.`,
@@ -132,33 +112,27 @@ export const propertyRouter = router({
 
       const climateRisk = getClimateRisk(input.postcode);
 
-      const [property] = await ctx.db
-        .insert(properties)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          address: input.address,
-          suburb: input.suburb,
-          state: input.state,
-          postcode: input.postcode,
-          purchasePrice: input.purchasePrice,
-          purchaseDate: input.contractDate,
-          contractDate: input.contractDate,
-          settlementDate: input.settlementDate || null,
-          entityName: input.entityName || "Personal",
-          latitude: input.latitude || null,
-          longitude: input.longitude || null,
-          climateRisk,
-        })
-        .returning();
+      const property = await ctx.uow.property.create({
+        userId: ctx.portfolio.ownerId,
+        address: input.address,
+        suburb: input.suburb,
+        state: input.state,
+        postcode: input.postcode,
+        purchasePrice: input.purchasePrice,
+        purchaseDate: input.contractDate,
+        contractDate: input.contractDate,
+        settlementDate: input.settlementDate || null,
+        entityName: input.entityName || "Personal",
+        latitude: input.latitude || null,
+        longitude: input.longitude || null,
+        climateRisk,
+      });
 
       // Check if this is the user's first property (for referral qualification)
       try {
-        const [propertyCount] = await ctx.db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(properties)
-          .where(eq(properties.userId, ctx.portfolio.ownerId));
+        const propertyCount = await ctx.uow.property.countByOwner(ctx.portfolio.ownerId);
 
-        if (propertyCount?.count === 1) {
+        if (propertyCount === 1) {
           // First property — qualify any pending referral
           const [referral] = await ctx.db
             .select()
@@ -229,51 +203,26 @@ export const propertyRouter = router({
         updateData.longitude = updateData.longitude || null;
       }
 
-      const [property] = await ctx.db
-        .update(properties)
-        .set(updateData)
-        .where(and(eq(properties.id, id), eq(properties.userId, ctx.portfolio.ownerId)))
-        .returning();
-
-      return property;
+      return ctx.uow.property.update(id, ctx.portfolio.ownerId, updateData);
     }),
 
   delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(properties)
-        .where(
-          and(eq(properties.id, input.id), eq(properties.userId, ctx.portfolio.ownerId))
-        );
-
+      await ctx.uow.property.delete(input.id, ctx.portfolio.ownerId);
       return { success: true };
     }),
 
   getMilestones: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db
-        .select()
-        .from(equityMilestones)
-        .where(
-          and(
-            eq(equityMilestones.propertyId, input.propertyId),
-            eq(equityMilestones.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .orderBy(desc(equityMilestones.achievedAt));
+      return ctx.uow.property.findMilestones(input.propertyId, ctx.portfolio.ownerId);
     }),
 
   refreshClimateRisk: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.id),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(input.id, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new Error("Property not found");
@@ -281,12 +230,9 @@ export const propertyRouter = router({
 
       const climateRisk = getClimateRisk(property.postcode);
 
-      const [updated] = await ctx.db
-        .update(properties)
-        .set({ climateRisk, updatedAt: new Date() })
-        .where(and(eq(properties.id, input.id), eq(properties.userId, ctx.portfolio.ownerId)))
-        .returning();
-
-      return updated;
+      return ctx.uow.property.update(input.id, ctx.portfolio.ownerId, {
+        climateRisk,
+        updatedAt: new Date(),
+      });
     }),
 });
