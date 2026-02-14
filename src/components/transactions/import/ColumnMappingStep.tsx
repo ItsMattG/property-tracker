@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import type { CSVColumnMap } from "@/server/services/csv-import";
+import type { CSVColumnMap } from "@/server/services/banking";
 import {
   Select,
   SelectContent,

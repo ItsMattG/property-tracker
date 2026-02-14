@@ -6,7 +6,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import {
   updateMerchantMemory,
   batchCategorize,
-} from "../services/categorization";
+} from "../services/banking";
 import { TRPCError } from "@trpc/server";
 import { categories } from "@/lib/categories";
 

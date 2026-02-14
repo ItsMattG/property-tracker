@@ -1,4 +1,4 @@
-import type { NewAnomalyAlert } from "../db/schema";
+import type { NewAnomalyAlert } from "../../db/schema";
 
 const UNUSUAL_AMOUNT_THRESHOLD = 0.3; // 30%
 const UNEXPECTED_EXPENSE_MIN = 500;
@@ -207,7 +207,7 @@ export async function getHistoricalAverage(
   merchantPattern: string,
   months: number = 6
 ): Promise<HistoricalAverage> {
-  const { transactions } = await import("../db/schema");
+  const { transactions } = await import("../../db/schema");
   const { eq, and, gte, like, sql } = await import("drizzle-orm");
 
   const startDate = new Date();
@@ -238,7 +238,7 @@ export async function getKnownMerchants(
   userId: string,
   propertyId?: string
 ): Promise<Set<string>> {
-  const { transactions } = await import("../db/schema");
+  const { transactions } = await import("../../db/schema");
   const { eq, and } = await import("drizzle-orm");
 
   const conditions = [eq(transactions.userId, userId)];

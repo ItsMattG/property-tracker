@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { db } from "../db";
-import { merchantCategories, categorizationExamples, transactions } from "../db/schema";
+import { db } from "../../db";
+import { merchantCategories, categorizationExamples, transactions } from "../../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { categories } from "@/lib/categories";
 

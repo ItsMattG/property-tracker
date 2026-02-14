@@ -7,7 +7,7 @@ import {
   properties,
 } from "@/server/db/schema";
 import { eq, and, lt } from "drizzle-orm";
-import { detectMissedRent } from "@/server/services/anomaly";
+import { detectMissedRent } from "@/server/services/banking";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 

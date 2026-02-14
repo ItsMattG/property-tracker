@@ -1,18 +1,20 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure, bankProcedure } from "../trpc";
 import { anomalyAlerts } from "../db/schema";
-import { batchCategorize } from "../services/categorization";
-import { TRPCError } from "@trpc/server";
-import { checkRateLimit, mapBasiqErrorToAlertType, mapAlertTypeToConnectionStatus } from "../services/sync";
-import { shouldCreateAlert } from "../services/alerts";
-import { basiqService } from "../services/basiq";
 import {
+  batchCategorize,
+  checkRateLimit,
+  mapBasiqErrorToAlertType,
+  mapAlertTypeToConnectionStatus,
+  shouldCreateAlert,
+  basiqService,
   detectUnusualAmount,
   detectDuplicates,
   detectUnexpectedExpense,
   getHistoricalAverage,
   getKnownMerchants,
-} from "../services/anomaly";
+} from "../services/banking";
+import { TRPCError } from "@trpc/server";
 import { metrics } from "@/lib/metrics";
 import { axiomMetrics } from "@/lib/axiom";
 import { logger } from "@/lib/logger";
