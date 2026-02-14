@@ -10,15 +10,22 @@ import { properties, equityMilestones, users } from "../../db/schema";
 import { PropertyRepository } from "../property.repository";
 import type { DB } from "../base";
 
+// Skip integration tests when no database is available (e.g. CI)
+const hasDatabase = !!process.env.DATABASE_URL;
+
 // Test database connection — uses DATABASE_URL from .env.local
 const connectionString = process.env.DATABASE_URL ?? "";
-const client = postgres(connectionString, { prepare: false, max: 1 });
-const db = drizzle(client, { schema }) as unknown as DB;
+const client = hasDatabase
+  ? postgres(connectionString, { prepare: false, max: 1 })
+  : (null as any);
+const db = hasDatabase
+  ? (drizzle(client, { schema }) as unknown as DB)
+  : (null as any);
 
 const TEST_USER_ID = "test-property-repo-user";
 const OTHER_USER_ID = "test-property-repo-other";
 
-describe("PropertyRepository", () => {
+describe.skipIf(!hasDatabase)("PropertyRepository", () => {
   let repo: PropertyRepository;
 
   beforeAll(async () => {
