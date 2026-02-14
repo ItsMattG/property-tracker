@@ -59,7 +59,7 @@ export class TransactionRepository
     });
 
     const [{ count: total }] = await this.db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql<number>`count(*)::int` })
       .from(transactions)
       .where(whereClause);
 
@@ -258,7 +258,7 @@ export class TransactionRepository
     });
 
     const [{ count: total }] = await this.db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: sql<number>`count(*)::int` })
       .from(transactions)
       .where(whereClause);
 
