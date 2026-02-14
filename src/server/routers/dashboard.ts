@@ -9,8 +9,9 @@ import {
   propertyValues,
   loans,
 } from "../db/schema";
-import { eq, and, ne, sql, gte, lt, inArray, desc } from "drizzle-orm";
+import { eq, and, ne, sql, gte, lt, inArray } from "drizzle-orm";
 import { calculateProgress, type OnboardingCounts } from "../services/onboarding";
+import { getLatestPropertyValues } from "./portfolio-helpers";
 
 export const dashboardRouter = router({
   getInitialData: protectedProcedure.query(async ({ ctx }) => {
@@ -215,59 +216,18 @@ export const dashboardRouter = router({
 
           if (activePropertyIds.length > 0) {
             // Current: latest estimated_value per active property (DISTINCT ON)
-            const currentValues = await ctx.db
-              .selectDistinctOn([propertyValues.propertyId], {
-                propertyId: propertyValues.propertyId,
-                estimatedValue: propertyValues.estimatedValue,
-              })
-              .from(propertyValues)
-              .where(
-                and(
-                  eq(propertyValues.userId, userId),
-                  inArray(propertyValues.propertyId, activePropertyIds)
-                )
-              )
-              .orderBy(
-                propertyValues.propertyId,
-                desc(propertyValues.valueDate),
-                desc(propertyValues.createdAt)
-              );
-
-            // Build map of latest valuations, fall back to purchasePrice
-            const valuationMap = new Map<string, number>();
-            for (const row of currentValues) {
-              valuationMap.set(row.propertyId, parseFloat(row.estimatedValue || "0"));
-            }
+            const valuationMap = await getLatestPropertyValues(
+              ctx.db, userId, activePropertyIds
+            );
             currentPortfolioValue = activeProperties.reduce(
               (sum, p) => sum + (valuationMap.get(p.id) || parseFloat(p.purchasePrice || "0")),
               0
             );
 
             // Previous: latest value per property before start of current month
-            const prevValues = await ctx.db
-              .selectDistinctOn([propertyValues.propertyId], {
-                propertyId: propertyValues.propertyId,
-                estimatedValue: propertyValues.estimatedValue,
-              })
-              .from(propertyValues)
-              .where(
-                and(
-                  eq(propertyValues.userId, userId),
-                  inArray(propertyValues.propertyId, activePropertyIds),
-                  lt(propertyValues.valueDate, currentMonthStr)
-                )
-              )
-              .orderBy(
-                propertyValues.propertyId,
-                desc(propertyValues.valueDate),
-                desc(propertyValues.createdAt)
-              );
-
-            // For previous period, fall back to purchasePrice for properties without prior valuations
-            const prevValuationMap = new Map<string, number>();
-            for (const row of prevValues) {
-              prevValuationMap.set(row.propertyId, parseFloat(row.estimatedValue || "0"));
-            }
+            const prevValuationMap = await getLatestPropertyValues(
+              ctx.db, userId, activePropertyIds, currentMonthStr
+            );
             // Only compute previous if at least some properties existed before this month
             const propertiesBeforeMonth = activeProperties.filter(p => p.createdAt < startOfMonth);
             if (propertiesBeforeMonth.length > 0) {
