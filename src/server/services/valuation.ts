@@ -1,3 +1,5 @@
+import { ExternalServiceError } from "@/server/errors";
+
 export interface ValuationResult {
   estimatedValue: number;
   confidenceLow: number;
@@ -100,11 +102,11 @@ export function getValuationProvider(): ValuationProvider {
   const provider = process.env.VALUATION_PROVIDER;
 
   if (provider === "corelogic") {
-    throw new Error("CoreLogic provider not implemented");
+    throw new ExternalServiceError("CoreLogic provider not implemented", "corelogic");
   }
 
   if (provider === "proptrack") {
-    throw new Error("PropTrack provider not implemented");
+    throw new ExternalServiceError("PropTrack provider not implemented", "proptrack");
   }
 
   return new MockValuationProvider();

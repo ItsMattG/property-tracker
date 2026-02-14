@@ -1,6 +1,8 @@
 // Basiq API Service
 // Documentation: https://api.basiq.io/reference
 
+import { ExternalServiceError } from "@/server/errors";
+
 const BASIQ_API_URL = process.env.BASIQ_SERVER_URL || "https://au-api.basiq.io";
 const BASIQ_API_KEY = process.env.BASIQ_API_KEY;
 
@@ -78,7 +80,7 @@ class BasiqService {
     }
 
     if (!BASIQ_API_KEY) {
-      throw new Error("BASIQ_API_KEY is not configured");
+      throw new ExternalServiceError("BASIQ_API_KEY is not configured", "basiq");
     }
 
     const response = await fetch(`${BASIQ_API_URL}/token`, {
@@ -92,7 +94,7 @@ class BasiqService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to get Basiq access token: ${response.statusText}`);
+      throw new ExternalServiceError(`Failed to get Basiq access token: ${response.statusText}`, "basiq");
     }
 
     const data: BasiqToken = await response.json();
@@ -130,7 +132,7 @@ class BasiqService {
           }
 
           const error = await response.text();
-          throw new Error(`Basiq API error: ${response.statusText} - ${error}`);
+          throw new ExternalServiceError(`Basiq API error: ${response.statusText} - ${error}`, "basiq");
         }
 
         return response.json();

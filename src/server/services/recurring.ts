@@ -1,4 +1,5 @@
 import type { RecurringTransaction, Transaction, ExpectedTransaction } from "../db/schema";
+import { formatDateISO } from "@/lib/utils";
 
 export type Frequency = "weekly" | "fortnightly" | "monthly" | "quarterly" | "annually";
 export type ExpectedStatus = "pending" | "matched" | "missed" | "skipped";
@@ -162,21 +163,14 @@ export function generateExpectedTransactions(
   const existingSet = new Set(existingDates);
 
   return dates
-    .filter((d) => !existingSet.has(formatDate(d)))
+    .filter((d) => !existingSet.has(formatDateISO(d)))
     .map((date) => ({
       recurringTransactionId: template.id,
       userId: template.userId,
       propertyId: template.propertyId,
-      expectedDate: formatDate(date),
+      expectedDate: formatDateISO(date),
       expectedAmount: template.amount,
     }));
-}
-
-/**
- * Format date as YYYY-MM-DD
- */
-function formatDate(date: Date): string {
-  return date.toISOString().split("T")[0];
 }
 
 /**

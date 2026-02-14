@@ -1,5 +1,6 @@
 // src/server/services/property-manager/propertyme.ts
 
+import { ExternalServiceError } from "@/server/errors";
 import type {
   PropertyManagerProvider,
   PMProperty,
@@ -53,7 +54,7 @@ export class PropertyMeProvider implements PropertyManagerProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`Token exchange failed: ${response.statusText}`);
+      throw new ExternalServiceError(`Token exchange failed: ${response.statusText}`, "propertyme");
     }
 
     const data = await response.json();
@@ -78,7 +79,7 @@ export class PropertyMeProvider implements PropertyManagerProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`Token refresh failed: ${response.statusText}`);
+      throw new ExternalServiceError(`Token refresh failed: ${response.statusText}`, "propertyme");
     }
 
     const data = await response.json();
@@ -98,7 +99,7 @@ export class PropertyMeProvider implements PropertyManagerProvider {
     });
 
     if (!response.ok) {
-      throw new Error(`PropertyMe API error: ${response.statusText}`);
+      throw new ExternalServiceError(`PropertyMe API error: ${response.statusText}`, "propertyme");
     }
 
     return response.json();
