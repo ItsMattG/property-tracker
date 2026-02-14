@@ -134,8 +134,8 @@ describe("property router", () => {
 
       // Verify update was called with proper table reference
       expect(updateMock).toHaveBeenCalledTimes(1);
-      // The update chain was executed (where clause includes userId filter in router)
-      expect(result).toBeUndefined(); // Empty array returns undefined
+      // The update chain was executed (where clause includes userId filter in repository)
+      expect(result).toBeNull(); // Repository normalizes empty result to null
     });
 
     it("property.delete only deletes user's own properties", async () => {
@@ -192,7 +192,7 @@ describe("property router", () => {
       });
 
       // Because where includes userId filter, other user's properties won't match
-      expect(result).toBeUndefined();
+      expect(result).toBeNull(); // Repository normalizes empty result to null
     });
   });
 });
