@@ -7,9 +7,10 @@
 | `src/server/trpc.ts` | tRPC init, all procedure types, middleware |
 | `src/server/routers/_app.ts` | Root router (54 sub-routers) |
 | `src/server/db/index.ts` | Drizzle + postgres client (max: 1 for serverless) |
-| `src/server/db/schema.ts` | ~3300 lines, 80+ tables, 40+ enums, relations |
+| `src/server/db/schema/index.ts` | Barrel re-export of domain schema modules |
+| `src/server/db/schema/*.ts` | Domain-split schema (auth, banking, properties, etc.) |
 | `src/app/api/trpc/[trpc]/route.ts` | API route handler + error sanitization |
-| `src/server/services/categorization.ts` | AI categorization service (Anthropic SDK) |
+| `src/server/services/banking/categorization.ts` | AI categorization service (Anthropic SDK) |
 | `src/app/api/chat/route.ts` | AI chat route (Vercel AI SDK) |
 
 ## Procedure Types
@@ -101,6 +102,28 @@ import { myRouter } from "./my";
 export const appRouter = router({ my: myRouter, /* ... */ });
 ```
 
+## Repository Pattern
+
+Routers access data via `ctx.uow` (Unit of Work), not `ctx.db` directly.
+
+```typescript
+// Good — typed, testable
+const property = await ctx.uow.property.findById(id, ctx.portfolio.ownerId);
+await ctx.uow.property.update(id, ctx.portfolio.ownerId, { name: input.name });
+
+// Bad — bypasses repository layer
+const property = await ctx.db.query.properties.findFirst({ ... });
+```
+
+**When `ctx.db` is acceptable:**
+- Cross-domain queries touching tables from multiple repositories (add a comment explaining why)
+- Background closures where UoW is not available
+
+**Interface rules:**
+- Update methods: `data: Partial<SchemaType>` — never `Record<string, unknown>`
+- Return types: always typed — never `Promise<unknown>` or `Promise<any>`
+- Relation fields: always typed — never `unknown`
+
 ## Drizzle Query Patterns
 
 ```typescript
@@ -168,6 +191,9 @@ export const myStatusEnum = pgEnum("my_status", ["active", "inactive", "archived
 | `inArray()` for bulk operations | Loop with individual queries |
 | `Promise.all()` for parallel queries | Sequential awaits for independent queries |
 | `sql<number>\`count(*)::int\`` | `count(*)` without int cast |
+| `Partial<SchemaType>` for repo updates | `Record<string, unknown>` (not type-safe) |
+| `ctx.uow.repo.method()` in routers | `ctx.db` when repo method exists |
+| Typed return values on repo methods | `Promise<unknown>` or `Promise<any>` |
 | `prepare: false` in DB config | Enable prepared statements (breaks serverless) |
 | `max: 1` connection | Multiple connections (serverless) |
 
@@ -201,7 +227,7 @@ These automatically check subscription status and throw `FORBIDDEN` if insuffici
 - Gated behind `featureFlags.aiAssistant` (currently false)
 
 ### Categorization (Anthropic SDK)
-- Service: `src/server/services/categorization.ts`
+- Service: `src/server/services/banking/categorization.ts`
 - Model: `claude-3-haiku-20240307` for cost
 - Two-tier: merchant memory first, Claude API fallback
 - Direct `@anthropic-ai/sdk` usage (not Vercel AI SDK)

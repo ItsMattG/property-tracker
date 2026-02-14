@@ -5,12 +5,15 @@ import { BaseRepository, type DB } from "./base";
 import type { IUserRepository } from "./interfaces/user.repository.interface";
 
 export class UserRepository extends BaseRepository implements IUserRepository {
-  async findById(id: string, columns?: Partial<Record<keyof User, true>>): Promise<any> {
+  async findById(id: string): Promise<User | null>;
+  async findById(id: string, columns: Partial<Record<keyof User, true>>): Promise<Partial<User> | null>;
+  async findById(id: string, columns?: Partial<Record<keyof User, true>>): Promise<User | Partial<User> | null> {
     if (columns) {
-      return this.db.query.users.findFirst({
+      const result = await this.db.query.users.findFirst({
         where: eq(users.id, id),
         columns,
-      }) as Promise<any>;
+      });
+      return (result as Partial<User>) ?? null;
     }
     const result = await this.db.query.users.findFirst({
       where: eq(users.id, id),

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { properties, transactions, documentExtractions } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { extractDocument } from "../services/document-extraction";
 import { matchPropertyByAddress } from "../services/property-matcher";
@@ -45,12 +45,7 @@ export const documentsRouter = router({
       }
 
       if (transactionId) {
-        const transaction = await ctx.db.query.transactions.findFirst({
-          where: and(
-            eq(transactions.id, transactionId),
-            eq(transactions.userId, ctx.portfolio.ownerId)
-          ),
-        });
+        const transaction = await ctx.uow.transactions.findById(transactionId, ctx.portfolio.ownerId);
         if (!transaction) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
         }
@@ -122,12 +117,7 @@ export const documentsRouter = router({
       }
 
       if (transactionId) {
-        const transaction = await ctx.db.query.transactions.findFirst({
-          where: and(
-            eq(transactions.id, transactionId),
-            eq(transactions.userId, ctx.portfolio.ownerId)
-          ),
-        });
+        const transaction = await ctx.uow.transactions.findById(transactionId, ctx.portfolio.ownerId);
         if (!transaction) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
         }
@@ -154,6 +144,7 @@ export const documentsRouter = router({
         });
 
         // Run extraction asynchronously (don't await)
+        // Uses db directly: background closure runs outside request/UoW lifecycle
         const ownerId = ctx.portfolio.ownerId;
         const db = ctx.db;
 

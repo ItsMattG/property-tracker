@@ -1,4 +1,4 @@
-import type { Transaction, NewTransaction } from "../../db/schema";
+import type { Transaction, NewTransaction, Property, BankAccount } from "../../db/schema";
 import type { DB } from "../base";
 
 /** Filters for listing transactions */
@@ -15,8 +15,8 @@ export interface TransactionFilters {
 
 /** Transaction with property and bank account relations */
 export type TransactionWithRelations = Transaction & {
-  property?: unknown;
-  bankAccount?: unknown;
+  property?: Property | null;
+  bankAccount?: BankAccount | null;
 };
 
 /** Paginated transaction result (includes relations from joins) */
@@ -59,4 +59,25 @@ export interface ITransactionRepository {
 
   /** Get monthly cash in/out for an account */
   getMonthlyCashFlow(bankAccountId: string, userId: string, monthStart: string): Promise<{ cashIn: string; cashOut: string }>;
+
+  /** Find recent transactions for a bank account (for anomaly detection) */
+  findRecentByAccount(userId: string, bankAccountId: string, limit: number): Promise<Transaction[]>;
+
+  /** Find uncategorized transactions for a bank account (post-sync AI categorization) */
+  findUncategorizedByAccount(userId: string, bankAccountId: string, limit: number): Promise<Transaction[]>;
+
+  /** Find transactions with pending AI suggestions (paginated, with relations) */
+  findPendingSuggestions(
+    userId: string,
+    filters: { confidenceFilter?: "all" | "high" | "low"; limit?: number; offset?: number }
+  ): Promise<{ transactions: TransactionWithRelations[]; total: number }>;
+
+  /** Count transactions with pending AI suggestions */
+  countPendingSuggestions(userId: string): Promise<number>;
+
+  /** Find uncategorized transactions for manual AI categorization trigger */
+  findForCategorization(userId: string, opts?: { limit?: number }): Promise<Transaction[]>;
+
+  /** Find multiple transactions by IDs scoped to user */
+  findByIds(ids: string[], userId: string): Promise<Transaction[]>;
 }

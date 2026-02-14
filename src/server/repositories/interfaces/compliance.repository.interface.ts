@@ -15,7 +15,7 @@ export interface IComplianceRepository {
   create(data: NewComplianceRecord, tx?: DB): Promise<ComplianceRecord>;
 
   /** Update a compliance record */
-  update(id: string, userId: string, data: Record<string, unknown>, tx?: DB): Promise<ComplianceRecord>;
+  update(id: string, userId: string, data: Partial<ComplianceRecord>, tx?: DB): Promise<ComplianceRecord>;
 
   /** Delete a compliance record */
   delete(id: string, userId: string, tx?: DB): Promise<void>;

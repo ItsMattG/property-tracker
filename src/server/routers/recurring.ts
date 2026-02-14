@@ -6,6 +6,7 @@ import {
   expectedTransactions,
   transactions,
 } from "../db/schema";
+import type { RecurringTransaction } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import {
   generateExpectedTransactions,
@@ -118,14 +119,14 @@ export const recurringRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 
-      const updateData: Record<string, unknown> = {
+      const updateData: Partial<RecurringTransaction> = {
         updatedAt: new Date(),
       };
 
       if (data.propertyId) updateData.propertyId = data.propertyId;
       if (data.description) updateData.description = data.description;
       if (data.amount) updateData.amount = data.amount;
-      if (data.category) updateData.category = data.category;
+      if (data.category) updateData.category = data.category as RecurringTransaction["category"];
       if (data.transactionType) updateData.transactionType = data.transactionType;
       if (data.frequency) updateData.frequency = data.frequency;
       if (data.dayOfMonth !== undefined)

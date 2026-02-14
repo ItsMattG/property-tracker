@@ -6,10 +6,7 @@ export interface IUserRepository {
   findById(id: string): Promise<User | null>;
 
   /** Find a user by id with specific columns */
-  findById<T extends Partial<Record<keyof User, true>>>(
-    id: string,
-    columns: T,
-  ): Promise<Pick<User, Extract<keyof T, keyof User>> | null>;
+  findById(id: string, columns: Partial<Record<keyof User, true>>): Promise<Partial<User> | null>;
 
   /** Update a user */
   update(id: string, data: Partial<User>, tx?: DB): Promise<void>;

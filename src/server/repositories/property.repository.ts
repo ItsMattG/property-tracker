@@ -39,7 +39,7 @@ export class PropertyRepository
   async update(
     id: string,
     userId: string,
-    data: Record<string, unknown>,
+    data: Partial<Property>,
     tx?: DB
   ): Promise<Property | null> {
     const client = this.resolve(tx);

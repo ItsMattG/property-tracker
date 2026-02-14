@@ -1,4 +1,7 @@
-import type { NewAnomalyAlert } from "../db/schema";
+import type { NewAnomalyAlert } from "../../db/schema";
+import { transactions } from "../../db/schema";
+import { eq, and, gte, like, sql } from "drizzle-orm";
+import type { DB } from "../../repositories/base";
 
 const UNUSUAL_AMOUNT_THRESHOLD = 0.3; // 30%
 const UNEXPECTED_EXPENSE_MIN = 500;
@@ -202,21 +205,18 @@ function extractMerchant(description: string): string {
 }
 
 export async function getHistoricalAverage(
-  db: any,
+  db: DB,
   userId: string,
   merchantPattern: string,
   months: number = 6
 ): Promise<HistoricalAverage> {
-  const { transactions } = await import("../db/schema");
-  const { eq, and, gte, like, sql } = await import("drizzle-orm");
-
   const startDate = new Date();
   startDate.setMonth(startDate.getMonth() - months);
 
   const result = await db
     .select({
       avg: sql<number>`AVG(ABS(CAST(${transactions.amount} AS DECIMAL)))`,
-      count: sql<number>`COUNT(*)`,
+      count: sql<number>`COUNT(*)::int`,
     })
     .from(transactions)
     .where(
@@ -234,13 +234,10 @@ export async function getHistoricalAverage(
 }
 
 export async function getKnownMerchants(
-  db: any,
+  db: DB,
   userId: string,
   propertyId?: string
 ): Promise<Set<string>> {
-  const { transactions } = await import("../db/schema");
-  const { eq, and } = await import("drizzle-orm");
-
   const conditions = [eq(transactions.userId, userId)];
   if (propertyId) {
     conditions.push(eq(transactions.propertyId, propertyId));

@@ -33,7 +33,7 @@ export interface IRecurringRepository {
   create(data: NewRecurringTransaction, tx?: DB): Promise<RecurringTransaction>;
 
   /** Update a recurring template */
-  update(id: string, userId: string, data: Record<string, unknown>, tx?: DB): Promise<RecurringTransaction>;
+  update(id: string, userId: string, data: Partial<RecurringTransaction>, tx?: DB): Promise<RecurringTransaction>;
 
   /** Delete a recurring template */
   delete(id: string, userId: string, tx?: DB): Promise<void>;

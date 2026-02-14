@@ -310,7 +310,7 @@ export async function generateAllSuggestions(userId: string): Promise<number> {
 
   // Return count of active suggestions
   const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
+    .select({ count: sql<number>`count(*)::int` })
     .from(taxSuggestions)
     .where(
       and(
