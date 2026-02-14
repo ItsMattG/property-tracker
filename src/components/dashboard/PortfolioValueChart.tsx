@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   AreaChart,
@@ -12,14 +13,8 @@ import {
 } from "recharts";
 import { trpc } from "@/lib/trpc/client";
 import { TrendingUp } from "lucide-react";
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+import { TimeRangeToggle } from "./TimeRangeToggle";
+import { formatCurrency } from "@/lib/utils";
 
 function formatCompact(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
@@ -39,13 +34,23 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   );
 }
 
+function generateMonthLabels(count: number): string[] {
+  const now = new Date();
+  const labels: string[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    labels.push(`${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(-2)}`);
+  }
+  return labels;
+}
+
 export function PortfolioValueChart() {
+  const [months, setMonths] = useState(6);
   const { data: properties } = trpc.property.list.useQuery(undefined, {
     staleTime: 5 * 60_000,
   });
 
-  // Build simple portfolio value data from properties
-  // For now, show current snapshot. When historical data is available, this will use a dedicated endpoint.
   const hasProperties = properties && properties.length > 0;
 
   if (!hasProperties) {
@@ -71,12 +76,13 @@ export function PortfolioValueChart() {
     );
   }
 
-  // Generate trailing 6-month placeholder data based on current property values
+  // Generate trailing N-month placeholder data based on current property values
   const totalValue = properties.reduce((sum, p) => sum + (Number(p.purchasePrice) || 0), 0);
-  const months = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
-  const data = months.map((month, i) => ({
+  const monthLabels = generateMonthLabels(months);
+  const growthPerMonth = 0.06 / 12; // ~6% annual growth simulated
+  const data = monthLabels.map((month, i) => ({
     month,
-    value: Math.round(totalValue * (0.94 + i * 0.0086)),
+    value: Math.round(totalValue * (1 - growthPerMonth * (months - 1 - i))),
   }));
 
   return (
@@ -92,9 +98,12 @@ export function PortfolioValueChart() {
               <CardDescription>Estimated total value over time</CardDescription>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
-            <p className="text-xs text-muted-foreground">{properties.length} {properties.length === 1 ? "property" : "properties"}</p>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
+              <p className="text-xs text-muted-foreground">{properties.length} {properties.length === 1 ? "property" : "properties"}</p>
+            </div>
+            <TimeRangeToggle value={months} onChange={setMonths} />
           </div>
         </div>
       </CardHeader>

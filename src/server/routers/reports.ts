@@ -157,10 +157,11 @@ export const reportsRouter = router({
       z.object({
         period: z.enum(["monthly", "quarterly", "annual"]).default("monthly"),
         months: z.number().min(1).max(24).default(12),
+        propertyId: z.string().optional(),
       })
     )
     .query(async ({ ctx, input }) => {
-      const { period, months } = input;
+      const { period, months, propertyId } = input;
 
       // Get properties with loans
       const userProperties = await getPropertiesWithLoans(ctx.portfolio.ownerId);
@@ -170,13 +171,19 @@ export const reportsRouter = router({
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - months);
 
+      // Build where conditions
+      const conditions = [
+        eq(transactions.userId, ctx.portfolio.ownerId),
+        gte(transactions.date, startDate.toISOString().split("T")[0]),
+        lte(transactions.date, endDate.toISOString().split("T")[0]),
+      ];
+      if (propertyId) {
+        conditions.push(eq(transactions.propertyId, propertyId));
+      }
+
       // Get transactions in range
       const txns = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.userId, ctx.portfolio.ownerId),
-          gte(transactions.date, startDate.toISOString().split("T")[0]),
-          lte(transactions.date, endDate.toISOString().split("T")[0])
-        ),
+        where: and(...conditions),
         orderBy: [desc(transactions.date)],
         with: {
           property: true,

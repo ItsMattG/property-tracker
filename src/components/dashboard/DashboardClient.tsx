@@ -20,14 +20,20 @@ import { useReferralTracking } from "@/hooks/useReferralTracking";
 import { RentalYieldCard } from "@/components/rental-yield";
 import { PortfolioValueChart } from "./PortfolioValueChart";
 import { CashFlowWidget } from "./CashFlowWidget";
+import { UpcomingCashFlowWidget } from "./UpcomingCashFlowWidget";
 import { ErrorState } from "@/components/ui/error-state";
 import { getErrorMessage } from "@/lib/errors";
 import { TrialPropertyLimitBanner } from "@/components/banners/TrialPropertyLimitBanner";
 import { StaleLoansDashboardCard } from "@/components/loans/StaleLoansDashboardCard";
+import { ActionItemsWidget } from "./ActionItemsWidget";
 import { PortfolioSummaryTable } from "./PortfolioSummaryTable";
 import { PropertyMapWidget } from "./PropertyMapWidget";
 import { LvrGaugeCard } from "./LvrGaugeCard";
 import { EquityProjectionCard } from "./EquityProjectionCard";
+import { RecentActivityCard } from "./RecentActivityCard";
+import { DEMO_STATS, DEMO_TRENDS } from "@/lib/demo-data";
+import { Button } from "@/components/ui/button";
+import { Eye, EyeOff, Plus } from "lucide-react";
 
 // Server-side data structure from dashboard.getInitialData
 // Note: Dates are Date objects on server but get serialized to strings when passed to client
@@ -62,6 +68,7 @@ function getTrendBorderClass(current: number, previous: number | null, invert = 
 
 export function DashboardClient({ initialData }: DashboardClientProps) {
   const [wizardClosed, setWizardClosed] = useState(false);
+  const [showDemoData, setShowDemoData] = useState(false);
   const utils = trpc.useUtils();
   useReferralTracking();
 
@@ -101,7 +108,13 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
   const { data: dashboardData } = trpc.dashboard.getInitialData.useQuery(undefined, {
     staleTime: 60_000,
   });
-  const trends = dashboardData?.trends ?? initialData?.trends ?? null;
+  const realTrends = dashboardData?.trends ?? initialData?.trends ?? null;
+
+  // Demo mode: overlay sample data when user has no properties
+  const hasNoProperties = stats?.propertyCount === 0 && !isLoading;
+  const isDemo = showDemoData && hasNoProperties;
+  const displayStats = isDemo ? DEMO_STATS : stats;
+  const trends = isDemo ? DEMO_TRENDS : realTrends;
 
   const dismissAlert = trpc.banking.dismissAlert.useMutation({
     onMutate: async (newData) => {
@@ -174,6 +187,43 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </p>
       </div>
 
+      {hasNoProperties && !showDemoData && (
+        <Card className="border-dashed border-primary/30 bg-primary/5">
+          <CardContent className="flex items-center justify-between py-4">
+            <div>
+              <p className="text-sm font-medium">Curious what BrickTrack looks like with data?</p>
+              <p className="text-xs text-muted-foreground">Preview the dashboard with sample properties and transactions.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowDemoData(true)}>
+              <Eye className="h-4 w-4 mr-2" />
+              Preview
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {isDemo && (
+        <Card className="border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30">
+          <CardContent className="flex items-center justify-between py-3">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              Viewing sample data. This is what BrickTrack looks like with real properties.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="default" size="sm" asChild>
+                <Link href="/properties/new">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Your Property
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowDemoData(false)}>
+                <EyeOff className="h-4 w-4 mr-1" />
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <PushPermissionBanner />
 
       {showChecklist && onboarding?.progress && (
@@ -202,7 +252,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                   {isLoading ? (
                     <div className="h-8 w-8 bg-muted animate-pulse rounded" />
                   ) : (
-                    stats?.propertyCount ?? 0
+                    displayStats?.propertyCount ?? 0
                   )}
                 </div>
                 {trends && (
@@ -213,7 +263,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                   />
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats?.propertyCount === 0
+                  {displayStats?.propertyCount === 0
                     ? "Add your first property to get started"
                     : "Investment properties tracked"}
                 </p>
@@ -304,7 +354,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                   {isLoading ? (
                     <div className="h-8 w-8 bg-muted animate-pulse rounded" />
                   ) : (
-                    stats?.transactionCount ?? 0
+                    displayStats?.transactionCount ?? 0
                   )}
                 </div>
                 {trends && (
@@ -315,7 +365,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                   />
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats?.transactionCount === 0
+                  {displayStats?.transactionCount === 0
                     ? "Connect your bank to import transactions"
                     : "Total transactions imported"}
                 </p>
@@ -339,7 +389,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                   {isLoading ? (
                     <div className="h-8 w-8 bg-muted animate-pulse rounded" />
                   ) : (
-                    stats?.uncategorizedCount ?? 0
+                    displayStats?.uncategorizedCount ?? 0
                   )}
                 </div>
                 {trends && (
@@ -351,7 +401,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                   />
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {stats?.uncategorizedCount === 0
+                  {displayStats?.uncategorizedCount === 0
                     ? "All transactions categorised!"
                     : "Transactions needing review"}
                 </p>
@@ -365,6 +415,8 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
       </div>
       )}
+
+      <ActionItemsWidget />
 
       <StaleLoansDashboardCard />
 
@@ -383,6 +435,8 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
 
       <CashFlowWidget />
 
+      <UpcomingCashFlowWidget />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {properties && properties.length > 0 && (
           <PropertyMapWidget properties={properties} />
@@ -396,7 +450,10 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         )}
       </div>
 
-      <SavingsWidget />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RecentActivityCard />
+        <SavingsWidget />
+      </div>
 
       <TopPerformerMatchesWidget />
     </div>

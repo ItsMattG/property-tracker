@@ -9,16 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+import { cn, formatCurrency } from "@/lib/utils";
 
 interface CategoryRow {
   category: string;

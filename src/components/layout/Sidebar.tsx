@@ -18,6 +18,7 @@ import {
   PieChart,
   ChevronsLeft,
   ChevronsRight,
+  CalendarDays,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useSidebar } from "./SidebarProvider";
@@ -65,6 +66,7 @@ const navGroups: Array<{
     items: [
       { href: "/reports", label: "Reports", icon: BarChart3 },
       { href: "/reports/tax-position", label: "Tax Position", icon: Calculator },
+      { href: "/cash-flow", label: "Cash Flow", icon: CalendarDays, featureFlag: "cashFlow" },
       { href: "/reports/forecast", label: "Forecast", icon: TrendingUp, featureFlag: "forecast" },
     ],
   },
@@ -78,6 +80,7 @@ function NavItem({
   isCollapsed,
   badge,
   onMouseEnter,
+  onNavigate,
 }: {
   href: string;
   label: string;
@@ -86,12 +89,14 @@ function NavItem({
   isCollapsed: boolean;
   badge?: React.ReactNode;
   onMouseEnter?: () => void;
+  onNavigate?: () => void;
 }) {
   const content = (
     <Link
       href={href}
       prefetch={false}
       onMouseEnter={onMouseEnter}
+      onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 py-2.5 rounded-lg text-sm transition-colors relative cursor-pointer",
         isActive
@@ -140,7 +145,7 @@ function SectionHeading({ label, isCollapsed }: { label: string; isCollapsed: bo
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const pathname = usePathname();
   const { isCollapsed, toggle } = useSidebar();
   const utils = trpc.useUtils();
@@ -196,6 +201,7 @@ export function Sidebar() {
         isActive={itemIsActive}
         isCollapsed={isCollapsed}
         onMouseEnter={() => handlePrefetch(item.href)}
+        onNavigate={onNavigate}
         badge={
           showBadge ? (
             <span className="ml-auto bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full font-medium">

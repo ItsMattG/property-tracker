@@ -6,6 +6,11 @@ import { sendEmailNotification } from "@/server/services/notification";
 
 export const auth = betterAuth({
   baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  trustedOrigins: [
+    "https://bricktrack.au",
+    "https://www.bricktrack.au",
+    "https://staging.bricktrack.au",
+  ],
   database: drizzleAdapter(db, {
     provider: "pg",
   }),

@@ -40,39 +40,47 @@ export function PropertyMapWidget({ properties }: AustraliaPropertiesMapProps) {
   const MapComponent = style === "geometric" ? AustraliaGeometricMap : AustraliaPropertiesMap;
 
   return (
-    <div className="relative" data-testid="property-map-widget">
-      {/* Style toggle overlay — positioned in the card header area */}
-      <div className="absolute top-3 right-10 z-10 flex gap-0.5 bg-muted/80 backdrop-blur-sm rounded-md p-0.5">
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={style === "dots" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => toggleStyle("dots")}
-              >
-                <Grid3X3 className="h-3 w-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Dot matrix</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={style === "geometric" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => toggleStyle("geometric")}
-              >
-                <Triangle className="h-3 w-3" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Geometric</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-      <MapComponent properties={properties} />
-    </div>
+    <Card data-testid="property-map-widget">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium">Property Locations</CardTitle>
+          <div className="flex gap-0.5 bg-muted/80 backdrop-blur-sm rounded-md p-0.5">
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={style === "dots" ? "secondary" : "ghost"}
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => toggleStyle("dots")}
+                    aria-label="Dot matrix style"
+                  >
+                    <Grid3X3 className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Dot matrix</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={style === "geometric" ? "secondary" : "ghost"}
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => toggleStyle("geometric")}
+                    aria-label="Geometric style"
+                  >
+                    <Triangle className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Geometric</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex items-center justify-center pb-4">
+        <MapComponent properties={properties} />
+      </CardContent>
+    </Card>
   );
 }

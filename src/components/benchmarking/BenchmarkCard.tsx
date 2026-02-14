@@ -9,18 +9,10 @@ import type {
   CategoryBenchmark,
   ManagementFeeBenchmark,
 } from "@/types/benchmarking";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 interface BenchmarkCardProps {
   propertyId: string;
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 function StatusIcon({ status }: { status: BenchmarkStatus }) {

@@ -1,31 +1,72 @@
 import { db } from "@/server/db";
 import * as schema from "@/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import type { DemoData } from "./profiles/demo";
 import type { DevData } from "./profiles/dev";
 import type { SeedSummary } from "./types";
 
 /**
- * Get or create user by email
+ * Ensure a BetterAuth credential account exists for the user.
+ * Required for email/password sign-in to work.
  */
-export async function getOrCreateUser(email: string): Promise<string> {
+async function ensureAuthCredential(userId: string, password: string): Promise<void> {
+  const existing = await db.query.account.findFirst({
+    where: and(
+      eq(schema.account.userId, userId),
+      eq(schema.account.providerId, "credential"),
+    ),
+  });
+
+  if (existing) return;
+
+  const { hashPassword } = await import("better-auth/crypto");
+  const hashedPassword = await hashPassword(password);
+
+  await db.insert(schema.account).values({
+    id: crypto.randomUUID(),
+    accountId: userId,
+    providerId: "credential",
+    userId,
+    password: hashedPassword,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+}
+
+/**
+ * Get or create user by email.
+ * When password is provided, also creates BetterAuth credential account
+ * so the user can sign in via email/password.
+ */
+export async function getOrCreateUser(email: string, password?: string): Promise<string> {
   // Check if user exists
   const existingUser = await db.query.users.findFirst({
     where: eq(schema.users.email, email),
   });
 
   if (existingUser) {
+    if (password) await ensureAuthCredential(existingUser.id, password);
     return existingUser.id;
   }
 
-  // Create user
+  // Create user with pro trial (matches BetterAuth databaseHooks behavior)
+  const now = new Date();
+  const trialEnd = new Date(now);
+  trialEnd.setDate(trialEnd.getDate() + 14);
+
   const [newUser] = await db
     .insert(schema.users)
     .values({
       email,
       name: "Demo User",
+      emailVerified: true,
+      trialStartedAt: now,
+      trialEndsAt: trialEnd,
+      trialPlan: "pro",
     })
     .returning();
+
+  if (password) await ensureAuthCredential(newUser.id, password);
 
   return newUser.id;
 }

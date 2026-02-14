@@ -6,21 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Plus, History, TrendingUp } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import { formatCurrency } from "@/lib/utils";
 import { AddValuationModal } from "./AddValuationModal";
 import { ValuationHistoryModal } from "./ValuationHistoryModal";
 
 interface ValuationCardProps {
   propertyId: string;
 }
-
-const formatCurrency = (value: string | number) => {
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(num);
-};
 
 const getSourceLabel = (source: string): string => {
   const labels: Record<string, string> = {
@@ -196,12 +188,12 @@ export function ValuationCard({ propertyId }: ValuationCardProps) {
         {/* Main value */}
         <div className="mb-4">
           <p className="text-3xl font-bold">
-            {formatCurrency(valuation.estimatedValue)}
+            {formatCurrency(parseFloat(valuation.estimatedValue))}
           </p>
           {valuation.confidenceLow && valuation.confidenceHigh && (
             <p className="text-sm text-muted-foreground">
-              Range: {formatCurrency(valuation.confidenceLow)} -{" "}
-              {formatCurrency(valuation.confidenceHigh)}
+              Range: {formatCurrency(parseFloat(valuation.confidenceLow))} -{" "}
+              {formatCurrency(parseFloat(valuation.confidenceHigh))}
             </p>
           )}
         </div>

@@ -21,6 +21,10 @@ import { featureFlags } from "@/config/feature-flags";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Breadcrumb, type BreadcrumbItem } from "./Breadcrumb";
 import { FYSelector } from "./FYSelector";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sidebar } from "./Sidebar";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -230,23 +234,36 @@ function UserMenu() {
 
 export function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname ?? "");
   const breadcrumbs = getBreadcrumbs(pathname ?? "");
 
   return (
     <>
-      <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
-        <div className="min-w-0 flex-1">
-          {breadcrumbs.length > 0 ? (
-            <Breadcrumb items={breadcrumbs} />
-          ) : (
-            <h1 className="text-lg font-semibold truncate">{pageTitle}</h1>
-          )}
+      <header className="h-16 border-b border-border bg-card px-4 md:px-6 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden flex-shrink-0"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <div className="min-w-0 flex-1">
+            {breadcrumbs.length > 0 ? (
+              <Breadcrumb items={breadcrumbs} />
+            ) : (
+              <h1 className="text-lg font-semibold truncate">{pageTitle}</h1>
+            )}
+          </div>
         </div>
         <TooltipProvider delayDuration={300}>
           <div className="flex items-center gap-3 flex-shrink-0" data-tour="quick-actions">
             {featureFlags.fySelector && <FYSelector />}
+            <ThemeToggle />
             {featureFlags.helpMenu && <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />}
             <AlertBadge />
             {featureFlags.quickAdd && <QuickAddButton />}
@@ -257,6 +274,14 @@ export function Header() {
       {featureFlags.whatsNew && (
         <WhatsNewDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       )}
+
+      {/* Mobile navigation drawer */}
+      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <SheetContent side="left" className="w-[280px] p-0 md:hidden" showCloseButton={false}>
+          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <Sidebar onNavigate={() => setMobileNavOpen(false)} />
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from "@/server/db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { getFinancialYearRange } from "./reports";
+import { formatCurrency } from "@/lib/utils";
 
 const MARGINAL_TAX_RATE = 0.37; // Assume 37% marginal rate
 const COMMON_DEDUCTIBLE_CATEGORIES = [
@@ -319,14 +320,6 @@ export async function generateAllSuggestions(userId: string): Promise<number> {
     );
 
   return count;
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 function getCategoryLabel(category: string): string {

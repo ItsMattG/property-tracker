@@ -1,0 +1,12 @@
+export type { IPropertyRepository } from "./property.repository.interface";
+export type { IBankAccountRepository, BankAccountWithRelations } from "./bank-account.repository.interface";
+export type { ITransactionRepository, TransactionFilters, PaginatedTransactions, TransactionWithRelations } from "./transaction.repository.interface";
+export type { ILoanRepository, LoanWithRelations } from "./loan.repository.interface";
+export type { IRecurringRepository, RecurringWithRelations, ExpectedWithRelations, ExpectedTransactionFilters } from "./recurring.repository.interface";
+export type { IDocumentRepository, DocumentFilters } from "./document.repository.interface";
+export type { IComplianceRepository } from "./compliance.repository.interface";
+export type { IEmailRepository } from "./email.repository.interface";
+export type { IChatRepository, ConversationSummary, ConversationWithMessages } from "./chat.repository.interface";
+export type { IPortfolioRepository } from "./portfolio.repository.interface";
+export type { IScenarioRepository, ScenarioWithRelations } from "./scenario.repository.interface";
+export type { IUserRepository } from "./user.repository.interface";

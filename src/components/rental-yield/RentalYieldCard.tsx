@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 export function RentalYieldCard() {
+  const router = useRouter();
   const { data, isLoading } = trpc.rentalYield.getPortfolioSummary.useQuery();
 
   if (isLoading) {
@@ -61,7 +63,8 @@ export function RentalYieldCard() {
               .map((p) => (
                 <div
                   key={p.propertyId}
-                  className="flex items-center justify-between text-sm border-t pt-2"
+                  className="flex items-center justify-between text-sm border-t pt-2 cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1.5 rounded-md transition-colors"
+                  onClick={() => router.push(`/properties/${p.propertyId}`)}
                 >
                   <span className="text-muted-foreground truncate max-w-[60%]">
                     {p.address}, {p.suburb}

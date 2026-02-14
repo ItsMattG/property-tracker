@@ -21,12 +21,12 @@ export { generateUIAuditData, type UIAuditData } from "./profiles/ui-audit";
  * Main seed function - seeds data based on mode
  */
 export async function seed(options: SeedOptions): Promise<SeedSummary> {
-  const { email, mode, clean = false } = options;
+  const { email, mode, clean = false, password } = options;
 
   console.log(`Starting seed in ${mode} mode for email: ${email}`);
 
-  // Get or create user
-  const userId = await getOrCreateUser(email);
+  // Get or create user (with BetterAuth credential if password provided)
+  const userId = await getOrCreateUser(email, password);
   console.log(`User ID: ${userId}`);
 
   // Clean existing data if requested

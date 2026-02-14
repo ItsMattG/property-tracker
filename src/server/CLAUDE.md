@@ -1,7 +1,5 @@
 # Server & Data Layer Quick Reference
 
-> See `docs/codebase-patterns.md` for full usage patterns and anti-patterns.
-
 ## Key Files
 
 | File | Purpose |
@@ -10,11 +8,9 @@
 | `src/server/routers/_app.ts` | Root router (54 sub-routers) |
 | `src/server/db/index.ts` | Drizzle + postgres client (max: 1 for serverless) |
 | `src/server/db/schema.ts` | ~3300 lines, 80+ tables, 40+ enums, relations |
-| `src/lib/trpc/client.ts` | Frontend tRPC: `createTRPCReact<AppRouter>()` |
-| `src/lib/trpc/Provider.tsx` | TRPCProvider + QueryClient config |
-| `src/lib/trpc/server.ts` | Server-side caller: `getServerTRPC()` |
 | `src/app/api/trpc/[trpc]/route.ts` | API route handler + error sanitization |
-| `src/lib/errors.ts` | `getErrorMessage(error)` utility |
+| `src/server/services/categorization.ts` | AI categorization service (Anthropic SDK) |
+| `src/app/api/chat/route.ts` | AI chat route (Vercel AI SDK) |
 
 ## Procedure Types
 
@@ -174,3 +170,44 @@ export const myStatusEnum = pgEnum("my_status", ["active", "inactive", "archived
 | `sql<number>\`count(*)::int\`` | `count(*)` without int cast |
 | `prepare: false` in DB config | Enable prepared statements (breaks serverless) |
 | `max: 1` connection | Multiple connections (serverless) |
+
+## Server-Side Auth
+
+```typescript
+import { getAuthSession } from "@/lib/auth";
+const session = await getAuthSession();
+const userId = session?.user.id;
+```
+
+All non-public routes require auth via middleware (`src/middleware.ts`). tRPC `protectedProcedure` resolves user + portfolio context automatically.
+
+## Plan / Subscription Gating (Server-Side)
+
+Use `proProcedure` or `teamProcedure` instead of `protectedProcedure`:
+```typescript
+export const myRouter = router({
+  proFeature: proProcedure.query(async ({ ctx }) => { /* ... */ }),
+  teamFeature: teamProcedure.mutation(async ({ ctx, input }) => { /* ... */ }),
+});
+```
+These automatically check subscription status and throw `FORBIDDEN` if insufficient.
+
+## AI Integrations
+
+### Chat (Vercel AI SDK)
+- Route: `src/app/api/chat/route.ts`
+- Model: `claude-sonnet-4-20250514` via `@ai-sdk/anthropic`
+- Uses `streamText` + `createUIMessageStreamResponse`
+- Gated behind `featureFlags.aiAssistant` (currently false)
+
+### Categorization (Anthropic SDK)
+- Service: `src/server/services/categorization.ts`
+- Model: `claude-3-haiku-20240307` for cost
+- Two-tier: merchant memory first, Claude API fallback
+- Direct `@anthropic-ai/sdk` usage (not Vercel AI SDK)
+
+## API Error Sanitization
+
+In `src/app/api/trpc/[trpc]/route.ts`:
+- Known TRPCError codes (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`) pass through to client
+- `INTERNAL_SERVER_ERROR`: generates error ID, logs full details, returns sanitized message to client

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { positiveAmountSchema } from "@/lib/validation";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { properties, transactions, propertySales, categoryEnum } from "../db/schema";
@@ -166,13 +167,13 @@ export const cgtRouter = router({
     .input(
       z.object({
         propertyId: z.string().uuid(),
-        salePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid sale price"),
+        salePrice: positiveAmountSchema,
         settlementDate: z.string(),
         contractDate: z.string().optional(),
-        agentCommission: z.string().regex(/^\d+\.?\d*$/).default("0"),
-        legalFees: z.string().regex(/^\d+\.?\d*$/).default("0"),
-        marketingCosts: z.string().regex(/^\d+\.?\d*$/).default("0"),
-        otherSellingCosts: z.string().regex(/^\d+\.?\d*$/).default("0"),
+        agentCommission: positiveAmountSchema.default("0"),
+        legalFees: positiveAmountSchema.default("0"),
+        marketingCosts: positiveAmountSchema.default("0"),
+        otherSellingCosts: positiveAmountSchema.default("0"),
       })
     )
     .mutation(async ({ ctx, input }) => {

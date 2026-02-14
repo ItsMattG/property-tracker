@@ -13,10 +13,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  // Staging is slower — give tests more time in CI
-  timeout: process.env.CI ? 60_000 : 30_000,
-  // Use blob reporter in CI for shard merging, HTML locally
-  reporter: process.env.CI ? "blob" : "html",
+  // CI runs against localhost (fast) — same timeout as local
+  timeout: 30_000,
+  reporter: process.env.CI ? "html" : "html",
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
     trace: "on-first-retry",
@@ -62,12 +61,12 @@ export default defineConfig({
       dependencies: ["setup"],
     },
   ],
-  // Only start local server if not testing against a preview URL
-  webServer: process.env.PLAYWRIGHT_BASE_URL
+  // Start dev server locally; in CI the server is started separately
+  webServer: process.env.CI
     ? undefined
     : {
         command: "npm run dev",
         url: "http://localhost:3000",
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: true,
       },
 });

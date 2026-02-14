@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TransactionTable } from "@/components/transactions/TransactionTable";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { ImportCSVDialog } from "@/components/transactions/ImportCSVDialog";
+import { ColumnVisibilityMenu, useColumnVisibility } from "@/components/transactions/ColumnVisibilityMenu";
 import { ReconciliationView } from "@/components/recurring/ReconciliationView";
 import { Pagination } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc/client";
-import { ArrowLeftRight, List, Calendar, Plus, Download } from "lucide-react";
+import { List, Calendar, Plus, Download } from "lucide-react";
+import { TransactionIllustration } from "@/components/ui/illustrations/TransactionIllustration";
 import Link from "next/link";
 import type { Category, TransactionFilterInput } from "@/types/category";
 import { useTour } from "@/hooks/useTour";
@@ -27,6 +29,7 @@ import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 import { onCrossTabInvalidation } from "@/lib/trpc/cross-tab";
 import { TransactionTableSkeleton } from "@/components/skeletons";
+import { TransactionCardList } from "@/components/transactions/TransactionCardList";
 
 type ViewMode = "transactions" | "reconciliation";
 
@@ -38,6 +41,7 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<TransactionFilterInput>({});
   const [deleteTransaction, setDeleteTransaction] = useState<{ id: string; description: string } | null>(null);
+  const { visibility, toggle, resetToDefaults } = useColumnVisibility();
   useTour({ tourId: "transactions" });
 
   const offset = (page - 1) * PAGE_SIZE;
@@ -284,6 +288,11 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <ColumnVisibilityMenu
+            visibility={visibility}
+            onToggle={toggle}
+            onResetToDefaults={resetToDefaults}
+          />
           <Button
             variant="outline"
             size="sm"
@@ -336,16 +345,35 @@ export default function TransactionsPage() {
             <TransactionTableSkeleton />
           ) : transactions && transactions.transactions.length > 0 ? (
             <>
-              <TransactionTable
-                transactions={transactions.transactions as any}
-                properties={properties ?? []}
-                onCategoryChange={handleCategoryChange}
-                onToggleVerified={handleToggleVerified}
-                onBulkCategoryChange={handleBulkCategoryChange}
-                onAllocate={handleAllocate}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
+              {/* Mobile: card view */}
+              <div className="md:hidden">
+                <TransactionCardList
+                  transactions={transactions.transactions.map((t) => ({
+                    id: t.id,
+                    description: t.description,
+                    amount: t.amount,
+                    date: t.date,
+                    category: t.category,
+                    verified: t.isVerified,
+                  }))}
+                />
+              </div>
+              {/* Desktop: table view */}
+              <div className="hidden md:block">
+                <TransactionTable
+                  transactions={transactions.transactions as any}
+                  properties={properties ?? []}
+                  onCategoryChange={handleCategoryChange}
+                  onToggleVerified={handleToggleVerified}
+                  onBulkCategoryChange={handleBulkCategoryChange}
+                  onAllocate={handleAllocate}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  columnVisibility={visibility}
+                  onToggleColumn={toggle}
+                  onResetColumns={resetToDefaults}
+                />
+              </div>
               {totalPages > 1 && (
                 <Pagination
                   currentPage={page}
@@ -357,9 +385,7 @@ export default function TransactionsPage() {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <ArrowLeftRight className="w-8 h-8 text-primary" />
-              </div>
+              <TransactionIllustration className="w-24 h-24 text-primary/40 mb-4" />
               <h3 className="text-lg font-semibold">No transactions yet</h3>
               <p className="text-muted-foreground max-w-sm mt-2">
                 Connect your bank account to automatically import transactions, or

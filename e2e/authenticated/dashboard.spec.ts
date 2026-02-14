@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "../../src/config/feature-flags";
-import { isBenignError, safeGoto } from "../fixtures/test-helpers";
+import { isBenignError, safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
 
 test.describe("Dashboard", () => {
   let pageErrors: Error[];
@@ -39,7 +39,8 @@ test.describe("Dashboard", () => {
   });
 
   test("should display the header", async ({ page }) => {
-    await expect(page.locator("header")).toBeVisible();
+    // Use .first() because the onboarding tour (driver.js) can add a second <header>
+    await expect(page.locator("header").first()).toBeVisible();
   });
 
   test("should display feedback button in header", async ({
@@ -258,19 +259,20 @@ test.describe("Dashboard", () => {
   test("should display Portfolio Summary table", async ({
     page,
   }) => {
-    // PortfolioSummaryTable renders when metrics exist; may be hidden if no properties
-    await page.waitForTimeout(1000);
-    const heading = page.getByText("Portfolio Summary", { exact: true });
-    const headingVisible = await heading.isVisible({ timeout: 5000 }).catch(() => false);
+    // Wait for dashboard to fully render
+    await expect(page.getByRole("heading", { name: /welcome to bricktrack/i })).toBeVisible({ timeout: 10000 });
 
-    if (headingVisible) {
-      // If heading visible, check for at least one column header
-      const hasValue = await page.getByRole("columnheader", { name: "Value" }).isVisible().catch(() => false);
-      const hasLoan = await page.getByRole("columnheader", { name: "Loan" }).isVisible().catch(() => false);
-      const hasEquity = await page.getByRole("columnheader", { name: "Equity" }).isVisible().catch(() => false);
-      expect(hasValue || hasLoan || hasEquity).toBe(true);
+    // Portfolio Summary has 3 states: loading (heading + skeleton), empty (null), data (heading + table).
+    // Wait for loading to settle — either the table appears or the component unmounts.
+    const columnHeader = page.getByRole("columnheader", { name: "Value" });
+    const headerVisible = await columnHeader.isVisible({ timeout: 10000 }).catch(() => false);
+
+    if (headerVisible) {
+      // Table loaded with data — verify structure
+      await expect(page.getByRole("columnheader", { name: "Loan" })).toBeVisible();
+      await expect(page.getByRole("columnheader", { name: "Equity" })).toBeVisible();
     }
-    // If heading not visible (no properties or still loading), test passes
+    // If columnheader never appears (no properties or empty metrics), test passes
   });
 
   // ── Sidebar collapse/expand ────────────────────────────────────────
@@ -278,25 +280,28 @@ test.describe("Dashboard", () => {
   test("should collapse and expand the sidebar", async ({
     page,
   }) => {
+    // Dismiss onboarding tour first — its overlay intercepts clicks
+    await dismissTourIfVisible(page);
+
     const sidebar = page.locator("aside");
 
     // Sidebar starts expanded (give extra time on slow staging)
     await expect(sidebar).toHaveClass(/w-64/, { timeout: 10000 });
     await expect(sidebar.getByText("BrickTrack")).toBeVisible({ timeout: 5000 });
 
-    // Click collapse (force: true to bypass any tour overlay)
+    // Click collapse
     await sidebar
       .getByRole("button", { name: /collapse sidebar/i })
-      .click({ force: true });
+      .click();
 
     // Sidebar is now collapsed
     await expect(sidebar).toHaveClass(/w-16/);
     await expect(sidebar.getByText("BrickTrack")).not.toBeVisible();
 
-    // Click expand (force: true to bypass any tour overlay)
+    // Click expand
     await sidebar
       .getByRole("button", { name: /expand sidebar/i })
-      .click({ force: true });
+      .click();
 
     // Sidebar is expanded again
     await expect(sidebar).toHaveClass(/w-64/);

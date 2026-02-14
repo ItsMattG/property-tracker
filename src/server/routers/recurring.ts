@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { positiveAmountSchema } from "@/lib/validation";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import {
   recurringTransactions,
@@ -23,7 +24,7 @@ const frequencyEnum = z.enum([
 const recurringSchema = z.object({
   propertyId: z.string().uuid(),
   description: z.string().min(1, "Description is required"),
-  amount: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
+  amount: positiveAmountSchema,
   category: z.string(),
   transactionType: z.enum(["income", "expense", "capital", "transfer", "personal"]),
   frequency: frequencyEnum,
@@ -32,7 +33,7 @@ const recurringSchema = z.object({
   startDate: z.string(),
   endDate: z.string().optional(),
   linkedBankAccountId: z.string().uuid().optional(),
-  amountTolerance: z.string().regex(/^\d+\.?\d*$/).default("5.00"),
+  amountTolerance: positiveAmountSchema.default("5.00"),
   dateTolerance: z.number().min(0).max(30).default(3),
   alertDelayDays: z.number().min(0).max(30).default(3),
 });

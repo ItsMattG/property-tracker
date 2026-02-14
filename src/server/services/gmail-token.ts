@@ -1,3 +1,4 @@
+import { ExternalServiceError } from "@/server/errors";
 import { db } from "@/server/db";
 import { emailConnections, type EmailConnection } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -38,7 +39,7 @@ export async function refreshAccessToken(
     const { credentials } = await oauth2Client.refreshAccessToken();
 
     if (!credentials.access_token) {
-      throw new Error("No access token in refresh response");
+      throw new ExternalServiceError("No access token in refresh response", "gmail");
     }
 
     const expiresAt = credentials.expiry_date

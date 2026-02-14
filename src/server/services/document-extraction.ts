@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { ExternalServiceError } from "@/server/errors";
 
 export interface LineItem {
   description: string;
@@ -119,7 +120,7 @@ export async function getDocumentContent(storagePath: string): Promise<string> {
     .download(storagePath);
 
   if (error || !data) {
-    throw new Error(`Failed to download document: ${error?.message}`);
+    throw new ExternalServiceError(`Failed to download document: ${error?.message}`, "supabase");
   }
 
   const buffer = await data.arrayBuffer();
