@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { positiveAmountSchema } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -55,7 +56,7 @@ const dayOfWeekOptions = [
 
 const recurringFormSchema = z.object({
   description: z.string().min(1, "Description is required"),
-  amount: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
+  amount: positiveAmountSchema,
   category: z.string(),
   transactionType: z.enum(["income", "expense", "capital", "transfer", "personal"]),
   frequency: z.enum(["weekly", "fortnightly", "monthly", "quarterly", "annually"]),
@@ -63,7 +64,7 @@ const recurringFormSchema = z.object({
   dayOfWeek: z.coerce.number().min(0).max(6).optional(),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
-  amountTolerance: z.string().regex(/^\d+\.?\d*$/).default("5.00"),
+  amountTolerance: positiveAmountSchema.default("5.00"),
   dateTolerance: z.coerce.number().min(0).max(30).default(3),
   alertDelayDays: z.coerce.number().min(0).max(30).default(3),
   linkedBankAccountId: z.string().uuid().optional(),

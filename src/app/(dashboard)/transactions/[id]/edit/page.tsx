@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { signedAmountSchema } from "@/lib/validation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
@@ -42,7 +43,7 @@ const editTransactionSchema = z.object({
   propertyId: z.string().uuid("Please select a property"),
   date: z.string().min(1, "Date is required"),
   description: z.string().min(1, "Description is required"),
-  amount: z.string().regex(/^-?\d+\.?\d*$/, "Invalid amount"),
+  amount: signedAmountSchema,
   category: z.string(),
   notes: z.string().optional(),
 });
