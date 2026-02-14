@@ -1,5 +1,8 @@
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "../../db/schema";
@@ -294,7 +297,7 @@ describe("PropertyRepository", () => {
         {
           propertyId: prop.id,
           userId: TEST_USER_ID,
-          milestoneType: "lvr_below",
+          milestoneType: "lvr",
           milestoneValue: "80",
           equityAtAchievement: "100000",
           lvrAtAchievement: "79.50",
@@ -303,7 +306,7 @@ describe("PropertyRepository", () => {
         {
           propertyId: prop.id,
           userId: TEST_USER_ID,
-          milestoneType: "lvr_below",
+          milestoneType: "lvr",
           milestoneValue: "60",
           equityAtAchievement: "200000",
           lvrAtAchievement: "59.50",
@@ -315,8 +318,8 @@ describe("PropertyRepository", () => {
 
       expect(result).toHaveLength(2);
       // Most recent first
-      expect(result[0].milestoneValue).toBe("60");
-      expect(result[1].milestoneValue).toBe("80");
+      expect(result[0].milestoneValue).toBe("60.00");
+      expect(result[1].milestoneValue).toBe("80.00");
     });
   });
 });
