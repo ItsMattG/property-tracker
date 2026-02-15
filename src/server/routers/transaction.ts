@@ -2,8 +2,6 @@ import { z } from "zod";
 import { signedAmountSchema } from "@/lib/validation";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { transactionNotes } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
 import { parseCSV } from "../services/banking";
 import { categoryValues, deriveTransactionFields, formatTransactionsCSV, importCSVRows, importRichCSVRows } from "../services/transaction";
 import { metrics } from "@/lib/metrics";
@@ -263,7 +261,7 @@ export const transactionRouter = router({
       return transaction;
     }),
 
-  // Discussion notes CRUD — transactionNotes stay as direct db calls (no notes repository)
+  // Discussion notes CRUD
   listNotes: protectedProcedure
     .input(z.object({ transactionId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
@@ -273,16 +271,7 @@ export const transactionRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }
 
-      const notes = await ctx.db.query.transactionNotes.findMany({
-        where: eq(transactionNotes.transactionId, input.transactionId),
-        orderBy: [desc(transactionNotes.createdAt)],
-        with: {
-          user: {
-            columns: { id: true, name: true },
-          },
-        },
-      });
-      return notes;
+      return ctx.uow.transactions.listNotes(input.transactionId);
     }),
 
   addNote: writeProcedure
@@ -299,16 +288,7 @@ export const transactionRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }
 
-      const [note] = await ctx.db
-        .insert(transactionNotes)
-        .values({
-          transactionId: input.transactionId,
-          userId: ctx.portfolio.ownerId,
-          content: input.content,
-        })
-        .returning();
-
-      return note;
+      return ctx.uow.transactions.addNote(input.transactionId, ctx.portfolio.ownerId, input.content);
     }),
 
   updateNote: writeProcedure
@@ -319,19 +299,7 @@ export const transactionRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [note] = await ctx.db
-        .update(transactionNotes)
-        .set({
-          content: input.content,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(transactionNotes.id, input.noteId),
-            eq(transactionNotes.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      const note = await ctx.uow.transactions.updateNote(input.noteId, ctx.portfolio.ownerId, input.content);
 
       if (!note) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
@@ -343,14 +311,7 @@ export const transactionRouter = router({
   deleteNote: writeProcedure
     .input(z.object({ noteId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(transactionNotes)
-        .where(
-          and(
-            eq(transactionNotes.id, input.noteId),
-            eq(transactionNotes.userId, ctx.portfolio.ownerId)
-          )
-        );
+      await ctx.uow.transactions.deleteNote(input.noteId, ctx.portfolio.ownerId);
 
       return { success: true };
     }),

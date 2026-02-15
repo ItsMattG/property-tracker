@@ -255,5 +255,7 @@ export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type ConnectionAlert = typeof connectionAlerts.$inferSelect;
 export type NewConnectionAlert = typeof connectionAlerts.$inferInsert;
+export type TransactionNote = typeof transactionNotes.$inferSelect;
+export type NewTransactionNote = typeof transactionNotes.$inferInsert;
 export type AnomalyAlert = typeof anomalyAlerts.$inferSelect;
 export type NewAnomalyAlert = typeof anomalyAlerts.$inferInsert;
