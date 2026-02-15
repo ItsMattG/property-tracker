@@ -14,6 +14,8 @@ import type {
   IUserRepository,
   ITaskRepository,
   IFeedbackRepository,
+  ITeamRepository,
+  IForecastRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -31,6 +33,8 @@ import { PortfolioRepository } from "./portfolio.repository";
 import { ScenarioRepository } from "./scenario.repository";
 import { TaskRepository } from "./task.repository";
 import { FeedbackRepository } from "./feedback.repository";
+import { TeamRepository } from "./team.repository";
+import { ForecastRepository } from "./forecast.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -48,6 +52,8 @@ export class UnitOfWork {
   private _user?: IUserRepository;
   private _task?: ITaskRepository;
   private _feedback?: IFeedbackRepository;
+  private _team?: ITeamRepository;
+  private _forecast?: IForecastRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -93,6 +99,12 @@ export class UnitOfWork {
   }
   get feedback(): IFeedbackRepository {
     return (this._feedback ??= new FeedbackRepository(this.db));
+  }
+  get team(): ITeamRepository {
+    return (this._team ??= new TeamRepository(this.db));
+  }
+  get forecast(): IForecastRepository {
+    return (this._forecast ??= new ForecastRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */
