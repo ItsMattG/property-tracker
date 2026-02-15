@@ -1,15 +1,9 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import {
-  documents,
-  documentExtractions,
-  transactions,
-  properties,
-} from "../../db/schema";
-import { eq, and, desc } from "drizzle-orm";
-import { extractDocument } from "../../services/property-analysis";
-import { matchPropertyByAddress } from "../../services/property-analysis";
+import { documentExtractions, transactions, properties } from "../../db/schema";
+import { extractDocument, matchPropertyByAddress } from "../../services/property-analysis";
 
 export const documentExtractionRouter = router({
   /**
@@ -19,33 +13,26 @@ export const documentExtractionRouter = router({
     .input(z.object({ documentId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Verify document exists and belongs to user
-      const document = await ctx.db.query.documents.findFirst({
-        where: and(
-          eq(documents.id, input.documentId),
-          eq(documents.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const document = await ctx.uow.document.findById(input.documentId, ctx.portfolio.ownerId);
 
       if (!document) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
       }
 
       // Check for existing extraction
-      const existing = await ctx.db.query.documentExtractions.findFirst({
-        where: eq(documentExtractions.documentId, input.documentId),
-      });
+      const existing = await ctx.uow.document.findExtractionByDocumentId(input.documentId);
 
       if (existing) {
         return existing;
       }
 
       // Create extraction record
-      const [extraction] = await ctx.db
-        .insert(documentExtractions)
-        .values({ documentId: input.documentId, status: "processing" })
-        .returning();
+      const extraction = await ctx.uow.document.createExtraction({
+        documentId: input.documentId,
+        status: "processing",
+      });
 
-      // Capture context-dependent values before the async gap
+      // Service-layer: captured db ref for background extraction job
       const db = ctx.db;
       const ownerId = ctx.portfolio.ownerId;
 
@@ -132,10 +119,10 @@ export const documentExtractionRouter = router({
   getExtraction: protectedProcedure
     .input(z.object({ documentId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const extraction = await ctx.db.query.documentExtractions.findFirst({
-        where: eq(documentExtractions.documentId, input.documentId),
-        with: { draftTransaction: true, matchedProperty: true },
-      });
+      const extraction = await ctx.uow.document.findExtractionByDocumentId(
+        input.documentId,
+        { withRelations: true }
+      );
 
       if (!extraction) return null;
 
@@ -149,11 +136,7 @@ export const documentExtractionRouter = router({
    * Lists extractions with pending_review transactions
    */
   listPendingReviews: protectedProcedure.query(async ({ ctx }) => {
-    const extractions = await ctx.db.query.documentExtractions.findMany({
-      where: eq(documentExtractions.status, "completed"),
-      with: { document: true, draftTransaction: true, matchedProperty: true },
-      orderBy: desc(documentExtractions.createdAt),
-    });
+    const extractions = await ctx.uow.document.findCompletedExtractionsWithRelations();
 
     return extractions
       .filter((e) => e.draftTransaction?.status === "pending_review")
@@ -176,10 +159,10 @@ export const documentExtractionRouter = router({
       description: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const extraction = await ctx.db.query.documentExtractions.findFirst({
-        where: eq(documentExtractions.id, input.extractionId),
-        with: { draftTransaction: true },
-      });
+      const extraction = await ctx.uow.document.findExtractionById(
+        input.extractionId,
+        { withRelations: true }
+      );
 
       if (!extraction?.draftTransaction) {
         throw new TRPCError({
@@ -188,6 +171,7 @@ export const documentExtractionRouter = router({
         });
       }
 
+      // Cross-domain: confirms draft transaction from extraction context
       await ctx.db.update(transactions).set({
         status: "confirmed",
         propertyId: input.propertyId ?? extraction.draftTransaction.propertyId,
@@ -206,9 +190,7 @@ export const documentExtractionRouter = router({
   discardExtraction: writeProcedure
     .input(z.object({ extractionId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const extraction = await ctx.db.query.documentExtractions.findFirst({
-        where: eq(documentExtractions.id, input.extractionId),
-      });
+      const extraction = await ctx.uow.document.findExtractionById(input.extractionId);
 
       if (!extraction) {
         throw new TRPCError({
@@ -217,13 +199,13 @@ export const documentExtractionRouter = router({
         });
       }
 
-      // Delete draft transaction first if exists
+      // Cross-domain: deletes draft transaction from extraction context
       if (extraction.draftTransactionId) {
         await ctx.db.delete(transactions).where(eq(transactions.id, extraction.draftTransactionId));
       }
 
       // Delete extraction
-      await ctx.db.delete(documentExtractions).where(eq(documentExtractions.id, input.extractionId));
+      await ctx.uow.document.deleteExtraction(input.extractionId);
 
       return { success: true };
     }),

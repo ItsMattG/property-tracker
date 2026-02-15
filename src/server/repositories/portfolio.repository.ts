@@ -1,6 +1,6 @@
 import { eq, and, gte, lte, inArray, desc } from "drizzle-orm";
-import { properties, propertyValues, loans, transactions } from "../db/schema";
-import type { Property, Loan, Transaction } from "../db/schema";
+import { properties, propertyValues, loans, transactions, portfolioShares } from "../db/schema";
+import type { Property, Loan, Transaction, PortfolioShare, NewPortfolioShare } from "../db/schema";
 import { BaseRepository } from "./base";
 import type { IPortfolioRepository } from "./interfaces/portfolio.repository.interface";
 
@@ -66,5 +66,30 @@ export class PortfolioRepository
       latestValues.set(row.propertyId, Number(row.estimatedValue));
     }
     return latestValues;
+  }
+
+  async createShare(data: NewPortfolioShare): Promise<PortfolioShare> {
+    const [share] = await this.db
+      .insert(portfolioShares)
+      .values(data)
+      .returning();
+    return share;
+  }
+
+  async findSharesByOwner(userId: string): Promise<PortfolioShare[]> {
+    return this.db.query.portfolioShares.findMany({
+      where: eq(portfolioShares.userId, userId),
+      orderBy: [desc(portfolioShares.createdAt)],
+    });
+  }
+
+  async deleteShare(id: string, userId: string): Promise<PortfolioShare | null> {
+    const [deleted] = await this.db
+      .delete(portfolioShares)
+      .where(
+        and(eq(portfolioShares.id, id), eq(portfolioShares.userId, userId))
+      )
+      .returning();
+    return deleted ?? null;
   }
 }

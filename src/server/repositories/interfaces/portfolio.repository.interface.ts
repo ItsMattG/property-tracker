@@ -1,4 +1,4 @@
-import type { Property, Loan, Transaction } from "../../db/schema";
+import type { Property, Loan, Transaction, PortfolioShare, NewPortfolioShare } from "../../db/schema";
 
 /**
  * Portfolio repository — aggregate queries across properties, loans,
@@ -19,4 +19,13 @@ export interface IPortfolioRepository {
 
   /** Get latest property value per property using DISTINCT ON */
   getLatestPropertyValues(userId: string, propertyIds: string[]): Promise<Map<string, number>>;
+
+  /** Create a portfolio share */
+  createShare(data: NewPortfolioShare): Promise<PortfolioShare>;
+
+  /** List shares for a user (ordered by newest first) */
+  findSharesByOwner(userId: string): Promise<PortfolioShare[]>;
+
+  /** Delete a share by id scoped to user, returns deleted share or null */
+  deleteShare(id: string, userId: string): Promise<PortfolioShare | null>;
 }

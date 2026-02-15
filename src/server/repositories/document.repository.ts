@@ -1,4 +1,4 @@
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, desc } from "drizzle-orm";
 import { documents, documentExtractions } from "../db/schema";
 import type {
   Document,
@@ -10,6 +10,7 @@ import { BaseRepository, type DB } from "./base";
 import type {
   IDocumentRepository,
   DocumentFilters,
+  ExtractionWithRelations,
 } from "./interfaces/document.repository.interface";
 
 export class DocumentRepository
@@ -93,6 +94,48 @@ export class DocumentRepository
     await client
       .update(documentExtractions)
       .set(data)
+      .where(eq(documentExtractions.id, id));
+  }
+
+  async findExtractionByDocumentId(
+    documentId: string,
+    opts?: { withRelations?: boolean }
+  ): Promise<ExtractionWithRelations | null> {
+    const result = await this.db.query.documentExtractions.findFirst({
+      where: eq(documentExtractions.documentId, documentId),
+      ...(opts?.withRelations && {
+        with: { draftTransaction: true, matchedProperty: true },
+      }),
+    });
+    return result ?? null;
+  }
+
+  async findExtractionById(
+    id: string,
+    opts?: { withRelations?: boolean }
+  ): Promise<ExtractionWithRelations | null> {
+    const result = await this.db.query.documentExtractions.findFirst({
+      where: eq(documentExtractions.id, id),
+      ...(opts?.withRelations && {
+        with: { draftTransaction: true, matchedProperty: true },
+      }),
+    });
+    return result ?? null;
+  }
+
+  async findCompletedExtractionsWithRelations(): Promise<
+    ExtractionWithRelations[]
+  > {
+    return this.db.query.documentExtractions.findMany({
+      where: eq(documentExtractions.status, "completed"),
+      with: { document: true, draftTransaction: true, matchedProperty: true },
+      orderBy: desc(documentExtractions.createdAt),
+    });
+  }
+
+  async deleteExtraction(id: string): Promise<void> {
+    await this.db
+      .delete(documentExtractions)
       .where(eq(documentExtractions.id, id));
   }
 }

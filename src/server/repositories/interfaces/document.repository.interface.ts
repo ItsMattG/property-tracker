@@ -1,4 +1,4 @@
-import type { Document, NewDocument, DocumentExtraction, NewDocumentExtraction } from "../../db/schema";
+import type { Document, NewDocument, DocumentExtraction, NewDocumentExtraction, Property, Transaction } from "../../db/schema";
 import type { DB } from "../base";
 
 /** Filters for listing documents */
@@ -6,6 +6,13 @@ export interface DocumentFilters {
   propertyId?: string;
   transactionId?: string;
 }
+
+/** Extraction with its related document, matched property, and draft transaction */
+export type ExtractionWithRelations = DocumentExtraction & {
+  document?: Document;
+  matchedProperty?: Property | null;
+  draftTransaction?: Transaction | null;
+};
 
 export interface IDocumentRepository {
   /** List documents for a user with optional property/transaction filter */
@@ -25,4 +32,16 @@ export interface IDocumentRepository {
 
   /** Update a document extraction record */
   updateExtraction(id: string, data: Partial<DocumentExtraction>, tx?: DB): Promise<void>;
+
+  /** Find extraction by document ID */
+  findExtractionByDocumentId(documentId: string, opts?: { withRelations?: boolean }): Promise<ExtractionWithRelations | null>;
+
+  /** Find extraction by ID with optional relations */
+  findExtractionById(id: string, opts?: { withRelations?: boolean }): Promise<ExtractionWithRelations | null>;
+
+  /** List completed extractions with pending review draft transactions */
+  findCompletedExtractionsWithRelations(): Promise<ExtractionWithRelations[]>;
+
+  /** Delete an extraction record */
+  deleteExtraction(id: string): Promise<void>;
 }
