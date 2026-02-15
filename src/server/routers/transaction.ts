@@ -2,74 +2,9 @@ import { z } from "zod";
 import { signedAmountSchema } from "@/lib/validation";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { transactionNotes } from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
 import { parseCSV } from "../services/banking";
+import { categoryValues, deriveTransactionFields, formatTransactionsCSV, importCSVRows, importRichCSVRows } from "../services/transaction";
 import { metrics } from "@/lib/metrics";
-import { getCategoryLabel } from "@/lib/categories";
-
-const categoryValues = [
-  "rental_income",
-  "other_rental_income",
-  "advertising",
-  "body_corporate",
-  "borrowing_expenses",
-  "cleaning",
-  "council_rates",
-  "gardening",
-  "insurance",
-  "interest_on_loans",
-  "land_tax",
-  "legal_expenses",
-  "pest_control",
-  "property_agent_fees",
-  "repairs_and_maintenance",
-  "capital_works_deductions",
-  "stationery_and_postage",
-  "travel_expenses",
-  "water_charges",
-  "sundry_rental_expenses",
-  "stamp_duty",
-  "conveyancing",
-  "buyers_agent_fees",
-  "initial_repairs",
-  "transfer",
-  "personal",
-  "uncategorized",
-] as const;
-
-/** Derive transaction type and deductibility from a category */
-function deriveTransactionFields(category: string) {
-  const incomeCategories = ["rental_income", "other_rental_income"];
-  const capitalCategories = [
-    "stamp_duty",
-    "conveyancing",
-    "buyers_agent_fees",
-    "initial_repairs",
-  ];
-  const nonDeductibleCategories = [
-    ...capitalCategories,
-    "transfer",
-    "personal",
-    "uncategorized",
-  ];
-
-  let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
-    "expense";
-  if (incomeCategories.includes(category)) {
-    transactionType = "income";
-  } else if (capitalCategories.includes(category)) {
-    transactionType = "capital";
-  } else if (category === "transfer") {
-    transactionType = "transfer";
-  } else if (category === "personal") {
-    transactionType = "personal";
-  }
-
-  const isDeductible = !nonDeductibleCategories.includes(category);
-
-  return { transactionType, isDeductible };
-}
 
 export const transactionRouter = router({
   list: protectedProcedure
@@ -102,34 +37,7 @@ export const transactionRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const results = await ctx.uow.transactions.findAllByOwner(ctx.portfolio.ownerId, input);
-
-      const header = "Date,Description,Amount,Category,Transaction Type,Property,Is Deductible,Is Verified,Notes";
-      const rows = results.map((t) => {
-        const escapeCsv = (val: string) => {
-          if (val.includes(",") || val.includes('"') || val.includes("\n")) {
-            return `"${val.replace(/"/g, '""')}"`;
-          }
-          return val;
-        };
-        const prop = t.property as { address?: string } | null | undefined;
-        return [
-          t.date,
-          escapeCsv(t.description),
-          t.amount,
-          getCategoryLabel(t.category),
-          t.transactionType,
-          prop?.address ?? "",
-          t.isDeductible ? "Yes" : "No",
-          t.isVerified ? "Yes" : "No",
-          escapeCsv(t.notes ?? ""),
-        ].join(",");
-      });
-
-      const csv = [header, ...rows].join("\n");
-      const today = new Date().toISOString().split("T")[0];
-      const filename = `bricktrack-transactions-${today}.csv`;
-
-      return { csv, filename };
+      return formatTransactionsCSV(results);
     }),
 
   get: protectedProcedure
@@ -299,34 +207,7 @@ export const transactionRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const rows = parseCSV(input.csvContent);
-
-      const imported: string[] = [];
-      const errors: string[] = [];
-
-      for (const row of rows) {
-        try {
-          const transaction = await ctx.uow.transactions.create({
-            userId: ctx.portfolio.ownerId,
-            propertyId: input.propertyId,
-            date: row.date,
-            description: row.description,
-            amount: row.amount,
-            category: "uncategorized",
-            transactionType: parseFloat(row.amount) >= 0 ? "income" : "expense",
-            isDeductible: false,
-          });
-
-          imported.push(transaction.id);
-        } catch (error) {
-          errors.push(`Row ${row.date} ${row.description}: ${error}`);
-        }
-      }
-
-      return {
-        importedCount: imported.length,
-        errorCount: errors.length,
-        errors: errors.slice(0, 5),
-      };
+      return importCSVRows(ctx.uow.transactions, ctx.portfolio.ownerId, input.propertyId, rows);
     }),
 
   importRichCSV: writeProcedure
@@ -349,36 +230,7 @@ export const transactionRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const imported: string[] = [];
-      const errors: string[] = [];
-
-      for (const row of input.rows) {
-        try {
-          const transaction = await ctx.uow.transactions.create({
-            userId: ctx.portfolio.ownerId,
-            propertyId: row.propertyId,
-            date: row.date,
-            description: row.description,
-            amount: row.amount.toString(),
-            category: row.category,
-            transactionType: row.transactionType,
-            isDeductible: row.isDeductible,
-            notes: row.notes,
-            invoiceUrl: row.invoiceUrl,
-            invoicePresent: row.invoicePresent,
-          });
-
-          imported.push(transaction.id);
-        } catch (error) {
-          errors.push(`Row ${row.date} ${row.description}: ${error}`);
-        }
-      }
-
-      return {
-        importedCount: imported.length,
-        errorCount: errors.length,
-        errors: errors.slice(0, 5),
-      };
+      return importRichCSVRows(ctx.uow.transactions, ctx.portfolio.ownerId, input.rows);
     }),
 
   allocate: writeProcedure
@@ -409,7 +261,7 @@ export const transactionRouter = router({
       return transaction;
     }),
 
-  // Discussion notes CRUD — transactionNotes stay as direct db calls (no notes repository)
+  // Discussion notes CRUD
   listNotes: protectedProcedure
     .input(z.object({ transactionId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
@@ -419,16 +271,7 @@ export const transactionRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }
 
-      const notes = await ctx.db.query.transactionNotes.findMany({
-        where: eq(transactionNotes.transactionId, input.transactionId),
-        orderBy: [desc(transactionNotes.createdAt)],
-        with: {
-          user: {
-            columns: { id: true, name: true },
-          },
-        },
-      });
-      return notes;
+      return ctx.uow.transactions.listNotes(input.transactionId);
     }),
 
   addNote: writeProcedure
@@ -445,16 +288,7 @@ export const transactionRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       }
 
-      const [note] = await ctx.db
-        .insert(transactionNotes)
-        .values({
-          transactionId: input.transactionId,
-          userId: ctx.portfolio.ownerId,
-          content: input.content,
-        })
-        .returning();
-
-      return note;
+      return ctx.uow.transactions.addNote(input.transactionId, ctx.portfolio.ownerId, input.content);
     }),
 
   updateNote: writeProcedure
@@ -465,19 +299,7 @@ export const transactionRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [note] = await ctx.db
-        .update(transactionNotes)
-        .set({
-          content: input.content,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(transactionNotes.id, input.noteId),
-            eq(transactionNotes.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      const note = await ctx.uow.transactions.updateNote(input.noteId, ctx.portfolio.ownerId, input.content);
 
       if (!note) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
@@ -489,14 +311,7 @@ export const transactionRouter = router({
   deleteNote: writeProcedure
     .input(z.object({ noteId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(transactionNotes)
-        .where(
-          and(
-            eq(transactionNotes.id, input.noteId),
-            eq(transactionNotes.userId, ctx.portfolio.ownerId)
-          )
-        );
+      await ctx.uow.transactions.deleteNote(input.noteId, ctx.portfolio.ownerId);
 
       return { success: true };
     }),

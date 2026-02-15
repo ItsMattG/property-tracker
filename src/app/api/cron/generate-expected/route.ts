@@ -9,7 +9,7 @@ import { eq, inArray } from "drizzle-orm";
 import {
   generateExpectedTransactions,
   findMatchingTransactions,
-} from "@/server/services/recurring";
+} from "@/server/services/transaction";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";

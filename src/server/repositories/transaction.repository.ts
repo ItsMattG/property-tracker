@@ -1,12 +1,13 @@
 import { eq, and, desc, gte, lte, inArray, isNotNull, sql } from "drizzle-orm";
-import { transactions } from "../db/schema";
-import type { Transaction, NewTransaction } from "../db/schema";
+import { transactions, transactionNotes } from "../db/schema";
+import type { Transaction, NewTransaction, TransactionNote } from "../db/schema";
 import { BaseRepository, type DB } from "./base";
 import type {
   ITransactionRepository,
   TransactionFilters,
   PaginatedTransactions,
   TransactionWithRelations,
+  TransactionNoteWithUser,
 } from "./interfaces/transaction.repository.interface";
 
 export class TransactionRepository
@@ -302,5 +303,58 @@ export class TransactionRepository
         inArray(transactions.id, ids)
       ),
     });
+  }
+
+  async listNotes(transactionId: string): Promise<TransactionNoteWithUser[]> {
+    return this.db.query.transactionNotes.findMany({
+      where: eq(transactionNotes.transactionId, transactionId),
+      orderBy: [desc(transactionNotes.createdAt)],
+      with: {
+        user: {
+          columns: { id: true, name: true },
+        },
+      },
+    });
+  }
+
+  async addNote(
+    transactionId: string,
+    userId: string,
+    content: string
+  ): Promise<TransactionNote> {
+    const [note] = await this.db
+      .insert(transactionNotes)
+      .values({ transactionId, userId, content })
+      .returning();
+    return note;
+  }
+
+  async updateNote(
+    noteId: string,
+    userId: string,
+    content: string
+  ): Promise<TransactionNote | null> {
+    const [note] = await this.db
+      .update(transactionNotes)
+      .set({ content, updatedAt: new Date() })
+      .where(
+        and(
+          eq(transactionNotes.id, noteId),
+          eq(transactionNotes.userId, userId)
+        )
+      )
+      .returning();
+    return note ?? null;
+  }
+
+  async deleteNote(noteId: string, userId: string): Promise<void> {
+    await this.db
+      .delete(transactionNotes)
+      .where(
+        and(
+          eq(transactionNotes.id, noteId),
+          eq(transactionNotes.userId, userId)
+        )
+      );
   }
 }

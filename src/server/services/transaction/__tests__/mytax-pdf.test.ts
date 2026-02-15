@@ -15,7 +15,7 @@ vi.mock("jspdf", () => {
 });
 
 import { generateMyTaxPDF } from "@/lib/mytax-pdf";
-import type { MyTaxReport } from "../../services/mytax";
+import type { MyTaxReport } from "../mytax";
 
 describe("generateMyTaxPDF", () => {
   const emptyReport: MyTaxReport = {

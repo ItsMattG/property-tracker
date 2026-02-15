@@ -9,7 +9,7 @@ import {
   calculatePropertyMetrics,
   getFinancialYearTransactions,
   getPropertiesWithLoans,
-} from "../services/reports";
+} from "../services/transaction";
 import { categories } from "@/lib/categories";
 
 export const reportsRouter = router({

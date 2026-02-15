@@ -7,7 +7,7 @@ import {
   detectPatterns,
   type Frequency,
 } from "../recurring";
-import type { RecurringTransaction, Transaction, ExpectedTransaction } from "../../db/schema";
+import type { RecurringTransaction, Transaction, ExpectedTransaction } from "@/server/db/schema";
 
 describe("recurring service", () => {
   describe("calculateNextDates", () => {

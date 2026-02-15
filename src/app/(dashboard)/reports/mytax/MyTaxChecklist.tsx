@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronRight, AlertTriangle } from "lucide-react";
 import { cn, formatCurrencyWithCents } from "@/lib/utils";
-import type { MyTaxReport, MyTaxPropertyReport, MyTaxLineItem } from "@/server/services/mytax";
+import type { MyTaxReport, MyTaxPropertyReport, MyTaxLineItem } from "@/server/services/transaction";
 
 interface MyTaxChecklistProps {
   report: MyTaxReport;

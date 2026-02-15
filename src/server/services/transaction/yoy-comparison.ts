@@ -213,19 +213,14 @@ export async function buildYoYComparison(
   ]);
 
   // Filter to deductible expenses only
-  const filterDeductible = (
-    txns: Array<{ propertyId: string | null; category: string; amount: string }>,
-  ) => txns.filter((t) => deductibleCategories.has(t.category));
+  const filterDeductible = <T extends { category: string }>(txns: T[]) =>
+    txns.filter((t) => deductibleCategories.has(t.category));
 
   const currentGrouped = groupByPropertyAndCategory(
-    filterDeductible(
-      currentTxns as Array<{ propertyId: string | null; category: string; amount: string }>,
-    ),
+    filterDeductible(currentTxns),
   );
   const comparisonGrouped = groupByPropertyAndCategory(
-    filterDeductible(
-      comparisonTxns as Array<{ propertyId: string | null; category: string; amount: string }>,
-    ),
+    filterDeductible(comparisonTxns),
   );
 
   // Portfolio-level comparison

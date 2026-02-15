@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { buildYoYComparison } from "../services/yoy-comparison";
+import { buildYoYComparison } from "../services/transaction";
 
 export const yoyComparisonRouter = router({
   getComparison: protectedProcedure

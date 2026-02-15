@@ -10,7 +10,7 @@ import {
   forecastScenarios,
 } from "../db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { calculateNextDates } from "../services/recurring";
+import { calculateNextDates } from "../services/transaction";
 
 interface CalendarEvent {
   id: string;

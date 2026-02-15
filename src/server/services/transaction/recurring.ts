@@ -1,4 +1,4 @@
-import type { RecurringTransaction, Transaction, ExpectedTransaction } from "../db/schema";
+import type { RecurringTransaction, Transaction, ExpectedTransaction } from "@/server/db/schema";
 import { formatDateISO } from "@/lib/utils";
 
 export type Frequency = "weekly" | "fortnightly" | "monthly" | "quarterly" | "annually";

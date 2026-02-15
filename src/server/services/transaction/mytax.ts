@@ -7,7 +7,7 @@ import {
   getFinancialYearTransactions,
   calculateCategoryTotals,
 } from "./reports";
-import { calculateTaxPosition } from "./tax-position";
+import { calculateTaxPosition } from "../tax-position";
 
 // --- Types ---
 
@@ -127,7 +127,7 @@ export async function buildMyTaxReport(
   // Build depreciation lookup by property
   const depByProperty = new Map<string, { capitalWorks: number; plantEquipment: number }>();
   for (const schedule of depreciation) {
-    const assets = (schedule as any).assets || [];
+    const assets = schedule.assets;
     let cw = 0;
     let pe = 0;
     for (const asset of assets) {
@@ -148,11 +148,11 @@ export async function buildMyTaxReport(
   // Build per-property reports
   const propertyReports: MyTaxPropertyReport[] = userProperties.map((prop) => {
     const propTxns = txnsByProperty.get(prop.id) || [];
-    const catTotals = calculateCategoryTotals(propTxns as any);
+    const catTotals = calculateCategoryTotals(propTxns);
     const dep = depByProperty.get(prop.id) || { capitalWorks: 0, plantEquipment: 0 };
 
-    const income = buildLineItems(incomeCategories, catTotals, propTxns as any);
-    const deductions = buildLineItems(deductibleCategories, catTotals, propTxns as any);
+    const income = buildLineItems(incomeCategories, catTotals, propTxns);
+    const deductions = buildLineItems(deductibleCategories, catTotals, propTxns);
 
     const totalIncome = income.reduce((s, i) => s + i.amount, 0);
     const totalDeductions =

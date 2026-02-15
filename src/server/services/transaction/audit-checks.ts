@@ -298,24 +298,10 @@ export async function buildAuditReport(
     }),
   ]);
 
-  const txnArray = currentTxns as Array<{
-    propertyId: string | null;
-    category: string;
-    amount: string;
-    transactionType: string;
-    isVerified: boolean;
-    description: string;
-  }>;
-  const priorArray = priorTxns as Array<{
-    propertyId: string | null;
-    category: string;
-    amount: string;
-  }>;
-
   // Group by property
-  const currentGrouped = groupByPropertyAndCategory(txnArray);
-  const priorGrouped = groupByPropertyAndCategory(priorArray);
-  const currentIncomeGrouped = groupIncomeByProperty(txnArray);
+  const currentGrouped = groupByPropertyAndCategory(currentTxns);
+  const priorGrouped = groupByPropertyAndCategory(priorTxns);
+  const currentIncomeGrouped = groupIncomeByProperty(currentTxns);
 
   // Portfolio-wide claimed categories
   const claimedCategories = new Set<string>();
@@ -328,7 +314,7 @@ export async function buildAuditReport(
   // Portfolio-level checks
   const portfolioChecks: AuditCheckResult[] = [
     ...checkMissedDeductions(claimedCategories),
-    ...checkUnassignedTransactions(txnArray),
+    ...checkUnassignedTransactions(currentTxns),
   ];
 
   // Per-property checks
@@ -338,13 +324,13 @@ export async function buildAuditReport(
     const propCurrentTotals = currentGrouped.get(prop.id) ?? new Map();
     const propPriorTotals = priorGrouped.get(prop.id) ?? new Map();
     const propIncomeTotals = currentIncomeGrouped.get(prop.id) ?? new Map();
-    const hasLoan = (prop as { loans?: unknown[] }).loans?.length ? true : false;
+    const hasLoan = prop.loans.length > 0;
 
     const checks: AuditCheckResult[] = [
       ...checkMissingKeyExpenses(prop.id, prop.address, propCurrentTotals, propPriorTotals),
-      ...checkUncategorizedTransactions(prop.id, prop.address, txnArray),
+      ...checkUncategorizedTransactions(prop.id, prop.address, currentTxns),
       ...checkLoanInterestMissing(prop.id, prop.address, hasLoan, propCurrentTotals),
-      ...checkLargeUnverified(prop.id, prop.address, txnArray),
+      ...checkLargeUnverified(prop.id, prop.address, currentTxns),
       ...checkNoRentalIncome(prop.id, prop.address, propIncomeTotals),
     ];
 

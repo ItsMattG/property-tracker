@@ -3,7 +3,7 @@ import { db } from "@/server/db";
 import { transactions, properties, taxProfiles } from "@/server/db/schema";
 import { categories } from "@/lib/categories";
 import { getFinancialYearRange } from "./reports";
-import { calculateTaxPosition, type TaxPositionResult } from "./tax-position";
+import { calculateTaxPosition, type TaxPositionResult } from "../tax-position";
 
 // --- Types ---
 
@@ -117,7 +117,7 @@ function getMonthsElapsed(financialYear: number): number {
 }
 
 function groupTransactionsByMonth(
-  txns: Array<{ date: string; amount: string; category: string; transactionType: string; propertyId: string | null }>,
+  txns: Array<{ date: string; amount: string; category: string; propertyId: string | null }>,
   propertyId: string,
   category: string,
 ): MonthlyTotals {
@@ -181,11 +181,11 @@ export async function buildTaxForecast(
 
     for (const cat of allRelevantCategories) {
       const currentMonths = groupTransactionsByMonth(
-        currentTxns as Array<{ date: string; amount: string; category: string; transactionType: string; propertyId: string | null }>,
+        currentTxns,
         prop.id, cat.value
       );
       const priorMonths = groupTransactionsByMonth(
-        priorTxns as Array<{ date: string; amount: string; category: string; transactionType: string; propertyId: string | null }>,
+        priorTxns,
         prop.id, cat.value
       );
 

@@ -11,7 +11,7 @@ import {
   type PropertySnapshot,
   type SummarySnapshot,
 } from "../services/share";
-import { getDateRangeForPeriod } from "../services/portfolio";
+import { getDateRangeForPeriod } from "../services/transaction";
 
 const privacyModeSchema = z.enum(["full", "summary", "redacted"]);
 

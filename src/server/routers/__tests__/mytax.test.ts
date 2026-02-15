@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createMockContext, createTestCaller } from "../../__tests__/test-utils";
 
-vi.mock("../../services/mytax", () => ({
+vi.mock("../../services/transaction", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../services/transaction")>()),
   buildMyTaxReport: vi.fn(),
 }));
 
-import { buildMyTaxReport } from "../../services/mytax";
+import { buildMyTaxReport } from "../../services/transaction";
 
 const mockUser = {
   id: "user-1",

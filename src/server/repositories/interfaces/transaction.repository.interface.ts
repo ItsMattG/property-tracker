@@ -1,5 +1,10 @@
-import type { Transaction, NewTransaction, Property, BankAccount } from "../../db/schema";
+import type { Transaction, NewTransaction, Property, BankAccount, TransactionNote } from "../../db/schema";
 import type { DB } from "../base";
+
+/** Transaction note with author info */
+export type TransactionNoteWithUser = TransactionNote & {
+  user: { id: string; name: string | null };
+};
 
 /** Filters for listing transactions */
 export interface TransactionFilters {
@@ -80,4 +85,16 @@ export interface ITransactionRepository {
 
   /** Find multiple transactions by IDs scoped to user */
   findByIds(ids: string[], userId: string): Promise<Transaction[]>;
+
+  /** List discussion notes for a transaction, ordered newest first */
+  listNotes(transactionId: string): Promise<TransactionNoteWithUser[]>;
+
+  /** Add a discussion note to a transaction */
+  addNote(transactionId: string, userId: string, content: string): Promise<TransactionNote>;
+
+  /** Update a discussion note (scoped to author) */
+  updateNote(noteId: string, userId: string, content: string): Promise<TransactionNote | null>;
+
+  /** Delete a discussion note (scoped to author) */
+  deleteNote(noteId: string, userId: string): Promise<void>;
 }
