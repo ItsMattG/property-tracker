@@ -63,5 +63,5 @@ Each subdirectory is one commit: create directory, move files + tests, create ba
 ## Tech Notes (context7)
 
 - **tRPC v11**: Router organization is project-level — tRPC is agnostic about file structure. Barrel re-exports work transparently since `_app.ts` only cares about the exported router object, not the file path.
-- **Next.js 15**: No impact — routers are server-side only, not imported by client components.
+- **Next.js 16**: No impact — routers are server-side only, not imported by client components.
 - **TypeScript**: Path aliases (`@/server/routers/...`) used in test files will need updating if tests import routers directly (most use `createTestCaller` which goes through `_app.ts`).

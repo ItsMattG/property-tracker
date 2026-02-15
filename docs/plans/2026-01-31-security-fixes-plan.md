@@ -6,7 +6,7 @@
 
 **Architecture:** Each fix is isolated and can be committed independently. We'll add authentication to the entity switch endpoint, remove insecure defaults, eliminate debug logging, add security headers, and standardize billing context.
 
-**Tech Stack:** Next.js 15, tRPC, Clerk authentication, Drizzle ORM, TypeScript
+**Tech Stack:** Next.js 16, tRPC, Clerk authentication, Drizzle ORM, TypeScript
 
 ---
 
