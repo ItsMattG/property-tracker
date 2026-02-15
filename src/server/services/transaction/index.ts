@@ -53,3 +53,14 @@ export {
   isEofySeason,
   daysUntilEofy,
 } from "./tax-optimization";
+
+export {
+  buildYoYComparison,
+  computeChange,
+  buildCategoryComparison,
+  sortCategories,
+  KEY_EXPENSES,
+  type YoYCategoryComparison,
+  type YoYPropertyBreakdown,
+  type YoYComparisonResult,
+} from "./yoy-comparison";
