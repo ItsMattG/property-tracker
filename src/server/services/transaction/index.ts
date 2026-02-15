@@ -31,3 +31,14 @@ export {
   type PropertyMetrics,
   type CategoryTotal,
 } from "./reports";
+
+export {
+  buildTaxForecast,
+  computeCategoryForecast,
+  computeConfidence,
+  type MonthlyTotals,
+  type Confidence,
+  type CategoryForecast,
+  type PropertyForecast,
+  type TaxForecastResult,
+} from "./tax-forecast";

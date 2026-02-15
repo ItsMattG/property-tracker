@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { buildTaxForecast } from "../services/tax-forecast";
+import { buildTaxForecast } from "../services/transaction";
 
 export const taxForecastRouter = router({
   getForecast: protectedProcedure
