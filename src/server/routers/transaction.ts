@@ -5,71 +5,9 @@ import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { transactionNotes } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { parseCSV } from "../services/banking";
+import { categoryValues, deriveTransactionFields } from "../services/transaction";
 import { metrics } from "@/lib/metrics";
 import { getCategoryLabel } from "@/lib/categories";
-
-const categoryValues = [
-  "rental_income",
-  "other_rental_income",
-  "advertising",
-  "body_corporate",
-  "borrowing_expenses",
-  "cleaning",
-  "council_rates",
-  "gardening",
-  "insurance",
-  "interest_on_loans",
-  "land_tax",
-  "legal_expenses",
-  "pest_control",
-  "property_agent_fees",
-  "repairs_and_maintenance",
-  "capital_works_deductions",
-  "stationery_and_postage",
-  "travel_expenses",
-  "water_charges",
-  "sundry_rental_expenses",
-  "stamp_duty",
-  "conveyancing",
-  "buyers_agent_fees",
-  "initial_repairs",
-  "transfer",
-  "personal",
-  "uncategorized",
-] as const;
-
-/** Derive transaction type and deductibility from a category */
-function deriveTransactionFields(category: string) {
-  const incomeCategories = ["rental_income", "other_rental_income"];
-  const capitalCategories = [
-    "stamp_duty",
-    "conveyancing",
-    "buyers_agent_fees",
-    "initial_repairs",
-  ];
-  const nonDeductibleCategories = [
-    ...capitalCategories,
-    "transfer",
-    "personal",
-    "uncategorized",
-  ];
-
-  let transactionType: "income" | "expense" | "capital" | "transfer" | "personal" =
-    "expense";
-  if (incomeCategories.includes(category)) {
-    transactionType = "income";
-  } else if (capitalCategories.includes(category)) {
-    transactionType = "capital";
-  } else if (category === "transfer") {
-    transactionType = "transfer";
-  } else if (category === "personal") {
-    transactionType = "personal";
-  }
-
-  const isDeductible = !nonDeductibleCategories.includes(category);
-
-  return { transactionType, isDeductible };
-}
 
 export const transactionRouter = router({
   list: protectedProcedure
