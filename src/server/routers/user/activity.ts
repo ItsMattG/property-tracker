@@ -1,47 +1,14 @@
 import { router, protectedProcedure } from "../../trpc";
-import { transactions, properties, loans } from "../../db/schema";
-import { eq, desc } from "drizzle-orm";
 
 export const activityRouter = router({
   getRecent: protectedProcedure.query(async ({ ctx }) => {
     const ownerId = ctx.portfolio.ownerId;
 
-    // Fetch recent items from each table in parallel
+    // Fetch recent items from each repo in parallel
     const [recentTransactions, recentProperties, recentLoans] = await Promise.all([
-      ctx.db.query.transactions.findMany({
-        where: eq(transactions.userId, ownerId),
-        orderBy: [desc(transactions.createdAt)],
-        limit: 5,
-        columns: {
-          id: true,
-          description: true,
-          amount: true,
-          category: true,
-          createdAt: true,
-          propertyId: true,
-        },
-      }),
-      ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ownerId),
-        orderBy: [desc(properties.createdAt)],
-        limit: 3,
-        columns: {
-          id: true,
-          address: true,
-          createdAt: true,
-        },
-      }),
-      ctx.db.query.loans.findMany({
-        where: eq(loans.userId, ownerId),
-        orderBy: [desc(loans.updatedAt)],
-        limit: 3,
-        columns: {
-          id: true,
-          lender: true,
-          currentBalance: true,
-          updatedAt: true,
-        },
-      }),
+      ctx.uow.transactions.findRecent(ownerId, 5),
+      ctx.uow.property.findRecent(ownerId, 3),
+      ctx.uow.loan.findRecent(ownerId, 3),
     ]);
 
     // Unify into a single activity stream

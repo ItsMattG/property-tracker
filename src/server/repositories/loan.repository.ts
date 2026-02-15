@@ -74,4 +74,26 @@ export class LoanRepository extends BaseRepository implements ILoanRepository {
       .delete(loans)
       .where(and(eq(loans.id, id), eq(loans.userId, userId)));
   }
+
+  async findRecent(
+    userId: string,
+    limit: number
+  ): Promise<Array<{
+    id: string;
+    lender: string;
+    currentBalance: string;
+    updatedAt: Date;
+  }>> {
+    return this.db.query.loans.findMany({
+      where: eq(loans.userId, userId),
+      orderBy: (l, { desc }) => [desc(l.updatedAt)],
+      limit,
+      columns: {
+        id: true,
+        lender: true,
+        currentBalance: true,
+        updatedAt: true,
+      },
+    });
+  }
 }

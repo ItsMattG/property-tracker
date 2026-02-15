@@ -1,7 +1,5 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../../trpc";
-import { subscriptions, users, properties } from "../../db/schema";
-import { eq, and, sql } from "drizzle-orm";
 import { stripe } from "@/lib/stripe";
 import { TRPCError } from "@trpc/server";
 import { getPlanFromSubscription } from "../../services/billing/subscription";
@@ -35,11 +33,8 @@ function getPriceId(plan: PlanType, interval?: BillingInterval): string {
 
 export const billingRouter = router({
   // Shows subscription status of the portfolio being viewed
-  // (could be user's own or a portfolio they have access to)
   getSubscription: protectedProcedure.query(async ({ ctx }) => {
-    const sub = await ctx.db.query.subscriptions.findFirst({
-      where: eq(subscriptions.userId, ctx.portfolio.ownerId),
-    });
+    const sub = await ctx.uow.user.findSubscriptionFull(ctx.portfolio.ownerId);
 
     if (!sub) {
       return {
@@ -65,7 +60,6 @@ export const billingRouter = router({
   }),
 
   // Creates checkout session for the CURRENT USER (not portfolio owner)
-  // Users can only create/upgrade their own subscriptions
   createCheckoutSession: protectedProcedure
     .input(
       z.object({
@@ -78,9 +72,7 @@ export const billingRouter = router({
       const isLifetime = input.plan === "lifetime";
 
       // Check for existing customer
-      const existing = await ctx.db.query.subscriptions.findFirst({
-        where: eq(subscriptions.userId, ctx.user.id),
-      });
+      const existing = await ctx.uow.user.findSubscriptionFull(ctx.user.id);
 
       const session = await stripe.checkout.sessions.create({
         mode: isLifetime ? "payment" : "subscription",
@@ -101,11 +93,8 @@ export const billingRouter = router({
     }),
 
   // Creates portal session for the CURRENT USER (not portfolio owner)
-  // Users can only manage their own billing
   createPortalSession: protectedProcedure.mutation(async ({ ctx }) => {
-    const sub = await ctx.db.query.subscriptions.findFirst({
-      where: eq(subscriptions.userId, ctx.user.id),
-    });
+    const sub = await ctx.uow.user.findSubscriptionFull(ctx.user.id);
 
     if (!sub?.stripeCustomerId) {
       throw new TRPCError({
@@ -124,35 +113,26 @@ export const billingRouter = router({
 
   // Get trial status and property count for the current portfolio owner
   getTrialStatus: protectedProcedure.query(async ({ ctx }) => {
-    const user = await ctx.db.query.users.findFirst({
-      where: eq(users.id, ctx.portfolio.ownerId),
-    });
+    const ownerId = ctx.portfolio.ownerId;
+
+    const [user, sub, propertyCount] = await Promise.all([
+      ctx.uow.user.findById(ownerId),
+      ctx.uow.user.findSubscriptionFull(ownerId),
+      ctx.uow.property.countByOwner(ownerId),
+    ]);
 
     if (!user || !user.trialEndsAt) {
       return { isOnTrial: false, trialEndsAt: null, propertyCount: 0 };
     }
 
-    const now = new Date();
-    const hasActiveSub = await ctx.db.query.subscriptions.findFirst({
-      where: and(
-        eq(subscriptions.userId, ctx.portfolio.ownerId),
-        eq(subscriptions.status, "active")
-      ),
-    });
-
-    if (hasActiveSub) {
+    if (sub && sub.status === "active") {
       return { isOnTrial: false, trialEndsAt: null, propertyCount: 0 };
     }
 
-    const [countResult] = await ctx.db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(properties)
-      .where(eq(properties.userId, ctx.portfolio.ownerId));
-
     return {
-      isOnTrial: user.trialEndsAt > now,
+      isOnTrial: user.trialEndsAt > new Date(),
       trialEndsAt: user.trialEndsAt,
-      propertyCount: countResult?.count ?? 0,
+      propertyCount,
     };
   }),
 });

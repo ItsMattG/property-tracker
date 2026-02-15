@@ -97,4 +97,14 @@ export interface ITransactionRepository {
 
   /** Delete a discussion note (scoped to author) */
   deleteNote(noteId: string, userId: string): Promise<void>;
+
+  /** Find recently created transactions for a user */
+  findRecent(userId: string, limit: number): Promise<Array<{
+    id: string;
+    description: string | null;
+    amount: string;
+    category: string;
+    createdAt: Date;
+    propertyId: string | null;
+  }>>;
 }

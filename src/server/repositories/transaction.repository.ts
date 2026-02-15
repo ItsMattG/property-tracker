@@ -357,4 +357,30 @@ export class TransactionRepository
         )
       );
   }
+
+  async findRecent(
+    userId: string,
+    limit: number
+  ): Promise<Array<{
+    id: string;
+    description: string | null;
+    amount: string;
+    category: string;
+    createdAt: Date;
+    propertyId: string | null;
+  }>> {
+    return this.db.query.transactions.findMany({
+      where: eq(transactions.userId, userId),
+      orderBy: (t, { desc }) => [desc(t.createdAt)],
+      limit,
+      columns: {
+        id: true,
+        description: true,
+        amount: true,
+        category: true,
+        createdAt: true,
+        propertyId: true,
+      },
+    });
+  }
 }

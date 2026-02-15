@@ -16,3 +16,4 @@ export type { ITeamRepository, MemberWithUser, InviteWithOwner, AuditEntryWithAc
 export type { IForecastRepository, CashFlowForecastWithProperty } from "./forecast.repository.interface";
 export type { IPropertyValueRepository } from "./property-value.repository.interface";
 export type { ISimilarPropertiesRepository, SimilarVectorRow, PropertyVectorWithRelations } from "./similar-properties.repository.interface";
+export type { IReferralRepository, ReferralWithReferee } from "./referral.repository.interface";

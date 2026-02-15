@@ -1,31 +1,15 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../../trpc";
-import {
-  referralCodes,
-  referrals,
-  referralCredits,
-  users,
-} from "../../db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
 import { generateReferralCode } from "../../services/user/referral";
 
 export const referralRouter = router({
   // Get or create user's referral code
   getMyCode: protectedProcedure.query(async ({ ctx }) => {
-    let [existing] = await ctx.db
-      .select()
-      .from(referralCodes)
-      .where(eq(referralCodes.userId, ctx.user.id));
+    let existing = await ctx.uow.referral.findCodeByUserId(ctx.user.id);
 
     if (!existing) {
-      [existing] = await ctx.db
-        .insert(referralCodes)
-        .values({
-          userId: ctx.user.id,
-          code: generateReferralCode(),
-        })
-        .returning();
+      existing = await ctx.uow.referral.createCode(ctx.user.id, generateReferralCode());
     }
 
     return {
@@ -36,64 +20,34 @@ export const referralRouter = router({
 
   // Get referral stats
   getStats: protectedProcedure.query(async ({ ctx }) => {
-    const [code] = await ctx.db
-      .select()
-      .from(referralCodes)
-      .where(eq(referralCodes.userId, ctx.user.id));
+    const code = await ctx.uow.referral.findCodeByUserId(ctx.user.id);
 
     if (!code) {
       return { invited: 0, qualified: 0, totalCredits: 0 };
     }
 
-    const myReferrals = await ctx.db
-      .select()
-      .from(referrals)
-      .where(eq(referrals.referrerUserId, ctx.user.id));
+    const myReferrals = await ctx.uow.referral.findByReferrer(ctx.user.id);
 
     const invited = myReferrals.length;
     const qualified = myReferrals.filter(
       (r) => r.status === "qualified" || r.status === "rewarded"
     ).length;
 
-    const [creditResult] = await ctx.db
-      .select({ total: sql<number>`coalesce(sum(${referralCredits.monthsFree}), 0)::int` })
-      .from(referralCredits)
-      .where(eq(referralCredits.userId, ctx.user.id));
+    const totalCredits = await ctx.uow.referral.getCreditsTotal(ctx.user.id);
 
-    return {
-      invited,
-      qualified,
-      totalCredits: creditResult?.total ?? 0,
-    };
+    return { invited, qualified, totalCredits };
   }),
 
   // Get referral list (for settings page)
   listReferrals: protectedProcedure.query(async ({ ctx }) => {
-    const myReferrals = await ctx.db
-      .select({
-        id: referrals.id,
-        status: referrals.status,
-        createdAt: referrals.createdAt,
-        qualifiedAt: referrals.qualifiedAt,
-        refereeName: users.name,
-        refereeEmail: users.email,
-      })
-      .from(referrals)
-      .leftJoin(users, eq(users.id, referrals.refereeUserId))
-      .where(eq(referrals.referrerUserId, ctx.user.id))
-      .orderBy(desc(referrals.createdAt));
-
-    return myReferrals;
+    return ctx.uow.referral.findByReferrer(ctx.user.id);
   }),
 
   // Resolve referral code (for /r/[code] page)
   resolveCode: protectedProcedure
     .input(z.object({ code: z.string() }))
     .query(async ({ ctx, input }) => {
-      const [codeRecord] = await ctx.db
-        .select()
-        .from(referralCodes)
-        .where(eq(referralCodes.code, input.code));
+      const codeRecord = await ctx.uow.referral.resolveCode(input.code);
 
       if (!codeRecord) {
         throw new TRPCError({
@@ -117,26 +71,20 @@ export const referralRouter = router({
   recordReferral: protectedProcedure
     .input(z.object({ code: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const [codeRecord] = await ctx.db
-        .select()
-        .from(referralCodes)
-        .where(eq(referralCodes.code, input.code));
+      const codeRecord = await ctx.uow.referral.resolveCode(input.code);
 
       if (!codeRecord || codeRecord.userId === ctx.user.id) {
         return { recorded: false };
       }
 
       // Check if already referred
-      const [existing] = await ctx.db
-        .select()
-        .from(referrals)
-        .where(eq(referrals.refereeUserId, ctx.user.id));
+      const existing = await ctx.uow.referral.findByReferee(ctx.user.id);
 
       if (existing) {
         return { recorded: false };
       }
 
-      await ctx.db.insert(referrals).values({
+      await ctx.uow.referral.createReferral({
         referrerUserId: codeRecord.userId,
         refereeUserId: ctx.user.id,
         referralCodeId: codeRecord.id,
@@ -147,31 +95,20 @@ export const referralRouter = router({
 
   // Qualify referral (called when referee adds first property)
   qualifyReferral: protectedProcedure.mutation(async ({ ctx }) => {
-    const [referral] = await ctx.db
-      .select()
-      .from(referrals)
-      .where(
-        and(
-          eq(referrals.refereeUserId, ctx.user.id),
-          eq(referrals.status, "pending")
-        )
-      );
+    const referral = await ctx.uow.referral.findByReferee(ctx.user.id);
 
-    if (!referral) {
+    if (!referral || referral.status !== "pending") {
       return { qualified: false };
     }
 
     // Update status
-    await ctx.db
-      .update(referrals)
-      .set({ status: "qualified", qualifiedAt: new Date() })
-      .where(eq(referrals.id, referral.id));
+    await ctx.uow.referral.qualifyReferral(referral.id);
 
     // Create credits for both users (1 month free each)
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
-    await ctx.db.insert(referralCredits).values([
+    await ctx.uow.referral.createCredits([
       {
         userId: referral.referrerUserId,
         referralId: referral.id,
