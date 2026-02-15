@@ -13,6 +13,7 @@ import type {
   IScenarioRepository,
   IUserRepository,
   ITaskRepository,
+  IFeedbackRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -29,6 +30,7 @@ import { EmailRepository } from "./email.repository";
 import { PortfolioRepository } from "./portfolio.repository";
 import { ScenarioRepository } from "./scenario.repository";
 import { TaskRepository } from "./task.repository";
+import { FeedbackRepository } from "./feedback.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -45,6 +47,7 @@ export class UnitOfWork {
   private _scenario?: IScenarioRepository;
   private _user?: IUserRepository;
   private _task?: ITaskRepository;
+  private _feedback?: IFeedbackRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -87,6 +90,9 @@ export class UnitOfWork {
   }
   get task(): ITaskRepository {
     return (this._task ??= new TaskRepository(this.db));
+  }
+  get feedback(): IFeedbackRepository {
+    return (this._feedback ??= new FeedbackRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */

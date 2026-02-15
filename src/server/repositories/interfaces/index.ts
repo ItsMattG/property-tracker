@@ -11,3 +11,4 @@ export type { IPortfolioRepository } from "./portfolio.repository.interface";
 export type { IScenarioRepository, ScenarioWithRelations } from "./scenario.repository.interface";
 export type { IUserRepository } from "./user.repository.interface";
 export type { ITaskRepository, TaskFiltersInput, TaskWithRelations } from "./task.repository.interface";
+export type { IFeedbackRepository, FeatureListFilters, FeatureWithUser, FeatureCommentWithUser, BugListFilters, BugWithUser } from "./feedback.repository.interface";
