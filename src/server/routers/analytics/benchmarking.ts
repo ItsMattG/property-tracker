@@ -23,6 +23,7 @@ export const benchmarkingRouter = router({
   getPropertyBenchmark: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }): Promise<PropertyBenchmark | null> => {
+      // Cross-domain: benchmarking aggregates properties and transactions
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, input.propertyId),
@@ -91,6 +92,7 @@ export const benchmarkingRouter = router({
 
   getPortfolioSummary: protectedProcedure.query(
     async ({ ctx }): Promise<PortfolioBenchmarkSummary> => {
+      // Cross-domain: benchmarking aggregates properties and transactions
       const userProperties = await ctx.db.query.properties.findMany({
         where: eq(properties.userId, ctx.portfolio.ownerId),
         with: {

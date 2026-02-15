@@ -3,7 +3,7 @@ export type { IBankAccountRepository, BankAccountWithRelations, AnomalyAlertWith
 export type { ITransactionRepository, TransactionFilters, PaginatedTransactions, TransactionWithRelations } from "./transaction.repository.interface";
 export type { ILoanRepository, LoanWithRelations, BrokerWithPackCount, LoanPackWithBroker, LoanComparisonWithLoan } from "./loan.repository.interface";
 export type { IRecurringRepository, RecurringWithRelations, ExpectedWithRelations, ExpectedTransactionFilters } from "./recurring.repository.interface";
-export type { IDocumentRepository, DocumentFilters } from "./document.repository.interface";
+export type { IDocumentRepository, DocumentFilters, ExtractionWithRelations, ExtractionWithFullRelations } from "./document.repository.interface";
 export type { IComplianceRepository, SmsfContributionWithMember, SmsfPensionWithMember, SmsfMemberWithEntity, EntityWithDetails, TrustDistributionWithAllocations } from "./compliance.repository.interface";
 export type { IEmailRepository } from "./email.repository.interface";
 export type { IChatRepository, ConversationSummary, ConversationWithMessages } from "./chat.repository.interface";

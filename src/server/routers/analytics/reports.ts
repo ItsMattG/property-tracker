@@ -17,6 +17,7 @@ export const reportsRouter = router({
    * Get available financial years based on user's transactions
    */
   getAvailableYears: protectedProcedure.query(async ({ ctx }) => {
+    // Cross-domain: report aggregates properties and transactions
     const result = await ctx.db
       .select({
         minDate: sql<string>`MIN(${transactions.date})`,
@@ -63,7 +64,7 @@ export const reportsRouter = router({
       const { year, propertyId } = input;
       const { startDate, endDate, label } = getFinancialYearRange(year);
 
-      // Validate property ownership if propertyId provided
+      // Cross-domain: report aggregates properties and transactions
       if (propertyId) {
         const property = await ctx.db.query.properties.findFirst({
           where: and(
@@ -79,7 +80,6 @@ export const reportsRouter = router({
         }
       }
 
-      // Get all user properties
       const userProperties = await ctx.db.query.properties.findMany({
         where: eq(properties.userId, ctx.portfolio.ownerId),
       });
@@ -181,7 +181,7 @@ export const reportsRouter = router({
         conditions.push(eq(transactions.propertyId, propertyId));
       }
 
-      // Get transactions in range
+      // Cross-domain: report aggregates properties and transactions
       const txns = await ctx.db.query.transactions.findMany({
         where: and(...conditions),
         orderBy: [desc(transactions.date)],

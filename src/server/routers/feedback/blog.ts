@@ -28,6 +28,7 @@ export const blogRouter = router({
         conditions.push(sql`${input.tag} = ANY(${blogPosts.tags})`);
       }
 
+      // publicProcedure: no ctx.uow available
       const posts = await ctx.db
         .select({
           id: blogPosts.id,
@@ -57,6 +58,7 @@ export const blogRouter = router({
   getBySlug: publicProcedure
     .input(z.object({ slug: z.string() }))
     .query(async ({ ctx, input }) => {
+      // publicProcedure: no ctx.uow available
       const now = new Date().toISOString().split("T")[0];
       const [post] = await ctx.db
         .select()
@@ -66,7 +68,7 @@ export const blogRouter = router({
       return post ?? null;
     }),
 
-  // Get categories with post counts
+  // publicProcedure: no ctx.uow available
   categories: publicProcedure.query(async ({ ctx }) => {
     const now = new Date().toISOString().split("T")[0];
     const result = await ctx.db
@@ -81,7 +83,7 @@ export const blogRouter = router({
     return result;
   }),
 
-  // Get all tags with post counts
+  // publicProcedure: no ctx.uow available
   tags: publicProcedure.query(async ({ ctx }) => {
     const now = new Date().toISOString().split("T")[0];
     const result = await ctx.db

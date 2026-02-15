@@ -186,7 +186,7 @@ export const recurringRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify both belong to user
+      // Cross-domain: recurring matching queries expectedTransactions and transactions
       const [expected, tx] = await Promise.all([
         ctx.db.query.expectedTransactions.findFirst({
           where: and(
@@ -221,7 +221,7 @@ export const recurringRouter = router({
         }
       );
 
-      // Apply category/transactionType from template to the actual transaction
+      // Cross-domain: apply recurring template fields to matched transaction
       if (expected.recurringTransaction) {
         await ctx.db
           .update(transactions)
@@ -260,6 +260,7 @@ export const recurringRouter = router({
   // getSuggestions and runMatching use cross-domain queries (transactions + recurring)
   // so they keep inline DB access for the transaction-domain parts
   getSuggestions: protectedProcedure.query(async ({ ctx }) => {
+    // Cross-domain: recurring matching queries expectedTransactions and transactions
     const [recentTransactions, existingTemplates] = await Promise.all([
       ctx.db.query.transactions.findMany({
         where: eq(transactions.userId, ctx.portfolio.ownerId),
@@ -288,6 +289,7 @@ export const recurringRouter = router({
       .filter((p) => p.matchedTransactionId)
       .map((p) => p.matchedTransactionId!);
 
+    // Cross-domain: recurring matching queries expectedTransactions and transactions
     const allTransactions = await ctx.db.query.transactions.findMany({
       where: eq(transactions.userId, ctx.portfolio.ownerId),
     });
@@ -355,7 +357,7 @@ export const recurringRouter = router({
       }
     }
 
-    // Batch execute all DB updates in parallel
+    // Cross-domain: batch update expectedTransactions and transactions tables
     if (expectedUpdates.length > 0) {
       const now = new Date();
       await Promise.all([

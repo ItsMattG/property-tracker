@@ -79,7 +79,7 @@ export const settlementRouter = router({
         await ctx.uow.property.update(propertyId, ctx.portfolio.ownerId, updates);
       }
 
-      // Create capital cost transactions
+      // Cross-domain: creates transactions from settlement extraction data
       const created = [];
       for (const item of items) {
         const [tx] = await ctx.db

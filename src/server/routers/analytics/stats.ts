@@ -4,7 +4,7 @@ import { eq, and, sql } from "drizzle-orm";
 
 export const statsRouter = router({
   dashboard: protectedProcedure.query(async ({ ctx }) => {
-    // Run all count queries in parallel
+    // Cross-domain: stats aggregates counts across properties, transactions, loans
     const [propertiesResult, transactionsResult, uncategorizedResult] =
       await Promise.all([
         // Count properties

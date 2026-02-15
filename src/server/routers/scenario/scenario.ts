@@ -184,7 +184,7 @@ export const scenarioRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
       }
 
-      // Get portfolio state - fetch all 3 queries in parallel
+      // Cross-domain: scenario snapshot aggregates properties, loans, recurringTransactions
       const [userProperties, userLoans, recurring] = await Promise.all([
         ctx.db.query.properties.findMany({
           where: eq(properties.userId, ctx.portfolio.ownerId),

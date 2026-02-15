@@ -25,7 +25,7 @@ export const shareRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Get user's properties
+      // Cross-domain: snapshot assembly aggregates properties, propertyValues, loans, transactions
       const userProperties = await ctx.db.query.properties.findMany({
         where: and(
           eq(properties.userId, ctx.portfolio.ownerId),
@@ -182,18 +182,15 @@ export const shareRouter = router({
       expiresAt.setDate(expiresAt.getDate() + input.expiresInDays);
 
       // Save to database
-      const [share] = await ctx.db
-        .insert(portfolioShares)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          token,
-          title: input.title,
-          privacyMode: input.privacyMode,
-          snapshotData: transformedSnapshot,
-          expiresAt,
-          viewCount: 0,
-        })
-        .returning();
+      const share = await ctx.uow.portfolio.createShare({
+        userId: ctx.portfolio.ownerId,
+        token,
+        title: input.title,
+        privacyMode: input.privacyMode,
+        snapshotData: transformedSnapshot,
+        expiresAt,
+        viewCount: 0,
+      });
 
       // Build share URL
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -208,10 +205,7 @@ export const shareRouter = router({
     }),
 
   list: protectedProcedure.query(async ({ ctx }) => {
-    const shares = await ctx.db.query.portfolioShares.findMany({
-      where: eq(portfolioShares.userId, ctx.portfolio.ownerId),
-      orderBy: [desc(portfolioShares.createdAt)],
-    });
+    const shares = await ctx.uow.portfolio.findSharesByOwner(ctx.portfolio.ownerId);
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -232,15 +226,7 @@ export const shareRouter = router({
   revoke: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const [deleted] = await ctx.db
-        .delete(portfolioShares)
-        .where(
-          and(
-            eq(portfolioShares.id, input.id),
-            eq(portfolioShares.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      const deleted = await ctx.uow.portfolio.deleteShare(input.id, ctx.portfolio.ownerId);
 
       if (!deleted) {
         throw new TRPCError({
@@ -255,6 +241,7 @@ export const shareRouter = router({
   getByToken: publicProcedure
     .input(z.object({ token: z.string() }))
     .query(async ({ ctx, input }) => {
+      // publicProcedure: no ctx.uow available
       const share = await ctx.db.query.portfolioShares.findFirst({
         where: eq(portfolioShares.token, input.token),
       });
@@ -274,7 +261,7 @@ export const shareRouter = router({
         });
       }
 
-      // Increment view count atomically and update last viewed
+      // publicProcedure: no ctx.uow available — increment view count atomically
       await ctx.db
         .update(portfolioShares)
         .set({

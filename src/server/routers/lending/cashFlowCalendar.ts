@@ -45,7 +45,7 @@ export const cashFlowCalendarRouter = router({
       const userId = ctx.portfolio.ownerId;
       const { startDate, endDate, propertyId, scenarioId } = input;
 
-      // Fetch active properties for address lookup
+      // Cross-domain: calendar aggregates properties, loans, transactions, forecasts, accounts
       const userProperties = await ctx.db.query.properties.findMany({
         where: and(
           eq(properties.userId, userId),
@@ -282,6 +282,7 @@ export const cashFlowCalendarRouter = router({
     }),
 
   getProperties: protectedProcedure.query(async ({ ctx }) => {
+    // Cross-domain: calendar needs property list for filtering
     return ctx.db.query.properties.findMany({
       where: and(
         eq(properties.userId, ctx.portfolio.ownerId),
