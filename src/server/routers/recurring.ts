@@ -12,7 +12,7 @@ import {
   generateExpectedTransactions,
   findMatchingTransactions,
   detectPatterns,
-} from "../services/recurring";
+} from "../services/transaction";
 
 const frequencyEnum = z.enum([
   "weekly",
