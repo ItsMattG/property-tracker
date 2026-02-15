@@ -7,6 +7,7 @@ import {
   regenerateForwardingAddress,
   processEmailBackground,
 } from "../services/email";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export const emailRouter = router({
   list: protectedProcedure
@@ -238,7 +239,6 @@ export const emailRouter = router({
         });
       }
 
-      const { getSupabaseAdmin } = await import("@/lib/supabase/server");
       const supabase = getSupabaseAdmin();
       const { data, error } = await supabase.storage
         .from("email-attachments")
