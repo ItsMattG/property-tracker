@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { router, writeProcedure, protectedProcedure } from "../trpc";
 import { properties, documents, transactions } from "../db/schema";
 import { eq, and } from "drizzle-orm";
-import { extractSettlement } from "../services/settlement-extract";
+import { extractSettlement } from "../services/property-analysis";
 
 export const settlementRouter = router({
   /**

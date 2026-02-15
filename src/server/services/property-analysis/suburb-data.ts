@@ -1,6 +1,6 @@
 // src/server/services/suburb-data.ts
 
-import type { NewSuburbBenchmark } from "../db/schema";
+import type { NewSuburbBenchmark } from "@/server/db/schema";
 
 /**
  * Mock suburb benchmark data for development

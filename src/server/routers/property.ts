@@ -5,7 +5,7 @@ import { referrals, referralCredits, subscriptions, users } from "../db/schema";
 import type { Property } from "../db/schema";
 import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { getClimateRisk } from "../services/climate-risk";
+import { getClimateRisk } from "../services/property-analysis";
 import { getPlanFromSubscription, PLAN_LIMITS, type Plan } from "../services/subscription";
 
 const propertySchema = z.object({

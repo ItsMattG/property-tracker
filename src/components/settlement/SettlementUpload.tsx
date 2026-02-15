@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { trpc } from "@/lib/trpc/client";
-import type { SettlementExtractedData } from "@/server/services/settlement-extract";
+import type { SettlementExtractedData } from "@/server/services/property-analysis/settlement-extract";
 
 type CapitalCategory =
   | "stamp_duty"

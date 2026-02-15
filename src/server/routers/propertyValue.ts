@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { propertyValues, properties, loans } from "../db/schema";
 import { eq, and, desc, asc, sql } from "drizzle-orm";
-import { getValuationProvider, MockValuationProvider } from "../services/valuation";
+import { getValuationProvider, MockValuationProvider } from "../services/property-analysis";
 
 export const propertyValueRouter = router({
   list: protectedProcedure

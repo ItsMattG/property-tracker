@@ -18,7 +18,7 @@ import {
 import {
   extractListingData,
   detectInputType,
-} from "../services/listing-extraction";
+} from "../services/property-analysis";
 import type { SimilarProperty } from "@/types/similar-properties";
 
 export const similarPropertiesRouter = router({

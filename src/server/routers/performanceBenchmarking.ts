@@ -19,7 +19,7 @@ import {
   getScoreLabel,
   getPercentileStatus,
 } from "../services/performance-benchmarking";
-import { getMockSuburbBenchmark } from "../services/suburb-data";
+import { getMockSuburbBenchmark } from "../services/property-analysis";
 import type {
   PropertyPerformanceResult,
   PercentileResult,

@@ -8,8 +8,8 @@ import {
   properties,
 } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { extractDocument } from "../services/document-extraction";
-import { matchPropertyByAddress } from "../services/property-matcher";
+import { extractDocument } from "../services/property-analysis";
+import { matchPropertyByAddress } from "../services/property-analysis";
 
 export const documentExtractionRouter = router({
   /**
