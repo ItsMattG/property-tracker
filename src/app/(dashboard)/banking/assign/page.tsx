@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,19 @@ import { toast } from "sonner";
 import { Landmark, ArrowRight, Loader2 } from "lucide-react";
 
 export default function AssignAccountsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading accounts...</p>
+      </div>
+    }>
+      <AssignAccountsContent />
+    </Suspense>
+  );
+}
+
+function AssignAccountsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const accountIds = searchParams?.get("accounts")?.split(",").filter(Boolean) ?? [];

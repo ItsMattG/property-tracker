@@ -96,25 +96,27 @@ export default function MyPage() {
 }
 ```
 
-## Middleware (`src/middleware.ts`)
+## Proxy (`src/proxy.ts`)
+
+Next.js 16 renamed `middleware` to `proxy`. The proxy runs on Node.js runtime.
 
 ```tsx
 import { getSessionCookie } from "better-auth/cookies";
 
 const publicRoutes = ["/", "/blog", "/sign-in", "/sign-up"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
   if (isPublic) return NextResponse.next();
 
-  const session = await getSessionCookie();
+  const session = getSessionCookie(request);
   if (!session) return NextResponse.redirect(new URL("/sign-in", request.url));
   return NextResponse.next();
 }
 ```
 
-All non-public routes require auth via middleware. tRPC `protectedProcedure` resolves user + portfolio context.
+All non-public routes require auth via proxy. tRPC `protectedProcedure` resolves user + portfolio context.
 
 ## Navigation
 

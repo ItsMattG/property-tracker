@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, Landmark, Shield, RefreshCw, Smartphone } from "lucide-react";
+import { ArrowLeft, Landmark, Loader2, Shield, RefreshCw, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -43,6 +43,19 @@ const mobileSchema = z.object({
 type MobileForm = z.infer<typeof mobileSchema>;
 
 export default function BankingConnectPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    }>
+      <BankingConnectContent />
+    </Suspense>
+  );
+}
+
+function BankingConnectContent() {
   useTour({ tourId: "banking" });
   const searchParams = useSearchParams();
   const propertyId = searchParams?.get("propertyId") ?? undefined;
