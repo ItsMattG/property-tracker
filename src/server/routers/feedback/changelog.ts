@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../../trpc";
-import { changelogEntries, userChangelogViews } from "../../db/schema";
+import { changelogEntries } from "../../db/schema";
 import { eq, desc, gt, and } from "drizzle-orm";
 
 export const changelogRouter = router({
-  // List entries with optional filtering (public)
+  // publicProcedure — no ctx.uow available
   list: publicProcedure
     .input(
       z.object({
@@ -15,11 +15,9 @@ export const changelogRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const conditions = [];
-
       if (input.category) {
         conditions.push(eq(changelogEntries.category, input.category));
       }
-
       if (input.cursor) {
         conditions.push(gt(changelogEntries.id, input.cursor));
       }
@@ -36,11 +34,10 @@ export const changelogRouter = router({
         const nextItem = entries.pop();
         nextCursor = nextItem?.id;
       }
-
       return { entries, nextCursor };
     }),
 
-  // Get single entry by slug (public)
+  // publicProcedure — no ctx.uow available
   getBySlug: publicProcedure
     .input(z.object({ slug: z.string() }))
     .query(async ({ ctx, input }) => {
@@ -48,45 +45,19 @@ export const changelogRouter = router({
         .select()
         .from(changelogEntries)
         .where(eq(changelogEntries.id, input.slug));
-
       return entry ?? null;
     }),
 
-  // Get count of unread entries (protected)
   getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
-    const [view] = await ctx.db
-      .select()
-      .from(userChangelogViews)
-      .where(eq(userChangelogViews.userId, ctx.user.id));
-
+    const view = await ctx.uow.changelog.findUserView(ctx.user.id);
     if (!view) {
-      // User has never viewed - count all entries
-      const entries = await ctx.db.select().from(changelogEntries);
-      return entries.length;
+      return ctx.uow.changelog.countAll();
     }
-
-    // Count entries newer than last viewed
-    const entries = await ctx.db
-      .select()
-      .from(changelogEntries)
-      .where(gt(changelogEntries.createdAt, view.lastViewedAt));
-
-    return entries.length;
+    return ctx.uow.changelog.countNewerThan(view.lastViewedAt);
   }),
 
-  // Mark as viewed (protected)
   markAsViewed: protectedProcedure.mutation(async ({ ctx }) => {
-    await ctx.db
-      .insert(userChangelogViews)
-      .values({
-        userId: ctx.user.id,
-        lastViewedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: userChangelogViews.userId,
-        set: { lastViewedAt: new Date() },
-      });
-
+    await ctx.uow.changelog.upsertUserView(ctx.user.id);
     return { success: true };
   }),
 });

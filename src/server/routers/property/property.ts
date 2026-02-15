@@ -1,9 +1,7 @@
 import { z } from "zod";
 import { positiveAmountSchema, australianPostcodeSchema } from "@/lib/validation";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import { referrals, referralCredits, subscriptions, users } from "../../db/schema";
 import type { Property } from "../../db/schema";
-import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getClimateRisk } from "../../services/property-analysis";
 import { getPlanFromSubscription, PLAN_LIMITS, type Plan } from "../../services/billing/subscription";
@@ -26,9 +24,7 @@ export const propertyRouter = router({
     // Get user's current plan to determine if locked properties should be filtered
     let currentPlan = "free";
     try {
-      const sub = await ctx.db.query.subscriptions?.findFirst({
-        where: eq(subscriptions.userId, ctx.portfolio.ownerId),
-      });
+      const sub = await ctx.uow.user.findSubscriptionFull(ctx.portfolio.ownerId);
       currentPlan = getPlanFromSubscription(
         sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
       );
@@ -55,9 +51,7 @@ export const propertyRouter = router({
       if (property.locked) {
         let currentPlan = "free";
         try {
-          const sub = await ctx.db.query.subscriptions?.findFirst({
-            where: eq(subscriptions.userId, ctx.portfolio.ownerId),
-          });
+          const sub = await ctx.uow.user.findSubscriptionFull(ctx.portfolio.ownerId);
           currentPlan = getPlanFromSubscription(
             sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
           );
@@ -81,19 +75,14 @@ export const propertyRouter = router({
     .input(propertySchema)
     .mutation(async ({ ctx, input }) => {
       // Check if user is on trial — trial users get pro limits
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.id, ctx.portfolio.ownerId),
-        columns: { trialEndsAt: true, trialPlan: true },
-      });
+      const user = await ctx.uow.user.findById(ctx.portfolio.ownerId);
       const isOnTrial = user?.trialEndsAt && user.trialEndsAt > new Date();
 
       let currentPlan: Plan;
       if (isOnTrial) {
         currentPlan = (user.trialPlan as Plan) ?? "pro";
       } else {
-        const sub = await ctx.db.query.subscriptions.findFirst({
-          where: eq(subscriptions.userId, ctx.portfolio.ownerId),
-        });
+        const sub = await ctx.uow.user.findSubscriptionFull(ctx.portfolio.ownerId);
         currentPlan = getPlanFromSubscription(
           sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
         );
@@ -135,26 +124,15 @@ export const propertyRouter = router({
 
         if (propertyCount === 1) {
           // First property — qualify any pending referral
-          const [referral] = await ctx.db
-            .select()
-            .from(referrals)
-            .where(
-              and(
-                eq(referrals.refereeUserId, ctx.portfolio.ownerId),
-                eq(referrals.status, "pending")
-              )
-            );
+          const referral = await ctx.uow.referral.findByReferee(ctx.portfolio.ownerId);
 
-          if (referral) {
+          if (referral && referral.status === "pending") {
             const expiresAt = new Date();
             expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
-            await ctx.db
-              .update(referrals)
-              .set({ status: "qualified", qualifiedAt: new Date() })
-              .where(eq(referrals.id, referral.id));
+            await ctx.uow.referral.qualifyReferral(referral.id);
 
-            await ctx.db.insert(referralCredits).values([
+            await ctx.uow.referral.createCredits([
               {
                 userId: referral.referrerUserId,
                 referralId: referral.id,

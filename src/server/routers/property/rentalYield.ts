@@ -8,6 +8,7 @@ export const rentalYieldRouter = router({
   getForProperty: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
+      // Cross-domain analytics: properties + transactions + propertyValues — stays ctx.db
       const property = await ctx.db.query.properties.findFirst({
         where: and(
           eq(properties.id, input.propertyId),
@@ -81,6 +82,7 @@ export const rentalYieldRouter = router({
     }),
 
   getPortfolioSummary: protectedProcedure.query(async ({ ctx }) => {
+    // Cross-domain analytics: properties + transactions + propertyValues — stays ctx.db
     const userProperties = await ctx.db.query.properties.findMany({
       where: eq(properties.userId, ctx.portfolio.ownerId),
     });

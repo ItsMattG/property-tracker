@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, writeProcedure, protectedProcedure } from "../../trpc";
-import { properties, documents, transactions } from "../../db/schema";
+import { documents, transactions } from "../../db/schema";
 import type { Property } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { extractSettlement } from "../../services/property-analysis";
@@ -19,12 +19,7 @@ export const settlementRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
@@ -69,12 +64,7 @@ export const settlementRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { propertyId, purchasePrice, settlementDate, items } = input;
 
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(propertyId, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
@@ -86,10 +76,7 @@ export const settlementRouter = router({
         if (purchasePrice) updates.purchasePrice = String(purchasePrice);
         if (settlementDate) updates.purchaseDate = settlementDate;
 
-        await ctx.db
-          .update(properties)
-          .set(updates)
-          .where(eq(properties.id, propertyId));
+        await ctx.uow.property.update(propertyId, ctx.portfolio.ownerId, updates);
       }
 
       // Create capital cost transactions
@@ -120,6 +107,7 @@ export const settlementRouter = router({
   getForProperty: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
+      // Cross-domain: document query by propertyId — stays ctx.db
       const docs = await ctx.db.query.documents.findMany({
         where: and(
           eq(documents.propertyId, input.propertyId),
