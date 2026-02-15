@@ -10,7 +10,7 @@ vi.mock("@/server/db", () => ({
   },
 }));
 
-vi.mock("../reports", () => ({
+vi.mock("../transaction/reports", () => ({
   getFinancialYearRange: vi.fn().mockReturnValue({
     startDate: "2025-07-01",
     endDate: "2026-06-30",
@@ -40,7 +40,7 @@ describe("mytax service", () => {
 
     it("aggregates income and deductions per property", async () => {
       const { getFinancialYearTransactions, calculateCategoryTotals } =
-        await import("../reports");
+        await import("../transaction/reports");
       const { db } = await import("@/server/db");
 
       const mockProps = [

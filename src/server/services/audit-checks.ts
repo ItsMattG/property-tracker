@@ -2,7 +2,7 @@ import { eq, and, gte, lte } from "drizzle-orm";
 import { db } from "@/server/db";
 import { transactions } from "@/server/db/schema";
 import { categoryMap } from "@/lib/categories";
-import { getFinancialYearRange, getPropertiesWithLoans } from "./reports";
+import { getFinancialYearRange, getPropertiesWithLoans } from "./transaction/reports";
 
 // --- Constants ---
 

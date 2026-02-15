@@ -19,3 +19,15 @@ export {
   type MatchCandidate,
   type PatternSuggestion,
 } from "./recurring";
+
+export {
+  getFinancialYearRange,
+  calculateCategoryTotals,
+  calculatePropertyMetrics,
+  getFinancialYearTransactions,
+  getPropertiesWithLoans,
+  type TransactionInput,
+  type FinancialYearRange,
+  type PropertyMetrics,
+  type CategoryTotal,
+} from "./reports";

@@ -7,7 +7,7 @@ import {
   depreciationSchedules,
 } from "@/server/db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { getFinancialYearRange } from "./reports";
+import { getFinancialYearRange } from "./transaction/reports";
 import { formatCurrency } from "@/lib/utils";
 
 const MARGINAL_TAX_RATE = 0.37; // Assume 37% marginal rate

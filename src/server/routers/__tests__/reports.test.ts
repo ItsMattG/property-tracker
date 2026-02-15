@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createMockContext, createTestCaller } from "../../__tests__/test-utils";
 
 // Mock the reports service functions that use direct db imports
-vi.mock("../../services/reports", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../services/reports")>();
+vi.mock("../../services/transaction/reports", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../services/transaction/reports")>();
   return {
     ...original,
     getFinancialYearTransactions: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock("../../services/reports", async (importOriginal) => {
 import {
   getFinancialYearTransactions,
   getPropertiesWithLoans,
-} from "../../services/reports";
+} from "../../services/transaction/reports";
 
 describe("reports router", () => {
   const mockUser = {

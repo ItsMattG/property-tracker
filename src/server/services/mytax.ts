@@ -6,7 +6,7 @@ import {
   getFinancialYearRange,
   getFinancialYearTransactions,
   calculateCategoryTotals,
-} from "./reports";
+} from "./transaction/reports";
 import { calculateTaxPosition } from "./tax-position";
 
 // --- Types ---

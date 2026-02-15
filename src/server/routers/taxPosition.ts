@@ -16,7 +16,7 @@ import {
 import {
   getFinancialYearRange,
   calculatePropertyMetrics,
-} from "../services/reports";
+} from "../services/transaction";
 
 const familyStatusSchema = z.enum(["single", "couple", "family"]);
 

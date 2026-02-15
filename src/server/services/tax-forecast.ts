@@ -2,7 +2,7 @@ import { eq, and, gte, lte } from "drizzle-orm";
 import { db } from "@/server/db";
 import { transactions, properties, taxProfiles } from "@/server/db/schema";
 import { categories } from "@/lib/categories";
-import { getFinancialYearRange } from "./reports";
+import { getFinancialYearRange } from "./transaction/reports";
 import { calculateTaxPosition, type TaxPositionResult } from "./tax-position";
 
 // --- Types ---
