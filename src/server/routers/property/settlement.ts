@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, writeProcedure, protectedProcedure } from "../../trpc";
-import { properties, documents, transactions } from "../../db/schema";
+import { documents, transactions } from "../../db/schema";
 import type { Property } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { extractSettlement } from "../../services/property-analysis";
@@ -70,17 +70,13 @@ export const settlementRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
-      // Cross-domain: property update + transaction inserts — stays ctx.db
       // Update purchase price and date if extracted
       if (purchasePrice || settlementDate) {
         const updates: Partial<Property> = { updatedAt: new Date() };
         if (purchasePrice) updates.purchasePrice = String(purchasePrice);
         if (settlementDate) updates.purchaseDate = settlementDate;
 
-        await ctx.db
-          .update(properties)
-          .set(updates)
-          .where(eq(properties.id, propertyId));
+        await ctx.uow.property.update(propertyId, ctx.portfolio.ownerId, updates);
       }
 
       // Create capital cost transactions
