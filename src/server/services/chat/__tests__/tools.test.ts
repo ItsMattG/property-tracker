@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getChatTools } from "../chat-tools";
+import { getChatTools } from "../tools";
 
 describe("Chat tools", () => {
   it("exports getChatTools function", () => {

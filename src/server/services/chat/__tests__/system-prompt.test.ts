@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildSystemPrompt } from "../chat-system-prompt";
+import { buildSystemPrompt } from "../system-prompt";
 
 describe("buildSystemPrompt", () => {
   it("includes user name and property count", () => {
