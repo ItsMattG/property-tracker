@@ -15,3 +15,4 @@ export type { IFeedbackRepository, FeatureListFilters, FeatureWithUser, FeatureC
 export type { ITeamRepository, MemberWithUser, InviteWithOwner, AuditEntryWithActor } from "./team.repository.interface";
 export type { IForecastRepository, CashFlowForecastWithProperty } from "./forecast.repository.interface";
 export type { IPropertyValueRepository } from "./property-value.repository.interface";
+export type { ISimilarPropertiesRepository, SimilarVectorRow, PropertyVectorWithRelations } from "./similar-properties.repository.interface";

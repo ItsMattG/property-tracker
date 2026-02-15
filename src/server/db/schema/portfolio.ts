@@ -302,3 +302,5 @@ export type PropertyMilestoneOverride = typeof propertyMilestoneOverrides.$infer
 export type NewPropertyMilestoneOverride = typeof propertyMilestoneOverrides.$inferInsert;
 export type UserOnboarding = typeof userOnboarding.$inferSelect;
 export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
+export type SharingPreference = typeof sharingPreferences.$inferSelect;
+export type NewSharingPreference = typeof sharingPreferences.$inferInsert;

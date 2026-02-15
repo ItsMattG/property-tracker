@@ -1,15 +1,6 @@
 // src/server/routers/similarProperties.ts
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { eq, and, or, sql } from "drizzle-orm";
-import {
-  properties,
-  propertyVectors,
-  externalListings,
-  sharingPreferences,
-  transactions,
-  suburbBenchmarks,
-} from "../db/schema";
 import {
   generatePropertyVector,
   calculateSimilarityScore,
@@ -25,49 +16,40 @@ export const similarPropertiesRouter = router({
   generateVector: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-        with: {
-          propertyValues: {
-            orderBy: (v, { desc }) => [desc(v.valueDate)],
-            limit: 1,
-          },
-        },
-      });
+      const property = await ctx.uow.property.findById(
+        input.propertyId,
+        ctx.portfolio.ownerId
+      );
 
       if (!property) {
         throw new Error("Property not found");
       }
 
-      // Calculate yield from transactions
-      const rentTransactions = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.propertyId, input.propertyId),
-          eq(transactions.category, "rental_income")
-        ),
-      });
+      // Get latest property value
+      const recentValues = await ctx.uow.propertyValue.findRecent(input.propertyId, 1);
+
+      // Calculate yield from rent transactions
+      const rentTransactions = await ctx.uow.transactions.findAllByOwner(
+        ctx.portfolio.ownerId,
+        { propertyId: input.propertyId, category: "rental_income" }
+      );
 
       const annualRent = rentTransactions.reduce(
         (sum, t) => sum + Math.abs(parseFloat(t.amount)),
         0
       );
 
-      const currentValue = property.propertyValues?.[0]?.estimatedValue
-        ? parseFloat(property.propertyValues[0].estimatedValue)
+      const currentValue = recentValues[0]?.estimatedValue
+        ? parseFloat(recentValues[0].estimatedValue)
         : parseFloat(property.purchasePrice);
 
       const grossYield = currentValue > 0 ? (annualRent / currentValue) * 100 : 0;
 
       // Get suburb growth rate
-      const benchmark = await ctx.db.query.suburbBenchmarks.findFirst({
-        where: and(
-          eq(suburbBenchmarks.suburb, property.suburb),
-          eq(suburbBenchmarks.state, property.state)
-        ),
-      });
+      const benchmark = await ctx.uow.similarProperties.findSuburbBenchmark(
+        property.suburb,
+        property.state
+      );
 
       const capitalGrowthRate = benchmark?.priceGrowth1yr
         ? parseFloat(benchmark.priceGrowth1yr)
@@ -82,23 +64,11 @@ export const similarPropertiesRouter = router({
         capitalGrowthRate,
       });
 
-      // Upsert vector
-      const existing = await ctx.db.query.propertyVectors.findFirst({
-        where: eq(propertyVectors.propertyId, input.propertyId),
-      });
-
-      if (existing) {
-        await ctx.db
-          .update(propertyVectors)
-          .set({ vector, updatedAt: new Date() })
-          .where(eq(propertyVectors.id, existing.id));
-      } else {
-        await ctx.db.insert(propertyVectors).values({
-          propertyId: input.propertyId,
-          userId: ctx.portfolio.ownerId,
-          vector,
-        });
-      }
+      await ctx.uow.similarProperties.upsertVector(
+        input.propertyId,
+        ctx.portfolio.ownerId,
+        vector
+      );
 
       return { success: true, vector };
     }),
@@ -112,9 +82,9 @@ export const similarPropertiesRouter = router({
       })
     )
     .query(async ({ ctx, input }): Promise<SimilarProperty[]> => {
-      const propertyVector = await ctx.db.query.propertyVectors.findFirst({
-        where: eq(propertyVectors.propertyId, input.propertyId),
-      });
+      const propertyVector = await ctx.uow.similarProperties.findVectorByProperty(
+        input.propertyId
+      );
 
       if (!propertyVector) {
         return [];
@@ -130,62 +100,20 @@ export const similarPropertiesRouter = router({
       }
       const vectorStr = `[${vectorArray.join(",")}]`;
 
-      // Build query with conditional structure to avoid boolean interpolation
-      // Note: pgvector requires the vector as a string literal for the <-> operator
-      const results = input.includeCommunity
-        ? await ctx.db.execute(sql`
-            SELECT
-              pv.id,
-              pv.property_id,
-              pv.external_listing_id,
-              pv.user_id,
-              pv.vector <-> ${vectorStr}::vector AS distance,
-              p.suburb as property_suburb,
-              p.state as property_state,
-              p.address as property_address,
-              el.suburb as listing_suburb,
-              el.state as listing_state,
-              el.property_type as listing_type,
-              el.price as listing_price,
-              el.source_url as listing_url
-            FROM property_vectors pv
-            LEFT JOIN properties p ON p.id = pv.property_id
-            LEFT JOIN external_listings el ON el.id = pv.external_listing_id
-            WHERE pv.id != ${propertyVector.id}
-              AND (pv.user_id = ${ctx.portfolio.ownerId} OR pv.is_shared = true)
-            ORDER BY pv.vector <-> ${vectorStr}::vector
-            LIMIT ${input.limit}
-          `)
-        : await ctx.db.execute(sql`
-            SELECT
-              pv.id,
-              pv.property_id,
-              pv.external_listing_id,
-              pv.user_id,
-              pv.vector <-> ${vectorStr}::vector AS distance,
-              p.suburb as property_suburb,
-              p.state as property_state,
-              p.address as property_address,
-              el.suburb as listing_suburb,
-              el.state as listing_state,
-              el.property_type as listing_type,
-              el.price as listing_price,
-              el.source_url as listing_url
-            FROM property_vectors pv
-            LEFT JOIN properties p ON p.id = pv.property_id
-            LEFT JOIN external_listings el ON el.id = pv.external_listing_id
-            WHERE pv.id != ${propertyVector.id}
-              AND pv.user_id = ${ctx.portfolio.ownerId}
-            ORDER BY pv.vector <-> ${vectorStr}::vector
-            LIMIT ${input.limit}
-          `);
+      const results = await ctx.uow.similarProperties.findSimilarVectors(
+        propertyVector.id,
+        vectorStr,
+        ctx.portfolio.ownerId,
+        input.includeCommunity,
+        input.limit
+      );
 
-      return (results as unknown as Array<Record<string, unknown>>).map((row) => {
+      return results.map((row) => {
         const isPortfolio = row.property_id && row.user_id === ctx.portfolio.ownerId;
         const isExternal = !!row.external_listing_id;
 
         return {
-          id: row.id as string,
+          id: row.id,
           type: isPortfolio ? "portfolio" : isExternal ? "external" : "community",
           suburb: (row.property_suburb || row.listing_suburb) as string,
           state: (row.property_state || row.listing_state) as string,
@@ -196,10 +124,10 @@ export const similarPropertiesRouter = router({
           distance: Number(row.distance),
           similarityScore: calculateSimilarityScore(Number(row.distance)),
           isEstimated: false,
-          propertyId: row.property_id as string | undefined,
-          address: row.property_address as string | undefined,
-          externalListingId: row.external_listing_id as string | undefined,
-          sourceUrl: row.listing_url as string | undefined,
+          propertyId: row.property_id ?? undefined,
+          address: row.property_address ?? undefined,
+          externalListingId: row.external_listing_id ?? undefined,
+          sourceUrl: row.listing_url ?? undefined,
         };
       });
     }),
@@ -239,12 +167,10 @@ export const similarPropertiesRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Get suburb benchmark for yield/growth estimates
-      const benchmark = await ctx.db.query.suburbBenchmarks.findFirst({
-        where: and(
-          eq(suburbBenchmarks.suburb, input.extractedData.suburb),
-          eq(suburbBenchmarks.state, input.extractedData.state)
-        ),
-      });
+      const benchmark = await ctx.uow.similarProperties.findSuburbBenchmark(
+        input.extractedData.suburb,
+        input.extractedData.state
+      );
 
       const estimatedYield = benchmark?.rentalYield
         ? parseFloat(benchmark.rentalYield)
@@ -253,24 +179,21 @@ export const similarPropertiesRouter = router({
         ? parseFloat(benchmark.priceGrowth1yr)
         : null;
 
-      const [listing] = await ctx.db
-        .insert(externalListings)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          sourceType: input.sourceType,
-          sourceUrl: input.sourceUrl,
-          rawInput: input.rawInput,
-          extractedData: input.extractedData,
-          suburb: input.extractedData.suburb,
-          state: input.extractedData.state as "NSW" | "VIC" | "QLD" | "SA" | "WA" | "TAS" | "NT" | "ACT",
-          postcode: input.extractedData.postcode,
-          propertyType: input.extractedData.propertyType,
-          price: input.extractedData.price?.toString(),
-          estimatedYield: estimatedYield?.toString(),
-          estimatedGrowth: estimatedGrowth?.toString(),
-          isEstimated: !input.extractedData.price,
-        })
-        .returning();
+      const listing = await ctx.uow.similarProperties.createExternalListing({
+        userId: ctx.portfolio.ownerId,
+        sourceType: input.sourceType,
+        sourceUrl: input.sourceUrl,
+        rawInput: input.rawInput,
+        extractedData: input.extractedData,
+        suburb: input.extractedData.suburb,
+        state: input.extractedData.state as "NSW" | "VIC" | "QLD" | "SA" | "WA" | "TAS" | "NT" | "ACT",
+        postcode: input.extractedData.postcode,
+        propertyType: input.extractedData.propertyType,
+        price: input.extractedData.price?.toString(),
+        estimatedYield: estimatedYield?.toString(),
+        estimatedGrowth: estimatedGrowth?.toString(),
+        isEstimated: !input.extractedData.price,
+      });
 
       // Generate vector for the listing
       const vector = generatePropertyVector({
@@ -282,7 +205,7 @@ export const similarPropertiesRouter = router({
         capitalGrowthRate: estimatedGrowth || 0,
       });
 
-      await ctx.db.insert(propertyVectors).values({
+      await ctx.uow.similarProperties.insertVector({
         externalListingId: listing.id,
         userId: ctx.portfolio.ownerId,
         vector,
@@ -292,30 +215,23 @@ export const similarPropertiesRouter = router({
     }),
 
   listExternalListings: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.externalListings.findMany({
-      where: eq(externalListings.userId, ctx.portfolio.ownerId),
-      orderBy: (el, { desc }) => [desc(el.createdAt)],
-    });
+    return ctx.uow.similarProperties.listExternalListings(ctx.portfolio.ownerId);
   }),
 
   deleteExternalListing: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(externalListings)
-        .where(
-          and(
-            eq(externalListings.id, input.id),
-            eq(externalListings.userId, ctx.portfolio.ownerId)
-          )
-        );
+      await ctx.uow.similarProperties.deleteExternalListing(
+        input.id,
+        ctx.portfolio.ownerId
+      );
       return { success: true };
     }),
 
   getSharingPreferences: protectedProcedure.query(async ({ ctx }) => {
-    const prefs = await ctx.db.query.sharingPreferences.findFirst({
-      where: eq(sharingPreferences.userId, ctx.portfolio.ownerId),
-    });
+    const prefs = await ctx.uow.similarProperties.findSharingPreferences(
+      ctx.portfolio.ownerId
+    );
 
     return (
       prefs || {
@@ -333,26 +249,13 @@ export const similarPropertiesRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db.query.sharingPreferences.findFirst({
-        where: eq(sharingPreferences.userId, ctx.portfolio.ownerId),
-      });
-
-      if (existing) {
-        await ctx.db
-          .update(sharingPreferences)
-          .set({
-            defaultShareLevel: input.defaultShareLevel,
-            defaultSharedAttributes: input.defaultSharedAttributes,
-            updatedAt: new Date(),
-          })
-          .where(eq(sharingPreferences.id, existing.id));
-      } else {
-        await ctx.db.insert(sharingPreferences).values({
-          userId: ctx.portfolio.ownerId,
+      await ctx.uow.similarProperties.upsertSharingPreferences(
+        ctx.portfolio.ownerId,
+        {
           defaultShareLevel: input.defaultShareLevel,
           defaultSharedAttributes: input.defaultSharedAttributes,
-        });
-      }
+        }
+      );
 
       return { success: true };
     }),
@@ -366,26 +269,20 @@ export const similarPropertiesRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const pv = await ctx.db.query.propertyVectors.findFirst({
-        where: and(
-          eq(propertyVectors.propertyId, input.propertyId),
-          eq(propertyVectors.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const pv = await ctx.uow.similarProperties.findVectorByPropertyAndUser(
+        input.propertyId,
+        ctx.portfolio.ownerId
+      );
 
       if (!pv) {
         throw new Error("Property vector not found");
       }
 
-      await ctx.db
-        .update(propertyVectors)
-        .set({
-          isShared: input.shareLevel !== "none",
-          shareLevel: input.shareLevel,
-          sharedAttributes: input.sharedAttributes,
-          updatedAt: new Date(),
-        })
-        .where(eq(propertyVectors.id, pv.id));
+      await ctx.uow.similarProperties.updateVectorSharing(pv.id, {
+        isShared: input.shareLevel !== "none",
+        shareLevel: input.shareLevel,
+        sharedAttributes: input.sharedAttributes,
+      });
 
       return { success: true };
     }),
@@ -411,18 +308,11 @@ export const similarPropertiesRouter = router({
     .query(async ({ ctx, input }) => {
       // For now, return community shared properties
       // TODO: Add filtering logic
-      const results = await ctx.db.query.propertyVectors.findMany({
-        where: or(
-          eq(propertyVectors.userId, ctx.portfolio.ownerId),
-          eq(propertyVectors.isShared, true)
-        ),
-        limit: input.limit,
-        offset: input.offset,
-        with: {
-          property: true,
-          externalListing: true,
-        },
-      });
+      const results = await ctx.uow.similarProperties.discoverVectors(
+        ctx.portfolio.ownerId,
+        input.limit,
+        input.offset
+      );
 
       return results.map((pv) => ({
         id: pv.id,
