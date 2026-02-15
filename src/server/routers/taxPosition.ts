@@ -8,7 +8,7 @@ import {
   calculateTaxPosition,
   estimatePropertySavings,
   type TaxPositionInput,
-} from "../services/tax-position";
+} from "../services/tax";
 import {
   getCurrentFinancialYear,
   getSupportedFinancialYears,

@@ -3,7 +3,7 @@ import { db } from "@/server/db";
 import { transactions, properties, taxProfiles } from "@/server/db/schema";
 import { categories } from "@/lib/categories";
 import { getFinancialYearRange } from "./reports";
-import { calculateTaxPosition, type TaxPositionResult } from "../tax-position";
+import { calculateTaxPosition, type TaxPositionResult } from "../tax";
 
 // --- Types ---
 

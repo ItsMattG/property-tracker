@@ -7,7 +7,7 @@ import {
   getFinancialYearTransactions,
   calculateCategoryTotals,
 } from "./reports";
-import { calculateTaxPosition } from "../tax-position";
+import { calculateTaxPosition } from "../tax";
 
 // --- Types ---
 

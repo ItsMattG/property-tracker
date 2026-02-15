@@ -6,7 +6,7 @@ import {
   calculateInsuranceBenchmark,
   calculateCouncilRatesBenchmark,
   calculateManagementFeesBenchmark,
-} from "../services/benchmarking";
+} from "../services/analytics";
 import type {
   PropertyBenchmark,
   PortfolioBenchmarkSummary,

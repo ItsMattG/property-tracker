@@ -12,7 +12,7 @@ import {
 } from "@/server/db/schema";
 import { eq, and, desc, gte, lte, inArray } from "drizzle-orm";
 import { getRequirementsForState, type AustralianState } from "@/lib/compliance-requirements";
-import { calculateComplianceStatus } from "./compliance";
+import { calculateComplianceStatus } from "../compliance";
 import { formatMilestone } from "@/lib/equity-milestones";
 
 export interface LoanPackSnapshot {

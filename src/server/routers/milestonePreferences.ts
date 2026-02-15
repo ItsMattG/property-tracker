@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import {
   DEFAULT_LVR_THRESHOLDS,
   DEFAULT_EQUITY_THRESHOLDS,
-} from "../services/milestone-preferences";
+} from "../services/notification";
 
 export const milestonePreferencesRouter = router({
   getGlobal: protectedProcedure.query(async ({ ctx }) => {

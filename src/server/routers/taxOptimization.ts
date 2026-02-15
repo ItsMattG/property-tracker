@@ -8,7 +8,7 @@ import {
 } from "../db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { extractDepreciationSchedule } from "../services/depreciation-extract";
+import { extractDepreciationSchedule } from "../services/property-analysis";
 import {
   generateAllSuggestions,
   getCurrentFinancialYear,

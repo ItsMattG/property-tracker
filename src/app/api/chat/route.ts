@@ -10,10 +10,8 @@ import { getAuthSession } from "@/lib/auth";
 import { db } from "@/server/db";
 import { users, properties } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
-import { getChatTools } from "@/server/services/chat-tools";
-import { generateTitle } from "@/server/services/chat";
+import { getChatTools, generateTitle, buildSystemPrompt } from "@/server/services/chat";
 import { ChatRepository } from "@/server/repositories/chat.repository";
-import { buildSystemPrompt } from "@/server/services/chat-system-prompt";
 
 export async function POST(req: Request) {
   const session = await getAuthSession();

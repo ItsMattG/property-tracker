@@ -8,7 +8,7 @@ import {
   calculateCostBase,
   calculateCapitalGain,
   CAPITAL_CATEGORIES,
-} from "../services/cgt";
+} from "../services/tax";
 
 type Category = (typeof categoryEnum.enumValues)[number];
 

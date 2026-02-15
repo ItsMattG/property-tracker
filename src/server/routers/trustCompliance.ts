@@ -13,7 +13,7 @@ import {
   getDaysUntilDeadline,
   getDeadlineStatus,
   validateAllocationTotals,
-} from "../services/trust-compliance";
+} from "../services/compliance";
 
 export const trustComplianceRouter = router({
   // Beneficiary Management

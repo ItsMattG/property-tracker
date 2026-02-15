@@ -9,7 +9,7 @@ import {
   updateTicketStatus,
   addTicketNote,
   formatTicketNumber,
-} from "../services/support-tickets";
+} from "../services/notification";
 
 function requireAdmin(userId: string) {
   const adminIds = (process.env.ADMIN_USER_IDS ?? "").split(",").filter(Boolean);

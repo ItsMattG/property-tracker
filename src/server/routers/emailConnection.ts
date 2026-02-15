@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { db } from "../db";
 import { emailConnections } from "../db/schema";
 import { eq, and } from "drizzle-orm";
-import { syncUserEmails } from "../services/gmail-sync";
+import { syncUserEmails } from "../services/email";
 
 export const emailConnectionRouter = router({
   /**

@@ -4,8 +4,8 @@ import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { properties, transactions, documentExtractions } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { extractDocument } from "../services/document-extraction";
-import { matchPropertyByAddress } from "../services/property-matcher";
+import { extractDocument } from "../services/property-analysis";
+import { matchPropertyByAddress } from "../services/property-analysis";
 
 const ALLOWED_FILE_TYPES = [
   "image/jpeg",

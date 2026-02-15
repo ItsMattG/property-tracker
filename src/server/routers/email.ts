@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { recordSenderPropertyMatch } from "../services/gmail-sync";
 import {
+  recordSenderPropertyMatch,
   ensureForwardingAddress,
   regenerateForwardingAddress,
-} from "../services/email-forwarding";
-import { processEmailBackground } from "../services/email-processing";
+  processEmailBackground,
+} from "../services/email";
 
 export const emailRouter = router({
   list: protectedProcedure

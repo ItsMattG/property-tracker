@@ -1,5 +1,5 @@
 import type { RiskLevel, ClimateRisk } from "@/types/climate-risk";
-import { climateRiskData } from "../data/climate-risk-data";
+import { climateRiskData } from "@/server/data/climate-risk-data";
 
 const RISK_LEVELS: RiskLevel[] = ["low", "medium", "high", "extreme"];
 

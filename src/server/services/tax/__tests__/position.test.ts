@@ -5,7 +5,7 @@ import {
   calculateTaxPosition,
   estimatePropertySavings,
   type TaxPositionInput,
-} from "../tax-position";
+} from "../position";
 
 describe("calculateTaxPosition", () => {
   const baseInput: TaxPositionInput = {
