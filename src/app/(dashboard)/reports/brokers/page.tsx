@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, MoreVertical, Send, Pencil, Trash2, Users, FileText } from "lucide-react";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { BrokerModal } from "@/components/broker/BrokerModal";
 import { GenerateLoanPackModal } from "@/components/loanPack/GenerateLoanPackModal";
@@ -195,9 +194,6 @@ export default function BrokerPortalPage() {
                     <p>
                       {broker.packCount} {broker.packCount === 1 ? "pack" : "packs"} sent
                     </p>
-                    {broker.lastPackAt && (
-                      <p>Last: {format(new Date(broker.lastPackAt), "MMM d, yyyy")}</p>
-                    )}
                   </div>
 
                   <Button

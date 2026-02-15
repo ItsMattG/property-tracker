@@ -1,8 +1,7 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { positiveAmountSchema } from "@/lib/validation";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import { loanComparisons, loans, refinanceAlerts } from "../../db/schema";
-import { eq, and } from "drizzle-orm";
 import {
   calculateMonthlySavings,
   calculateTotalInterestSaved,
@@ -92,76 +91,39 @@ export const loanComparisonRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [comparison] = await ctx.db
-        .insert(loanComparisons)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          loanId: input.loanId,
-          name: input.name,
-          newRate: input.newRate,
-          newLender: input.newLender || null,
-          switchingCosts: input.switchingCosts,
-        })
-        .returning();
-
-      return comparison;
+      return ctx.uow.loan.createComparison({
+        userId: ctx.portfolio.ownerId,
+        loanId: input.loanId,
+        name: input.name,
+        newRate: input.newRate,
+        newLender: input.newLender || null,
+        switchingCosts: input.switchingCosts,
+      });
     }),
 
   listComparisons: protectedProcedure
     .input(z.object({ loanId: z.string().uuid().optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(loanComparisons.userId, ctx.portfolio.ownerId)];
-
-      if (input?.loanId) {
-        conditions.push(eq(loanComparisons.loanId, input.loanId));
-      }
-
-      return ctx.db.query.loanComparisons.findMany({
-        where: and(...conditions),
-        with: {
-          loan: {
-            with: {
-              property: true,
-            },
-          },
-        },
-        orderBy: (lc, { desc }) => [desc(lc.createdAt)],
-      });
+      return ctx.uow.loan.findComparisonsByOwner(ctx.portfolio.ownerId, input?.loanId);
     }),
 
   deleteComparison: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(loanComparisons)
-        .where(
-          and(
-            eq(loanComparisons.id, input.id),
-            eq(loanComparisons.userId, ctx.portfolio.ownerId)
-          )
-        );
-
+      await ctx.uow.loan.deleteComparison(input.id, ctx.portfolio.ownerId);
       return { success: true };
     }),
 
   getAlertConfig: protectedProcedure
     .input(z.object({ loanId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      // Verify loan belongs to user
-      const loan = await ctx.db.query.loans.findFirst({
-        where: and(
-          eq(loans.id, input.loanId),
-          eq(loans.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const loan = await ctx.uow.loan.findById(input.loanId, ctx.portfolio.ownerId);
 
       if (!loan) {
-        throw new Error("Loan not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Loan not found" });
       }
 
-      const config = await ctx.db.query.refinanceAlerts.findFirst({
-        where: eq(refinanceAlerts.loanId, input.loanId),
-      });
+      const config = await ctx.uow.loan.findRefinanceAlert(input.loanId);
 
       return config || {
         loanId: input.loanId,
@@ -182,46 +144,16 @@ export const loanComparisonRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify loan belongs to user
-      const loan = await ctx.db.query.loans.findFirst({
-        where: and(
-          eq(loans.id, input.loanId),
-          eq(loans.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const loan = await ctx.uow.loan.findById(input.loanId, ctx.portfolio.ownerId);
 
       if (!loan) {
-        throw new Error("Loan not found");
+        throw new TRPCError({ code: "NOT_FOUND", message: "Loan not found" });
       }
 
-      const existing = await ctx.db.query.refinanceAlerts.findFirst({
-        where: eq(refinanceAlerts.loanId, input.loanId),
+      return ctx.uow.loan.upsertRefinanceAlert(input.loanId, {
+        enabled: input.enabled,
+        rateGapThreshold: input.rateGapThreshold,
+        notifyOnCashRateChange: input.notifyOnCashRateChange,
       });
-
-      if (existing) {
-        const [updated] = await ctx.db
-          .update(refinanceAlerts)
-          .set({
-            enabled: input.enabled,
-            rateGapThreshold: input.rateGapThreshold,
-            notifyOnCashRateChange: input.notifyOnCashRateChange,
-          })
-          .where(eq(refinanceAlerts.loanId, input.loanId))
-          .returning();
-
-        return updated;
-      }
-
-      const [created] = await ctx.db
-        .insert(refinanceAlerts)
-        .values({
-          loanId: input.loanId,
-          enabled: input.enabled,
-          rateGapThreshold: input.rateGapThreshold,
-          notifyOnCashRateChange: input.notifyOnCashRateChange,
-        })
-        .returning();
-
-      return created;
     }),
 });
