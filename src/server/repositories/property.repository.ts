@@ -1,6 +1,6 @@
 import { eq, and, desc, sql } from "drizzle-orm";
-import { properties, equityMilestones } from "../db/schema";
-import type { Property, NewProperty, EquityMilestone } from "../db/schema";
+import { properties, equityMilestones, propertySales } from "../db/schema";
+import type { Property, NewProperty, EquityMilestone, PropertySale, NewPropertySale } from "../db/schema";
 import { BaseRepository, type DB } from "./base";
 import type { IPropertyRepository } from "./interfaces/property.repository.interface";
 
@@ -80,5 +80,34 @@ export class PropertyRepository
         )
       )
       .orderBy(desc(equityMilestones.achievedAt));
+  }
+
+  async findByOwnerWithSales(
+    userId: string
+  ): Promise<(Property & { sales: PropertySale[] })[]> {
+    return this.db.query.properties.findMany({
+      where: eq(properties.userId, userId),
+      with: { sales: true },
+    });
+  }
+
+  async findSaleByProperty(
+    propertyId: string,
+    userId: string
+  ): Promise<(PropertySale & { property: Property }) | null> {
+    const result = await this.db.query.propertySales.findFirst({
+      where: and(
+        eq(propertySales.propertyId, propertyId),
+        eq(propertySales.userId, userId)
+      ),
+      with: { property: true },
+    });
+    return result ?? null;
+  }
+
+  async createSale(data: NewPropertySale, tx?: DB): Promise<PropertySale> {
+    const client = this.resolve(tx);
+    const [sale] = await client.insert(propertySales).values(data).returning();
+    return sale;
   }
 }
