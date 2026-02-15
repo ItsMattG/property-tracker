@@ -18,7 +18,7 @@ import {
   buildCohortDescription,
   getScoreLabel,
   getPercentileStatus,
-} from "../services/performance-benchmarking";
+} from "../services/analytics";
 import { getMockSuburbBenchmark } from "../services/property-analysis";
 import type {
   PropertyPerformanceResult,

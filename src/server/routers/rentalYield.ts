@@ -2,7 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { properties, transactions, propertyValues } from "../db/schema";
 import { eq, and, sql, desc, gte, inArray } from "drizzle-orm";
-import { calculateGrossYield, calculateNetYield } from "../services/rental-yield";
+import { calculateGrossYield, calculateNetYield } from "../services/analytics";
 
 export const rentalYieldRouter = router({
   getForProperty: protectedProcedure

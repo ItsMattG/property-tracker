@@ -8,7 +8,7 @@ import {
   councilRatesBenchmarks,
   managementFeeBenchmarks,
   ABOVE_AVERAGE_THRESHOLD,
-} from "../data/expense-benchmarks";
+} from "@/server/data/expense-benchmarks";
 
 /**
  * Determine benchmark status based on user amount vs average
