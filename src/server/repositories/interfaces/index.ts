@@ -4,7 +4,7 @@ export type { ITransactionRepository, TransactionFilters, PaginatedTransactions,
 export type { ILoanRepository, LoanWithRelations } from "./loan.repository.interface";
 export type { IRecurringRepository, RecurringWithRelations, ExpectedWithRelations, ExpectedTransactionFilters } from "./recurring.repository.interface";
 export type { IDocumentRepository, DocumentFilters } from "./document.repository.interface";
-export type { IComplianceRepository } from "./compliance.repository.interface";
+export type { IComplianceRepository, SmsfContributionWithMember, SmsfPensionWithMember, SmsfMemberWithEntity } from "./compliance.repository.interface";
 export type { IEmailRepository } from "./email.repository.interface";
 export type { IChatRepository, ConversationSummary, ConversationWithMessages } from "./chat.repository.interface";
 export type { IPortfolioRepository } from "./portfolio.repository.interface";
