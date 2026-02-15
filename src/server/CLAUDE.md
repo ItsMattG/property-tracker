@@ -38,7 +38,7 @@ teamProcedure          → + subscription >= "team"
 ```typescript
 ctx.user      // { id, clerkId, email, name, ... }
 ctx.portfolio // { ownerId, role, canWrite, canManageMembers, canManageBanks, canViewAuditLog, canUploadDocuments }
-ctx.uow       // UnitOfWork — primary data access (23 typed repositories)
+ctx.uow       // UnitOfWork — primary data access (22 typed repositories)
 ctx.db        // Drizzle instance — only for cross-domain queries (must add comment explaining why)
 ```
 
