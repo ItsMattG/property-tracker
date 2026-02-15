@@ -1,14 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../../trpc";
-import {
-  entities,
-  beneficiaries,
-  trustDistributions,
-  distributionAllocations,
-  type Beneficiary,
-} from "../../db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import type { Beneficiary } from "../../db/schema";
 import {
   getCurrentFinancialYear,
   getDaysUntilDeadline,
@@ -21,16 +14,11 @@ export const trustComplianceRouter = router({
   getBeneficiaries: protectedProcedure
     .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const entity = await ctx.db.query.entities.findFirst({
-        where: and(eq(entities.id, input.entityId), eq(entities.type, "trust")),
-      });
-      if (!entity || entity.userId !== ctx.user.id) {
+      const entity = await ctx.uow.compliance.findEntityById(input.entityId, ctx.user.id);
+      if (!entity || entity.type !== "trust") {
         throw new TRPCError({ code: "NOT_FOUND", message: "Trust entity not found" });
       }
-      return ctx.db.query.beneficiaries.findMany({
-        where: eq(beneficiaries.entityId, input.entityId),
-        orderBy: (b, { asc }) => [asc(b.name)],
-      });
+      return ctx.uow.compliance.findBeneficiaries(input.entityId);
     }),
 
   addBeneficiary: protectedProcedure
@@ -41,19 +29,16 @@ export const trustComplianceRouter = router({
       tfn: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const entity = await ctx.db.query.entities.findFirst({
-        where: and(eq(entities.id, input.entityId), eq(entities.type, "trust")),
-      });
-      if (!entity || entity.userId !== ctx.user.id) {
+      const entity = await ctx.uow.compliance.findEntityById(input.entityId, ctx.user.id);
+      if (!entity || entity.type !== "trust") {
         throw new TRPCError({ code: "NOT_FOUND", message: "Trust entity not found" });
       }
-      const [beneficiary] = await ctx.db.insert(beneficiaries).values({
+      return ctx.uow.compliance.createBeneficiary({
         entityId: input.entityId,
         name: input.name,
         relationship: input.relationship,
         tfn: input.tfn,
-      }).returning();
-      return beneficiary;
+      });
     }),
 
   updateBeneficiary: protectedProcedure
@@ -65,48 +50,42 @@ export const trustComplianceRouter = router({
       isActive: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const beneficiary = await ctx.db.query.beneficiaries.findFirst({
-        where: eq(beneficiaries.id, input.beneficiaryId),
-        with: { entity: true },
-      });
-      if (!beneficiary || beneficiary.entity.userId !== ctx.user.id) {
+      const beneficiary = await ctx.uow.compliance.findBeneficiaryById(input.beneficiaryId);
+      if (!beneficiary) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Beneficiary not found" });
       }
+      // Verify ownership via the beneficiary's parent entity
+      const entity = await ctx.uow.compliance.findEntityById(beneficiary.entityId, ctx.user.id);
+      if (!entity) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Beneficiary not found" });
+      }
+
       const updates: Partial<Beneficiary> = { updatedAt: new Date() };
       if (input.name) updates.name = input.name;
       if (input.relationship) updates.relationship = input.relationship;
       if (input.tfn !== undefined) updates.tfn = input.tfn;
       if (input.isActive !== undefined) updates.isActive = input.isActive;
 
-      const [updated] = await ctx.db.update(beneficiaries)
-        .set(updates)
-        .where(eq(beneficiaries.id, input.beneficiaryId))
-        .returning();
-      return updated;
+      return ctx.uow.compliance.updateBeneficiary(input.beneficiaryId, updates);
     }),
 
   // Distributions
   getDistributions: protectedProcedure
     .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.query.trustDistributions.findMany({
-        where: eq(trustDistributions.entityId, input.entityId),
-        with: { allocations: { with: { beneficiary: true } } },
-        orderBy: [desc(trustDistributions.financialYear)],
-      });
+      return ctx.uow.compliance.findTrustDistributions(input.entityId);
     }),
 
   getDistribution: protectedProcedure
     .input(z.object({ distributionId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const distribution = await ctx.db.query.trustDistributions.findFirst({
-        where: eq(trustDistributions.id, input.distributionId),
-        with: {
-          allocations: { with: { beneficiary: true } },
-          entity: true,
-        },
-      });
-      if (!distribution || distribution.entity.userId !== ctx.user.id) {
+      const distribution = await ctx.uow.compliance.findTrustDistributionById(input.distributionId);
+      if (!distribution) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Distribution not found" });
+      }
+      // Verify ownership via the distribution's parent entity
+      const entity = await ctx.uow.compliance.findEntityById(distribution.entityId, ctx.user.id);
+      if (!entity) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Distribution not found" });
       }
       return distribution;
@@ -128,10 +107,8 @@ export const trustComplianceRouter = router({
       })),
     }))
     .mutation(async ({ ctx, input }) => {
-      const entity = await ctx.db.query.entities.findFirst({
-        where: and(eq(entities.id, input.entityId), eq(entities.type, "trust")),
-      });
-      if (!entity || entity.userId !== ctx.user.id) {
+      const entity = await ctx.uow.compliance.findEntityById(input.entityId, ctx.user.id);
+      if (!entity || entity.type !== "trust") {
         throw new TRPCError({ code: "NOT_FOUND", message: "Trust entity not found" });
       }
 
@@ -150,18 +127,18 @@ export const trustComplianceRouter = router({
       }
 
       // Create distribution
-      const [distribution] = await ctx.db.insert(trustDistributions).values({
+      const distribution = await ctx.uow.compliance.createTrustDistribution({
         entityId: input.entityId,
         financialYear: input.financialYear,
         resolutionDate: input.resolutionDate,
         totalAmount: input.totalAmount.toString(),
         capitalGainsComponent: input.capitalGainsComponent.toString(),
         frankingCreditsComponent: input.frankingCreditsComponent.toString(),
-      }).returning();
+      });
 
       // Create allocations
       if (input.allocations.length > 0) {
-        await ctx.db.insert(distributionAllocations).values(
+        await ctx.uow.compliance.createDistributionAllocations(
           input.allocations.map((a) => ({
             distributionId: distribution.id,
             beneficiaryId: a.beneficiaryId,
@@ -181,12 +158,10 @@ export const trustComplianceRouter = router({
     .query(async ({ ctx, input }) => {
       const year = getCurrentFinancialYear();
 
-      const distribution = await ctx.db.query.trustDistributions.findFirst({
-        where: and(
-          eq(trustDistributions.entityId, input.entityId),
-          eq(trustDistributions.financialYear, year)
-        ),
-      });
+      const distribution = await ctx.uow.compliance.findTrustDistributionByYear(
+        input.entityId,
+        year
+      );
 
       const hasDistribution = !!distribution;
       const daysUntil = getDaysUntilDeadline(year);
@@ -207,20 +182,15 @@ export const trustComplianceRouter = router({
     .query(async ({ ctx, input }) => {
       const year = getCurrentFinancialYear();
 
-      const [beneficiaryList, distributions] = await Promise.all([
-        ctx.db.query.beneficiaries.findMany({
-          where: and(
-            eq(beneficiaries.entityId, input.entityId),
-            eq(beneficiaries.isActive, true)
-          ),
-        }),
-        ctx.db.query.trustDistributions.findMany({
-          where: eq(trustDistributions.entityId, input.entityId),
-          with: { allocations: { with: { beneficiary: true } } },
-          orderBy: [desc(trustDistributions.financialYear)],
-          limit: 5,
-        }),
+      const [allBeneficiaries, distributions] = await Promise.all([
+        ctx.uow.compliance.findBeneficiaries(input.entityId),
+        ctx.uow.compliance.findTrustDistributions(input.entityId),
       ]);
+
+      // Filter active beneficiaries in JS (repo returns all)
+      const activeBeneficiaries = allBeneficiaries.filter((b) => b.isActive);
+      // Limit distributions in JS (repo returns all, ordered by year desc)
+      const recentDistributions = distributions.slice(0, 5);
 
       const currentYearDistribution = distributions.find((d) => d.financialYear === year);
       const hasDistribution = !!currentYearDistribution;
@@ -234,8 +204,8 @@ export const trustComplianceRouter = router({
           status,
           hasDistribution,
         },
-        beneficiaries: beneficiaryList.length,
-        recentDistributions: distributions.map((d) => ({
+        beneficiaries: activeBeneficiaries.length,
+        recentDistributions: recentDistributions.map((d) => ({
           id: d.id,
           financialYear: d.financialYear,
           totalAmount: parseFloat(d.totalAmount),
