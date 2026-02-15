@@ -1,6 +1,6 @@
 # Claude Code Rules
 
-**Stack:** Next.js 15 (App Router) · React 19 · tRPC v11 · Drizzle ORM · BetterAuth · Tailwind v4 · Zod v4 · Stripe · Supabase (storage) · Playwright
+**Stack:** Next.js 16 (App Router) · React 19 · tRPC v11 · Drizzle ORM · BetterAuth · Tailwind v4 · Zod v4 · Stripe · Supabase (storage) · Playwright
 
 ## Scoped Guidance
 

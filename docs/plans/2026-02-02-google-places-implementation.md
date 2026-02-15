@@ -6,7 +6,7 @@
 
 **Architecture:** Client-side Google Places integration using `@react-google-maps/api`. A provider loads the script once at dashboard level. The `AddressAutocomplete` component wraps Google's Autocomplete, parses address components, and fires a callback to populate form fields.
 
-**Tech Stack:** Next.js 14, React, @react-google-maps/api, react-hook-form
+**Tech Stack:** Next.js 16, React, @react-google-maps/api, react-hook-form
 
 ---
 

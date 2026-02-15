@@ -875,7 +875,7 @@ See Appendix C for Document, Reminder, Valuation, Entity, RentalIncome entities.
 
 | Layer | Choice | Reasoning |
 |-------|--------|-----------|
-| Frontend | Next.js 14 | SSR, API routes, Vercel deploy |
+| Frontend | Next.js 16 | SSR, API routes, Vercel deploy |
 | UI | shadcn/ui + Tailwind | Fast, no lock-in |
 | State | TanStack Query | Server state caching |
 | Forms | React Hook Form + Zod | Type-safe validation |

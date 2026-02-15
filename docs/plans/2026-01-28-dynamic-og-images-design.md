@@ -12,7 +12,7 @@ Generate dynamic Open Graph images for portfolio share links (`/share/[token]`) 
 
 ### New Route: `src/app/api/og/share/[token]/route.tsx`
 
-Edge runtime API route using Next.js `ImageResponse` (from `next/og`). No extra dependency needed — built into Next.js 14+.
+Edge runtime API route using Next.js `ImageResponse` (from `next/og`). No extra dependency needed — built into Next.js 16+.
 
 - Fetches portfolio snapshot by share token from database
 - Validates token: exists, not expired, active

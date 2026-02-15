@@ -6,7 +6,7 @@
 
 **Architecture:** Three new database tables (rateHistory, loanComparisons, refinanceAlerts), two new services (rate-data, loan-comparison), one new router (loanComparison), two cron jobs, and three new pages with supporting components. Integrates with existing notification system.
 
-**Tech Stack:** Next.js 14, tRPC, Drizzle ORM, PostgreSQL, Vitest, React, TailwindCSS, Resend (email)
+**Tech Stack:** Next.js 16, tRPC, Drizzle ORM, PostgreSQL, Vitest, React, TailwindCSS, Resend (email)
 
 ---
 
