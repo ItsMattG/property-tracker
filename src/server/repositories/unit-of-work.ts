@@ -12,6 +12,12 @@ import type {
   IPortfolioRepository,
   IScenarioRepository,
   IUserRepository,
+  ITaskRepository,
+  IFeedbackRepository,
+  ITeamRepository,
+  IForecastRepository,
+  IPropertyValueRepository,
+  ISimilarPropertiesRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -27,6 +33,12 @@ import { ComplianceRepository } from "./compliance.repository";
 import { EmailRepository } from "./email.repository";
 import { PortfolioRepository } from "./portfolio.repository";
 import { ScenarioRepository } from "./scenario.repository";
+import { TaskRepository } from "./task.repository";
+import { FeedbackRepository } from "./feedback.repository";
+import { TeamRepository } from "./team.repository";
+import { ForecastRepository } from "./forecast.repository";
+import { PropertyValueRepository } from "./property-value.repository";
+import { SimilarPropertiesRepository } from "./similar-properties.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -42,6 +54,12 @@ export class UnitOfWork {
   private _portfolio?: IPortfolioRepository;
   private _scenario?: IScenarioRepository;
   private _user?: IUserRepository;
+  private _task?: ITaskRepository;
+  private _feedback?: IFeedbackRepository;
+  private _team?: ITeamRepository;
+  private _forecast?: IForecastRepository;
+  private _propertyValue?: IPropertyValueRepository;
+  private _similarProperties?: ISimilarPropertiesRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -81,6 +99,24 @@ export class UnitOfWork {
   }
   get scenario(): IScenarioRepository {
     return (this._scenario ??= new ScenarioRepository(this.db));
+  }
+  get task(): ITaskRepository {
+    return (this._task ??= new TaskRepository(this.db));
+  }
+  get feedback(): IFeedbackRepository {
+    return (this._feedback ??= new FeedbackRepository(this.db));
+  }
+  get team(): ITeamRepository {
+    return (this._team ??= new TeamRepository(this.db));
+  }
+  get forecast(): IForecastRepository {
+    return (this._forecast ??= new ForecastRepository(this.db));
+  }
+  get propertyValue(): IPropertyValueRepository {
+    return (this._propertyValue ??= new PropertyValueRepository(this.db));
+  }
+  get similarProperties(): ISimilarPropertiesRepository {
+    return (this._similarProperties ??= new SimilarPropertiesRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */

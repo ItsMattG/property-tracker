@@ -1,4 +1,4 @@
-import type { Property, NewProperty, EquityMilestone } from "../../db/schema";
+import type { Property, NewProperty, EquityMilestone, PropertySale, NewPropertySale } from "../../db/schema";
 import type { DB } from "../base";
 
 export interface IPropertyRepository {
@@ -22,4 +22,13 @@ export interface IPropertyRepository {
 
   /** Get equity milestones for a property */
   findMilestones(propertyId: string, userId: string): Promise<EquityMilestone[]>;
+
+  /** List properties with sales relations */
+  findByOwnerWithSales(userId: string): Promise<(Property & { sales: PropertySale[] })[]>;
+
+  /** Find sale record for a property with property relation */
+  findSaleByProperty(propertyId: string, userId: string): Promise<(PropertySale & { property: Property }) | null>;
+
+  /** Create a property sale record */
+  createSale(data: NewPropertySale, tx?: DB): Promise<PropertySale>;
 }
