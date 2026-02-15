@@ -1,23 +1,10 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import {
-  forecastScenarios,
-  cashFlowForecasts,
-  recurringTransactions,
-  loans,
-  type CashFlowForecast,
-  type RecurringTransaction,
-  type Loan,
-} from "../../db/schema";
-import { type db as dbInstance } from "../../db";
-import { eq, and, desc } from "drizzle-orm";
+import type { ForecastScenario } from "../../db/schema";
 import { TRPCError } from "@trpc/server";
 import {
   DEFAULT_ASSUMPTIONS,
-  parseAssumptions,
-  calculateMonthlyProjection,
-  getForecastMonth,
-  type ScenarioAssumptions,
+  generateForecastsForScenario,
 } from "../../services/lending";
 
 const assumptionsSchema = z.object({
@@ -29,10 +16,7 @@ const assumptionsSchema = z.object({
 
 export const forecastRouter = router({
   listScenarios: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.forecastScenarios.findMany({
-      where: eq(forecastScenarios.userId, ctx.portfolio.ownerId),
-      orderBy: [desc(forecastScenarios.isDefault), desc(forecastScenarios.createdAt)],
-    });
+    return ctx.uow.forecast.listScenarios(ctx.portfolio.ownerId);
   }),
 
   createScenario: writeProcedure
@@ -44,26 +28,25 @@ export const forecastRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const ownerId = ctx.portfolio.ownerId;
       const assumptions = input.assumptions ?? DEFAULT_ASSUMPTIONS;
 
       if (input.isDefault) {
-        await ctx.db
-          .update(forecastScenarios)
-          .set({ isDefault: false })
-          .where(eq(forecastScenarios.userId, ctx.portfolio.ownerId));
+        await ctx.uow.forecast.clearAllDefaults(ownerId);
       }
 
-      const [scenario] = await ctx.db
-        .insert(forecastScenarios)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          name: input.name,
-          assumptions: JSON.stringify(assumptions),
-          isDefault: input.isDefault ?? false,
-        })
-        .returning();
+      const scenario = await ctx.uow.forecast.createScenario({
+        userId: ownerId,
+        name: input.name,
+        assumptions: JSON.stringify(assumptions),
+        isDefault: input.isDefault ?? false,
+      });
 
-      await generateForecastsForScenario(ctx.db, ctx.portfolio.ownerId, scenario.id);
+      await generateForecastsForScenario(
+        { forecast: ctx.uow.forecast, recurring: ctx.uow.recurring, loan: ctx.uow.loan },
+        ownerId,
+        scenario.id
+      );
 
       return scenario;
     }),
@@ -77,29 +60,25 @@ export const forecastRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db.query.forecastScenarios.findFirst({
-        where: and(
-          eq(forecastScenarios.id, input.id),
-          eq(forecastScenarios.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const ownerId = ctx.portfolio.ownerId;
 
+      const existing = await ctx.uow.forecast.findScenarioById(input.id, ownerId);
       if (!existing) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
       }
 
-      const [scenario] = await ctx.db
-        .update(forecastScenarios)
-        .set({
-          updatedAt: new Date(),
-          ...(input.name ? { name: input.name } : {}),
-          ...(input.assumptions ? { assumptions: JSON.stringify(input.assumptions) } : {}),
-        })
-        .where(eq(forecastScenarios.id, input.id))
-        .returning();
+      const updates: Partial<ForecastScenario> = { updatedAt: new Date() };
+      if (input.name) updates.name = input.name;
+      if (input.assumptions) updates.assumptions = JSON.stringify(input.assumptions);
+
+      const scenario = await ctx.uow.forecast.updateScenario(input.id, updates);
 
       if (input.assumptions) {
-        await generateForecastsForScenario(ctx.db, ctx.portfolio.ownerId, scenario.id);
+        await generateForecastsForScenario(
+          { forecast: ctx.uow.forecast, recurring: ctx.uow.recurring, loan: ctx.uow.loan },
+          ownerId,
+          scenario.id
+        );
       }
 
       return scenario;
@@ -108,42 +87,21 @@ export const forecastRouter = router({
   deleteScenario: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const [deleted] = await ctx.db
-        .delete(forecastScenarios)
-        .where(
-          and(
-            eq(forecastScenarios.id, input.id),
-            eq(forecastScenarios.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
-
+      const deleted = await ctx.uow.forecast.deleteScenario(input.id, ctx.portfolio.ownerId);
       if (!deleted) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
       }
-
       return deleted;
     }),
 
   setDefaultScenario: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(forecastScenarios)
-        .set({ isDefault: false })
-        .where(eq(forecastScenarios.userId, ctx.portfolio.ownerId));
+      const ownerId = ctx.portfolio.ownerId;
 
-      const [scenario] = await ctx.db
-        .update(forecastScenarios)
-        .set({ isDefault: true })
-        .where(
-          and(
-            eq(forecastScenarios.id, input.id),
-            eq(forecastScenarios.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      await ctx.uow.forecast.clearAllDefaults(ownerId);
 
+      const scenario = await ctx.uow.forecast.setDefault(input.id, ownerId);
       if (!scenario) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
       }
@@ -159,22 +117,11 @@ export const forecastRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [
-        eq(cashFlowForecasts.userId, ctx.portfolio.ownerId),
-        eq(cashFlowForecasts.scenarioId, input.scenarioId),
-      ];
-
-      if (input.propertyId) {
-        conditions.push(eq(cashFlowForecasts.propertyId, input.propertyId));
-      }
-
-      const forecasts = await ctx.db.query.cashFlowForecasts.findMany({
-        where: and(...conditions),
-        with: {
-          property: true,
-        },
-        orderBy: [cashFlowForecasts.forecastMonth],
-      });
+      const forecasts = await ctx.uow.forecast.getForecasts(
+        ctx.portfolio.ownerId,
+        input.scenarioId,
+        input.propertyId
+      );
 
       const totalIncome = forecasts.reduce((sum, f) => sum + Number(f.projectedIncome), 0);
       const totalExpenses = forecasts.reduce((sum, f) => sum + Number(f.projectedExpenses), 0);
@@ -199,121 +146,38 @@ export const forecastRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const results: Record<string, CashFlowForecast[]> = {};
+      const ownerId = ctx.portfolio.ownerId;
 
-      for (const scenarioId of input.scenarioIds) {
-        const conditions = [
-          eq(cashFlowForecasts.userId, ctx.portfolio.ownerId),
-          eq(cashFlowForecasts.scenarioId, scenarioId),
-        ];
+      const entries = await Promise.all(
+        input.scenarioIds.map(async (scenarioId) => {
+          const forecasts = await ctx.uow.forecast.getForecastsRaw(
+            ownerId,
+            scenarioId,
+            input.propertyId
+          );
+          return [scenarioId, forecasts] as const;
+        })
+      );
 
-        if (input.propertyId) {
-          conditions.push(eq(cashFlowForecasts.propertyId, input.propertyId));
-        }
-
-        results[scenarioId] = await ctx.db.query.cashFlowForecasts.findMany({
-          where: and(...conditions),
-          orderBy: [cashFlowForecasts.forecastMonth],
-        });
-      }
-
-      return results;
+      return Object.fromEntries(entries);
     }),
 
   regenerate: writeProcedure
     .input(z.object({ scenarioId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const scenario = await ctx.db.query.forecastScenarios.findFirst({
-        where: and(
-          eq(forecastScenarios.id, input.scenarioId),
-          eq(forecastScenarios.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const ownerId = ctx.portfolio.ownerId;
 
+      const scenario = await ctx.uow.forecast.findScenarioById(input.scenarioId, ownerId);
       if (!scenario) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Scenario not found" });
       }
 
-      await generateForecastsForScenario(ctx.db, ctx.portfolio.ownerId, input.scenarioId);
+      await generateForecastsForScenario(
+        { forecast: ctx.uow.forecast, recurring: ctx.uow.recurring, loan: ctx.uow.loan },
+        ownerId,
+        input.scenarioId
+      );
 
       return { success: true };
     }),
 });
-
-async function generateForecastsForScenario(
-  db: typeof dbInstance,
-  userId: string,
-  scenarioId: string
-) {
-  const scenario = await db.query.forecastScenarios.findFirst({
-    where: eq(forecastScenarios.id, scenarioId),
-  });
-
-  if (!scenario) return;
-
-  const assumptions = parseAssumptions(scenario.assumptions);
-
-  const recurring = await db.query.recurringTransactions.findMany({
-    where: and(
-      eq(recurringTransactions.userId, userId),
-      eq(recurringTransactions.isActive, true)
-    ),
-  });
-
-  const userLoans = await db.query.loans.findMany({
-    where: eq(loans.userId, userId),
-  });
-
-  const baseIncome = recurring
-    .filter((r: RecurringTransaction) => r.transactionType === "income")
-    .reduce((sum: number, r: RecurringTransaction) => sum + Math.abs(Number(r.amount)), 0);
-
-  const baseExpenses = recurring
-    .filter((r: RecurringTransaction) => r.transactionType === "expense")
-    .reduce((sum: number, r: RecurringTransaction) => sum + Math.abs(Number(r.amount)), 0);
-
-  const totalLoanBalance = userLoans.reduce(
-    (sum: number, l: Loan) => sum + Number(l.currentBalance),
-    0
-  );
-  const weightedRate =
-    totalLoanBalance > 0
-      ? userLoans.reduce(
-          (sum: number, l: Loan) =>
-            sum + (Number(l.currentBalance) / totalLoanBalance) * Number(l.interestRate),
-          0
-        )
-      : 0;
-
-  await db
-    .delete(cashFlowForecasts)
-    .where(eq(cashFlowForecasts.scenarioId, scenarioId));
-
-  const forecastValues = Array.from({ length: 12 }, (_, month) => {
-    const projection = calculateMonthlyProjection({
-      monthsAhead: month,
-      baseIncome,
-      baseExpenses,
-      loanBalance: totalLoanBalance,
-      loanRate: weightedRate,
-      assumptions,
-    });
-
-    return {
-      userId,
-      scenarioId,
-      propertyId: null,
-      forecastMonth: getForecastMonth(month),
-      projectedIncome: String(projection.projectedIncome),
-      projectedExpenses: String(projection.projectedExpenses),
-      projectedNet: String(projection.projectedNet),
-      breakdown: JSON.stringify({
-        baseIncome,
-        baseExpenses,
-        loanInterest: projection.projectedExpenses - baseExpenses,
-      }),
-    };
-  });
-
-  await db.insert(cashFlowForecasts).values(forecastValues);
-}

@@ -3,13 +3,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../../trpc";
 import {
-  properties,
-  transactions,
-  suburbBenchmarks,
-  propertyPerformanceBenchmarks,
-} from "../../db/schema";
-import { eq, and, gte, inArray } from "drizzle-orm";
-import {
   calculatePercentile,
   calculateInvertedPercentile,
   calculatePerformanceScore,
@@ -36,33 +29,25 @@ export const performanceBenchmarkingRouter = router({
   getPropertyPerformance: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }): Promise<PropertyPerformanceResult | null> => {
-      // 1. Get the property with its latest valuation
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-        with: {
-          propertyValues: {
-            orderBy: (v, { desc }) => [desc(v.valueDate)],
-            limit: 1,
-          },
-        },
-      });
+      const ownerId = ctx.portfolio.ownerId;
 
+      // 1. Get the property
+      const property = await ctx.uow.property.findById(input.propertyId, ownerId);
       if (!property) return null;
+
+      // Get latest valuation
+      const recentValues = await ctx.uow.propertyValue.findRecent(input.propertyId, 1);
+      const latestValue = recentValues[0] ?? null;
 
       // Property type defaults to "house" if not specified
       const propertyType = "house";
 
       // 2. Get or create suburb benchmark
-      let suburbBenchmark = await ctx.db.query.suburbBenchmarks.findFirst({
-        where: and(
-          eq(suburbBenchmarks.suburb, property.suburb),
-          eq(suburbBenchmarks.state, property.state),
-          eq(suburbBenchmarks.propertyType, propertyType)
-        ),
-      });
+      let suburbBenchmark = await ctx.uow.similarProperties.findSuburbBenchmark(
+        property.suburb,
+        property.state,
+        propertyType
+      );
 
       if (!suburbBenchmark) {
         // Create from mock data
@@ -74,28 +59,22 @@ export const performanceBenchmarkingRouter = router({
         if (!mockData) return null;
 
         const today = new Date().toISOString().split("T")[0];
-        const [inserted] = await ctx.db
-          .insert(suburbBenchmarks)
-          .values({
-            ...mockData,
-            suburb: property.suburb,
-            state: property.state,
-            postcode: mockData.postcode || "0000",
-            propertyType: propertyType,
-            periodStart: today,
-            periodEnd: today,
-          })
-          .returning();
-        suburbBenchmark = inserted;
+        suburbBenchmark = await ctx.uow.similarProperties.createSuburbBenchmark({
+          ...mockData,
+          suburb: property.suburb,
+          state: property.state,
+          postcode: mockData.postcode || "0000",
+          propertyType: propertyType,
+          periodStart: today,
+          periodEnd: today,
+        });
       }
 
       // 3. Get property transactions for last year
       const lastYear = getLastYearDate();
-      const propertyTransactions = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.propertyId, input.propertyId),
-          gte(transactions.date, lastYear.toISOString().split("T")[0])
-        ),
+      const propertyTransactions = await ctx.uow.transactions.findAllByOwner(ownerId, {
+        propertyId: input.propertyId,
+        startDate: lastYear.toISOString().split("T")[0],
       });
 
       // 4. Calculate user metrics
@@ -107,8 +86,8 @@ export const performanceBenchmarkingRouter = router({
         .filter((t) => t.transactionType === "expense")
         .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
 
-      const currentValue = property.propertyValues?.[0]?.estimatedValue
-        ? parseFloat(property.propertyValues[0].estimatedValue)
+      const currentValue = latestValue?.estimatedValue
+        ? parseFloat(latestValue.estimatedValue)
         : parseFloat(property.purchasePrice);
 
       const userYield = currentValue > 0 ? (annualRent / currentValue) * 100 : null;
@@ -200,35 +179,18 @@ export const performanceBenchmarkingRouter = router({
       );
 
       // 8. Cache the result
-      await ctx.db
-        .insert(propertyPerformanceBenchmarks)
-        .values({
-          propertyId: input.propertyId,
-          yieldPercentile,
-          growthPercentile,
-          expensePercentile,
-          vacancyPercentile,
-          performanceScore,
-          cohortSize: suburbBenchmark.sampleSize || 0,
-          cohortDescription,
-          suburbBenchmarkId: suburbBenchmark.id,
-          insights: JSON.stringify(insights),
-        })
-        .onConflictDoUpdate({
-          target: propertyPerformanceBenchmarks.propertyId,
-          set: {
-            yieldPercentile,
-            growthPercentile,
-            expensePercentile,
-            vacancyPercentile,
-            performanceScore,
-            cohortSize: suburbBenchmark.sampleSize || 0,
-            cohortDescription,
-            suburbBenchmarkId: suburbBenchmark.id,
-            insights: JSON.stringify(insights),
-            calculatedAt: new Date(),
-          },
-        });
+      await ctx.uow.similarProperties.upsertPerformanceBenchmark({
+        propertyId: input.propertyId,
+        yieldPercentile,
+        growthPercentile,
+        expensePercentile,
+        vacancyPercentile,
+        performanceScore,
+        cohortSize: suburbBenchmark.sampleSize || 0,
+        cohortDescription,
+        suburbBenchmarkId: suburbBenchmark.id,
+        insights: JSON.stringify(insights),
+      });
 
       return {
         propertyId: input.propertyId,
@@ -248,9 +210,8 @@ export const performanceBenchmarkingRouter = router({
 
   getPortfolioPerformance: protectedProcedure.query(
     async ({ ctx }): Promise<PortfolioPerformanceSummary> => {
-      const userProperties = await ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ctx.portfolio.ownerId),
-      });
+      const ownerId = ctx.portfolio.ownerId;
+      const userProperties = await ctx.uow.property.findByOwner(ownerId);
 
       if (userProperties.length === 0) {
         return {
@@ -262,12 +223,8 @@ export const performanceBenchmarkingRouter = router({
         };
       }
 
-      const benchmarks = await ctx.db.query.propertyPerformanceBenchmarks.findMany({
-        where: inArray(
-          propertyPerformanceBenchmarks.propertyId,
-          userProperties.map((p) => p.id)
-        ),
-      });
+      const propertyIds = userProperties.map((p) => p.id);
+      const benchmarks = await ctx.uow.similarProperties.findPerformanceBenchmarksByProperties(propertyIds);
 
       if (benchmarks.length === 0) {
         return {
@@ -309,18 +266,13 @@ export const performanceBenchmarkingRouter = router({
   ),
 
   getUnderperformers: protectedProcedure.query(async ({ ctx }) => {
-    const userProperties = await ctx.db.query.properties.findMany({
-      where: eq(properties.userId, ctx.portfolio.ownerId),
-    });
+    const ownerId = ctx.portfolio.ownerId;
+    const userProperties = await ctx.uow.property.findByOwner(ownerId);
 
     if (userProperties.length === 0) return [];
 
-    const benchmarks = await ctx.db.query.propertyPerformanceBenchmarks.findMany({
-      where: inArray(
-        propertyPerformanceBenchmarks.propertyId,
-        userProperties.map((p) => p.id)
-      ),
-    });
+    const propertyIds = userProperties.map((p) => p.id);
+    const benchmarks = await ctx.uow.similarProperties.findPerformanceBenchmarksByProperties(propertyIds);
 
     return benchmarks
       .filter((b) =>

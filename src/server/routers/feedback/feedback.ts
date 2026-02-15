@@ -1,18 +1,11 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../../trpc";
-import {
-  featureRequests,
-  featureVotes,
-  featureComments,
-  bugReports,
-  users,
-} from "../../db/schema";
-import { eq, and, desc, sql, asc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { router, protectedProcedure, publicProcedure } from "../../trpc";
 import { sendEmailNotification } from "@/server/services/notification";
+import { FeedbackRepository } from "../../repositories/feedback.repository";
 
 export const feedbackRouter = router({
-  // List all feature requests (public)
+  // Public procedures: instantiate repo from ctx.db (no UoW on public context)
   listFeatures: publicProcedure
     .input(
       z.object({
@@ -25,77 +18,24 @@ export const feedbackRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const conditions = input.status
-        ? eq(featureRequests.status, input.status)
-        : undefined;
-
-      const orderBy =
-        input.sortBy === "votes"
-          ? desc(featureRequests.voteCount)
-          : input.sortBy === "newest"
-            ? desc(featureRequests.createdAt)
-            : asc(featureRequests.createdAt);
-
-      const features = await ctx.db
-        .select({
-          id: featureRequests.id,
-          title: featureRequests.title,
-          description: featureRequests.description,
-          category: featureRequests.category,
-          status: featureRequests.status,
-          voteCount: featureRequests.voteCount,
-          createdAt: featureRequests.createdAt,
-          userName: users.name,
-        })
-        .from(featureRequests)
-        .leftJoin(users, eq(featureRequests.userId, users.id))
-        .where(conditions)
-        .orderBy(orderBy)
-        .limit(input.limit)
-        .offset(input.offset);
-
-      return features;
+      const repo = new FeedbackRepository(ctx.db);
+      return repo.listFeatures(input);
     }),
 
-  // Get single feature with comments
   getFeature: publicProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const [feature] = await ctx.db
-        .select({
-          id: featureRequests.id,
-          title: featureRequests.title,
-          description: featureRequests.description,
-          category: featureRequests.category,
-          status: featureRequests.status,
-          voteCount: featureRequests.voteCount,
-          createdAt: featureRequests.createdAt,
-          userName: users.name,
-        })
-        .from(featureRequests)
-        .leftJoin(users, eq(featureRequests.userId, users.id))
-        .where(eq(featureRequests.id, input.id));
-
+      const repo = new FeedbackRepository(ctx.db);
+      const feature = await repo.findFeatureById(input.id);
       if (!feature) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Feature not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Feature not found",
+        });
       }
-
-      const comments = await ctx.db
-        .select({
-          id: featureComments.id,
-          content: featureComments.content,
-          createdAt: featureComments.createdAt,
-          userName: users.name,
-        })
-        .from(featureComments)
-        .leftJoin(users, eq(featureComments.userId, users.id))
-        .where(eq(featureComments.featureId, input.id))
-        .orderBy(asc(featureComments.createdAt));
-
-      return { ...feature, comments };
+      return feature;
     }),
 
-  // Create feature request (authenticated)
   createFeature: protectedProcedure
     .input(
       z.object({
@@ -105,73 +45,19 @@ export const feedbackRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [feature] = await ctx.db
-        .insert(featureRequests)
-        .values({
-          userId: ctx.user.id,
-          title: input.title,
-          description: input.description,
-          category: input.category,
-        })
-        .returning();
-
-      return feature;
+      return ctx.uow.feedback.createFeature(ctx.user.id, input);
     }),
 
-  // Vote on feature (authenticated)
   voteFeature: protectedProcedure
     .input(z.object({ featureId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      // Check if already voted
-      const [existingVote] = await ctx.db
-        .select()
-        .from(featureVotes)
-        .where(
-          and(
-            eq(featureVotes.userId, ctx.user.id),
-            eq(featureVotes.featureId, input.featureId)
-          )
-        );
-
-      if (existingVote) {
-        // Remove vote
-        await ctx.db
-          .delete(featureVotes)
-          .where(eq(featureVotes.id, existingVote.id));
-
-        await ctx.db
-          .update(featureRequests)
-          .set({ voteCount: sql`${featureRequests.voteCount} - 1` })
-          .where(eq(featureRequests.id, input.featureId));
-
-        return { voted: false };
-      }
-
-      // Add vote
-      await ctx.db.insert(featureVotes).values({
-        userId: ctx.user.id,
-        featureId: input.featureId,
-      });
-
-      await ctx.db
-        .update(featureRequests)
-        .set({ voteCount: sql`${featureRequests.voteCount} + 1` })
-        .where(eq(featureRequests.id, input.featureId));
-
-      return { voted: true };
+      return ctx.uow.feedback.toggleVote(ctx.user.id, input.featureId);
     }),
 
-  // Check if user has voted (authenticated)
   getUserVotes: protectedProcedure.query(async ({ ctx }) => {
-    const votes = await ctx.db
-      .select({ featureId: featureVotes.featureId })
-      .from(featureVotes)
-      .where(eq(featureVotes.userId, ctx.user.id));
-
-    return votes.map((v) => v.featureId);
+    return ctx.uow.feedback.getUserVotes(ctx.user.id);
   }),
 
-  // Add comment (authenticated)
   addComment: protectedProcedure
     .input(
       z.object({
@@ -180,19 +66,14 @@ export const feedbackRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [comment] = await ctx.db
-        .insert(featureComments)
-        .values({
-          featureId: input.featureId,
-          userId: ctx.user.id,
-          content: input.content,
-        })
-        .returning();
-
-      return comment;
+      return ctx.uow.feedback.addComment(
+        ctx.user.id,
+        input.featureId,
+        input.content
+      );
     }),
 
-  // Submit bug report (authenticated) — sends email instead of DB insert
+  // submitBug sends email — no DB access, stays in router
   submitBug: protectedProcedure
     .input(
       z.object({
@@ -209,7 +90,10 @@ export const feedbackRouter = router({
 
       const browserInfoHtml = input.browserInfo
         ? Object.entries(input.browserInfo)
-            .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
+            .map(
+              ([key, value]) =>
+                `<li><strong>${key}:</strong> ${value}</li>`
+            )
             .join("")
         : "<li>Not provided</li>";
 
@@ -225,66 +109,39 @@ export const feedbackRouter = router({
         <ul>${browserInfoHtml}</ul>
       `.trim();
 
-      const recipient = process.env.BUG_REPORT_EMAIL || "bugs@bricktrack.com.au";
+      const recipient =
+        process.env.BUG_REPORT_EMAIL || "bugs@bricktrack.com.au";
       const subject = `[Bug Report] [${input.severity.toUpperCase()}] ${input.description.slice(0, 80)}`;
 
       await sendEmailNotification(recipient, subject, html);
-
       return { id: "emailed" };
     }),
 
-  // List bug reports (admin only - check env ADMIN_USER_IDS)
+  // Admin-only: authorization check stays in router
   listBugs: protectedProcedure
     .input(
       z.object({
-        status: z.enum(["new", "investigating", "fixed", "wont_fix"]).optional(),
+        status: z
+          .enum(["new", "investigating", "fixed", "wont_fix"])
+          .optional(),
         severity: z.enum(["low", "medium", "high", "critical"]).optional(),
         limit: z.number().min(1).max(100).default(50),
         offset: z.number().min(0).default(0),
       })
     )
     .query(async ({ ctx, input }) => {
-      const adminIds = (process.env.ADMIN_USER_IDS ?? "").split(",").filter(Boolean);
+      const adminIds = (process.env.ADMIN_USER_IDS ?? "")
+        .split(",")
+        .filter(Boolean);
       if (!adminIds.includes(ctx.user.id)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin access required",
+        });
       }
-
-      const conditions = [];
-      if (input.status) conditions.push(eq(bugReports.status, input.status));
-      if (input.severity) conditions.push(eq(bugReports.severity, input.severity));
-
-      const whereClause =
-        conditions.length === 0
-          ? undefined
-          : conditions.length === 1
-            ? conditions[0]
-            : and(conditions[0], conditions[1]);
-
-      const bugs = await ctx.db
-        .select({
-          id: bugReports.id,
-          description: bugReports.description,
-          stepsToReproduce: bugReports.stepsToReproduce,
-          severity: bugReports.severity,
-          browserInfo: bugReports.browserInfo,
-          currentPage: bugReports.currentPage,
-          status: bugReports.status,
-          adminNotes: bugReports.adminNotes,
-          createdAt: bugReports.createdAt,
-          userName: users.name,
-          userEmail: users.email,
-        })
-        .from(bugReports)
-        .leftJoin(users, eq(bugReports.userId, users.id))
-        .where(whereClause)
-        .orderBy(desc(bugReports.createdAt))
-        .limit(input.limit)
-        .offset(input.offset);
-
-      return bugs;
+      return ctx.uow.feedback.listBugs(input);
     }),
 
-  // Update bug report status (admin only)
   updateBugStatus: protectedProcedure
     .input(
       z.object({
@@ -294,47 +151,45 @@ export const feedbackRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const adminIds = (process.env.ADMIN_USER_IDS ?? "").split(",").filter(Boolean);
+      const adminIds = (process.env.ADMIN_USER_IDS ?? "")
+        .split(",")
+        .filter(Boolean);
       if (!adminIds.includes(ctx.user.id)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin access required",
+        });
       }
-
-      const [updated] = await ctx.db
-        .update(bugReports)
-        .set({
-          status: input.status,
-          adminNotes: input.adminNotes,
-          updatedAt: new Date(),
-        })
-        .where(eq(bugReports.id, input.id))
-        .returning();
-
-      return updated;
+      return ctx.uow.feedback.updateBugStatus(input.id, {
+        status: input.status,
+        adminNotes: input.adminNotes,
+        updatedAt: new Date(),
+      });
     }),
 
-  // Update feature status (admin only)
   updateFeatureStatus: protectedProcedure
     .input(
       z.object({
         id: z.string().uuid(),
-        status: z.enum(["open", "planned", "in_progress", "shipped", "rejected"]),
+        status: z.enum([
+          "open",
+          "planned",
+          "in_progress",
+          "shipped",
+          "rejected",
+        ]),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const adminIds = (process.env.ADMIN_USER_IDS ?? "").split(",").filter(Boolean);
+      const adminIds = (process.env.ADMIN_USER_IDS ?? "")
+        .split(",")
+        .filter(Boolean);
       if (!adminIds.includes(ctx.user.id)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Admin access required",
+        });
       }
-
-      const [updated] = await ctx.db
-        .update(featureRequests)
-        .set({
-          status: input.status,
-          updatedAt: new Date(),
-        })
-        .where(eq(featureRequests.id, input.id))
-        .returning();
-
-      return updated;
+      return ctx.uow.feedback.updateFeatureStatus(input.id, input.status);
     }),
 });

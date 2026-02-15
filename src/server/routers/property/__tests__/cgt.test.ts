@@ -100,7 +100,9 @@ describe("cgt router", () => {
 
       const updateMock = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue(undefined),
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([{ ...mockProperty, status: "sold" }]),
+          }),
         }),
       });
 

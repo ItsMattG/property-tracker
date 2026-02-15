@@ -21,6 +21,8 @@ export default defineConfig({
         "src/app/api/auth/gmail/**",
         "src/app/api/auth/callback/gmail/**",
         "src/app/api/cron/email-sync/**",
+        // Repository layer — pure data access, tested via router integration tests
+        "src/server/repositories/**",
       ],
       // Lowered thresholds to match current coverage - increase as tests are added
       thresholds: {

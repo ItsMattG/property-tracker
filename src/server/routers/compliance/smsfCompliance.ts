@@ -1,14 +1,9 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+
 import { router, protectedProcedure } from "../../trpc";
-import {
-  entities,
-  smsfMembers,
-  smsfContributions,
-  smsfPensions,
-  smsfAuditItems,
-  type SmsfMember,
-} from "../../db/schema";
+import { entities } from "../../db/schema";
+import type { SmsfMember } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import {
   calculateMinimumPension,
@@ -25,16 +20,14 @@ export const smsfComplianceRouter = router({
   getMembers: protectedProcedure
     .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
+      // Cross-domain: entity ownership validation
       const entity = await ctx.db.query.entities.findFirst({
         where: and(eq(entities.id, input.entityId), eq(entities.type, "smsf")),
       });
       if (!entity || entity.userId !== ctx.user.id) {
         throw new TRPCError({ code: "NOT_FOUND", message: "SMSF entity not found" });
       }
-      return ctx.db.query.smsfMembers.findMany({
-        where: eq(smsfMembers.entityId, input.entityId),
-        orderBy: (members, { asc }) => [asc(members.name)],
-      });
+      return ctx.uow.compliance.findSmsfMembers(input.entityId);
     }),
 
   addMember: protectedProcedure
@@ -47,21 +40,21 @@ export const smsfComplianceRouter = router({
       currentBalance: z.number().min(0),
     }))
     .mutation(async ({ ctx, input }) => {
+      // Cross-domain: entity ownership validation
       const entity = await ctx.db.query.entities.findFirst({
         where: and(eq(entities.id, input.entityId), eq(entities.type, "smsf")),
       });
       if (!entity || entity.userId !== ctx.user.id) {
         throw new TRPCError({ code: "NOT_FOUND", message: "SMSF entity not found" });
       }
-      const [member] = await ctx.db.insert(smsfMembers).values({
+      return ctx.uow.compliance.createSmsfMember({
         entityId: input.entityId,
         name: input.name,
         dateOfBirth: input.dateOfBirth,
         memberSince: input.memberSince,
         phase: input.phase,
         currentBalance: input.currentBalance.toString(),
-      }).returning();
-      return member;
+      });
     }),
 
   updateMember: protectedProcedure
@@ -72,10 +65,7 @@ export const smsfComplianceRouter = router({
       currentBalance: z.number().min(0).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const member = await ctx.db.query.smsfMembers.findFirst({
-        where: eq(smsfMembers.id, input.memberId),
-        with: { entity: true },
-      });
+      const member = await ctx.uow.compliance.findSmsfMemberById(input.memberId);
       if (!member || member.entity.userId !== ctx.user.id) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Member not found" });
       }
@@ -84,11 +74,7 @@ export const smsfComplianceRouter = router({
       if (input.phase) updates.phase = input.phase;
       if (input.currentBalance !== undefined) updates.currentBalance = input.currentBalance.toString();
 
-      const [updated] = await ctx.db.update(smsfMembers)
-        .set(updates)
-        .where(eq(smsfMembers.id, input.memberId))
-        .returning();
-      return updated;
+      return ctx.uow.compliance.updateSmsfMember(input.memberId, updates);
     }),
 
   // Contributions
@@ -96,13 +82,7 @@ export const smsfComplianceRouter = router({
     .input(z.object({ entityId: z.string().uuid(), year: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       const year = input.year || getCurrentFinancialYear();
-      const contributions = await ctx.db.query.smsfContributions.findMany({
-        where: and(
-          eq(smsfContributions.entityId, input.entityId),
-          eq(smsfContributions.financialYear, year)
-        ),
-        with: { member: true },
-      });
+      const contributions = await ctx.uow.compliance.findSmsfContributions(input.entityId, year);
       return contributions.map((c) => ({
         ...c,
         concessional: parseFloat(c.concessional),
@@ -127,26 +107,21 @@ export const smsfComplianceRouter = router({
       const year = input.year || getCurrentFinancialYear();
 
       // Check if record exists for this member/year
-      const existing = await ctx.db.query.smsfContributions.findFirst({
-        where: and(
-          eq(smsfContributions.entityId, input.entityId),
-          eq(smsfContributions.memberId, input.memberId),
-          eq(smsfContributions.financialYear, year)
-        ),
-      });
+      const existing = await ctx.uow.compliance.findSmsfContributionByMemberYear(
+        input.entityId,
+        input.memberId,
+        year
+      );
 
       if (existing) {
         const newConcessional = parseFloat(existing.concessional) + (input.concessional || 0);
         const newNonConcessional = parseFloat(existing.nonConcessional) + (input.nonConcessional || 0);
 
-        const [updated] = await ctx.db.update(smsfContributions)
-          .set({
-            concessional: newConcessional.toString(),
-            nonConcessional: newNonConcessional.toString(),
-            updatedAt: new Date(),
-          })
-          .where(eq(smsfContributions.id, existing.id))
-          .returning();
+        const updated = await ctx.uow.compliance.updateSmsfContribution(existing.id, {
+          concessional: newConcessional.toString(),
+          nonConcessional: newNonConcessional.toString(),
+          updatedAt: new Date(),
+        });
 
         return {
           ...updated,
@@ -154,13 +129,13 @@ export const smsfComplianceRouter = router({
         };
       }
 
-      const [contribution] = await ctx.db.insert(smsfContributions).values({
+      const contribution = await ctx.uow.compliance.createSmsfContribution({
         entityId: input.entityId,
         memberId: input.memberId,
         financialYear: year,
         concessional: (input.concessional || 0).toString(),
         nonConcessional: (input.nonConcessional || 0).toString(),
-      }).returning();
+      });
 
       return {
         ...contribution,
@@ -173,13 +148,7 @@ export const smsfComplianceRouter = router({
     .input(z.object({ entityId: z.string().uuid(), year: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       const year = input.year || getCurrentFinancialYear();
-      const pensions = await ctx.db.query.smsfPensions.findMany({
-        where: and(
-          eq(smsfPensions.entityId, input.entityId),
-          eq(smsfPensions.financialYear, year)
-        ),
-        with: { member: true },
-      });
+      const pensions = await ctx.uow.compliance.findSmsfPensions(input.entityId, year);
 
       const monthsElapsed = getMonthsElapsedInFY();
 
@@ -207,27 +176,22 @@ export const smsfComplianceRouter = router({
     .mutation(async ({ ctx, input }) => {
       const year = input.year || getCurrentFinancialYear();
 
-      const existing = await ctx.db.query.smsfPensions.findFirst({
-        where: and(
-          eq(smsfPensions.entityId, input.entityId),
-          eq(smsfPensions.memberId, input.memberId),
-          eq(smsfPensions.financialYear, year)
-        ),
-      });
+      const existing = await ctx.uow.compliance.findSmsfPensionByMemberYear(
+        input.entityId,
+        input.memberId,
+        year
+      );
 
       if (existing) {
         const newDrawn = parseFloat(existing.amountDrawn) + input.amount;
-        const [updated] = await ctx.db.update(smsfPensions)
-          .set({ amountDrawn: newDrawn.toString(), updatedAt: new Date() })
-          .where(eq(smsfPensions.id, existing.id))
-          .returning();
-        return updated;
+        return ctx.uow.compliance.updateSmsfPension(existing.id, {
+          amountDrawn: newDrawn.toString(),
+          updatedAt: new Date(),
+        });
       }
 
-      // Need to create new pension record - get member for minimum calc
-      const member = await ctx.db.query.smsfMembers.findFirst({
-        where: eq(smsfMembers.id, input.memberId),
-      });
+      // Need to get member for minimum pension calculation
+      const member = await ctx.uow.compliance.findSmsfMemberById(input.memberId);
       if (!member) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Member not found" });
       }
@@ -237,7 +201,7 @@ export const smsfComplianceRouter = router({
         new Date(member.dateOfBirth)
       );
 
-      const [pension] = await ctx.db.insert(smsfPensions).values({
+      return ctx.uow.compliance.createSmsfPension({
         entityId: input.entityId,
         memberId: input.memberId,
         financialYear: year,
@@ -245,9 +209,7 @@ export const smsfComplianceRouter = router({
         minimumRequired: minimumRequired.toString(),
         amountDrawn: input.amount.toString(),
         frequency: "monthly",
-      }).returning();
-
-      return pension;
+      });
     }),
 
   // Audit Checklist
@@ -256,12 +218,7 @@ export const smsfComplianceRouter = router({
     .query(async ({ ctx, input }) => {
       const year = input.year || getCurrentFinancialYear();
 
-      let items = await ctx.db.query.smsfAuditItems.findMany({
-        where: and(
-          eq(smsfAuditItems.entityId, input.entityId),
-          eq(smsfAuditItems.financialYear, year)
-        ),
-      });
+      let items = await ctx.uow.compliance.findSmsfAuditItems(input.entityId, year);
 
       // Create default items if none exist
       if (items.length === 0) {
@@ -270,7 +227,7 @@ export const smsfComplianceRouter = router({
           financialYear: year,
           item,
         }));
-        items = await ctx.db.insert(smsfAuditItems).values(newItems).returning();
+        items = await ctx.uow.compliance.createSmsfAuditItems(newItems);
       }
 
       return items;
@@ -279,14 +236,10 @@ export const smsfComplianceRouter = router({
   updateChecklistItem: protectedProcedure
     .input(z.object({ itemId: z.string().uuid(), completed: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      const [updated] = await ctx.db.update(smsfAuditItems)
-        .set({
-          completed: input.completed,
-          completedAt: input.completed ? new Date() : null,
-        })
-        .where(eq(smsfAuditItems.id, input.itemId))
-        .returning();
-      return updated;
+      return ctx.uow.compliance.updateSmsfAuditItem(input.itemId, {
+        completed: input.completed,
+        completedAt: input.completed ? new Date() : null,
+      });
     }),
 
   // Dashboard
@@ -296,29 +249,10 @@ export const smsfComplianceRouter = router({
       const year = getCurrentFinancialYear();
 
       const [members, contributions, pensions, auditItems] = await Promise.all([
-        ctx.db.query.smsfMembers.findMany({
-          where: eq(smsfMembers.entityId, input.entityId),
-        }),
-        ctx.db.query.smsfContributions.findMany({
-          where: and(
-            eq(smsfContributions.entityId, input.entityId),
-            eq(smsfContributions.financialYear, year)
-          ),
-          with: { member: true },
-        }),
-        ctx.db.query.smsfPensions.findMany({
-          where: and(
-            eq(smsfPensions.entityId, input.entityId),
-            eq(smsfPensions.financialYear, year)
-          ),
-          with: { member: true },
-        }),
-        ctx.db.query.smsfAuditItems.findMany({
-          where: and(
-            eq(smsfAuditItems.entityId, input.entityId),
-            eq(smsfAuditItems.financialYear, year)
-          ),
-        }),
+        ctx.uow.compliance.findSmsfMembers(input.entityId),
+        ctx.uow.compliance.findSmsfContributions(input.entityId, year),
+        ctx.uow.compliance.findSmsfPensions(input.entityId, year),
+        ctx.uow.compliance.findSmsfAuditItems(input.entityId, year),
       ]);
 
       const monthsElapsed = getMonthsElapsedInFY();
