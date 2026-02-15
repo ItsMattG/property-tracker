@@ -5,7 +5,7 @@ import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { transactionNotes } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { parseCSV } from "../services/banking";
-import { categoryValues, deriveTransactionFields, formatTransactionsCSV } from "../services/transaction";
+import { categoryValues, deriveTransactionFields, formatTransactionsCSV, importCSVRows, importRichCSVRows } from "../services/transaction";
 import { metrics } from "@/lib/metrics";
 
 export const transactionRouter = router({
@@ -209,34 +209,7 @@ export const transactionRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const rows = parseCSV(input.csvContent);
-
-      const imported: string[] = [];
-      const errors: string[] = [];
-
-      for (const row of rows) {
-        try {
-          const transaction = await ctx.uow.transactions.create({
-            userId: ctx.portfolio.ownerId,
-            propertyId: input.propertyId,
-            date: row.date,
-            description: row.description,
-            amount: row.amount,
-            category: "uncategorized",
-            transactionType: parseFloat(row.amount) >= 0 ? "income" : "expense",
-            isDeductible: false,
-          });
-
-          imported.push(transaction.id);
-        } catch (error) {
-          errors.push(`Row ${row.date} ${row.description}: ${error}`);
-        }
-      }
-
-      return {
-        importedCount: imported.length,
-        errorCount: errors.length,
-        errors: errors.slice(0, 5),
-      };
+      return importCSVRows(ctx.uow.transactions, ctx.portfolio.ownerId, input.propertyId, rows);
     }),
 
   importRichCSV: writeProcedure
@@ -259,36 +232,7 @@ export const transactionRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const imported: string[] = [];
-      const errors: string[] = [];
-
-      for (const row of input.rows) {
-        try {
-          const transaction = await ctx.uow.transactions.create({
-            userId: ctx.portfolio.ownerId,
-            propertyId: row.propertyId,
-            date: row.date,
-            description: row.description,
-            amount: row.amount.toString(),
-            category: row.category,
-            transactionType: row.transactionType,
-            isDeductible: row.isDeductible,
-            notes: row.notes,
-            invoiceUrl: row.invoiceUrl,
-            invoicePresent: row.invoicePresent,
-          });
-
-          imported.push(transaction.id);
-        } catch (error) {
-          errors.push(`Row ${row.date} ${row.description}: ${error}`);
-        }
-      }
-
-      return {
-        importedCount: imported.length,
-        errorCount: errors.length,
-        errors: errors.slice(0, 5),
-      };
+      return importRichCSVRows(ctx.uow.transactions, ctx.portfolio.ownerId, input.rows);
     }),
 
   allocate: writeProcedure

@@ -104,3 +104,5 @@ export {
   generateTransactionsCSV,
   generateAnnualSummaryCSV,
 } from "./csv-export";
+
+export { importCSVRows, importRichCSVRows } from "./import";
