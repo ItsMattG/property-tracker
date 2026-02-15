@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import { taxProfiles, transactions } from "../../db/schema";
+import { transactions } from "../../db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import {
   calculateTaxPosition,
@@ -58,14 +58,7 @@ export const taxPositionRouter = router({
   getProfile: protectedProcedure
     .input(z.object({ financialYear: z.number().int() }))
     .query(async ({ ctx, input }) => {
-      const profile = await ctx.db.query.taxProfiles.findFirst({
-        where: and(
-          eq(taxProfiles.userId, ctx.portfolio.ownerId),
-          eq(taxProfiles.financialYear, input.financialYear)
-        ),
-      });
-
-      return profile ?? null;
+      return ctx.uow.tax.findProfileByUserAndYear(ctx.portfolio.ownerId, input.financialYear);
     }),
 
   /**
@@ -74,52 +67,32 @@ export const taxPositionRouter = router({
   saveProfile: writeProcedure
     .input(taxProfileSchema)
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db.query.taxProfiles.findFirst({
-        where: and(
-          eq(taxProfiles.userId, ctx.portfolio.ownerId),
-          eq(taxProfiles.financialYear, input.financialYear)
-        ),
-      });
+      const existing = await ctx.uow.tax.findProfileByUserAndYear(ctx.portfolio.ownerId, input.financialYear);
+
+      const profileData = {
+        grossSalary: input.grossSalary?.toString(),
+        paygWithheld: input.paygWithheld?.toString(),
+        otherDeductions: input.otherDeductions.toString(),
+        hasHecsDebt: input.hasHecsDebt,
+        hasPrivateHealth: input.hasPrivateHealth,
+        familyStatus: input.familyStatus,
+        dependentChildren: input.dependentChildren,
+        partnerIncome: input.partnerIncome?.toString(),
+        isComplete: input.isComplete,
+      };
 
       if (existing) {
-        const [updated] = await ctx.db
-          .update(taxProfiles)
-          .set({
-            grossSalary: input.grossSalary?.toString(),
-            paygWithheld: input.paygWithheld?.toString(),
-            otherDeductions: input.otherDeductions.toString(),
-            hasHecsDebt: input.hasHecsDebt,
-            hasPrivateHealth: input.hasPrivateHealth,
-            familyStatus: input.familyStatus,
-            dependentChildren: input.dependentChildren,
-            partnerIncome: input.partnerIncome?.toString(),
-            isComplete: input.isComplete,
-            updatedAt: new Date(),
-          })
-          .where(eq(taxProfiles.id, existing.id))
-          .returning();
-
-        return updated;
+        return ctx.uow.tax.updateProfile(existing.id, {
+          ...profileData,
+          updatedAt: new Date(),
+        });
       }
 
-      const [created] = await ctx.db
-        .insert(taxProfiles)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          financialYear: input.financialYear,
-          grossSalary: input.grossSalary?.toString(),
-          paygWithheld: input.paygWithheld?.toString(),
-          otherDeductions: input.otherDeductions.toString(),
-          hasHecsDebt: input.hasHecsDebt,
-          hasPrivateHealth: input.hasPrivateHealth,
-          familyStatus: input.familyStatus,
-          dependentChildren: input.dependentChildren,
-          partnerIncome: input.partnerIncome?.toString(),
-          isComplete: input.isComplete,
-        })
-        .returning();
-
-      return created;
+      return ctx.uow.tax.createProfile({
+        userId: ctx.portfolio.ownerId,
+        financialYear: input.financialYear,
+        ...profileData,
+      });
     }),
 
   /**
@@ -130,6 +103,7 @@ export const taxPositionRouter = router({
     .query(async ({ ctx, input }) => {
       const { startDate, endDate } = getFinancialYearRange(input.financialYear);
 
+      // Cross-domain: queries transactions table for financial year rental metrics
       const txns = await ctx.db.query.transactions.findMany({
         where: and(
           eq(transactions.userId, ctx.portfolio.ownerId),
@@ -199,14 +173,9 @@ export const taxPositionRouter = router({
       const year = input.financialYear ?? getCurrentFinancialYear();
 
       // Get profile
-      const profile = await ctx.db.query.taxProfiles.findFirst({
-        where: and(
-          eq(taxProfiles.userId, ctx.portfolio.ownerId),
-          eq(taxProfiles.financialYear, year)
-        ),
-      });
+      const profile = await ctx.uow.tax.findProfileByUserAndYear(ctx.portfolio.ownerId, year);
 
-      // Get rental result
+      // Cross-domain: queries transactions table for financial year rental metrics
       const { startDate, endDate } = getFinancialYearRange(year);
       const txns = await ctx.db.query.transactions.findMany({
         where: and(

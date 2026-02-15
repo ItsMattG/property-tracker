@@ -6,6 +6,13 @@ import {
   smsfContributions,
   smsfPensions,
   smsfAuditItems,
+  entities,
+  entityMembers,
+  trustDetails,
+  smsfDetails,
+  beneficiaries,
+  trustDistributions,
+  distributionAllocations,
 } from "../db/schema";
 import type {
   ComplianceRecord,
@@ -18,6 +25,19 @@ import type {
   NewSmsfPension,
   SmsfAuditItem,
   NewSmsfAuditItem,
+  Entity,
+  NewEntity,
+  EntityMember,
+  TrustDetails,
+  NewTrustDetails,
+  SmsfDetails as SmsfDetailsType,
+  NewSmsfDetails,
+  Beneficiary,
+  NewBeneficiary,
+  TrustDistribution,
+  NewTrustDistribution,
+  DistributionAllocation,
+  NewDistributionAllocation,
 } from "../db/schema";
 import { BaseRepository, type DB } from "./base";
 import type {
@@ -25,6 +45,8 @@ import type {
   SmsfContributionWithMember,
   SmsfPensionWithMember,
   SmsfMemberWithEntity,
+  EntityWithDetails,
+  TrustDistributionWithAllocations,
 } from "./interfaces/compliance.repository.interface";
 
 export class ComplianceRepository
@@ -308,5 +330,191 @@ export class ComplianceRepository
       .where(eq(smsfAuditItems.id, id))
       .returning();
     return item;
+  }
+
+  // --- Entities ---
+
+  async findEntitiesByUser(userId: string): Promise<EntityWithDetails[]> {
+    return this.db.query.entities.findMany({
+      where: eq(entities.userId, userId),
+      with: { trustDetails: true, smsfDetails: true, members: true },
+      orderBy: (e, { desc: d }) => [d(e.createdAt)],
+    }) as Promise<EntityWithDetails[]>;
+  }
+
+  async findEntityById(
+    id: string,
+    userId: string
+  ): Promise<EntityWithDetails | null> {
+    const result = await this.db.query.entities.findFirst({
+      where: and(eq(entities.id, id), eq(entities.userId, userId)),
+      with: { trustDetails: true, smsfDetails: true, members: true },
+    });
+    return (result as EntityWithDetails) ?? null;
+  }
+
+  async createEntity(data: NewEntity, tx?: DB): Promise<Entity> {
+    const client = this.resolve(tx);
+    const [entity] = await client.insert(entities).values(data).returning();
+    return entity;
+  }
+
+  async updateEntity(
+    id: string,
+    userId: string,
+    data: Partial<Entity>,
+    tx?: DB
+  ): Promise<Entity> {
+    const client = this.resolve(tx);
+    const [entity] = await client
+      .update(entities)
+      .set(data)
+      .where(and(eq(entities.id, id), eq(entities.userId, userId)))
+      .returning();
+    return entity;
+  }
+
+  async deleteEntity(id: string, userId: string, tx?: DB): Promise<void> {
+    const client = this.resolve(tx);
+    await client
+      .delete(entities)
+      .where(and(eq(entities.id, id), eq(entities.userId, userId)));
+  }
+
+  async findEntityMemberByUser(
+    entityId: string,
+    userId: string
+  ): Promise<EntityMember | null> {
+    const result = await this.db.query.entityMembers.findFirst({
+      where: and(
+        eq(entityMembers.entityId, entityId),
+        eq(entityMembers.userId, userId)
+      ),
+    });
+    return result ?? null;
+  }
+
+  async createTrustDetails(
+    data: NewTrustDetails,
+    tx?: DB
+  ): Promise<TrustDetails> {
+    const client = this.resolve(tx);
+    const [details] = await client
+      .insert(trustDetails)
+      .values(data)
+      .returning();
+    return details;
+  }
+
+  async createSmsfDetails(
+    data: NewSmsfDetails,
+    tx?: DB
+  ): Promise<SmsfDetailsType> {
+    const client = this.resolve(tx);
+    const [details] = await client
+      .insert(smsfDetails)
+      .values(data)
+      .returning();
+    return details;
+  }
+
+  // --- Beneficiaries ---
+
+  async findBeneficiaries(entityId: string): Promise<Beneficiary[]> {
+    return this.db.query.beneficiaries.findMany({
+      where: eq(beneficiaries.entityId, entityId),
+      orderBy: (b, { asc: a }) => [a(b.name)],
+    });
+  }
+
+  async findBeneficiaryById(id: string): Promise<Beneficiary | null> {
+    const result = await this.db.query.beneficiaries.findFirst({
+      where: eq(beneficiaries.id, id),
+    });
+    return result ?? null;
+  }
+
+  async createBeneficiary(
+    data: NewBeneficiary,
+    tx?: DB
+  ): Promise<Beneficiary> {
+    const client = this.resolve(tx);
+    const [beneficiary] = await client
+      .insert(beneficiaries)
+      .values(data)
+      .returning();
+    return beneficiary;
+  }
+
+  async updateBeneficiary(
+    id: string,
+    data: Partial<Beneficiary>,
+    tx?: DB
+  ): Promise<Beneficiary> {
+    const client = this.resolve(tx);
+    const [beneficiary] = await client
+      .update(beneficiaries)
+      .set(data)
+      .where(eq(beneficiaries.id, id))
+      .returning();
+    return beneficiary;
+  }
+
+  // --- Trust Distributions ---
+
+  async findTrustDistributions(
+    entityId: string
+  ): Promise<TrustDistributionWithAllocations[]> {
+    return this.db.query.trustDistributions.findMany({
+      where: eq(trustDistributions.entityId, entityId),
+      with: { allocations: { with: { beneficiary: true } } },
+      orderBy: (td, { desc: d }) => [d(td.financialYear)],
+    }) as Promise<TrustDistributionWithAllocations[]>;
+  }
+
+  async findTrustDistributionById(
+    id: string
+  ): Promise<TrustDistributionWithAllocations | null> {
+    const result = await this.db.query.trustDistributions.findFirst({
+      where: eq(trustDistributions.id, id),
+      with: { allocations: { with: { beneficiary: true } } },
+    });
+    return (result as TrustDistributionWithAllocations) ?? null;
+  }
+
+  async findTrustDistributionByYear(
+    entityId: string,
+    year: string
+  ): Promise<TrustDistribution | null> {
+    const result = await this.db.query.trustDistributions.findFirst({
+      where: and(
+        eq(trustDistributions.entityId, entityId),
+        eq(trustDistributions.financialYear, year)
+      ),
+    });
+    return result ?? null;
+  }
+
+  async createTrustDistribution(
+    data: NewTrustDistribution,
+    tx?: DB
+  ): Promise<TrustDistribution> {
+    const client = this.resolve(tx);
+    const [distribution] = await client
+      .insert(trustDistributions)
+      .values(data)
+      .returning();
+    return distribution;
+  }
+
+  async createDistributionAllocations(
+    data: NewDistributionAllocation[],
+    tx?: DB
+  ): Promise<DistributionAllocation[]> {
+    const client = this.resolve(tx);
+    return client
+      .insert(distributionAllocations)
+      .values(data)
+      .returning();
   }
 }

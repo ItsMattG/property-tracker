@@ -1,51 +1,22 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import { brokers, loanPacks } from "../../db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
 
 export const brokerRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    const results = await ctx.db
-      .select({
-        id: brokers.id,
-        name: brokers.name,
-        email: brokers.email,
-        phone: brokers.phone,
-        company: brokers.company,
-        notes: brokers.notes,
-        createdAt: brokers.createdAt,
-        updatedAt: brokers.updatedAt,
-        packCount: sql<number>`count(${loanPacks.id})::int`,
-        lastPackAt: sql<Date | null>`max(${loanPacks.createdAt})`,
-      })
-      .from(brokers)
-      .leftJoin(loanPacks, eq(loanPacks.brokerId, brokers.id))
-      .where(eq(brokers.userId, ctx.portfolio.ownerId))
-      .groupBy(brokers.id)
-      .orderBy(desc(brokers.updatedAt));
-
-    return results;
+    return ctx.uow.loan.listBrokersWithStats(ctx.portfolio.ownerId);
   }),
 
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const broker = await ctx.db.query.brokers.findFirst({
-        where: and(
-          eq(brokers.id, input.id),
-          eq(brokers.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const broker = await ctx.uow.loan.findBrokerById(input.id, ctx.portfolio.ownerId);
 
       if (!broker) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Broker not found" });
       }
 
-      const packs = await ctx.db.query.loanPacks.findMany({
-        where: eq(loanPacks.brokerId, input.id),
-        orderBy: [desc(loanPacks.createdAt)],
-      });
+      const packs = await ctx.uow.loan.findBrokerPacks(input.id);
 
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       return {
@@ -74,19 +45,14 @@ export const brokerRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [broker] = await ctx.db
-        .insert(brokers)
-        .values({
-          userId: ctx.portfolio.ownerId,
-          name: input.name,
-          email: input.email || null,
-          phone: input.phone || null,
-          company: input.company || null,
-          notes: input.notes || null,
-        })
-        .returning();
-
-      return broker;
+      return ctx.uow.loan.createBroker({
+        userId: ctx.portfolio.ownerId,
+        name: input.name,
+        email: input.email || null,
+        phone: input.phone || null,
+        company: input.company || null,
+        notes: input.notes || null,
+      });
     }),
 
   update: writeProcedure
@@ -101,20 +67,13 @@ export const brokerRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const [updated] = await ctx.db
-        .update(brokers)
-        .set({
-          name: input.name,
-          email: input.email || null,
-          phone: input.phone || null,
-          company: input.company || null,
-          notes: input.notes || null,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(eq(brokers.id, input.id), eq(brokers.userId, ctx.portfolio.ownerId))
-        )
-        .returning();
+      const updated = await ctx.uow.loan.updateBroker(input.id, ctx.portfolio.ownerId, {
+        name: input.name,
+        email: input.email || null,
+        phone: input.phone || null,
+        company: input.company || null,
+        notes: input.notes || null,
+      });
 
       if (!updated) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Broker not found" });
@@ -126,17 +85,7 @@ export const brokerRouter = router({
   delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const [deleted] = await ctx.db
-        .delete(brokers)
-        .where(
-          and(eq(brokers.id, input.id), eq(brokers.userId, ctx.portfolio.ownerId))
-        )
-        .returning();
-
-      if (!deleted) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Broker not found" });
-      }
-
+      await ctx.uow.loan.deleteBroker(input.id, ctx.portfolio.ownerId);
       return { success: true };
     }),
 });

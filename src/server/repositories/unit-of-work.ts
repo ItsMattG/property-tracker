@@ -22,6 +22,7 @@ import type {
   IPropertyManagerRepository,
   INotificationRepository,
   IChangelogRepository,
+  ITaxRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -47,6 +48,7 @@ import { ReferralRepository } from "./referral.repository";
 import { PropertyManagerRepository } from "./property-manager.repository";
 import { NotificationRepository } from "./notification.repository";
 import { ChangelogRepository } from "./changelog.repository";
+import { TaxRepository } from "./tax.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -72,6 +74,7 @@ export class UnitOfWork {
   private _propertyManager?: IPropertyManagerRepository;
   private _notification?: INotificationRepository;
   private _changelog?: IChangelogRepository;
+  private _tax?: ITaxRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -141,6 +144,9 @@ export class UnitOfWork {
   }
   get changelog(): IChangelogRepository {
     return (this._changelog ??= new ChangelogRepository(this.db));
+  }
+  get tax(): ITaxRepository {
+    return (this._tax ??= new TaxRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure, bankProcedure } from "../../trpc";
-import { anomalyAlerts } from "../../db/schema";
+import type { NewAnomalyAlert } from "../../db/schema";
 import {
   batchCategorize,
   checkRateLimit,
@@ -163,6 +163,7 @@ export const bankingRouter = router({
             100
           );
 
+          // Service-layer: DB passed to banking service functions
           const knownMerchants = await getKnownMerchants(
             ctx.db,
             ctx.portfolio.ownerId,
@@ -170,8 +171,7 @@ export const bankingRouter = router({
           );
 
           // Collect all anomaly alerts to batch insert
-          type AnomalyAlertInsert = typeof anomalyAlerts.$inferInsert;
-          const anomalyAlertsToInsert: AnomalyAlertInsert[] = [];
+          const anomalyAlertsToInsert: NewAnomalyAlert[] = [];
 
           for (const txn of basiqTransactions.slice(0, transactionsAdded)) {
             const txnInput = {
@@ -181,7 +181,7 @@ export const bankingRouter = router({
               date: txn.postDate,
             };
 
-            // Check for unusual amount
+            // Service-layer: DB passed to banking service functions
             const historical = await getHistoricalAverage(
               ctx.db,
               ctx.portfolio.ownerId,
@@ -227,7 +227,7 @@ export const bankingRouter = router({
 
           // Batch insert all anomaly alerts at once
           if (anomalyAlertsToInsert.length > 0) {
-            await ctx.db.insert(anomalyAlerts).values(anomalyAlertsToInsert);
+            await ctx.uow.bankAccount.createAnomalyAlerts(anomalyAlertsToInsert);
           }
 
           // Run AI categorization on new uncategorized transactions

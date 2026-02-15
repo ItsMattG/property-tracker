@@ -1,14 +1,8 @@
 import { z } from "zod";
 import { cookies } from "next/headers";
 import { router, protectedProcedure } from "../../trpc";
-import {
-  entities,
-  trustDetails,
-  smsfDetails,
-  entityMembers,
-  properties,
-} from "../../db/schema";
-import { eq, and } from "drizzle-orm";
+import { entities, entityMembers, properties } from "../../db/schema";
+import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
 const createEntitySchema = z.object({
@@ -39,13 +33,8 @@ export const entityRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     // Get entities user owns + memberships in parallel
     const [ownedEntities, memberships] = await Promise.all([
-      ctx.db.query.entities.findMany({
-        where: eq(entities.userId, ctx.user.id),
-        with: {
-          trustDetails: true,
-          smsfDetails: true,
-        },
-      }),
+      ctx.uow.compliance.findEntitiesByUser(ctx.user.id),
+      // Cross-domain: membership query spans entity + user domains; no "find all memberships for user" repo method
       ctx.db.query.entityMembers.findMany({
         where: eq(entityMembers.userId, ctx.user.id),
         with: {
@@ -72,6 +61,7 @@ export const entityRouter = router({
   get: protectedProcedure
     .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
+      // Cross-domain: loads entity with user details for members (members.user relation not in compliance repo)
       const entity = await ctx.db.query.entities.findFirst({
         where: eq(entities.id, input.entityId),
         with: {
@@ -131,24 +121,21 @@ export const entityRouter = router({
       }
 
       // Create entity
-      const [entity] = await ctx.db
-        .insert(entities)
-        .values({
-          userId: ctx.user.id,
-          ...entityData,
-        })
-        .returning();
+      const entity = await ctx.uow.compliance.createEntity({
+        userId: ctx.user.id,
+        ...entityData,
+      });
 
       // Create type-specific details
       if (input.type === "trust" && trustInput) {
-        await ctx.db.insert(trustDetails).values({
+        await ctx.uow.compliance.createTrustDetails({
           entityId: entity.id,
           ...trustInput,
         });
       }
 
       if (input.type === "smsf" && smsfInput) {
-        await ctx.db.insert(smsfDetails).values({
+        await ctx.uow.compliance.createSmsfDetails({
           entityId: entity.id,
           ...smsfInput,
         });
@@ -170,9 +157,7 @@ export const entityRouter = router({
       const { entityId, ...updateData } = input;
 
       // Verify ownership
-      const entity = await ctx.db.query.entities.findFirst({
-        where: and(eq(entities.id, entityId), eq(entities.userId, ctx.user.id)),
-      });
+      const entity = await ctx.uow.compliance.findEntityById(entityId, ctx.user.id);
 
       if (!entity) {
         throw new TRPCError({
@@ -181,28 +166,17 @@ export const entityRouter = router({
         });
       }
 
-      const [updated] = await ctx.db
-        .update(entities)
-        .set({
-          ...updateData,
-          updatedAt: new Date(),
-        })
-        .where(eq(entities.id, entityId))
-        .returning();
-
-      return updated;
+      return ctx.uow.compliance.updateEntity(entityId, ctx.user.id, {
+        ...updateData,
+        updatedAt: new Date(),
+      });
     }),
 
   delete: protectedProcedure
     .input(z.object({ entityId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
-      const entity = await ctx.db.query.entities.findFirst({
-        where: and(
-          eq(entities.id, input.entityId),
-          eq(entities.userId, ctx.user.id)
-        ),
-      });
+      const entity = await ctx.uow.compliance.findEntityById(input.entityId, ctx.user.id);
 
       if (!entity) {
         throw new TRPCError({
@@ -211,7 +185,7 @@ export const entityRouter = router({
         });
       }
 
-      // Check for properties
+      // Cross-domain: check property references before deleting entity
       const propertyCount = await ctx.db.query.properties.findMany({
         where: eq(properties.entityId, input.entityId),
       });
@@ -224,7 +198,7 @@ export const entityRouter = router({
         });
       }
 
-      await ctx.db.delete(entities).where(eq(entities.id, input.entityId));
+      await ctx.uow.compliance.deleteEntity(input.entityId, ctx.user.id);
 
       return { success: true };
     }),
@@ -235,39 +209,27 @@ export const entityRouter = router({
     const activeEntityId = cookieStore.get("active_entity_id")?.value;
 
     if (activeEntityId) {
-      const entity = await ctx.db.query.entities.findFirst({
-        where: eq(entities.id, activeEntityId),
-        with: {
-          trustDetails: true,
-          smsfDetails: true,
-        },
-      });
+      // Try ownership first via repo (scoped by userId)
+      const ownedEntity = await ctx.uow.compliance.findEntityById(activeEntityId, ctx.user.id);
+      if (ownedEntity) return ownedEntity;
 
-      if (entity) {
-        // Verify access
-        const isOwner = entity.userId === ctx.user.id;
-        if (isOwner) return entity;
-
-        const membership = await ctx.db.query.entityMembers.findFirst({
-          where: and(
-            eq(entityMembers.entityId, activeEntityId),
-            eq(entityMembers.userId, ctx.user.id)
-          ),
+      // Cross-domain: entity access check spans ownership + membership
+      const membership = await ctx.uow.compliance.findEntityMemberByUser(activeEntityId, ctx.user.id);
+      if (membership?.joinedAt) {
+        // User is a member — load entity without user scoping via ctx.db
+        const entity = await ctx.db.query.entities.findFirst({
+          where: eq(entities.id, activeEntityId),
+          with: {
+            trustDetails: true,
+            smsfDetails: true,
+          },
         });
-
-        if (membership?.joinedAt) return entity;
+        if (entity) return entity;
       }
     }
 
     // Return first owned entity or null
-    const firstEntity = await ctx.db.query.entities.findFirst({
-      where: eq(entities.userId, ctx.user.id),
-      with: {
-        trustDetails: true,
-        smsfDetails: true,
-      },
-    });
-
-    return firstEntity || null;
+    const ownedEntities = await ctx.uow.compliance.findEntitiesByUser(ctx.user.id);
+    return ownedEntities[0] || null;
   }),
 });

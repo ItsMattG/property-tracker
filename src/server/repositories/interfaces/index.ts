@@ -1,10 +1,10 @@
 export type { IPropertyRepository } from "./property.repository.interface";
-export type { IBankAccountRepository, BankAccountWithRelations } from "./bank-account.repository.interface";
+export type { IBankAccountRepository, BankAccountWithRelations, AnomalyAlertWithRelations, AnomalyAlertFull, AnomalyAlertCounts } from "./bank-account.repository.interface";
 export type { ITransactionRepository, TransactionFilters, PaginatedTransactions, TransactionWithRelations } from "./transaction.repository.interface";
-export type { ILoanRepository, LoanWithRelations } from "./loan.repository.interface";
+export type { ILoanRepository, LoanWithRelations, BrokerWithPackCount, LoanPackWithBroker, LoanComparisonWithLoan } from "./loan.repository.interface";
 export type { IRecurringRepository, RecurringWithRelations, ExpectedWithRelations, ExpectedTransactionFilters } from "./recurring.repository.interface";
 export type { IDocumentRepository, DocumentFilters } from "./document.repository.interface";
-export type { IComplianceRepository, SmsfContributionWithMember, SmsfPensionWithMember, SmsfMemberWithEntity } from "./compliance.repository.interface";
+export type { IComplianceRepository, SmsfContributionWithMember, SmsfPensionWithMember, SmsfMemberWithEntity, EntityWithDetails, TrustDistributionWithAllocations } from "./compliance.repository.interface";
 export type { IEmailRepository } from "./email.repository.interface";
 export type { IChatRepository, ConversationSummary, ConversationWithMessages } from "./chat.repository.interface";
 export type { IPortfolioRepository } from "./portfolio.repository.interface";
@@ -20,3 +20,4 @@ export type { IReferralRepository, ReferralWithReferee } from "./referral.reposi
 export type { INotificationRepository } from "./notification.repository.interface";
 export type { IPropertyManagerRepository, ConnectionWithMappings, ConnectionWithDetails, MappingWithConnection, MappingWithProperty } from "./property-manager.repository.interface";
 export type { IChangelogRepository, ChangelogListResult } from "./changelog.repository.interface";
+export type { ITaxRepository, TaxSuggestionWithProperty, DepreciationScheduleWithRelations } from "./tax.repository.interface";

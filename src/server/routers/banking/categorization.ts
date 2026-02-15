@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
 import type { Transaction } from "../../db/schema";
-import { merchantCategories, categorizationExamples } from "../../db/schema";
-import { eq, desc, sql } from "drizzle-orm";
 import {
   updateMerchantMemory,
   batchCategorize,
@@ -277,20 +275,23 @@ export const categorizationRouter = router({
 
   // Get merchant memory stats
   getMerchantStats: protectedProcedure.query(async ({ ctx }) => {
-    const mappings = await ctx.db.query.merchantCategories.findMany({
-      where: eq(merchantCategories.userId, ctx.portfolio.ownerId),
-      orderBy: [desc(merchantCategories.lastUsedAt)],
-      limit: 20,
-    });
+    const [allMappings, totalExamples] = await Promise.all([
+      ctx.uow.tax.findMerchantCategories(ctx.portfolio.ownerId),
+      ctx.uow.tax.countCategorizationExamples(ctx.portfolio.ownerId),
+    ]);
 
-    const examples = await ctx.db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(categorizationExamples)
-      .where(eq(categorizationExamples.userId, ctx.portfolio.ownerId));
+    // Sort by lastUsedAt desc and take top 20 (repo returns all)
+    const mappings = allMappings
+      .sort((a, b) => {
+        const aTime = a.lastUsedAt?.getTime() ?? 0;
+        const bTime = b.lastUsedAt?.getTime() ?? 0;
+        return bTime - aTime;
+      })
+      .slice(0, 20);
 
     return {
       merchantMappings: mappings.length,
-      totalExamples: examples[0].count,
+      totalExamples,
       recentMappings: mappings.map((m) => ({
         merchantName: m.merchantName,
         category: m.category,
