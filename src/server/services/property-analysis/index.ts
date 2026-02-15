@@ -68,3 +68,15 @@ export {
   calculateOverallRisk,
   getClimateRisk,
 } from "./climate-risk";
+
+// vector-generation
+export {
+  normalizePropertyType,
+  normalizeLocationCluster,
+  normalizePriceBracket,
+  normalizeYield,
+  normalizeGrowth,
+  generatePropertyVector,
+  calculateSimilarityScore,
+  getPriceBracketLabel,
+} from "./vector-generation";

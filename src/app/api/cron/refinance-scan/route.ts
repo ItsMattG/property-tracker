@@ -9,7 +9,7 @@ import {
 } from "@/server/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { shouldAlertForLoan, calculateLvr } from "./helpers";
-import { getEstimatedMarketRate } from "@/server/services/rate-data";
+import { getEstimatedMarketRate } from "@/server/services/lending/rate-data";
 import { calculateMonthlySavings } from "@/server/services/lending";
 import { sendEmailNotification } from "@/server/services/notification";
 import {

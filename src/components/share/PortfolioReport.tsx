@@ -1,6 +1,6 @@
 "use client";
 
-import type { PortfolioSnapshot } from "@/server/services/share";
+import type { PortfolioSnapshot } from "@/server/services/portfolio/share";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {

@@ -8,7 +8,7 @@ import {
   users,
 } from "../../db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { generateReferralCode } from "../../services/referral";
+import { generateReferralCode } from "../../services/user/referral";
 
 export const referralRouter = router({
   // Get or create user's referral code

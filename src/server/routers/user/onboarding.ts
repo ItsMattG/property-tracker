@@ -9,7 +9,7 @@ import {
   propertyValues,
 } from "../../db/schema";
 import { eq, and, ne, sql } from "drizzle-orm";
-import { calculateProgress, type OnboardingCounts } from "../../services/onboarding";
+import { calculateProgress, type OnboardingCounts } from "../../services/user/onboarding";
 
 export const onboardingRouter = router({
   getProgress: protectedProcedure.query(async ({ ctx }) => {

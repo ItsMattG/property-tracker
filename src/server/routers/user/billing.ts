@@ -4,7 +4,7 @@ import { subscriptions, users, properties } from "../../db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { stripe } from "@/lib/stripe";
 import { TRPCError } from "@trpc/server";
-import { getPlanFromSubscription } from "../../services/subscription";
+import { getPlanFromSubscription } from "../../services/billing/subscription";
 
 type BillingInterval = "monthly" | "annual";
 type PlanType = "pro" | "team" | "lifetime";

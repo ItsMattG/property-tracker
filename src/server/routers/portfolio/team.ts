@@ -4,7 +4,7 @@ import { router, protectedProcedure, memberProcedure, publicProcedure } from "..
 import {
   generateInviteToken,
   getInviteExpiryDate,
-} from "../../services/portfolio-access";
+} from "../../services/portfolio/portfolio-access";
 import { TeamRepository } from "../../repositories/team.repository";
 
 export const teamRouter = router({

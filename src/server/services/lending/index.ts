@@ -34,3 +34,11 @@ export type {
   MonthlyProjection,
   ProjectionInput,
 } from "./forecast";
+
+// rate-data
+export {
+  getMargin,
+  getLatestCashRate,
+  getEstimatedMarketRate,
+} from "./rate-data";
+export type { LoanPurpose, RepaymentType } from "./rate-data";

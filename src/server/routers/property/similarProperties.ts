@@ -5,7 +5,7 @@ import {
   generatePropertyVector,
   calculateSimilarityScore,
   getPriceBracketLabel,
-} from "../../services/vector-generation";
+} from "../../services/property-analysis/vector-generation";
 import {
   extractListingData,
   detectInputType,

@@ -10,7 +10,7 @@ import {
   loans,
 } from "../../db/schema";
 import { eq, and, ne, sql, gte, lt, inArray } from "drizzle-orm";
-import { calculateProgress, type OnboardingCounts } from "../../services/onboarding";
+import { calculateProgress, type OnboardingCounts } from "../../services/user/onboarding";
 import { getLatestPropertyValues } from "../portfolio/portfolio-helpers";
 
 export const dashboardRouter = router({

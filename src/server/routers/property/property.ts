@@ -6,7 +6,7 @@ import type { Property } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { getClimateRisk } from "../../services/property-analysis";
-import { getPlanFromSubscription, PLAN_LIMITS, type Plan } from "../../services/subscription";
+import { getPlanFromSubscription, PLAN_LIMITS, type Plan } from "../../services/billing/subscription";
 
 const propertySchema = z.object({
   address: z.string().min(1, "Address is required"),
