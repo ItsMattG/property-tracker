@@ -1,4 +1,4 @@
-// Transaction services barrel — populated as files are moved
+// Transaction services barrel
 export {
   categoryValues,
   deriveTransactionFields,
@@ -98,9 +98,8 @@ export {
   getDateRangeForPeriod,
 } from "./portfolio";
 
-export { formatTransactionsCSV } from "./csv-export";
-
 export {
+  formatTransactionsCSV,
   generateTransactionsCSV,
   generateAnnualSummaryCSV,
 } from "./csv-export";
