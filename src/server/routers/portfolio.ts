@@ -7,7 +7,7 @@ import {
   calculateGrossYield,
   calculateNetYield,
   getDateRangeForPeriod,
-} from "../services/portfolio";
+} from "../services/transaction";
 
 const periodSchema = z.enum(["monthly", "quarterly", "annual"]);
 const sortBySchema = z.enum(["cashFlow", "equity", "lvr", "alphabetical"]);

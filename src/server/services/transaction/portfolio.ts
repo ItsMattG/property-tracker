@@ -1,4 +1,4 @@
-import type { Transaction } from "../db/schema";
+import type { Transaction } from "@/server/db/schema";
 
 /**
  * Calculate equity (value - total loans)
@@ -59,7 +59,7 @@ export function calculateNetYield(
 /**
  * Find best and worst performers from an array of objects
  */
-export function findBestWorst<T extends Record<string, any>>(
+export function findBestWorst<T extends { id: string; [key: string]: string | number | null | undefined | boolean }>(
   items: T[],
   key: keyof T
 ): { best: string | null; worst: string | null } {
@@ -72,12 +72,12 @@ export function findBestWorst<T extends Record<string, any>>(
   }
 
   const sorted = [...validItems].sort(
-    (a, b) => (b[key] as number) - (a[key] as number)
+    (a, b) => Number(b[key]) - Number(a[key])
   );
 
   return {
-    best: sorted[0].id as string,
-    worst: sorted[sorted.length - 1].id as string,
+    best: sorted[0].id,
+    worst: sorted[sorted.length - 1].id,
   };
 }
 

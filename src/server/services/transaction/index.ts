@@ -87,3 +87,13 @@ export {
   type MyTaxPersonalSummary,
   type MyTaxReport,
 } from "./mytax";
+
+export {
+  calculateEquity,
+  calculateLVR,
+  calculateCashFlow,
+  calculateGrossYield,
+  calculateNetYield,
+  findBestWorst,
+  getDateRangeForPeriod,
+} from "./portfolio";
