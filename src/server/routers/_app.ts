@@ -35,39 +35,60 @@ import {
   mytaxRouter,
   yoyComparisonRouter,
 } from "./tax";
-// remaining flat imports (to be organized in subsequent batches)
-import { statsRouter } from "./stats";
-import { reportsRouter } from "./reports";
-import { documentsRouter } from "./documents";
-import { portfolioRouter } from "./portfolio";
-import { onboardingRouter } from "./onboarding";
-import { performanceBenchmarkingRouter } from "./performanceBenchmarking";
-import { notificationRouter } from "./notification";
-import { teamRouter } from "./team";
-import { documentExtractionRouter } from "./documentExtraction";
+// analytics domain
+import {
+  statsRouter,
+  benchmarkingRouter,
+  performanceBenchmarkingRouter,
+  dashboardRouter,
+  reportsRouter,
+} from "./analytics";
+// compliance domain
+import {
+  complianceRouter,
+  smsfComplianceRouter,
+  trustComplianceRouter,
+  entityRouter,
+} from "./compliance";
+// communication domain
+import {
+  emailRouter,
+  emailConnectionRouter,
+  emailSenderRouter,
+  chatRouter,
+  notificationRouter,
+} from "./communication";
+// portfolio domain
+import {
+  portfolioRouter,
+  teamRouter,
+  shareRouter,
+} from "./portfolio";
+// documents domain
+import {
+  documentsRouter,
+  documentExtractionRouter,
+} from "./documents";
+// scenario domain
 import { scenarioRouter } from "./scenario";
-import { shareRouter } from "./share";
-import { complianceRouter } from "./compliance";
-import { benchmarkingRouter } from "./benchmarking";
-import { entityRouter } from "./entity";
-import { smsfComplianceRouter } from "./smsfCompliance";
-import { trustComplianceRouter } from "./trustCompliance";
-import { mobileAuthRouter } from "./mobileAuth";
-import { userRouter } from "./user";
-import { milestonePreferencesRouter } from "./milestonePreferences";
-import { feedbackRouter } from "./feedback";
-import { changelogRouter } from "./changelog";
-import { blogRouter } from "./blog";
-import { emailRouter } from "./email";
-import { emailConnectionRouter } from "./emailConnection";
-import { emailSenderRouter } from "./emailSender";
-import { taskRouter } from "./task";
-import { chatRouter } from "./chat";
-import { supportTicketsRouter } from "./supportTickets";
-import { referralRouter } from "./referral";
-import { billingRouter } from "./billing";
-import { dashboardRouter } from "./dashboard";
-import { activityRouter } from "./activity";
+// user domain
+import {
+  userRouter,
+  mobileAuthRouter,
+  billingRouter,
+  onboardingRouter,
+  milestonePreferencesRouter,
+  referralRouter,
+  activityRouter,
+} from "./user";
+// feedback domain
+import {
+  feedbackRouter,
+  supportTicketsRouter,
+  changelogRouter,
+  blogRouter,
+  taskRouter,
+} from "./feedback";
 
 export const appRouter = router({
   property: propertyRouter,
