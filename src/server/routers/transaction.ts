@@ -5,9 +5,8 @@ import { router, protectedProcedure, writeProcedure } from "../trpc";
 import { transactionNotes } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { parseCSV } from "../services/banking";
-import { categoryValues, deriveTransactionFields } from "../services/transaction";
+import { categoryValues, deriveTransactionFields, formatTransactionsCSV } from "../services/transaction";
 import { metrics } from "@/lib/metrics";
-import { getCategoryLabel } from "@/lib/categories";
 
 export const transactionRouter = router({
   list: protectedProcedure
@@ -40,34 +39,7 @@ export const transactionRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const results = await ctx.uow.transactions.findAllByOwner(ctx.portfolio.ownerId, input);
-
-      const header = "Date,Description,Amount,Category,Transaction Type,Property,Is Deductible,Is Verified,Notes";
-      const rows = results.map((t) => {
-        const escapeCsv = (val: string) => {
-          if (val.includes(",") || val.includes('"') || val.includes("\n")) {
-            return `"${val.replace(/"/g, '""')}"`;
-          }
-          return val;
-        };
-        const prop = t.property as { address?: string } | null | undefined;
-        return [
-          t.date,
-          escapeCsv(t.description),
-          t.amount,
-          getCategoryLabel(t.category),
-          t.transactionType,
-          prop?.address ?? "",
-          t.isDeductible ? "Yes" : "No",
-          t.isVerified ? "Yes" : "No",
-          escapeCsv(t.notes ?? ""),
-        ].join(",");
-      });
-
-      const csv = [header, ...rows].join("\n");
-      const today = new Date().toISOString().split("T")[0];
-      const filename = `bricktrack-transactions-${today}.csv`;
-
-      return { csv, filename };
+      return formatTransactionsCSV(results);
     }),
 
   get: protectedProcedure

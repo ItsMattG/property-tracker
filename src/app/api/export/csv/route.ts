@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import {
   generateTransactionsCSV,
   generateAnnualSummaryCSV,
-} from "@/server/services/export";
+} from "@/server/services/transaction";
 
 export async function GET(request: NextRequest) {
   try {

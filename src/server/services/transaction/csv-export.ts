@@ -5,6 +5,7 @@ import { getCategoryLabel, getCategoryInfo } from "@/lib/categories";
 import { format } from "date-fns";
 import { axiomMetrics } from "@/lib/axiom";
 import { logger } from "@/lib/logger";
+import type { TransactionWithRelations } from "@/server/repositories/interfaces/transaction.repository.interface";
 
 interface ExportOptions {
   userId: string;
@@ -14,17 +15,41 @@ interface ExportOptions {
   includePersonal?: boolean;
 }
 
-interface TransactionRow {
-  date: string;
-  property: string;
-  description: string;
-  amount: string;
-  category: string;
-  atoCode: string;
-  type: string;
-  isDeductible: string;
-  bankAccount: string;
-  verified: string;
+/** Escape a CSV value by wrapping in quotes if it contains commas, quotes, or newlines */
+function escapeCsvValue(val: string): string {
+  if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+    return `"${val.replace(/"/g, '""')}"`;
+  }
+  return val;
+}
+
+/** Format transaction results (from findAllByOwner) into a CSV string + filename */
+export function formatTransactionsCSV(
+  results: TransactionWithRelations[]
+): { csv: string; filename: string } {
+  const header =
+    "Date,Description,Amount,Category,Transaction Type,Property,Is Deductible,Is Verified,Notes";
+
+  const rows = results.map((t) => {
+    const prop = t.property as { address?: string } | null | undefined;
+    return [
+      t.date,
+      escapeCsvValue(t.description),
+      t.amount,
+      getCategoryLabel(t.category),
+      t.transactionType,
+      prop?.address ?? "",
+      t.isDeductible ? "Yes" : "No",
+      t.isVerified ? "Yes" : "No",
+      escapeCsvValue(t.notes ?? ""),
+    ].join(",");
+  });
+
+  const csv = [header, ...rows].join("\n");
+  const today = new Date().toISOString().split("T")[0];
+  const filename = `bricktrack-transactions-${today}.csv`;
+
+  return { csv, filename };
 }
 
 export async function generateTransactionsCSV(options: ExportOptions): Promise<string> {
