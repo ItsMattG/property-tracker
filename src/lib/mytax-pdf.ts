@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import type { MyTaxReport, MyTaxPropertyReport } from "@/server/services/mytax";
+import type { MyTaxReport, MyTaxPropertyReport } from "@/server/services/transaction";
 import { formatCurrencyWithCents } from "@/lib/utils";
 
 function addPropertyPage(doc: jsPDF, prop: MyTaxPropertyReport, y: number): number {

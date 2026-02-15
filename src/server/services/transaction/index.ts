@@ -79,3 +79,11 @@ export {
   type AuditPropertyScore,
   type AuditReport,
 } from "./audit-checks";
+
+export {
+  buildMyTaxReport,
+  type MyTaxLineItem,
+  type MyTaxPropertyReport,
+  type MyTaxPersonalSummary,
+  type MyTaxReport,
+} from "./mytax";

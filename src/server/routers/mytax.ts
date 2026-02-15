@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { buildMyTaxReport } from "../services/mytax";
+import { buildMyTaxReport } from "../services/transaction";
 
 export const mytaxRouter = router({
   getReport: protectedProcedure
