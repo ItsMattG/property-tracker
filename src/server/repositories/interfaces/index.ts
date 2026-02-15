@@ -14,3 +14,4 @@ export type { ITaskRepository, TaskFiltersInput, TaskWithRelations } from "./tas
 export type { IFeedbackRepository, FeatureListFilters, FeatureWithUser, FeatureCommentWithUser, BugListFilters, BugWithUser } from "./feedback.repository.interface";
 export type { ITeamRepository, MemberWithUser, InviteWithOwner, AuditEntryWithActor } from "./team.repository.interface";
 export type { IForecastRepository, CashFlowForecastWithProperty } from "./forecast.repository.interface";
+export type { IPropertyValueRepository } from "./property-value.repository.interface";

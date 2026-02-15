@@ -16,6 +16,7 @@ import type {
   IFeedbackRepository,
   ITeamRepository,
   IForecastRepository,
+  IPropertyValueRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -35,6 +36,7 @@ import { TaskRepository } from "./task.repository";
 import { FeedbackRepository } from "./feedback.repository";
 import { TeamRepository } from "./team.repository";
 import { ForecastRepository } from "./forecast.repository";
+import { PropertyValueRepository } from "./property-value.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -54,6 +56,7 @@ export class UnitOfWork {
   private _feedback?: IFeedbackRepository;
   private _team?: ITeamRepository;
   private _forecast?: IForecastRepository;
+  private _propertyValue?: IPropertyValueRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -105,6 +108,9 @@ export class UnitOfWork {
   }
   get forecast(): IForecastRepository {
     return (this._forecast ??= new ForecastRepository(this.db));
+  }
+  get propertyValue(): IPropertyValueRepository {
+    return (this._propertyValue ??= new PropertyValueRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */
