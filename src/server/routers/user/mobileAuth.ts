@@ -33,6 +33,7 @@ export const mobileAuthRouter = router({
         });
       }
 
+      // publicProcedure: no ctx.uow available
       const user = await ctx.db.query.users.findFirst({
         where: eq(users.email, input.email.toLowerCase().trim()),
       });
@@ -93,7 +94,7 @@ export const mobileAuthRouter = router({
         });
       }
 
-      // Upsert push token
+      // publicProcedure: no ctx.uow available
       const existing = await ctx.db.query.pushTokens.findFirst({
         where: eq(pushTokens.token, input.pushToken),
       });
@@ -136,6 +137,7 @@ export const mobileAuthRouter = router({
         });
       }
 
+      // publicProcedure: no ctx.uow available
       await ctx.db
         .delete(pushTokens)
         .where(
@@ -154,6 +156,7 @@ export const mobileAuthRouter = router({
     .query(async ({ ctx, input }) => {
       try {
         const payload = verifyMobileToken(input.token);
+        // publicProcedure: no ctx.uow available
         const user = await ctx.db.query.users.findFirst({
           where: eq(users.id, payload.userId),
         });

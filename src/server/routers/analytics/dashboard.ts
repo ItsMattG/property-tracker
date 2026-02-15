@@ -17,6 +17,7 @@ export const dashboardRouter = router({
   getInitialData: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.portfolio.ownerId;
 
+    // Cross-domain: dashboard aggregates data across properties, transactions, loans, alerts
     const [statsResult, alertsResult, onboardingResult, propertiesResult, trendsResult] =
       await Promise.all([
         // Stats - same as stats.dashboard
