@@ -38,31 +38,28 @@ teamProcedure          → + subscription >= "team"
 ```typescript
 ctx.user      // { id, clerkId, email, name, ... }
 ctx.portfolio // { ownerId, role, canWrite, canManageMembers, canManageBanks, canViewAuditLog, canUploadDocuments }
-ctx.db        // Drizzle database instance
+ctx.uow       // UnitOfWork — primary data access (23 typed repositories)
+ctx.db        // Drizzle instance — only for cross-domain queries (must add comment explaining why)
 ```
 
 ## Router Template
 
+Routers are thin controllers — all data access goes through `ctx.uow` (Unit of Work).
+
 ```typescript
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { eq, and, desc } from "drizzle-orm";
-import { myTable } from "../db/schema";
 
 export const myRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.myTable.findMany({
-      where: eq(myTable.userId, ctx.portfolio.ownerId),
-      orderBy: (t, { desc }) => [desc(t.createdAt)],
-    });
+    return ctx.uow.myDomain.findByOwner(ctx.portfolio.ownerId);
   }),
 
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const item = await ctx.db.query.myTable.findFirst({
-        where: and(eq(myTable.id, input.id), eq(myTable.userId, ctx.portfolio.ownerId)),
-      });
+      const item = await ctx.uow.myDomain.findById(input.id, ctx.portfolio.ownerId);
       if (!item) throw new TRPCError({ code: "NOT_FOUND" });
       return item;
     }),
@@ -70,28 +67,24 @@ export const myRouter = router({
   create: writeProcedure
     .input(z.object({ name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const [item] = await ctx.db.insert(myTable).values({
+      return ctx.uow.myDomain.create({
         userId: ctx.portfolio.ownerId,
         name: input.name,
-      }).returning();
-      return item;
+      });
     }),
 
   update: writeProcedure
     .input(z.object({ id: z.string().uuid(), name: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
-      const [item] = await ctx.db.update(myTable)
-        .set({ name: input.name, updatedAt: new Date() })
-        .where(and(eq(myTable.id, input.id), eq(myTable.userId, ctx.portfolio.ownerId)))
-        .returning();
-      return item;
+      return ctx.uow.myDomain.update(input.id, ctx.portfolio.ownerId, {
+        name: input.name,
+      });
     }),
 
   delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.delete(myTable)
-        .where(and(eq(myTable.id, input.id), eq(myTable.userId, ctx.portfolio.ownerId)));
+      await ctx.uow.myDomain.delete(input.id, ctx.portfolio.ownerId);
     }),
 });
 ```
@@ -124,7 +117,9 @@ const property = await ctx.db.query.properties.findFirst({ ... });
 - Return types: always typed — never `Promise<unknown>` or `Promise<any>`
 - Relation fields: always typed — never `unknown`
 
-## Drizzle Query Patterns
+## Drizzle Query Patterns (for cross-domain queries and repository internals)
+
+Use these patterns inside repositories or for cross-domain queries that span multiple repositories (always add a comment explaining why `ctx.db` is used).
 
 ```typescript
 // Relational query with joins
