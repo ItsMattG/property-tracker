@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { buildAuditReport } from "../services/audit-checks";
+import { buildAuditReport } from "../services/transaction";
 
 export const auditChecksRouter = router({
   getReport: protectedProcedure

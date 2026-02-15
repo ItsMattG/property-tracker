@@ -64,3 +64,18 @@ export {
   type YoYPropertyBreakdown,
   type YoYComparisonResult,
 } from "./yoy-comparison";
+
+export {
+  buildAuditReport,
+  computeAuditScore,
+  checkMissingKeyExpenses,
+  checkUncategorizedTransactions,
+  checkLoanInterestMissing,
+  checkMissedDeductions,
+  checkUnassignedTransactions,
+  checkLargeUnverified,
+  checkNoRentalIncome,
+  type AuditCheckResult,
+  type AuditPropertyScore,
+  type AuditReport,
+} from "./audit-checks";
