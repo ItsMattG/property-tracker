@@ -142,7 +142,7 @@ describe("propertyValue router", () => {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findFirst: vi.fn().mockResolvedValue(mockProperty) },
           propertyValues: {
-            findFirst: vi.fn().mockResolvedValue(mockPropertyValue),
+            findMany: vi.fn().mockResolvedValue([mockPropertyValue]),
           },
         },
       };
@@ -162,7 +162,7 @@ describe("propertyValue router", () => {
         query: {
           users: { findFirst: vi.fn().mockResolvedValue(mockUser) },
           properties: { findFirst: vi.fn().mockResolvedValue(mockProperty) },
-          propertyValues: { findFirst: vi.fn().mockResolvedValue(null) },
+          propertyValues: { findMany: vi.fn().mockResolvedValue([]) },
         },
       };
 

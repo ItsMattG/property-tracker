@@ -2,24 +2,14 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, memberProcedure, publicProcedure } from "../trpc";
 import {
-  portfolioMembers,
-  portfolioInvites,
-  auditLog,
-  users,
-} from "../db/schema";
-import { eq, and, desc } from "drizzle-orm";
-import {
   generateInviteToken,
   getInviteExpiryDate,
 } from "../services/portfolio-access";
+import { TeamRepository } from "../repositories/team.repository";
 
 export const teamRouter = router({
-  // Get current portfolio context (for UI)
   getContext: protectedProcedure.query(async ({ ctx }) => {
-    const owner = await ctx.db.query.users.findFirst({
-      where: eq(users.id, ctx.portfolio.ownerId),
-    });
-
+    const owner = await ctx.uow.team.getOwner(ctx.portfolio.ownerId);
     return {
       ownerId: ctx.portfolio.ownerId,
       ownerName: owner?.name || owner?.email || "Unknown",
@@ -34,7 +24,6 @@ export const teamRouter = router({
     };
   }),
 
-  // List team members
   listMembers: protectedProcedure.query(async ({ ctx }) => {
     if (!ctx.portfolio.canViewAuditLog) {
       throw new TRPCError({
@@ -43,18 +32,8 @@ export const teamRouter = router({
       });
     }
 
-    const members = await ctx.db.query.portfolioMembers.findMany({
-      where: eq(portfolioMembers.ownerId, ctx.portfolio.ownerId),
-      with: {
-        user: true,
-      },
-      orderBy: [desc(portfolioMembers.joinedAt)],
-    });
-
-    // Get owner info
-    const owner = await ctx.db.query.users.findFirst({
-      where: eq(users.id, ctx.portfolio.ownerId),
-    });
+    const members = await ctx.uow.team.listMembers(ctx.portfolio.ownerId);
+    const owner = await ctx.uow.team.getOwner(ctx.portfolio.ownerId);
 
     return {
       owner,
@@ -62,18 +41,10 @@ export const teamRouter = router({
     };
   }),
 
-  // List pending invites (owner only)
   listInvites: memberProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.portfolioInvites.findMany({
-      where: and(
-        eq(portfolioInvites.ownerId, ctx.portfolio.ownerId),
-        eq(portfolioInvites.status, "pending")
-      ),
-      orderBy: [desc(portfolioInvites.createdAt)],
-    });
+    return ctx.uow.team.listPendingInvites(ctx.portfolio.ownerId);
   }),
 
-  // Send invite (owner only)
   sendInvite: memberProcedure
     .input(
       z.object({
@@ -82,19 +53,15 @@ export const teamRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Check if already a member
-      const existingUser = await ctx.db.query.users.findFirst({
-        where: eq(users.email, input.email.toLowerCase()),
-      });
+      const existingUser = await ctx.uow.team.findUserByEmail(
+        input.email.toLowerCase()
+      );
 
       if (existingUser) {
-        const existingMember = await ctx.db.query.portfolioMembers.findFirst({
-          where: and(
-            eq(portfolioMembers.ownerId, ctx.portfolio.ownerId),
-            eq(portfolioMembers.userId, existingUser.id)
-          ),
-        });
-
+        const existingMember = await ctx.uow.team.findMembership(
+          ctx.portfolio.ownerId,
+          existingUser.id
+        );
         if (existingMember) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -103,15 +70,10 @@ export const teamRouter = router({
         }
       }
 
-      // Check for pending invite
-      const existingInvite = await ctx.db.query.portfolioInvites.findFirst({
-        where: and(
-          eq(portfolioInvites.ownerId, ctx.portfolio.ownerId),
-          eq(portfolioInvites.email, input.email.toLowerCase()),
-          eq(portfolioInvites.status, "pending")
-        ),
-      });
-
+      const existingInvite = await ctx.uow.team.findPendingInviteByEmail(
+        ctx.portfolio.ownerId,
+        input.email.toLowerCase()
+      );
       if (existingInvite) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -122,20 +84,16 @@ export const teamRouter = router({
       const token = generateInviteToken();
       const expiresAt = getInviteExpiryDate();
 
-      const [invite] = await ctx.db
-        .insert(portfolioInvites)
-        .values({
-          ownerId: ctx.portfolio.ownerId,
-          email: input.email.toLowerCase(),
-          role: input.role,
-          token,
-          invitedBy: ctx.user.id,
-          expiresAt,
-        })
-        .returning();
+      const invite = await ctx.uow.team.createInvite({
+        ownerId: ctx.portfolio.ownerId,
+        email: input.email.toLowerCase(),
+        role: input.role,
+        token,
+        invitedBy: ctx.user.id,
+        expiresAt,
+      });
 
-      // Log audit
-      await ctx.db.insert(auditLog).values({
+      await ctx.uow.team.logAudit({
         ownerId: ctx.portfolio.ownerId,
         actorId: ctx.user.id,
         action: "member_invited",
@@ -143,38 +101,20 @@ export const teamRouter = router({
         metadata: JSON.stringify({ role: input.role }),
       });
 
-      // Note: Email sending will be added in Task 6
-
       return invite;
     }),
 
-  // Cancel invite (owner only)
   cancelInvite: memberProcedure
     .input(z.object({ inviteId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(portfolioInvites)
-        .where(
-          and(
-            eq(portfolioInvites.id, input.inviteId),
-            eq(portfolioInvites.ownerId, ctx.portfolio.ownerId)
-          )
-        );
-
+      await ctx.uow.team.cancelInvite(input.inviteId, ctx.portfolio.ownerId);
       return { success: true };
     }),
 
-  // Resend invite (owner only)
   resendInvite: memberProcedure
     .input(z.object({ inviteId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const invite = await ctx.db.query.portfolioInvites.findFirst({
-        where: and(
-          eq(portfolioInvites.id, input.inviteId),
-          eq(portfolioInvites.ownerId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const invite = await ctx.uow.team.findInviteByTokenBasic(input.inviteId);
       if (!invite) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Invite not found" });
       }
@@ -182,21 +122,10 @@ export const teamRouter = router({
       const newToken = generateInviteToken();
       const newExpiry = getInviteExpiryDate();
 
-      await ctx.db
-        .update(portfolioInvites)
-        .set({
-          token: newToken,
-          expiresAt: newExpiry,
-          status: "pending",
-        })
-        .where(eq(portfolioInvites.id, input.inviteId));
-
-      // Note: Email sending will be added in Task 6
-
+      await ctx.uow.team.refreshInviteToken(input.inviteId, newToken, newExpiry);
       return { success: true };
     }),
 
-  // Change member role (owner only)
   changeRole: memberProcedure
     .input(
       z.object({
@@ -205,25 +134,17 @@ export const teamRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const member = await ctx.db.query.portfolioMembers.findFirst({
-        where: and(
-          eq(portfolioMembers.id, input.memberId),
-          eq(portfolioMembers.ownerId, ctx.portfolio.ownerId)
-        ),
-        with: { user: true },
-      });
-
+      const member = await ctx.uow.team.findMemberById(
+        input.memberId,
+        ctx.portfolio.ownerId
+      );
       if (!member) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Member not found" });
       }
 
-      await ctx.db
-        .update(portfolioMembers)
-        .set({ role: input.role })
-        .where(eq(portfolioMembers.id, input.memberId));
+      await ctx.uow.team.changeRole(input.memberId, input.role);
 
-      // Log audit
-      await ctx.db.insert(auditLog).values({
+      await ctx.uow.team.logAudit({
         ownerId: ctx.portfolio.ownerId,
         actorId: ctx.user.id,
         action: "role_changed",
@@ -234,28 +155,20 @@ export const teamRouter = router({
       return { success: true };
     }),
 
-  // Remove member (owner only)
   removeMember: memberProcedure
     .input(z.object({ memberId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const member = await ctx.db.query.portfolioMembers.findFirst({
-        where: and(
-          eq(portfolioMembers.id, input.memberId),
-          eq(portfolioMembers.ownerId, ctx.portfolio.ownerId)
-        ),
-        with: { user: true },
-      });
-
+      const member = await ctx.uow.team.findMemberById(
+        input.memberId,
+        ctx.portfolio.ownerId
+      );
       if (!member) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Member not found" });
       }
 
-      await ctx.db
-        .delete(portfolioMembers)
-        .where(eq(portfolioMembers.id, input.memberId));
+      await ctx.uow.team.removeMember(input.memberId);
 
-      // Log audit
-      await ctx.db.insert(auditLog).values({
+      await ctx.uow.team.logAudit({
         ownerId: ctx.portfolio.ownerId,
         actorId: ctx.user.id,
         action: "member_removed",
@@ -265,25 +178,10 @@ export const teamRouter = router({
       return { success: true };
     }),
 
-  // Get portfolios user has access to (for switcher)
   getAccessiblePortfolios: protectedProcedure.query(async ({ ctx }) => {
-    const memberships = await ctx.db.query.portfolioMembers.findMany({
-      where: eq(portfolioMembers.userId, ctx.user.id),
-      with: {
-        owner: true,
-      },
-    });
-
-    return memberships
-      .filter((m) => m.joinedAt !== null)
-      .map((m) => ({
-        ownerId: m.ownerId,
-        ownerName: m.owner?.name || m.owner?.email || "Unknown",
-        role: m.role,
-      }));
+    return ctx.uow.team.getAccessiblePortfolios(ctx.user.id);
   }),
 
-  // Get audit log
   getAuditLog: protectedProcedure
     .input(
       z.object({
@@ -298,28 +196,19 @@ export const teamRouter = router({
           message: "You do not have access to view the audit log",
         });
       }
-
-      const entries = await ctx.db.query.auditLog.findMany({
-        where: eq(auditLog.ownerId, ctx.portfolio.ownerId),
-        with: {
-          actor: true,
-        },
-        orderBy: [desc(auditLog.createdAt)],
-        limit: input.limit,
-        offset: input.offset,
-      });
-
-      return entries;
+      return ctx.uow.team.getAuditLog(
+        ctx.portfolio.ownerId,
+        input.limit,
+        input.offset
+      );
     }),
 
-  // Get invite by token (for accept page - public)
+  // Public procedure: instantiate repo from ctx.db (no UoW on public context)
   getInviteByToken: publicProcedure
     .input(z.object({ token: z.string() }))
     .query(async ({ ctx, input }) => {
-      const invite = await ctx.db.query.portfolioInvites.findFirst({
-        where: eq(portfolioInvites.token, input.token),
-        with: { owner: true },
-      });
+      const repo = new TeamRepository(ctx.db);
+      const invite = await repo.findInviteByToken(input.token);
 
       if (!invite) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Invite not found" });
@@ -340,13 +229,10 @@ export const teamRouter = router({
       };
     }),
 
-  // Accept invite
   acceptInvite: protectedProcedure
     .input(z.object({ token: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const invite = await ctx.db.query.portfolioInvites.findFirst({
-        where: eq(portfolioInvites.token, input.token),
-      });
+      const invite = await ctx.uow.team.findInviteByTokenBasic(input.token);
 
       if (!invite || invite.status !== "pending") {
         throw new TRPCError({ code: "NOT_FOUND", message: "Invalid invite" });
@@ -356,7 +242,6 @@ export const teamRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Invite has expired" });
       }
 
-      // Verify email matches (case-insensitive)
       if (invite.email.toLowerCase() !== ctx.user.email?.toLowerCase()) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -364,8 +249,7 @@ export const teamRouter = router({
         });
       }
 
-      // Create membership
-      await ctx.db.insert(portfolioMembers).values({
+      await ctx.uow.team.acceptInvite(invite.id, {
         ownerId: invite.ownerId,
         userId: ctx.user.id,
         role: invite.role,
@@ -373,14 +257,7 @@ export const teamRouter = router({
         joinedAt: new Date(),
       });
 
-      // Update invite status
-      await ctx.db
-        .update(portfolioInvites)
-        .set({ status: "accepted" })
-        .where(eq(portfolioInvites.id, invite.id));
-
-      // Log audit
-      await ctx.db.insert(auditLog).values({
+      await ctx.uow.team.logAudit({
         ownerId: invite.ownerId,
         actorId: ctx.user.id,
         action: "invite_accepted",
@@ -390,25 +267,18 @@ export const teamRouter = router({
       return { success: true };
     }),
 
-  // Decline invite
   declineInvite: protectedProcedure
     .input(z.object({ token: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const invite = await ctx.db.query.portfolioInvites.findFirst({
-        where: eq(portfolioInvites.token, input.token),
-      });
+      const invite = await ctx.uow.team.findInviteByTokenBasic(input.token);
 
       if (!invite || invite.status !== "pending") {
         throw new TRPCError({ code: "NOT_FOUND", message: "Invalid invite" });
       }
 
-      await ctx.db
-        .update(portfolioInvites)
-        .set({ status: "declined" })
-        .where(eq(portfolioInvites.id, invite.id));
+      await ctx.uow.team.declineInvite(invite.id);
 
-      // Log audit
-      await ctx.db.insert(auditLog).values({
+      await ctx.uow.team.logAudit({
         ownerId: invite.ownerId,
         actorId: ctx.user.id,
         action: "invite_declined",

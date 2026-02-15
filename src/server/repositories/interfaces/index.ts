@@ -4,9 +4,15 @@ export type { ITransactionRepository, TransactionFilters, PaginatedTransactions,
 export type { ILoanRepository, LoanWithRelations } from "./loan.repository.interface";
 export type { IRecurringRepository, RecurringWithRelations, ExpectedWithRelations, ExpectedTransactionFilters } from "./recurring.repository.interface";
 export type { IDocumentRepository, DocumentFilters } from "./document.repository.interface";
-export type { IComplianceRepository } from "./compliance.repository.interface";
+export type { IComplianceRepository, SmsfContributionWithMember, SmsfPensionWithMember, SmsfMemberWithEntity } from "./compliance.repository.interface";
 export type { IEmailRepository } from "./email.repository.interface";
 export type { IChatRepository, ConversationSummary, ConversationWithMessages } from "./chat.repository.interface";
 export type { IPortfolioRepository } from "./portfolio.repository.interface";
 export type { IScenarioRepository, ScenarioWithRelations } from "./scenario.repository.interface";
 export type { IUserRepository } from "./user.repository.interface";
+export type { ITaskRepository, TaskFiltersInput, TaskWithRelations } from "./task.repository.interface";
+export type { IFeedbackRepository, FeatureListFilters, FeatureWithUser, FeatureCommentWithUser, BugListFilters, BugWithUser } from "./feedback.repository.interface";
+export type { ITeamRepository, MemberWithUser, InviteWithOwner, AuditEntryWithActor } from "./team.repository.interface";
+export type { IForecastRepository, CashFlowForecastWithProperty } from "./forecast.repository.interface";
+export type { IPropertyValueRepository } from "./property-value.repository.interface";
+export type { ISimilarPropertiesRepository, SimilarVectorRow, PropertyVectorWithRelations } from "./similar-properties.repository.interface";

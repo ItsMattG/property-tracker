@@ -2,15 +2,11 @@ import { z } from "zod";
 import { positiveAmountSchema } from "@/lib/validation";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { properties, transactions, propertySales, categoryEnum } from "../db/schema";
-import { eq, and, inArray } from "drizzle-orm";
 import {
   calculateCostBase,
   calculateCapitalGain,
   CAPITAL_CATEGORIES,
 } from "../services/tax";
-
-type Category = (typeof categoryEnum.enumValues)[number];
 
 export const cgtRouter = router({
   /**
@@ -20,15 +16,9 @@ export const cgtRouter = router({
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       const { propertyId } = input;
+      const ownerId = ctx.portfolio.ownerId;
 
-      // Validate property ownership
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const property = await ctx.uow.property.findById(propertyId, ownerId);
       if (!property) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -36,22 +26,16 @@ export const cgtRouter = router({
         });
       }
 
-      // Get capital transactions
-      const allTxns = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.propertyId, propertyId),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
+      const allTxns = await ctx.uow.transactions.findAllByOwner(ownerId, {
+        propertyId,
       });
 
       const capitalTxns = allTxns.filter((t) =>
         CAPITAL_CATEGORIES.includes(t.category)
       );
 
-      // Calculate cost base
       const totalCostBase = calculateCostBase(property.purchasePrice, capitalTxns);
 
-      // Build breakdown
       const breakdown = capitalTxns.map((t) => ({
         category: t.category,
         description: t.description,
@@ -80,41 +64,28 @@ export const cgtRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const { status } = input;
+      const ownerId = ctx.portfolio.ownerId;
 
-      // Get all properties
-      let userProperties = await ctx.db.query.properties.findMany({
-        where: eq(properties.userId, ctx.portfolio.ownerId),
-        with: {
-          sales: true,
-        },
-      });
+      let userProperties = await ctx.uow.property.findByOwnerWithSales(ownerId);
 
-      // Filter by status if needed
       if (status === "active") {
         userProperties = userProperties.filter((p) => p.status === "active");
       } else if (status === "sold") {
         userProperties = userProperties.filter((p) => p.status === "sold");
       }
 
-      // Get all capital transactions for the user (filtered to capital categories at DB level)
-      const allTxns = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.userId, ctx.portfolio.ownerId),
-          inArray(transactions.category, CAPITAL_CATEGORIES as Category[])
-        ),
-      });
+      // Get all transactions, filter to capital categories in JS
+      const allTxns = await ctx.uow.transactions.findAllByOwner(ownerId);
 
-      // Pre-index capital transactions by propertyId for O(1) lookup
       const capitalTxnsByProperty = new Map<string, typeof allTxns>();
       for (const txn of allTxns) {
-        if (txn.propertyId) {
+        if (txn.propertyId && CAPITAL_CATEGORIES.includes(txn.category)) {
           const existing = capitalTxnsByProperty.get(txn.propertyId) ?? [];
           existing.push(txn);
           capitalTxnsByProperty.set(txn.propertyId, existing);
         }
       }
 
-      // Build summary for each property
       const propertySummaries = userProperties.map((property) => {
         const propertyCapitalTxns = capitalTxnsByProperty.get(property.id) ?? [];
 
@@ -178,15 +149,9 @@ export const cgtRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { propertyId, salePrice, settlementDate, contractDate, ...costs } = input;
+      const ownerId = ctx.portfolio.ownerId;
 
-      // Validate property ownership
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const property = await ctx.uow.property.findById(propertyId, ownerId);
       if (!property) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -194,7 +159,6 @@ export const cgtRouter = router({
         });
       }
 
-      // Check property is not already sold
       if (property.status === "sold") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -202,7 +166,6 @@ export const cgtRouter = router({
         });
       }
 
-      // Validate settlement date is after purchase date
       if (new Date(settlementDate) <= new Date(property.purchaseDate)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -210,22 +173,16 @@ export const cgtRouter = router({
         });
       }
 
-      // Get capital transactions for cost base
-      const allTxns = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.propertyId, propertyId),
-          eq(transactions.userId, ctx.portfolio.ownerId)
-        ),
+      const allTxns = await ctx.uow.transactions.findAllByOwner(ownerId, {
+        propertyId,
       });
 
       const capitalTxns = allTxns.filter((t) =>
         CAPITAL_CATEGORIES.includes(t.category)
       );
 
-      // Calculate cost base
       const costBase = calculateCostBase(property.purchasePrice, capitalTxns);
 
-      // Calculate capital gain
       const cgtResult = calculateCapitalGain({
         costBase,
         salePrice: Number(salePrice),
@@ -239,35 +196,27 @@ export const cgtRouter = router({
         settlementDate,
       });
 
-      // Create sale record
-      const [sale] = await ctx.db
-        .insert(propertySales)
-        .values({
-          propertyId,
-          userId: ctx.portfolio.ownerId,
-          salePrice,
-          settlementDate,
-          contractDate,
-          agentCommission: costs.agentCommission,
-          legalFees: costs.legalFees,
-          marketingCosts: costs.marketingCosts,
-          otherSellingCosts: costs.otherSellingCosts,
-          costBase: String(costBase),
-          capitalGain: String(cgtResult.capitalGain),
-          discountedGain: String(cgtResult.discountedGain),
-          heldOverTwelveMonths: cgtResult.heldOverTwelveMonths,
-        })
-        .returning();
+      const sale = await ctx.uow.property.createSale({
+        propertyId,
+        userId: ownerId,
+        salePrice,
+        settlementDate,
+        contractDate,
+        agentCommission: costs.agentCommission,
+        legalFees: costs.legalFees,
+        marketingCosts: costs.marketingCosts,
+        otherSellingCosts: costs.otherSellingCosts,
+        costBase: String(costBase),
+        capitalGain: String(cgtResult.capitalGain),
+        discountedGain: String(cgtResult.discountedGain),
+        heldOverTwelveMonths: cgtResult.heldOverTwelveMonths,
+      });
 
-      // Archive the property
-      await ctx.db
-        .update(properties)
-        .set({
-          status: "sold",
-          soldAt: settlementDate,
-          updatedAt: new Date(),
-        })
-        .where(eq(properties.id, propertyId));
+      await ctx.uow.property.update(propertyId, ownerId, {
+        status: "sold",
+        soldAt: settlementDate,
+        updatedAt: new Date(),
+      });
 
       return {
         sale,
@@ -281,15 +230,10 @@ export const cgtRouter = router({
   getSaleDetails: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const sale = await ctx.db.query.propertySales.findFirst({
-        where: and(
-          eq(propertySales.propertyId, input.propertyId),
-          eq(propertySales.userId, ctx.portfolio.ownerId)
-        ),
-        with: {
-          property: true,
-        },
-      });
+      const sale = await ctx.uow.property.findSaleByProperty(
+        input.propertyId,
+        ctx.portfolio.ownerId
+      );
 
       if (!sale) {
         throw new TRPCError({
@@ -329,14 +273,9 @@ export const cgtRouter = router({
   getSellingCosts: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      // Validate property ownership
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const ownerId = ctx.portfolio.ownerId;
 
+      const property = await ctx.uow.property.findById(input.propertyId, ownerId);
       if (!property) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -344,16 +283,14 @@ export const cgtRouter = router({
         });
       }
 
-      // Look for transactions that might be selling costs (filtered at DB level)
-      const sellingCostCategories: Category[] = ["property_agent_fees", "legal_expenses"];
-      const sellingCosts = await ctx.db.query.transactions.findMany({
-        where: and(
-          eq(transactions.propertyId, input.propertyId),
-          eq(transactions.userId, ctx.portfolio.ownerId),
-          inArray(transactions.category, sellingCostCategories)
-        ),
-        orderBy: (t, { desc }) => [desc(t.date)],
+      const allTxns = await ctx.uow.transactions.findAllByOwner(ownerId, {
+        propertyId: input.propertyId,
       });
+
+      const sellingCostCategories = ["property_agent_fees", "legal_expenses"];
+      const sellingCosts = allTxns
+        .filter((t) => sellingCostCategories.includes(t.category))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       return {
         transactions: sellingCosts.map((t) => ({

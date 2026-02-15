@@ -238,3 +238,7 @@ export type SuburbBenchmark = typeof suburbBenchmarks.$inferSelect;
 export type NewSuburbBenchmark = typeof suburbBenchmarks.$inferInsert;
 export type PropertyPerformanceBenchmark = typeof propertyPerformanceBenchmarks.$inferSelect;
 export type NewPropertyPerformanceBenchmark = typeof propertyPerformanceBenchmarks.$inferInsert;
+export type PropertyVector = typeof propertyVectors.$inferSelect;
+export type NewPropertyVector = typeof propertyVectors.$inferInsert;
+export type ExternalListing = typeof externalListings.$inferSelect;
+export type NewExternalListing = typeof externalListings.$inferInsert;

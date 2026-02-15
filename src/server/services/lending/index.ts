@@ -17,6 +17,9 @@ export {
 } from "./loan-comparison";
 export type { AmortizationEntry } from "./loan-comparison";
 
+// forecast-generation
+export { generateForecastsForScenario } from "./forecast-generation";
+
 // forecast
 export {
   applyGrowthRate,

@@ -2,8 +2,8 @@ import { z } from "zod";
 import { positiveAmountSchema } from "@/lib/validation";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure } from "../trpc";
-import { propertyValues, properties, loans } from "../db/schema";
-import { eq, and, desc, asc, sql } from "drizzle-orm";
+import { loans } from "../db/schema";
+import { eq, sql } from "drizzle-orm";
 import { getValuationProvider, MockValuationProvider } from "../services/property-analysis";
 
 export const propertyValueRouter = router({
@@ -13,60 +13,34 @@ export const propertyValueRouter = router({
       limit: z.number().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      // Verify property belongs to user
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
-      return ctx.db.query.propertyValues.findMany({
-        where: eq(propertyValues.propertyId, input.propertyId),
-        orderBy: [desc(propertyValues.valueDate)],
-        limit: input.limit,
-      });
+      return ctx.uow.propertyValue.findByProperty(input.propertyId, { limit: input.limit });
     }),
 
   getLatest: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      // Verify property belongs to user
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
-      return ctx.db.query.propertyValues.findFirst({
-        where: eq(propertyValues.propertyId, input.propertyId),
-        orderBy: [desc(propertyValues.valueDate)],
-      });
+      return ctx.uow.propertyValue.findByProperty(input.propertyId, { limit: 1 }).then((r) => r[0] ?? null);
     }),
 
   getCurrent: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const valuation = await ctx.db.query.propertyValues.findFirst({
-        where: and(
-          eq(propertyValues.propertyId, input.propertyId),
-          eq(propertyValues.userId, ctx.portfolio.ownerId)
-        ),
-        orderBy: [desc(propertyValues.valueDate)],
-      });
+      const valuation = await ctx.uow.propertyValue.findLatestByUser(
+        input.propertyId,
+        ctx.portfolio.ownerId
+      );
 
-      if (!valuation) {
-        return null;
-      }
+      if (!valuation) return null;
 
       const valuationDate = new Date(valuation.valueDate);
       const today = new Date();
@@ -74,28 +48,17 @@ export const propertyValueRouter = router({
         (today.getTime() - valuationDate.getTime()) / (1000 * 60 * 60 * 24)
       );
 
-      return {
-        valuation,
-        daysSinceUpdate,
-      };
+      return { valuation, daysSinceUpdate };
     }),
 
   refresh: writeProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      // Get property with address
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
-      // Get valuation from provider
       const provider = getValuationProvider();
       const fullAddress = `${property.address}, ${property.suburb} ${property.state} ${property.postcode}`;
       const result = await provider.getValuation({
@@ -110,22 +73,16 @@ export const propertyValueRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to get valuation from provider" });
       }
 
-      // Store the valuation
-      const [value] = await ctx.db
-        .insert(propertyValues)
-        .values({
-          propertyId: input.propertyId,
-          userId: ctx.portfolio.ownerId,
-          estimatedValue: result.estimatedValue.toString(),
-          confidenceLow: result.confidenceLow.toString(),
-          confidenceHigh: result.confidenceHigh.toString(),
-          valueDate: new Date().toISOString().split("T")[0],
-          source: result.source as "mock" | "corelogic" | "proptrack",
-          apiResponseId: `mock-${Date.now()}`,
-        })
-        .returning();
-
-      return value;
+      return ctx.uow.propertyValue.create({
+        propertyId: input.propertyId,
+        userId: ctx.portfolio.ownerId,
+        estimatedValue: result.estimatedValue.toString(),
+        confidenceLow: result.confidenceLow.toString(),
+        confidenceHigh: result.confidenceHigh.toString(),
+        valueDate: new Date().toISOString().split("T")[0],
+        source: result.source as "mock" | "corelogic" | "proptrack",
+        apiResponseId: `mock-${Date.now()}`,
+      });
     }),
 
   create: writeProcedure
@@ -141,51 +98,31 @@ export const propertyValueRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify property belongs to user
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
-      const [value] = await ctx.db
-        .insert(propertyValues)
-        .values({
-          propertyId: input.propertyId,
-          userId: ctx.portfolio.ownerId,
-          estimatedValue: input.estimatedValue,
-          valueDate: input.valueDate,
-          source: input.source,
-          notes: input.notes,
-          confidenceLow: input.confidenceLow,
-          confidenceHigh: input.confidenceHigh,
-        })
-        .returning();
-
-      return value;
+      return ctx.uow.propertyValue.create({
+        propertyId: input.propertyId,
+        userId: ctx.portfolio.ownerId,
+        estimatedValue: input.estimatedValue,
+        valueDate: input.valueDate,
+        source: input.source,
+        notes: input.notes,
+        confidenceLow: input.confidenceLow,
+        confidenceHigh: input.confidenceHigh,
+      });
     }),
 
   delete: writeProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      // Find the valuation first
-      const valuation = await ctx.db.query.propertyValues.findFirst({
-        where: and(
-          eq(propertyValues.id, input.id),
-          eq(propertyValues.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const valuation = await ctx.uow.propertyValue.findById(input.id, ctx.portfolio.ownerId);
       if (!valuation) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Valuation not found" });
       }
 
-      // Only allow deleting manual valuations
       if (valuation.source !== "manual") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -193,67 +130,40 @@ export const propertyValueRouter = router({
         });
       }
 
-      await ctx.db
-        .delete(propertyValues)
-        .where(eq(propertyValues.id, input.id));
-
+      await ctx.uow.propertyValue.delete(input.id);
       return { success: true };
     }),
 
   getValuationHistory: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
-      return ctx.db.query.propertyValues.findMany({
-        where: eq(propertyValues.propertyId, input.propertyId),
-        orderBy: [asc(propertyValues.valueDate)],
-      });
+      return ctx.uow.propertyValue.findByProperty(input.propertyId, { orderAsc: true });
     }),
 
   getCapitalGrowthStats: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
-      // Fetch latest 2 valuations in single query instead of 2 queries
-      const recentValuations = await ctx.db.query.propertyValues.findMany({
-        where: eq(propertyValues.propertyId, input.propertyId),
-        orderBy: [desc(propertyValues.valueDate)],
-        limit: 2,
-      });
-
+      const recentValuations = await ctx.uow.propertyValue.findRecent(input.propertyId, 2);
       const latestValuation = recentValuations[0];
       const previousValuation = recentValuations[1];
 
-      if (!latestValuation) {
-        return null;
-      }
+      if (!latestValuation) return null;
 
       const currentValue = Number(latestValuation.estimatedValue);
       const purchasePrice = Number(property.purchasePrice);
       const totalGain = currentValue - purchasePrice;
       const totalGainPercent = purchasePrice > 0 ? (totalGain / purchasePrice) * 100 : 0;
 
-      // Annualized growth rate
       const purchaseDate = new Date(property.purchaseDate);
       const now = new Date();
       const yearsHeld = (now.getTime() - purchaseDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
@@ -261,14 +171,13 @@ export const propertyValueRouter = router({
         ? (Math.pow(currentValue / purchasePrice, 1 / yearsHeld) - 1) * 100
         : 0;
 
-      // Month-over-month change
       const previousValue = previousValuation ? Number(previousValuation.estimatedValue) : null;
       const monthlyChange = previousValue ? currentValue - previousValue : null;
       const monthlyChangePercent = previousValue && previousValue > 0
         ? ((currentValue - previousValue) / previousValue) * 100
         : null;
 
-      // Equity and LVR (if loan data exists)
+      // Cross-domain: loan aggregate by propertyId — no repo method for SUM by property
       const loanResult = await ctx.db
         .select({ total: sql<number>`COALESCE(SUM(current_balance), 0)::int` })
         .from(loans)
@@ -302,24 +211,13 @@ export const propertyValueRouter = router({
   triggerBackfill: writeProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
-
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
-      // Check if valuations already exist
-      const existingCount = await ctx.db.query.propertyValues.findMany({
-        where: eq(propertyValues.propertyId, input.propertyId),
-        columns: { id: true },
-      });
-
-      if (existingCount.length > 2) {
+      const existingValues = await ctx.uow.propertyValue.findByProperty(input.propertyId);
+      if (existingValues.length > 2) {
         return { backfilled: 0, message: "History already exists" };
       }
 
@@ -337,30 +235,27 @@ export const propertyValueRouter = router({
         propertyType: "house",
       });
 
-      // Get existing value dates to avoid duplicates
-      const existingDates = new Set(existingCount.length > 0
-        ? (await ctx.db.query.propertyValues.findMany({
-            where: eq(propertyValues.propertyId, input.propertyId),
-            columns: { valueDate: true },
-          })).map(v => v.valueDate)
-        : []
+      const existingDates = new Set(
+        existingValues.length > 0
+          ? await ctx.uow.propertyValue.findDatesByProperty(input.propertyId)
+          : []
       );
 
-      const toInsert = history.filter(h => !existingDates.has(h.valueDate));
+      const toInsert = history
+        .filter((h) => !existingDates.has(h.valueDate))
+        .map((h) => ({
+          propertyId: input.propertyId,
+          userId: ctx.portfolio.ownerId,
+          estimatedValue: h.estimatedValue.toString(),
+          confidenceLow: h.confidenceLow.toString(),
+          confidenceHigh: h.confidenceHigh.toString(),
+          valueDate: h.valueDate,
+          source: "mock" as const,
+          apiResponseId: `mock-backfill-${h.valueDate}`,
+        }));
 
       if (toInsert.length > 0) {
-        await ctx.db.insert(propertyValues).values(
-          toInsert.map(h => ({
-            propertyId: input.propertyId,
-            userId: ctx.portfolio.ownerId,
-            estimatedValue: h.estimatedValue.toString(),
-            confidenceLow: h.confidenceLow.toString(),
-            confidenceHigh: h.confidenceHigh.toString(),
-            valueDate: h.valueDate,
-            source: "mock" as const,
-            apiResponseId: `mock-backfill-${h.valueDate}`,
-          }))
-        );
+        await ctx.uow.propertyValue.createMany(toInsert);
       }
 
       return { backfilled: toInsert.length };
