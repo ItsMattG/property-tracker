@@ -18,6 +18,7 @@ import type {
   IForecastRepository,
   IPropertyValueRepository,
   ISimilarPropertiesRepository,
+  IReferralRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -39,6 +40,7 @@ import { TeamRepository } from "./team.repository";
 import { ForecastRepository } from "./forecast.repository";
 import { PropertyValueRepository } from "./property-value.repository";
 import { SimilarPropertiesRepository } from "./similar-properties.repository";
+import { ReferralRepository } from "./referral.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -60,6 +62,7 @@ export class UnitOfWork {
   private _forecast?: IForecastRepository;
   private _propertyValue?: IPropertyValueRepository;
   private _similarProperties?: ISimilarPropertiesRepository;
+  private _referral?: IReferralRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -117,6 +120,9 @@ export class UnitOfWork {
   }
   get similarProperties(): ISimilarPropertiesRepository {
     return (this._similarProperties ??= new SimilarPropertiesRepository(this.db));
+  }
+  get referral(): IReferralRepository {
+    return (this._referral ??= new ReferralRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */

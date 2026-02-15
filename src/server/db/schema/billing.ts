@@ -86,3 +86,17 @@ export const monitorState = pgTable("monitor_state", {
   failingSince: timestamp("failing_since"),
   consecutiveFailures: integer("consecutive_failures").default(0).notNull(),
 });
+
+// Inferred types
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type NewReferralCode = typeof referralCodes.$inferInsert;
+export type Referral = typeof referrals.$inferSelect;
+export type NewReferral = typeof referrals.$inferInsert;
+export type ReferralCredit = typeof referralCredits.$inferSelect;
+export type NewReferralCredit = typeof referralCredits.$inferInsert;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type NewSubscription = typeof subscriptions.$inferInsert;
+export type CronHeartbeat = typeof cronHeartbeats.$inferSelect;
+export type NewCronHeartbeat = typeof cronHeartbeats.$inferInsert;
+export type MonitorState = typeof monitorState.$inferSelect;
+export type NewMonitorState = typeof monitorState.$inferInsert;

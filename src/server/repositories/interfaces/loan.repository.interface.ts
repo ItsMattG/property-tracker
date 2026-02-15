@@ -25,4 +25,12 @@ export interface ILoanRepository {
 
   /** Delete a loan */
   delete(id: string, userId: string, tx?: DB): Promise<void>;
+
+  /** Find recently updated loans for a user */
+  findRecent(userId: string, limit: number): Promise<Array<{
+    id: string;
+    lender: string;
+    currentBalance: string;
+    updatedAt: Date;
+  }>>;
 }

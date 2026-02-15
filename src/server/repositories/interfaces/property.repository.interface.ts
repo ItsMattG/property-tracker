@@ -31,4 +31,7 @@ export interface IPropertyRepository {
 
   /** Create a property sale record */
   createSale(data: NewPropertySale, tx?: DB): Promise<PropertySale>;
+
+  /** Find recently created properties for a user */
+  findRecent(userId: string, limit: number): Promise<Array<{ id: string; address: string; createdAt: Date }>>;
 }

@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
 import {
-  userOnboarding,
-  properties,
   bankAccounts,
   transactions,
   recurringTransactions,
@@ -13,56 +11,50 @@ import { calculateProgress, type OnboardingCounts } from "../../services/user/on
 
 export const onboardingRouter = router({
   getProgress: protectedProcedure.query(async ({ ctx }) => {
+    const ownerId = ctx.portfolio.ownerId;
+
     // Get or create onboarding record
-    let onboarding = await ctx.db.query.userOnboarding.findFirst({
-      where: eq(userOnboarding.userId, ctx.portfolio.ownerId),
-    });
+    let onboarding = await ctx.uow.user.findOnboarding(ownerId);
 
     if (!onboarding) {
-      const [created] = await ctx.db
-        .insert(userOnboarding)
-        .values({ userId: ctx.portfolio.ownerId })
-        .returning();
-      onboarding = created;
+      onboarding = await ctx.uow.user.createOnboarding(ownerId);
     }
 
-    // Get counts in parallel
+    // Get counts in parallel — property count via repo, remaining via ctx.db
+    // Cross-domain: bankAccounts, transactions, recurring, propertyValues have no count methods in their repos
     const [
-      propertyResult,
+      propertyCount,
       bankAccountResult,
       categorizedResult,
       recurringResult,
       propertyValueResult,
     ] = await Promise.all([
-      ctx.db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(properties)
-        .where(eq(properties.userId, ctx.portfolio.ownerId)),
+      ctx.uow.property.countByOwner(ownerId),
       ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(bankAccounts)
-        .where(eq(bankAccounts.userId, ctx.portfolio.ownerId)),
+        .where(eq(bankAccounts.userId, ownerId)),
       ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(transactions)
         .where(
           and(
-            eq(transactions.userId, ctx.portfolio.ownerId),
+            eq(transactions.userId, ownerId),
             ne(transactions.category, "uncategorized")
           )
         ),
       ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(recurringTransactions)
-        .where(eq(recurringTransactions.userId, ctx.portfolio.ownerId)),
+        .where(eq(recurringTransactions.userId, ownerId)),
       ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(propertyValues)
-        .where(eq(propertyValues.userId, ctx.portfolio.ownerId)),
+        .where(eq(propertyValues.userId, ownerId)),
     ]);
 
     const counts: OnboardingCounts = {
-      propertyCount: propertyResult[0]?.count ?? 0,
+      propertyCount,
       bankAccountCount: bankAccountResult[0]?.count ?? 0,
       categorizedCount: categorizedResult[0]?.count ?? 0,
       recurringCount: recurringResult[0]?.count ?? 0,
@@ -83,37 +75,23 @@ export const onboardingRouter = router({
   }),
 
   dismissWizard: writeProcedure.mutation(async ({ ctx }) => {
-    const [updated] = await ctx.db
-      .update(userOnboarding)
-      .set({
-        wizardDismissedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
-      .returning();
-
-    return updated;
+    return ctx.uow.user.updateOnboarding(ctx.portfolio.ownerId, {
+      wizardDismissedAt: new Date(),
+      updatedAt: new Date(),
+    });
   }),
 
   dismissChecklist: writeProcedure.mutation(async ({ ctx }) => {
-    const [updated] = await ctx.db
-      .update(userOnboarding)
-      .set({
-        checklistDismissedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
-      .returning();
-
-    return updated;
+    return ctx.uow.user.updateOnboarding(ctx.portfolio.ownerId, {
+      checklistDismissedAt: new Date(),
+      updatedAt: new Date(),
+    });
   }),
 
   markStepComplete: writeProcedure
     .input(z.object({ stepId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const onboarding = await ctx.db.query.userOnboarding.findFirst({
-        where: eq(userOnboarding.userId, ctx.portfolio.ownerId),
-      });
+      const onboarding = await ctx.uow.user.findOnboarding(ctx.portfolio.ownerId);
 
       if (!onboarding) return null;
 
@@ -122,24 +100,16 @@ export const onboardingRouter = router({
         return onboarding;
       }
 
-      const [updated] = await ctx.db
-        .update(userOnboarding)
-        .set({
-          completedSteps: [...currentSteps, input.stepId],
-          updatedAt: new Date(),
-        })
-        .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
-        .returning();
-
-      return updated;
+      return ctx.uow.user.updateOnboarding(ctx.portfolio.ownerId, {
+        completedSteps: [...currentSteps, input.stepId],
+        updatedAt: new Date(),
+      });
     }),
 
   completeTour: writeProcedure
     .input(z.object({ tourId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const onboarding = await ctx.db.query.userOnboarding.findFirst({
-        where: eq(userOnboarding.userId, ctx.portfolio.ownerId),
-      });
+      const onboarding = await ctx.uow.user.findOnboarding(ctx.portfolio.ownerId);
 
       if (!onboarding) return null;
 
@@ -148,28 +118,16 @@ export const onboardingRouter = router({
         return onboarding;
       }
 
-      const [updated] = await ctx.db
-        .update(userOnboarding)
-        .set({
-          completedTours: [...currentTours, input.tourId],
-          updatedAt: new Date(),
-        })
-        .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
-        .returning();
-
-      return updated;
+      return ctx.uow.user.updateOnboarding(ctx.portfolio.ownerId, {
+        completedTours: [...currentTours, input.tourId],
+        updatedAt: new Date(),
+      });
     }),
 
   disableTours: writeProcedure.mutation(async ({ ctx }) => {
-    const [updated] = await ctx.db
-      .update(userOnboarding)
-      .set({
-        toursDisabled: true,
-        updatedAt: new Date(),
-      })
-      .where(eq(userOnboarding.userId, ctx.portfolio.ownerId))
-      .returning();
-
-    return updated;
+    return ctx.uow.user.updateOnboarding(ctx.portfolio.ownerId, {
+      toursDisabled: true,
+      updatedAt: new Date(),
+    });
   }),
 });

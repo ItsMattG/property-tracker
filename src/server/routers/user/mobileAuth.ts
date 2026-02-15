@@ -12,6 +12,7 @@ import {
 } from "../../lib/mobile-jwt";
 import { authRateLimiter } from "../../middleware/rate-limit";
 
+// Uses publicProcedure (no ctx.uow) — handles its own JWT auth
 export const mobileAuthRouter = router({
   // Login with email/password
   login: publicProcedure

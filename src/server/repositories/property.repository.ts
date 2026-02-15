@@ -110,4 +110,20 @@ export class PropertyRepository
     const [sale] = await client.insert(propertySales).values(data).returning();
     return sale;
   }
+
+  async findRecent(
+    userId: string,
+    limit: number
+  ): Promise<Array<{ id: string; address: string; createdAt: Date }>> {
+    return this.db.query.properties.findMany({
+      where: eq(properties.userId, userId),
+      orderBy: (p, { desc }) => [desc(p.createdAt)],
+      limit,
+      columns: {
+        id: true,
+        address: true,
+        createdAt: true,
+      },
+    });
+  }
 }
