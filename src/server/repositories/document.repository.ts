@@ -11,6 +11,7 @@ import type {
   IDocumentRepository,
   DocumentFilters,
   ExtractionWithRelations,
+  ExtractionWithFullRelations,
 } from "./interfaces/document.repository.interface";
 
 export class DocumentRepository
@@ -124,7 +125,7 @@ export class DocumentRepository
   }
 
   async findCompletedExtractionsWithRelations(): Promise<
-    ExtractionWithRelations[]
+    ExtractionWithFullRelations[]
   > {
     return this.db.query.documentExtractions.findMany({
       where: eq(documentExtractions.status, "completed"),

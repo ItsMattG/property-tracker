@@ -7,11 +7,18 @@ export interface DocumentFilters {
   transactionId?: string;
 }
 
-/** Extraction with its related document, matched property, and draft transaction */
+/** Extraction with optional relations (used when relations may or may not be loaded) */
 export type ExtractionWithRelations = DocumentExtraction & {
   document?: Document;
   matchedProperty?: Property | null;
   draftTransaction?: Transaction | null;
+};
+
+/** Extraction with all relations guaranteed loaded */
+export type ExtractionWithFullRelations = DocumentExtraction & {
+  document: Document;
+  matchedProperty: Property | null;
+  draftTransaction: Transaction | null;
 };
 
 export interface IDocumentRepository {
@@ -39,8 +46,8 @@ export interface IDocumentRepository {
   /** Find extraction by ID with optional relations */
   findExtractionById(id: string, opts?: { withRelations?: boolean }): Promise<ExtractionWithRelations | null>;
 
-  /** List completed extractions with pending review draft transactions */
-  findCompletedExtractionsWithRelations(): Promise<ExtractionWithRelations[]>;
+  /** List completed extractions with all relations loaded */
+  findCompletedExtractionsWithRelations(): Promise<ExtractionWithFullRelations[]>;
 
   /** Delete an extraction record */
   deleteExtraction(id: string): Promise<void>;
