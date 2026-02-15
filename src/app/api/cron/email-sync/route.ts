@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { recordHeartbeat } from "@/lib/monitoring";
-import { syncAllEmails } from "@/server/services/gmail-sync";
+import { syncAllEmails } from "@/server/services/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
