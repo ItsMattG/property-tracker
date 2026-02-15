@@ -1,12 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import {
-  taxSuggestions,
-  depreciationSchedules,
-  depreciationAssets,
-  documents,
-} from "../../db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { documents } from "../../db/schema";
+import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { extractDepreciationSchedule } from "../../services/property-analysis";
 import {
@@ -26,33 +21,12 @@ export const taxOptimizationRouter = router({
     .query(async ({ ctx, input }) => {
       const fy = input.financialYear || getCurrentFinancialYear();
 
-      const suggestions = await ctx.db.query.taxSuggestions.findMany({
-        where: and(
-          eq(taxSuggestions.userId, ctx.portfolio.ownerId),
-          eq(taxSuggestions.financialYear, fy.toString()),
-          eq(taxSuggestions.status, input.status)
-        ),
-        with: {
-          property: true,
-        },
-        orderBy: [desc(taxSuggestions.estimatedSavings)],
-      });
-
-      return suggestions;
+      return ctx.uow.tax.findSuggestions(ctx.portfolio.ownerId, fy.toString(), input.status);
     }),
 
   // Get suggestion count (for badges)
   getSuggestionCount: protectedProcedure.query(async ({ ctx }) => {
-    const [{ count }] = await ctx.db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(taxSuggestions)
-      .where(
-        and(
-          eq(taxSuggestions.userId, ctx.portfolio.ownerId),
-          eq(taxSuggestions.status, "active")
-        )
-      );
-
+    const count = await ctx.uow.tax.countActiveSuggestions(ctx.portfolio.ownerId);
     return { count };
   }),
 
@@ -60,16 +34,7 @@ export const taxOptimizationRouter = router({
   dismissSuggestion: writeProcedure
     .input(z.object({ suggestionId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const [updated] = await ctx.db
-        .update(taxSuggestions)
-        .set({ status: "dismissed" })
-        .where(
-          and(
-            eq(taxSuggestions.id, input.suggestionId),
-            eq(taxSuggestions.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      const updated = await ctx.uow.tax.updateSuggestionStatus(input.suggestionId, ctx.portfolio.ownerId, "dismissed");
 
       if (!updated) {
         throw new TRPCError({ code: "NOT_FOUND" });
@@ -82,16 +47,7 @@ export const taxOptimizationRouter = router({
   markActioned: writeProcedure
     .input(z.object({ suggestionId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const [updated] = await ctx.db
-        .update(taxSuggestions)
-        .set({ status: "actioned" })
-        .where(
-          and(
-            eq(taxSuggestions.id, input.suggestionId),
-            eq(taxSuggestions.userId, ctx.portfolio.ownerId)
-          )
-        )
-        .returning();
+      const updated = await ctx.uow.tax.updateSuggestionStatus(input.suggestionId, ctx.portfolio.ownerId, "actioned");
 
       if (!updated) {
         throw new TRPCError({ code: "NOT_FOUND" });
@@ -110,23 +66,7 @@ export const taxOptimizationRouter = router({
   getDepreciationSchedules: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid().optional() }))
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(depreciationSchedules.userId, ctx.portfolio.ownerId)];
-
-      if (input.propertyId) {
-        conditions.push(eq(depreciationSchedules.propertyId, input.propertyId));
-      }
-
-      const schedules = await ctx.db.query.depreciationSchedules.findMany({
-        where: and(...conditions),
-        with: {
-          property: true,
-          assets: true,
-          document: true,
-        },
-        orderBy: [desc(depreciationSchedules.createdAt)],
-      });
-
-      return schedules;
+      return ctx.uow.tax.findSchedules(ctx.portfolio.ownerId, input.propertyId);
     }),
 
   // Extract depreciation from uploaded document
@@ -138,7 +78,7 @@ export const taxOptimizationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Verify document ownership
+      // Cross-domain: verify document ownership from documents domain
       const doc = await ctx.db.query.documents.findFirst({
         where: and(
           eq(documents.id, input.documentId),
@@ -189,20 +129,17 @@ export const taxOptimizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       // Create schedule
-      const [schedule] = await ctx.db
-        .insert(depreciationSchedules)
-        .values({
-          propertyId: input.propertyId,
-          userId: ctx.portfolio.ownerId,
-          documentId: input.documentId,
-          effectiveDate: input.effectiveDate,
-          totalValue: input.totalValue.toFixed(2),
-        })
-        .returning();
+      const schedule = await ctx.uow.tax.createSchedule({
+        propertyId: input.propertyId,
+        userId: ctx.portfolio.ownerId,
+        documentId: input.documentId,
+        effectiveDate: input.effectiveDate,
+        totalValue: input.totalValue.toFixed(2),
+      });
 
       // Insert assets
       if (input.assets.length > 0) {
-        await ctx.db.insert(depreciationAssets).values(
+        await ctx.uow.tax.createAssets(
           input.assets.map((asset) => ({
             scheduleId: schedule.id,
             assetName: asset.assetName,
@@ -217,17 +154,11 @@ export const taxOptimizationRouter = router({
       }
 
       // Mark any "claim_depreciation" suggestions for this property as actioned
-      await ctx.db
-        .update(taxSuggestions)
-        .set({ status: "actioned" })
-        .where(
-          and(
-            eq(taxSuggestions.userId, ctx.portfolio.ownerId),
-            eq(taxSuggestions.propertyId, input.propertyId),
-            eq(taxSuggestions.type, "claim_depreciation"),
-            eq(taxSuggestions.status, "active")
-          )
-        );
+      await ctx.uow.tax.actionSuggestionsByPropertyAndType(
+        ctx.portfolio.ownerId,
+        input.propertyId,
+        "claim_depreciation"
+      );
 
       return schedule;
     }),
@@ -236,15 +167,7 @@ export const taxOptimizationRouter = router({
   deleteDepreciationSchedule: writeProcedure
     .input(z.object({ scheduleId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(depreciationSchedules)
-        .where(
-          and(
-            eq(depreciationSchedules.id, input.scheduleId),
-            eq(depreciationSchedules.userId, ctx.portfolio.ownerId)
-          )
-        );
-
+      await ctx.uow.tax.deleteSchedule(input.scheduleId, ctx.portfolio.ownerId);
       return { success: true };
     }),
 });
