@@ -42,3 +42,14 @@ export {
   type PropertyForecast,
   type TaxForecastResult,
 } from "./tax-forecast";
+
+export {
+  generateAllSuggestions,
+  generatePrepayInterestSuggestion,
+  generateScheduleRepairsSuggestion,
+  generateClaimDepreciationSuggestion,
+  generateMissedDeductionSuggestions,
+  getCurrentFinancialYear,
+  isEofySeason,
+  daysUntilEofy,
+} from "./tax-optimization";

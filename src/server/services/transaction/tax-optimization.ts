@@ -7,8 +7,9 @@ import {
   depreciationSchedules,
 } from "@/server/db/schema";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { getFinancialYearRange } from "./transaction/reports";
+import { getFinancialYearRange } from "./reports";
 import { formatCurrency } from "@/lib/utils";
+import { getCategoryLabel } from "@/lib/categories";
 
 const MARGINAL_TAX_RATE = 0.37; // Assume 37% marginal rate
 const COMMON_DEDUCTIBLE_CATEGORIES = [
@@ -322,14 +323,3 @@ export async function generateAllSuggestions(userId: string): Promise<number> {
   return count;
 }
 
-function getCategoryLabel(category: string): string {
-  const labels: Record<string, string> = {
-    insurance: "Insurance",
-    council_rates: "Council Rates",
-    water_charges: "Water Charges",
-    property_agent_fees: "Property Agent Fees",
-    land_tax: "Land Tax",
-    repairs_and_maintenance: "Repairs & Maintenance",
-  };
-  return labels[category] || category;
-}

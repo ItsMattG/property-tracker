@@ -12,7 +12,7 @@ import { extractDepreciationSchedule } from "../services/depreciation-extract";
 import {
   generateAllSuggestions,
   getCurrentFinancialYear,
-} from "../services/tax-optimization";
+} from "../services/transaction";
 
 export const taxOptimizationRouter = router({
   // Get active suggestions for current user
