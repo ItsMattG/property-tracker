@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { format, differenceInDays } from "date-fns";
 import Link from "next/link";
-import type { LoanPackSnapshot } from "@/server/services/loanPack";
+import type { LoanPackSnapshot } from "@/server/services/lending";
 
 interface PageProps {
   params: Promise<{ token: string }>;

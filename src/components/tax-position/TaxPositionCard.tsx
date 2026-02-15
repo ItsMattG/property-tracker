@@ -6,16 +6,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
+import { formatCurrency } from "@/lib/utils";
 import { Calculator, Home, ArrowRight, Loader2, TrendingUp } from "lucide-react";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
-}
 
 export function TaxPositionCard() {
   const { data: summary, isLoading } = trpc.taxPosition.getSummary.useQuery({});
@@ -104,13 +96,13 @@ export function TaxPositionCard() {
                 isRefund ? "text-green-600" : "text-amber-600"
               }`}
             >
-              {formatCurrency(amount)}
+              {formatCurrency(Math.abs(amount))}
             </p>
             {propertySavings > 0 && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Home className="h-3 w-3" />
                 Properties {isRefund ? "saved" : "reduced by"} you{" "}
-                {formatCurrency(propertySavings)}
+                {formatCurrency(Math.abs(propertySavings))}
               </p>
             )}
             {forecast?.taxPosition.forecast && forecast.monthsElapsed < 12 && (

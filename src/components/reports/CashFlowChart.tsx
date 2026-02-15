@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { formatCurrency } from "@/lib/utils";
 
 interface MonthlyData {
   month: string;
@@ -29,15 +30,6 @@ function formatMonth(month: string): string {
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
   return `${monthNames[Number(m) - 1]} ${year.slice(-2)}`;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 }
 
 export function CashFlowChart({ data }: CashFlowChartProps) {

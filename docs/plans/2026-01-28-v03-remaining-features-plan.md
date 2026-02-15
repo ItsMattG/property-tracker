@@ -6,7 +6,7 @@
 
 **Architecture:** Three independent feature branches, each merged separately. Feature A (SEO + Email) touches metadata, tRPC email router, Supabase signed URLs, and email list UI. Feature B (Advisors) extends the existing role/permission system with an advisor role, dedicated settings page, and advisor dashboard. Feature C (Referrals) adds new DB tables, a referral tracking flow via cookies, and a settings page.
 
-**Tech Stack:** Next.js 14 App Router, tRPC, Drizzle ORM, PostgreSQL, Supabase Storage, Clerk Auth, Tailwind CSS, shadcn/ui
+**Tech Stack:** Next.js 16 App Router, tRPC, Drizzle ORM, PostgreSQL, Supabase Storage, Clerk Auth, Tailwind CSS, shadcn/ui
 
 ---
 

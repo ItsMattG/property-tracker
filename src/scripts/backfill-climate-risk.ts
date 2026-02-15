@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { properties } from "@/server/db/schema";
-import { getClimateRisk } from "@/server/services/climate-risk";
+import { getClimateRisk } from "@/server/services/property-analysis";
 import { isNull, eq } from "drizzle-orm";
 
 async function backfillClimateRisk() {

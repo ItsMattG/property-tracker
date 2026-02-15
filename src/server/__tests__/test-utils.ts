@@ -1,5 +1,6 @@
 import { appRouter } from "../routers/_app";
 import { vi } from "vitest";
+import type { UnitOfWork } from "../repositories/unit-of-work";
 
 type MockUser = {
   id: string;
@@ -33,12 +34,14 @@ export const otherUser: MockUser = {
 export function createMockContext(overrides: {
   userId?: string | null;
   user?: MockUser | null;
+  uow?: UnitOfWork;
 } = {}) {
   const user = overrides.user ?? null;
   return {
     db: {} as any, // Will be mocked per test
     userId: overrides.userId ?? null,
     user,
+    uow: overrides.uow,
     portfolio: {
       ownerId: user?.id ?? "user-1",
       role: "owner" as const,
@@ -71,4 +74,37 @@ export function createAuthenticatedContext(user = mockUser) {
 // Create unauthenticated context
 export function createUnauthenticatedContext() {
   return createMockContext({ userId: null });
+}
+
+/**
+ * Create a mock UoW with auto-generated vi.fn() stubs for all repository methods.
+ *
+ * Usage:
+ *   const uow = createMockUow({
+ *     property: { findById: vi.fn().mockResolvedValue(mockProperty) },
+ *   });
+ *   const ctx = createMockContext({ userId: "user-1", user: mockUser, uow });
+ *
+ * Any repository method not explicitly overridden returns a vi.fn() that resolves undefined.
+ */
+export function createMockUow(
+  overrides: Record<string, Record<string, unknown>> = {}
+): UnitOfWork {
+  const repos: Record<string, unknown> = {};
+  const handler: ProxyHandler<Record<string, unknown>> = {
+    get(_target, prop: string) {
+      if (prop in repos) return repos[prop];
+      // Create a proxy for each repository that auto-generates vi.fn() for any method
+      repos[prop] = new Proxy(overrides[prop] ?? {}, {
+        get(repoTarget, method: string) {
+          if (method in repoTarget) return repoTarget[method];
+          const fn = vi.fn();
+          (repoTarget as Record<string, unknown>)[method] = fn;
+          return fn;
+        },
+      });
+      return repos[prop];
+    },
+  };
+  return new Proxy({}, handler) as unknown as UnitOfWork;
 }

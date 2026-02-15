@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/utils";
 
 interface Stats {
   currentValue: number;
@@ -19,13 +20,6 @@ interface ValuationOverviewCardProps {
   stats: Stats | null | undefined;
   isLoading: boolean;
 }
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(value);
 
 const formatDate = (dateString: string) =>
   new Intl.DateTimeFormat("en-AU", {

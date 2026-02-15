@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { trpc } from "@/lib/trpc/client";
 import {
   Card,
@@ -26,6 +26,22 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
 export default function EmailConnectionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6 max-w-2xl">
+        <div>
+          <h2 className="text-2xl font-bold">Email Connections</h2>
+          <p className="text-muted-foreground">Connect your email accounts to automatically import property-related emails</p>
+        </div>
+        <div className="h-64 rounded-lg bg-muted animate-pulse" />
+      </div>
+    }>
+      <EmailConnectionsContent />
+    </Suspense>
+  );
+}
+
+function EmailConnectionsContent() {
   const searchParams = useSearchParams();
   const success = searchParams?.get("success");
   const error = searchParams?.get("error");

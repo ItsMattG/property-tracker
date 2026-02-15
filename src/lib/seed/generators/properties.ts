@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import type { PropertySeedConfig } from "../types";
-import { getClimateRisk } from "@/server/services/climate-risk";
+import { getClimateRisk } from "@/server/services/property-analysis";
 import { formatDate } from "../utils";
 
 export interface GeneratedProperty {

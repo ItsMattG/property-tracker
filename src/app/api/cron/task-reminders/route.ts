@@ -8,7 +8,7 @@ import {
 import { eq, and, isNotNull, ne } from "drizzle-orm";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { notifyUser } from "@/server/services/notification";
-import { shouldSendReminder } from "@/server/services/task";
+import { shouldSendReminder } from "@/server/services/feedback/task";
 import { format, parseISO } from "date-fns";
 import { logger } from "@/lib/logger";
 

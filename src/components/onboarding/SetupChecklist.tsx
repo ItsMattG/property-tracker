@@ -7,7 +7,7 @@ import { Check, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
-import type { StepStatus } from "@/server/services/onboarding";
+import type { StepStatus } from "@/server/services/user/onboarding";
 
 interface SetupChecklistProps {
   progress: {

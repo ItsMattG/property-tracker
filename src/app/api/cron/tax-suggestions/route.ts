@@ -6,7 +6,7 @@ import {
   generateAllSuggestions,
   isEofySeason,
   getCurrentFinancialYear,
-} from "@/server/services/tax-optimization";
+} from "@/server/services/transaction";
 import { sendEmailNotification } from "@/server/services/notification";
 import { eofySuggestionsTemplate, eofySuggestionsSubject } from "@/lib/email/templates/eofy-suggestions";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";

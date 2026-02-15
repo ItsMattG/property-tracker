@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { propertyEmails } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
-import { resolveForwardingAddress } from "@/server/services/email-forwarding";
-import { isSenderApproved } from "@/server/services/email-sender-check";
-import { processEmailBackground } from "@/server/services/email-processing";
+import {
+  resolveForwardingAddress,
+  isSenderApproved,
+  processEmailBackground,
+} from "@/server/services/email";
 import { waitUntil } from "@vercel/functions";
 import { timingSafeEqual } from "crypto";
 

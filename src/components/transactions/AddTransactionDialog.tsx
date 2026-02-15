@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { signedAmountSchema } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -41,7 +42,7 @@ const transactionFormSchema = z.object({
   propertyId: z.string().uuid("Please select a property"),
   date: z.string().min(1, "Date is required"),
   description: z.string().min(1, "Description is required"),
-  amount: z.string().regex(/^-?\d+\.?\d*$/, "Invalid amount"),
+  amount: signedAmountSchema,
   category: z.string(),
   notes: z.string().optional(),
 });

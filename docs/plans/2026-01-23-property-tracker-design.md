@@ -600,7 +600,7 @@ RENTAL_INCOME
 
 | Layer | Technology | Reasoning |
 |-------|------------|-----------|
-| Frontend | Next.js 14 (App Router) | SSR, API routes, Vercel deployment |
+| Frontend | Next.js 16 (App Router) | SSR, API routes, Vercel deployment |
 | UI Components | shadcn/ui + Tailwind | Copy-paste components, no lock-in |
 | State | TanStack Query + Zustand | Server state + minimal client state |
 | Forms | React Hook Form + Zod | Type-safe validation |

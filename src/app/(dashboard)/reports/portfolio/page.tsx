@@ -19,6 +19,7 @@ import {
   Building2,
   Loader2,
 } from "lucide-react";
+import { formatCurrencyWithCents } from "@/lib/utils";
 
 const CashFlowChart = dynamic(
   () =>
@@ -32,13 +33,6 @@ const CashFlowChart = dynamic(
     ssr: false,
   }
 );
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-  }).format(amount);
-}
 
 export default function PortfolioDashboardPage() {
   const [period, setPeriod] = useState<"monthly" | "quarterly" | "annual">(
@@ -127,7 +121,7 @@ export default function PortfolioDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(data.totals.totalIncome)}
+                  {formatCurrencyWithCents(data.totals.totalIncome)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Last {months} months
@@ -144,7 +138,7 @@ export default function PortfolioDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  {formatCurrency(data.totals.totalExpenses)}
+                  {formatCurrencyWithCents(data.totals.totalExpenses)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Last {months} months
@@ -163,7 +157,7 @@ export default function PortfolioDashboardPage() {
                     data.totals.netIncome >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  {formatCurrency(data.totals.netIncome)}
+                  {formatCurrencyWithCents(data.totals.netIncome)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Last {months} months
@@ -203,7 +197,7 @@ export default function PortfolioDashboardPage() {
                     <div>
                       <p className="font-medium">{property.address}</p>
                       <p className="text-sm text-muted-foreground">
-                        Purchase: {formatCurrency(property.purchasePrice)}
+                        Purchase: {formatCurrencyWithCents(property.purchasePrice)}
                       </p>
                     </div>
                     <div className="text-right">
@@ -211,7 +205,7 @@ export default function PortfolioDashboardPage() {
                         Loan Balance
                       </p>
                       <p className="font-medium">
-                        {formatCurrency(property.loanBalance)}
+                        {formatCurrencyWithCents(property.loanBalance)}
                       </p>
                     </div>
                   </div>

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Building2 } from "lucide-react";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils";
 
 interface LoanCardProps {
   loan: {
@@ -29,14 +30,6 @@ interface LoanCardProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
-
-const formatCurrency = (amount: string) =>
-  new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(parseFloat(amount));
 
 export function LoanCard({ loan, onEdit, onDelete }: LoanCardProps) {
   const paidOff =
@@ -87,7 +80,7 @@ export function LoanCard({ loan, onEdit, onDelete }: LoanCardProps) {
         {/* Balance + progress */}
         <div>
           <p className="text-2xl font-bold tracking-tight">
-            {formatCurrency(loan.currentBalance)}
+            {formatCurrency(parseFloat(loan.currentBalance))}
           </p>
           <div className="mt-2 flex items-center gap-2">
             <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
@@ -113,7 +106,7 @@ export function LoanCard({ loan, onEdit, onDelete }: LoanCardProps) {
           <div>
             <p className="text-xs text-muted-foreground">Repayment</p>
             <p className="text-sm font-semibold tabular-nums">
-              {formatCurrency(loan.repaymentAmount)}
+              {formatCurrency(parseFloat(loan.repaymentAmount))}
             </p>
           </div>
           <div>

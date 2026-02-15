@@ -1,17 +1,6 @@
 import jsPDF from "jspdf";
-import type { PortfolioSnapshot } from "@/server/services/share";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function formatPercent(value: number): string {
-  return `${value.toFixed(1)}%`;
-}
+import type { PortfolioSnapshot } from "@/server/services/portfolio/share";
+import { formatCurrency, formatPercent } from "@/lib/utils";
 
 function addWatermark(doc: jsPDF): void {
   const pageWidth = doc.internal.pageSize.getWidth();

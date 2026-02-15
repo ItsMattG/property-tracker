@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { positiveAmountSchema } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -32,11 +33,11 @@ const loanFormSchema = z.object({
   accountNumberMasked: z.string().optional(),
   loanType: z.enum(["principal_and_interest", "interest_only"]),
   rateType: z.enum(["variable", "fixed", "split"]),
-  originalAmount: z.string().regex(/^\d+\.?\d*$/, "Enter a valid loan amount (must be greater than 0)"),
-  currentBalance: z.string().regex(/^\d+\.?\d*$/, "Enter a valid balance amount"),
-  interestRate: z.string().regex(/^\d+\.?\d*$/, "Enter a valid interest rate (e.g., 6.5)"),
+  originalAmount: positiveAmountSchema,
+  currentBalance: positiveAmountSchema,
+  interestRate: positiveAmountSchema,
   fixedRateExpiry: z.string().optional(),
-  repaymentAmount: z.string().regex(/^\d+\.?\d*$/, "Invalid amount"),
+  repaymentAmount: positiveAmountSchema,
   repaymentFrequency: z.enum(["weekly", "fortnightly", "monthly"]),
 });
 

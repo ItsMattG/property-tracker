@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 import { recordHeartbeat } from "@/lib/monitoring";
-import { getValuationProvider, MockValuationProvider } from "@/server/services/valuation";
+import { getValuationProvider, MockValuationProvider } from "@/server/services/property-analysis";
 
 export const runtime = "nodejs";
 

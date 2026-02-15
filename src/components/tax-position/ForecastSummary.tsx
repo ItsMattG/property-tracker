@@ -2,16 +2,8 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfidenceBadge } from "./ConfidenceBadge";
+import { formatCurrency } from "@/lib/utils";
 import { TrendingUp } from "lucide-react";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
-}
 
 type Confidence = "high" | "medium" | "low";
 
@@ -41,7 +33,7 @@ export function ForecastSummary({
               <p className="text-xs text-blue-700">
                 {forecastIsRefund ? "Projected Refund" : "Projected Owing"}:{" "}
                 <span className="font-semibold">
-                  {formatCurrency(forecastRefund)}
+                  {formatCurrency(Math.abs(forecastRefund))}
                 </span>
               </p>
             </div>

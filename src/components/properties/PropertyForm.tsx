@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { positiveAmountSchema, australianPostcodeSchema, suburbSchema } from "@/lib/validation";
 import { NumericFormat } from "react-number-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,10 +29,10 @@ const states = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
 
 const propertyFormSchema = z.object({
   address: z.string().min(1, "Address is required"),
-  suburb: z.string().min(1, "Suburb is required").regex(/^[a-zA-Z\s\-']+$/, "Suburb must only contain letters"),
+  suburb: z.string().min(1, "Suburb is required").pipe(suburbSchema),
   state: z.enum(states, { error: "State is required" }),
-  postcode: z.string().regex(/^\d{4}$/, "Invalid postcode (must be 4 digits)"),
-  purchasePrice: z.string().regex(/^\d+\.?\d*$/, "Invalid price"),
+  postcode: australianPostcodeSchema,
+  purchasePrice: positiveAmountSchema,
   contractDate: z.string().min(1, "Contract date is required"),
   settlementDate: z.string().optional(),
   entityName: z.string().optional(),

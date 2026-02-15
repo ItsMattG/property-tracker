@@ -10,13 +10,8 @@ import { getAuthSession } from "@/lib/auth";
 import { db } from "@/server/db";
 import { users, properties } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
-import { getChatTools } from "@/server/services/chat-tools";
-import {
-  createConversation,
-  addMessage,
-  generateTitle,
-} from "@/server/services/chat";
-import { buildSystemPrompt } from "@/server/services/chat-system-prompt";
+import { getChatTools, generateTitle, buildSystemPrompt } from "@/server/services/chat";
+import { ChatRepository } from "@/server/repositories/chat.repository";
 
 export async function POST(req: Request) {
   const session = await getAuthSession();
@@ -42,6 +37,8 @@ export async function POST(req: Request) {
     currentRoute?: string;
   };
 
+  const chatRepo = new ChatRepository(db);
+
   // Get or create conversation
   let convId = conversationId;
   if (!convId) {
@@ -51,7 +48,7 @@ export async function POST(req: Request) {
       .map((p) => p.text)
       .join("") || "";
     const title = firstContent ? generateTitle(firstContent) : null;
-    const conversation = await createConversation(user.id, title || undefined);
+    const conversation = await chatRepo.createConversation(user.id, title || undefined);
     convId = conversation.id;
   }
 
@@ -63,7 +60,7 @@ export async function POST(req: Request) {
       .map((p) => p.text)
       .join("") || "";
     if (textContent) {
-      await addMessage(convId, "user", textContent);
+      await chatRepo.addMessage(convId, "user", textContent);
     }
   }
 
@@ -92,7 +89,7 @@ export async function POST(req: Request) {
       stopWhen: stepCountIs(5),
       onFinish: async ({ text }) => {
         if (text) {
-          await addMessage(savedConvId, "assistant", text);
+          await chatRepo.addMessage(savedConvId, "assistant", text);
         }
       },
     }).toUIMessageStream(),

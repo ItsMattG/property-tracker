@@ -13,17 +13,10 @@ import {
 } from "recharts";
 import { trpc } from "@/lib/trpc/client";
 import { TrendingUp } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 const GROWTH_RATE = 0.05; // 5% annual property growth (Australian long-term average)
 const PROJECTION_YEARS = 25;
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 function formatCompact(value: number): string {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;

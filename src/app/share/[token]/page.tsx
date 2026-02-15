@@ -2,7 +2,7 @@ import { db } from "@/server/db";
 import { portfolioShares } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { transformForPrivacy, type PortfolioSnapshot, type PrivacyMode } from "@/server/services/share";
+import { transformForPrivacy, type PortfolioSnapshot, type PrivacyMode } from "@/server/services/portfolio/share";
 import { PortfolioReport } from "@/components/share/PortfolioReport";
 import { DownloadPDFButton } from "@/components/share/DownloadPDFButton";
 import { Button } from "@/components/ui/button";

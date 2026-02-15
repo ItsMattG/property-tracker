@@ -6,7 +6,7 @@
 
 **Architecture:** Feature requests are public with upvoting; bug reports are private. Both use tRPC routes with Drizzle ORM. Public `/feedback` page shows feature board. Bug reports go to admin-only dashboard in settings. Feedback button in sidebar triggers modals.
 
-**Tech Stack:** Next.js 14, tRPC, Drizzle ORM, PostgreSQL, shadcn/ui, Vitest, Playwright
+**Tech Stack:** Next.js 16, tRPC, Drizzle ORM, PostgreSQL, shadcn/ui, Vitest, Playwright
 
 ---
 

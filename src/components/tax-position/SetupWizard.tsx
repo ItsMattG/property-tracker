@@ -15,17 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc/client";
+import { formatCurrency } from "@/lib/utils";
 import { ArrowLeft, ArrowRight, Home, Loader2, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
-}
 
 type FamilyStatus = "single" | "couple" | "family";
 
@@ -152,13 +144,13 @@ export function SetupWizard({
                     <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
                       <Home className="h-4 w-4" />
                       Your rental properties saved you{" "}
-                      {formatCurrency(calculation.propertySavings)} in tax!
+                      {formatCurrency(Math.abs(calculation.propertySavings))} in tax!
                     </p>
                   )}
                   <div className="border-t pt-4 mt-4 text-sm text-left space-y-1">
                     <div className="flex justify-between">
                       <span>Gross salary</span>
-                      <span>{formatCurrency(calculation.grossSalary)}</span>
+                      <span>{formatCurrency(Math.abs(calculation.grossSalary))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Rental result</span>
@@ -169,11 +161,11 @@ export function SetupWizard({
                     </div>
                     <div className="flex justify-between">
                       <span>Tax payable</span>
-                      <span>{formatCurrency(calculation.totalTaxLiability)}</span>
+                      <span>{formatCurrency(Math.abs(calculation.totalTaxLiability))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>PAYG paid</span>
-                      <span>-{formatCurrency(calculation.paygWithheld)}</span>
+                      <span>-{formatCurrency(Math.abs(calculation.paygWithheld))}</span>
                     </div>
                   </div>
                 </>

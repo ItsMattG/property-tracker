@@ -15,7 +15,7 @@ import {
 import { eq, desc, sql } from "drizzle-orm";
 import { sendPushNotification, sendEmailNotification, isQuietHours } from "@/server/services/notification";
 import { getMilestoneMessage } from "@/lib/equity-milestones";
-import { resolveThresholds } from "@/server/services/milestone-preferences";
+import { resolveThresholds } from "@/server/services/notification";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 import { logger } from "@/lib/logger";
 

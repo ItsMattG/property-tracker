@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Zap, Check } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -50,6 +50,30 @@ const PLANS = [
 ];
 
 export default function BillingPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">Billing</h2>
+          <p className="text-muted-foreground">Loading billing details...</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <div className="h-48 bg-muted animate-pulse rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    }>
+      <BillingContent />
+    </Suspense>
+  );
+}
+
+function BillingContent() {
   const searchParams = useSearchParams();
   const utils = trpc.useUtils();
 
