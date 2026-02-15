@@ -1,10 +1,25 @@
-import type { Loan, NewLoan, Property, BankAccount } from "../../db/schema";
+import type {
+  Loan, NewLoan, Property, BankAccount,
+  Broker, NewBroker, LoanPack, NewLoanPack,
+  LoanComparison, NewLoanComparison, RefinanceAlert, NewRefinanceAlert,
+} from "../../db/schema";
 import type { DB } from "../base";
 
 /** Loan with property and offset account relations */
 export type LoanWithRelations = Loan & {
   property: Property;
   offsetAccount?: BankAccount | null;
+};
+
+/** Broker with count of associated loan packs */
+export type BrokerWithPackCount = Broker & { packCount: number };
+
+/** Loan pack with its associated broker */
+export type LoanPackWithBroker = LoanPack & { broker: Broker | null };
+
+/** Loan comparison with nested loan and property */
+export type LoanComparisonWithLoan = LoanComparison & {
+  loan: Loan & { property: Property | null };
 };
 
 export interface ILoanRepository {
@@ -33,4 +48,28 @@ export interface ILoanRepository {
     currentBalance: string;
     updatedAt: Date;
   }>>;
+
+  // --- Brokers ---
+  listBrokersWithStats(userId: string): Promise<BrokerWithPackCount[]>;
+  findBrokerById(id: string, userId: string): Promise<Broker | null>;
+  findBrokerPacks(brokerId: string): Promise<LoanPack[]>;
+  createBroker(data: NewBroker, tx?: DB): Promise<Broker>;
+  updateBroker(id: string, userId: string, data: Partial<Broker>, tx?: DB): Promise<Broker>;
+  deleteBroker(id: string, userId: string, tx?: DB): Promise<void>;
+
+  // --- Loan Packs ---
+  createLoanPack(data: NewLoanPack, tx?: DB): Promise<LoanPack>;
+  findLoanPacksByOwner(userId: string): Promise<LoanPackWithBroker[]>;
+  deleteLoanPack(id: string, userId: string, tx?: DB): Promise<void>;
+  findLoanPackByToken(token: string): Promise<LoanPack | null>;
+  incrementLoanPackAccess(id: string, tx?: DB): Promise<LoanPack>;
+
+  // --- Loan Comparisons ---
+  createComparison(data: NewLoanComparison, tx?: DB): Promise<LoanComparison>;
+  findComparisonsByOwner(userId: string, loanId?: string): Promise<LoanComparisonWithLoan[]>;
+  deleteComparison(id: string, userId: string, tx?: DB): Promise<void>;
+
+  // --- Refinance Alerts ---
+  findRefinanceAlert(loanId: string): Promise<RefinanceAlert | null>;
+  upsertRefinanceAlert(loanId: string, data: Partial<RefinanceAlert>, tx?: DB): Promise<RefinanceAlert>;
 }
