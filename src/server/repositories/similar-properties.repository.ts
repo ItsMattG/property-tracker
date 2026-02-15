@@ -1,9 +1,10 @@
-import { eq, and, or, sql, desc } from "drizzle-orm";
+import { eq, and, or, sql, desc, inArray } from "drizzle-orm";
 import {
   propertyVectors,
   externalListings,
   sharingPreferences,
   suburbBenchmarks,
+  propertyPerformanceBenchmarks,
 } from "../db/schema";
 import type {
   PropertyVector,
@@ -11,6 +12,9 @@ import type {
   ExternalListing,
   NewExternalListing,
   SuburbBenchmark,
+  NewSuburbBenchmark,
+  PropertyPerformanceBenchmark,
+  NewPropertyPerformanceBenchmark,
   SharingPreference,
 } from "../db/schema";
 import { BaseRepository, type DB } from "./base";
@@ -230,13 +234,58 @@ export class SimilarPropertiesRepository
 
   // ── Suburb Benchmarks ─────────────────────────────────────────────
 
-  async findSuburbBenchmark(suburb: string, state: string): Promise<SuburbBenchmark | null> {
+  async findSuburbBenchmark(
+    suburb: string,
+    state: string,
+    propertyType?: string
+  ): Promise<SuburbBenchmark | null> {
+    const conditions = [
+      eq(suburbBenchmarks.suburb, suburb),
+      eq(suburbBenchmarks.state, state),
+    ];
+    if (propertyType) {
+      conditions.push(eq(suburbBenchmarks.propertyType, propertyType));
+    }
     const result = await this.db.query.suburbBenchmarks.findFirst({
-      where: and(
-        eq(suburbBenchmarks.suburb, suburb),
-        eq(suburbBenchmarks.state, state)
-      ),
+      where: and(...conditions),
     });
     return result ?? null;
+  }
+
+  async createSuburbBenchmark(data: NewSuburbBenchmark): Promise<SuburbBenchmark> {
+    const [inserted] = await this.db.insert(suburbBenchmarks).values(data).returning();
+    return inserted;
+  }
+
+  // ── Performance Benchmarks ──────────────────────────────────────────
+
+  async upsertPerformanceBenchmark(data: NewPropertyPerformanceBenchmark): Promise<void> {
+    await this.db
+      .insert(propertyPerformanceBenchmarks)
+      .values(data)
+      .onConflictDoUpdate({
+        target: propertyPerformanceBenchmarks.propertyId,
+        set: {
+          yieldPercentile: data.yieldPercentile,
+          growthPercentile: data.growthPercentile,
+          expensePercentile: data.expensePercentile,
+          vacancyPercentile: data.vacancyPercentile,
+          performanceScore: data.performanceScore,
+          cohortSize: data.cohortSize,
+          cohortDescription: data.cohortDescription,
+          suburbBenchmarkId: data.suburbBenchmarkId,
+          insights: data.insights,
+          calculatedAt: new Date(),
+        },
+      });
+  }
+
+  async findPerformanceBenchmarksByProperties(
+    propertyIds: string[]
+  ): Promise<PropertyPerformanceBenchmark[]> {
+    if (propertyIds.length === 0) return [];
+    return this.db.query.propertyPerformanceBenchmarks.findMany({
+      where: inArray(propertyPerformanceBenchmarks.propertyId, propertyIds),
+    });
   }
 }

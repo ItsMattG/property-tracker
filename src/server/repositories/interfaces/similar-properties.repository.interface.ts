@@ -4,6 +4,9 @@ import type {
   ExternalListing,
   NewExternalListing,
   SuburbBenchmark,
+  NewSuburbBenchmark,
+  PropertyPerformanceBenchmark,
+  NewPropertyPerformanceBenchmark,
   SharingPreference,
   Property,
 } from "../../db/schema";
@@ -65,6 +68,11 @@ export interface ISimilarPropertiesRepository {
     data: { defaultShareLevel: string; defaultSharedAttributes: string[] }
   ): Promise<void>;
 
-  // Suburb Benchmarks (read-only lookups)
-  findSuburbBenchmark(suburb: string, state: string): Promise<SuburbBenchmark | null>;
+  // Suburb Benchmarks
+  findSuburbBenchmark(suburb: string, state: string, propertyType?: string): Promise<SuburbBenchmark | null>;
+  createSuburbBenchmark(data: NewSuburbBenchmark): Promise<SuburbBenchmark>;
+
+  // Performance Benchmarks
+  upsertPerformanceBenchmark(data: NewPropertyPerformanceBenchmark): Promise<void>;
+  findPerformanceBenchmarksByProperties(propertyIds: string[]): Promise<PropertyPerformanceBenchmark[]>;
 }
