@@ -19,6 +19,9 @@ import type {
   IPropertyValueRepository,
   ISimilarPropertiesRepository,
   IReferralRepository,
+  IPropertyManagerRepository,
+  INotificationRepository,
+  IChangelogRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -41,6 +44,9 @@ import { ForecastRepository } from "./forecast.repository";
 import { PropertyValueRepository } from "./property-value.repository";
 import { SimilarPropertiesRepository } from "./similar-properties.repository";
 import { ReferralRepository } from "./referral.repository";
+import { PropertyManagerRepository } from "./property-manager.repository";
+import { NotificationRepository } from "./notification.repository";
+import { ChangelogRepository } from "./changelog.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -63,6 +69,9 @@ export class UnitOfWork {
   private _propertyValue?: IPropertyValueRepository;
   private _similarProperties?: ISimilarPropertiesRepository;
   private _referral?: IReferralRepository;
+  private _propertyManager?: IPropertyManagerRepository;
+  private _notification?: INotificationRepository;
+  private _changelog?: IChangelogRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -123,6 +132,15 @@ export class UnitOfWork {
   }
   get referral(): IReferralRepository {
     return (this._referral ??= new ReferralRepository(this.db));
+  }
+  get propertyManager(): IPropertyManagerRepository {
+    return (this._propertyManager ??= new PropertyManagerRepository(this.db));
+  }
+  get notification(): INotificationRepository {
+    return (this._notification ??= new NotificationRepository(this.db));
+  }
+  get changelog(): IChangelogRepository {
+    return (this._changelog ??= new ChangelogRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */

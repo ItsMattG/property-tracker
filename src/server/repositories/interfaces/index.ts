@@ -17,3 +17,6 @@ export type { IForecastRepository, CashFlowForecastWithProperty } from "./foreca
 export type { IPropertyValueRepository } from "./property-value.repository.interface";
 export type { ISimilarPropertiesRepository, SimilarVectorRow, PropertyVectorWithRelations } from "./similar-properties.repository.interface";
 export type { IReferralRepository, ReferralWithReferee } from "./referral.repository.interface";
+export type { INotificationRepository } from "./notification.repository.interface";
+export type { IPropertyManagerRepository, ConnectionWithMappings, ConnectionWithDetails, MappingWithConnection, MappingWithProperty } from "./property-manager.repository.interface";
+export type { IChangelogRepository, ChangelogListResult } from "./changelog.repository.interface";

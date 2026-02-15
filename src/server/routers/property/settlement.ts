@@ -19,12 +19,7 @@ export const settlementRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, input.propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(input.propertyId, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
@@ -69,17 +64,13 @@ export const settlementRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { propertyId, purchasePrice, settlementDate, items } = input;
 
-      const property = await ctx.db.query.properties.findFirst({
-        where: and(
-          eq(properties.id, propertyId),
-          eq(properties.userId, ctx.portfolio.ownerId)
-        ),
-      });
+      const property = await ctx.uow.property.findById(propertyId, ctx.portfolio.ownerId);
 
       if (!property) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
       }
 
+      // Cross-domain: property update + transaction inserts — stays ctx.db
       // Update purchase price and date if extracted
       if (purchasePrice || settlementDate) {
         const updates: Partial<Property> = { updatedAt: new Date() };
@@ -120,6 +111,7 @@ export const settlementRouter = router({
   getForProperty: protectedProcedure
     .input(z.object({ propertyId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
+      // Cross-domain: document query by propertyId — stays ctx.db
       const docs = await ctx.db.query.documents.findMany({
         where: and(
           eq(documents.propertyId, input.propertyId),

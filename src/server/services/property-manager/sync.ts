@@ -3,31 +3,10 @@
 import { eq, and } from "drizzle-orm";
 import type { PropertyManagerProvider } from "./types";
 import { transactions, propertyManagerMappings } from "@/server/db/schema";
+import type { NewTransaction } from "@/server/db/schema";
+import type { DB } from "../../repositories/base";
 
-type DbClient = {
-  query: {
-    propertyManagerMappings: {
-      findMany: (opts: unknown) => Promise<Array<{
-        providerPropertyId: string;
-        propertyId: string | null;
-        autoSync: boolean;
-      }>>;
-    };
-    transactions: {
-      findFirst: (opts: unknown) => Promise<unknown>;
-    };
-  };
-  insert: (table: unknown) => {
-    values: (values: unknown) => {
-      returning: () => Promise<Array<{ id: string }>>;
-    };
-  };
-  update: (table: unknown) => {
-    set: (values: unknown) => {
-      where: (condition: unknown) => Promise<void>;
-    };
-  };
-};
+type TransactionCategory = NonNullable<NewTransaction["category"]>;
 
 interface SyncResult {
   created: number;
@@ -38,7 +17,7 @@ interface SyncResult {
 export class PropertyManagerSyncService {
   constructor(
     private provider: PropertyManagerProvider,
-    private db: DbClient
+    private db: DB
   ) {}
 
   async syncRentPayments(
@@ -236,7 +215,7 @@ export class PropertyManagerSyncService {
     return result;
   }
 
-  private mapBillCategory(category?: string): string {
+  private mapBillCategory(category?: string): TransactionCategory {
     if (!category) return "sundry_rental_expenses";
     const lower = category.toLowerCase();
     if (lower.includes("rate") || lower.includes("council")) return "council_rates";
