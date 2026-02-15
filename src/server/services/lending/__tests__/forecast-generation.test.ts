@@ -1,5 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, type Mock } from "vitest";
 import { generateForecastsForScenario } from "../forecast-generation";
+
+type ForecastDeps = Parameters<typeof generateForecastsForScenario>[0];
 
 const mockScenario = {
   id: "scenario-1",
@@ -21,41 +23,22 @@ function createMockDeps() {
       findScenarioById: vi.fn().mockResolvedValue(mockScenario),
       clearForecasts: vi.fn().mockResolvedValue(undefined),
       insertForecasts: vi.fn().mockResolvedValue([]),
-      listScenarios: vi.fn(),
-      createScenario: vi.fn(),
-      updateScenario: vi.fn(),
-      deleteScenario: vi.fn(),
-      clearAllDefaults: vi.fn(),
-      setDefault: vi.fn(),
-      getForecasts: vi.fn(),
-      getForecastsRaw: vi.fn(),
     },
     recurring: {
       findByOwner: vi.fn().mockResolvedValue([
         { transactionType: "income", amount: "5000" },
         { transactionType: "expense", amount: "-2000" },
       ]),
-      findById: vi.fn(),
-      findByProperty: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-      findExpected: vi.fn(),
-      createExpected: vi.fn(),
-      findExpectedByOwner: vi.fn(),
-      updateExpected: vi.fn(),
-      deleteExpected: vi.fn(),
     },
     loan: {
       findByOwner: vi.fn().mockResolvedValue([
         { currentBalance: "400000", interestRate: "5.5" },
       ]),
-      findById: vi.fn(),
-      findByProperty: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
     },
+  } as unknown as ForecastDeps & {
+    forecast: { findScenarioById: Mock; clearForecasts: Mock; insertForecasts: Mock };
+    recurring: { findByOwner: Mock };
+    loan: { findByOwner: Mock };
   };
 }
 
@@ -78,13 +61,13 @@ describe("generateForecastsForScenario", () => {
       ])
     );
 
-    const insertedForecasts = deps.forecast.insertForecasts.mock.calls[0][0];
+    const insertedForecasts = (deps.forecast.insertForecasts as Mock).mock.calls[0][0];
     expect(insertedForecasts).toHaveLength(12);
   });
 
   it("returns early if scenario not found", async () => {
     const deps = createMockDeps();
-    deps.forecast.findScenarioById.mockResolvedValue(null);
+    (deps.forecast.findScenarioById as Mock).mockResolvedValue(null);
 
     await generateForecastsForScenario(deps, "user-1", "scenario-1");
 
@@ -94,12 +77,12 @@ describe("generateForecastsForScenario", () => {
 
   it("handles zero loan balance", async () => {
     const deps = createMockDeps();
-    deps.loan.findByOwner.mockResolvedValue([]);
+    (deps.loan.findByOwner as Mock).mockResolvedValue([]);
 
     await generateForecastsForScenario(deps, "user-1", "scenario-1");
 
     expect(deps.forecast.insertForecasts).toHaveBeenCalled();
-    const insertedForecasts = deps.forecast.insertForecasts.mock.calls[0][0];
+    const insertedForecasts = (deps.forecast.insertForecasts as Mock).mock.calls[0][0];
     expect(insertedForecasts).toHaveLength(12);
   });
 });
