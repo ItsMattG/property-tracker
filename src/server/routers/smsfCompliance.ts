@@ -17,7 +17,7 @@ import {
   getMonthsElapsedInFY,
   DEFAULT_AUDIT_ITEMS,
   CONTRIBUTION_CAPS,
-} from "../services/smsf-compliance";
+} from "../services/compliance";
 
 export const smsfComplianceRouter = router({
   // Member Management
