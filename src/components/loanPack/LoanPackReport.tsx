@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { LoanPackSnapshot } from "@/server/services/loanPack";
+import type { LoanPackSnapshot } from "@/server/services/lending/loan-pack";
 import { Building2, TrendingUp, TrendingDown, Shield, Trophy, Wallet } from "lucide-react";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 

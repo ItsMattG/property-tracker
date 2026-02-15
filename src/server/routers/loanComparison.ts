@@ -8,7 +8,7 @@ import {
   calculateTotalInterestSaved,
   calculateBreakEvenMonths,
   generateAmortizationSchedule,
-} from "../services/loan-comparison";
+} from "../services/lending";
 import { getEstimatedMarketRate } from "../services/rate-data";
 
 export const loanComparisonRouter = router({

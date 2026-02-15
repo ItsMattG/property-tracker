@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import type { LoanPackSnapshot } from "@/server/services/loanPack";
+import type { LoanPackSnapshot } from "@/server/services/lending/loan-pack";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 
 export function generateLoanPackPDF(data: LoanPackSnapshot): Blob {

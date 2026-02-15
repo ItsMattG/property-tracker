@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { generateLoanPackPDF } from "@/lib/loan-pack-pdf";
 import { downloadBlob } from "@/lib/export-utils";
-import type { LoanPackSnapshot } from "@/server/services/loanPack";
+import type { LoanPackSnapshot } from "@/server/services/lending/loan-pack";
 
 interface DownloadLoanPackPDFButtonProps {
   data: LoanPackSnapshot;

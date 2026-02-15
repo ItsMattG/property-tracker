@@ -18,7 +18,7 @@ import {
   calculateMonthlyProjection,
   getForecastMonth,
   type ScenarioAssumptions,
-} from "../services/forecast";
+} from "../services/lending";
 
 const assumptionsSchema = z.object({
   rentGrowthPercent: z.number().min(-10).max(20).default(2),

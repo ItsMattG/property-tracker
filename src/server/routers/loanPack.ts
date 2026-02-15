@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, writeProcedure, publicProcedure } from "../trpc";
 import { loanPacks, brokers } from "../db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { generateLoanPackToken, generateLoanPackSnapshot } from "../services/loanPack";
+import { generateLoanPackToken, generateLoanPackSnapshot } from "../services/lending";
 
 export const loanPackRouter = router({
   create: writeProcedure
