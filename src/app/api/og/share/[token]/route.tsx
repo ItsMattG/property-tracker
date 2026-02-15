@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { db } from "@/server/db";
 import { portfolioShares } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
-import type { PortfolioSnapshot, PrivacyMode } from "@/server/services/share";
+import type { PortfolioSnapshot, PrivacyMode } from "@/server/services/portfolio/share";
 import { formatCurrencyCompact } from "@/lib/utils";
 
 export const runtime = "nodejs";

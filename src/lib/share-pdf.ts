@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import type { PortfolioSnapshot } from "@/server/services/share";
+import type { PortfolioSnapshot } from "@/server/services/portfolio/share";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 
 function addWatermark(doc: jsPDF): void {

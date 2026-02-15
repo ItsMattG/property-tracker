@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { properties, propertyVectors, propertyValues, transactions, suburbBenchmarks } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { generatePropertyVector } from "@/server/services/vector-generation";
+import { generatePropertyVector } from "@/server/services/property-analysis/vector-generation";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
 
 export async function GET(request: Request) {

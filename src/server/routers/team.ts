@@ -11,7 +11,7 @@ import { eq, and, desc } from "drizzle-orm";
 import {
   generateInviteToken,
   getInviteExpiryDate,
-} from "../services/portfolio-access";
+} from "../services/portfolio/portfolio-access";
 
 export const teamRouter = router({
   // Get current portfolio context (for UI)

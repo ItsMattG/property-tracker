@@ -9,7 +9,7 @@ import {
   calculateBreakEvenMonths,
   generateAmortizationSchedule,
 } from "../services/lending";
-import { getEstimatedMarketRate } from "../services/rate-data";
+import { getEstimatedMarketRate } from "../services/lending/rate-data";
 
 export const loanComparisonRouter = router({
   calculate: protectedProcedure

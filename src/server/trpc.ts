@@ -4,7 +4,7 @@ import { headers, cookies } from "next/headers";
 import { db } from "./db";
 import { users, portfolioMembers, subscriptions } from "./db/schema";
 import { eq, and } from "drizzle-orm";
-import { type PortfolioRole, getPermissions } from "./services/portfolio-access";
+import { type PortfolioRole, getPermissions } from "./services/portfolio/portfolio-access";
 import { verifyMobileToken } from "./lib/mobile-jwt";
 import { axiomMetrics, flushAxiom } from "@/lib/axiom";
 import { logger, setLogContext, clearLogContext } from "@/lib/logger";
@@ -264,7 +264,7 @@ export const bankProcedure = protectedProcedure.use(async ({ ctx, next }) => {
 });
 
 // Plan-gated procedures for subscription-based feature access
-import { getPlanFromSubscription, isPlanSufficient, type Plan } from "./services/subscription";
+import { getPlanFromSubscription, isPlanSufficient, type Plan } from "./services/billing/subscription";
 
 function createPlanGatedProcedure(requiredPlan: Plan) {
   return protectedProcedure.use(async ({ ctx, next }) => {

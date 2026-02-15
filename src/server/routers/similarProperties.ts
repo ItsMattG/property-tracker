@@ -14,7 +14,7 @@ import {
   generatePropertyVector,
   calculateSimilarityScore,
   getPriceBracketLabel,
-} from "../services/vector-generation";
+} from "../services/property-analysis/vector-generation";
 import {
   extractListingData,
   detectInputType,
@@ -180,15 +180,31 @@ export const similarPropertiesRouter = router({
             LIMIT ${input.limit}
           `);
 
-      return (results as unknown as Array<Record<string, unknown>>).map((row) => {
+      interface SimilarPropertyRow {
+        id: string;
+        distance: number;
+        property_id: string | null;
+        user_id: string | null;
+        external_listing_id: string | null;
+        property_address: string | null;
+        property_suburb: string | null;
+        property_state: string | null;
+        listing_suburb: string | null;
+        listing_state: string | null;
+        listing_type: string | null;
+        listing_price: string | null;
+        listing_url: string | null;
+      }
+
+      return (results as unknown as SimilarPropertyRow[]).map((row) => {
         const isPortfolio = row.property_id && row.user_id === ctx.portfolio.ownerId;
         const isExternal = !!row.external_listing_id;
 
         return {
-          id: row.id as string,
+          id: row.id,
           type: isPortfolio ? "portfolio" : isExternal ? "external" : "community",
-          suburb: (row.property_suburb || row.listing_suburb) as string,
-          state: (row.property_state || row.listing_state) as string,
+          suburb: (row.property_suburb || row.listing_suburb) ?? "",
+          state: (row.property_state || row.listing_state) ?? "",
           propertyType: (row.listing_type || "house") as "house" | "townhouse" | "unit",
           priceBracket: getPriceBracketLabel(Number(row.listing_price) || 0),
           yield: null,
@@ -196,10 +212,10 @@ export const similarPropertiesRouter = router({
           distance: Number(row.distance),
           similarityScore: calculateSimilarityScore(Number(row.distance)),
           isEstimated: false,
-          propertyId: row.property_id as string | undefined,
-          address: row.property_address as string | undefined,
-          externalListingId: row.external_listing_id as string | undefined,
-          sourceUrl: row.listing_url as string | undefined,
+          propertyId: row.property_id ?? undefined,
+          address: row.property_address ?? undefined,
+          externalListingId: row.external_listing_id ?? undefined,
+          sourceUrl: row.listing_url ?? undefined,
         };
       });
     }),
