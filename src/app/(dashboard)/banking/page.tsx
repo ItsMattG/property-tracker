@@ -47,6 +47,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Wallet,
+  ArrowLeftRight,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ConnectionAlertBanner } from "@/components/banking/ConnectionAlertBanner";
@@ -188,6 +189,16 @@ export default function BankingPage() {
       toast.success("Property updated");
       utils.banking.listAccounts.invalidate();
       utils.banking.getAccountSummaries.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const updateDefaultType = trpc.banking.updateDefaultTransactionType.useMutation({
+    onSuccess: () => {
+      toast.success("Default transaction type updated");
+      utils.banking.listAccounts.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -513,6 +524,29 @@ export default function BankingPage() {
                                       {property.suburb}
                                     </SelectItem>
                                   ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Default transaction type */}
+                            <div className="flex items-center gap-2">
+                              <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+                              <Select
+                                value={account.defaultTransactionType ?? "property"}
+                                onValueChange={(value) =>
+                                  updateDefaultType.mutate({
+                                    accountId: account.id,
+                                    defaultTransactionType: value as "property" | "personal" | "ask",
+                                  })
+                                }
+                              >
+                                <SelectTrigger className="w-[160px]" size="sm">
+                                  <SelectValue placeholder="Transaction type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="property">Property</SelectItem>
+                                  <SelectItem value="personal">Personal</SelectItem>
+                                  <SelectItem value="ask">Ask me each time</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
