@@ -232,3 +232,52 @@ These automatically check subscription status and throw `FORBIDDEN` if insuffici
 In `src/app/api/trpc/[trpc]/route.ts`:
 - Known TRPCError codes (`UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`) pass through to client
 - `INTERNAL_SERVER_ERROR`: generates error ID, logs full details, returns sanitized message to client
+
+## Observability
+
+### Logging (`@/lib/logger`)
+
+| Method | When |
+|--------|------|
+| `logger.debug(msg, ctx)` | Dev-only detail, stripped in production |
+| `logger.info(msg, ctx)` | Business events (user signed up, property created) |
+| `logger.warn(msg, ctx)` | Recoverable issues (rate limit hit, retry succeeded) |
+| `logger.error(msg, error, ctx)` | Failures requiring investigation |
+| `logger.child({ domain })` | Scoped logger for a router/service |
+
+- **Never** use `console.log/warn/error` in server code — use `logger`
+- `requestId` and `userId` are auto-set via `setLogContext` in tRPC middleware
+- All logs auto-ship to Axiom in production via `@/lib/axiom`
+
+### Error Tracking (Sentry)
+
+- Unexpected errors auto-captured via `global-error.tsx` and tRPC error formatter
+- Use `Sentry.captureException(error)` for caught errors that need visibility
+- Never capture expected errors (validation, 404, auth redirects)
+- Set user context via `Sentry.setUser({ id })` — never log PII in tags/breadcrumbs
+
+### Rate Limiting (Upstash)
+
+- Import from `src/server/middleware/rate-limit.ts`
+- Apply to: public endpoints, expensive operations (AI, bulk exports), auth attempts
+- Standard error: `throw new TRPCError({ code: "TOO_MANY_REQUESTS" })`
+
+## Unit Testing Conventions
+
+| Pattern | Example |
+|---------|---------|
+| Test file location | `src/server/repositories/__tests__/property.test.ts` |
+| Mock UoW | `const uow = createMockUow()` from `@/server/test-utils` |
+| Mock structure | `vi.mocked(uow.propertyRepo.findById).mockResolvedValue(mockProperty)` |
+| Test naming | `it("returns null when property not found")` — describe behavior |
+| Arrange-Act-Assert | Clear separation with blank lines between sections |
+
+**What to test:**
+- Repository methods: query building, filtering, edge cases
+- Router procedures: authorization, validation, business logic
+- Services: transformation logic, error handling
+
+**What NOT to test:**
+- Drizzle query builder internals (trust the ORM)
+- Third-party library behavior
+- Simple pass-through functions with no logic

@@ -94,3 +94,18 @@ When E2E tests fail during validation:
 - Capture all evidence (logs, screenshots, trace)
 - Notify via ntfy: `"E2E tests failing after 2 fix attempts — need your input"`
 - Wait for user guidance before continuing
+
+## Error Monitoring in Tests
+
+Every E2E test MUST capture page errors to catch uncaught exceptions, unhandled promise rejections, and React hydration errors:
+
+```ts
+const errors: string[] = [];
+page.on("pageerror", (err) => errors.push(err.message));
+
+// ... test body ...
+
+expect(errors).toEqual([]);
+```
+
+Without this, tests can pass while the page has JavaScript errors that would break real users.
