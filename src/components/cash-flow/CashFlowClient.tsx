@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { CalendarGrid } from "./CalendarGrid";
 import { TimelineView } from "./TimelineView";
 import { BalanceChart } from "./BalanceChart";
+import { CashFlowSummary } from "./CashFlowSummary";
 import { DayDetailSheet } from "./DayDetailSheet";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -149,8 +150,13 @@ export function CashFlowClient() {
         </div>
       </div>
 
+      {/* KPI Summary Cards */}
+      {!isLoading && events.length > 0 && (
+        <CashFlowSummary events={events} />
+      )}
+
       {/* Balance projection chart */}
-      <Card className="animate-card-entrance" style={{ "--stagger-index": 0 } as React.CSSProperties}>
+      <Card className="animate-card-entrance" style={{ "--stagger-index": 1 } as React.CSSProperties}>
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -172,7 +178,7 @@ export function CashFlowClient() {
       </Card>
 
       {/* Calendar or list view */}
-      <Card className="animate-card-entrance" style={{ "--stagger-index": 1 } as React.CSSProperties}>
+      <Card className="animate-card-entrance" style={{ "--stagger-index": 2 } as React.CSSProperties}>
         <CardContent className="pt-6">
           {isLoading ? (
             <Skeleton className="h-[400px] w-full" />
