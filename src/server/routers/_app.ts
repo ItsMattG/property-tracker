@@ -89,6 +89,8 @@ import {
   blogRouter,
   taskRouter,
 } from "./feedback";
+// budget domain
+import { budgetRouter } from "./budget";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -147,6 +149,7 @@ export const appRouter = router({
   dashboard: dashboardRouter,
   activity: activityRouter,
   cashFlowCalendar: cashFlowCalendarRouter,
+  budget: budgetRouter,
 });
 
 export type AppRouter = typeof appRouter;
