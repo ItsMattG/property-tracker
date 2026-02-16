@@ -128,8 +128,7 @@ export function AddressAutocomplete({
             {
               input,
               sessionToken: sessionTokenRef.current,
-              includedPrimaryTypes: ["address"],
-              region: "au",
+              includedRegionCodes: ["au"],
             }
           );
 
