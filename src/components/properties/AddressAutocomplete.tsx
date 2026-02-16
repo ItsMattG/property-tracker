@@ -83,6 +83,13 @@ export function AddressAutocomplete({
       });
   }, []);
 
+  // Clean up debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   // Click outside to close dropdown
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -226,7 +233,7 @@ export function AddressAutocomplete({
         onKeyDown={handleKeyDown}
         placeholder={GOOGLE_PLACES_API_KEY ? placeholder : "123 Smith Street"}
         name={name}
-        onBlur={(e) => {
+        onBlur={() => {
           // Delay closing so mousedown on suggestion fires first
           setTimeout(() => setIsOpen(false), 150);
           onBlur?.();
