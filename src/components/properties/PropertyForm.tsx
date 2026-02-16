@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +9,7 @@ import { NumericFormat } from "react-number-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
+import { cn } from "@/lib/utils";
 import { AddressAutocomplete } from "./AddressAutocomplete";
 import {
   Form,
@@ -65,6 +67,8 @@ export function PropertyForm({
   isLoading,
   entities = [],
 }: PropertyFormProps) {
+  const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set());
+
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
     defaultValues: {
@@ -107,6 +111,11 @@ export function PropertyForm({
                     form.setValue("postcode", result.postcode, { shouldValidate: true });
                     form.setValue("latitude", result.latitude);
                     form.setValue("longitude", result.longitude);
+
+                    // Briefly highlight auto-filled fields
+                    const fields = new Set(["suburb", "state", "postcode"]);
+                    setHighlightedFields(fields);
+                    setTimeout(() => setHighlightedFields(new Set()), 600);
                   }}
                 />
               </FormControl>
@@ -121,7 +130,7 @@ export function PropertyForm({
             control={form.control}
             name="suburb"
             render={({ field }) => (
-              <FormItem className="col-span-2">
+              <FormItem className={cn("col-span-2", highlightedFields.has("suburb") && "[&_input]:animate-autofill-highlight")}>
                 <FormLabel>Suburb<RequiredMark /></FormLabel>
                 <FormControl>
                   <Input placeholder="Sydney" {...field} />
@@ -135,7 +144,7 @@ export function PropertyForm({
             control={form.control}
             name="state"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className={cn(highlightedFields.has("state") && "[&_[data-slot=select-trigger]]:animate-autofill-highlight")}>
                 <FormLabel>State<RequiredMark /></FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? ""}>
                   <FormControl>
@@ -160,7 +169,7 @@ export function PropertyForm({
             control={form.control}
             name="postcode"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className={cn(highlightedFields.has("postcode") && "[&_input]:animate-autofill-highlight")}>
                 <FormLabel>Postcode<RequiredMark /></FormLabel>
                 <FormControl>
                   <NumericFormat customInput={Input} placeholder="2000" allowNegative={false} decimalScale={0} maxLength={4} value={field.value} onValueChange={(values) => field.onChange(values.value)} onBlur={field.onBlur} name={field.name} />
