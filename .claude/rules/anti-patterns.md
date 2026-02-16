@@ -121,3 +121,50 @@
 | `await expect(page.getByText("Success")).toBeVisible()` | `await page.waitForSelector(".success")` |
 | `page.on('pageerror', ...)` to catch uncaught exceptions | Ignore page errors in tests |
 | Use `authenticatedPage` fixture from `e2e/fixtures/auth.ts` | Manual login in each test |
+
+## Sentry v10
+
+| DO | DON'T |
+|----|-------|
+| `Sentry.captureException(error)` for unexpected errors | `console.error` for production error tracking |
+| `Sentry.setUser({ id })` in auth context | Log PII (email, name) in Sentry breadcrumbs |
+| `Sentry.withScope(scope => { scope.setTag(...) })` for context | Capture expected/handled errors (404, validation) |
+| Use `global-error.tsx` for React error boundary reporting | Silent swallowing of errors in catch blocks |
+
+## Structured Logging / Axiom
+
+| DO | DON'T |
+|----|-------|
+| `logger.info("message", { context })` from `@/lib/logger` | `console.log` in server code |
+| `logger.error("message", error, { context })` | `console.error(error)` without structured context |
+| `logger.child({ domain: "banking" })` for domain-scoped logs | Create custom logger instances |
+| Include `requestId`, `userId` in log context | Log sensitive data (passwords, tokens, card numbers) |
+
+## Upstash Rate Limiting
+
+| DO | DON'T |
+|----|-------|
+| Use middleware from `src/server/middleware/rate-limit.ts` | Build custom rate limiting |
+| Apply to public/expensive endpoints (AI, bulk exports, auth) | Rate limit every tRPC procedure (overhead) |
+| Return TRPCError code `TOO_MANY_REQUESTS` | Silently drop rate-limited requests |
+| Sliding window algorithm | Fixed window (burst-prone) |
+
+## Error Boundaries
+
+| DO | DON'T |
+|----|-------|
+| `error.tsx` per route segment for granular recovery | Single global error boundary only |
+| Show "retry" action in error UI | Show raw error messages to users |
+| Report to Sentry in error boundary | Swallow errors silently |
+| `<ErrorBoundary>` component for client-side granular recovery | Let all errors bubble to global handler |
+
+## Security
+
+| DO | DON'T |
+|----|-------|
+| Always scope queries by `ctx.portfolio.ownerId` | Trust client-sent user IDs |
+| `stripe.webhooks.constructEvent()` for webhook verification | Process unverified webhook payloads |
+| Validate file uploads server-side (type, size, extension) | Trust client-side validation alone |
+| `writeProcedure` for mutations | `protectedProcedure` for state-changing ops without `canWrite` |
+| Sanitize AI-generated content before rendering | `dangerouslySetInnerHTML` with unsanitized content |
+| Use env vars for all secrets/keys | Hardcode API keys, tokens, or passwords |
