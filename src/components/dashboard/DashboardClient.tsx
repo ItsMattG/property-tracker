@@ -243,7 +243,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.propertyCount.current ?? 0, trends?.propertyCount.previous ?? null)
             )}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">Properties</CardTitle>
                 <Building2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -278,7 +278,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.portfolioValue.current ?? 0, trends?.portfolioValue.previous ?? null)
             )}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -311,7 +311,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.totalEquity.current ?? 0, trends?.totalEquity.previous ?? null)
             )}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">Total Equity</CardTitle>
                 <PiggyBank className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -345,7 +345,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.transactionCount.current ?? 0, trends?.transactionCount.previous ?? null)
             )}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">Transactions</CardTitle>
                 <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -380,7 +380,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               "interactive-card hover:border-primary transition-colors cursor-pointer",
               getTrendBorderClass(trends?.uncategorizedCount.current ?? 0, trends?.uncategorizedCount.previous ?? null, true)
             )}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium">Uncategorised</CardTitle>
                 <AlertCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
