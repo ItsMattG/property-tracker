@@ -48,6 +48,59 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   );
 }
 
+/**
+ * Fill date gaps in the balance series so Recharts draws continuous lines.
+ * For each pair of consecutive points more than 1 day apart, insert:
+ *   - one carry-forward entry the day after the first point
+ *   - one carry-forward entry the day before the second point
+ * This keeps the data sparse but ensures no visual gaps.
+ */
+function fillDateGaps(series: DailyBalance[]): DailyBalance[] {
+  if (series.length < 2) return series;
+
+  const result: DailyBalance[] = [];
+
+  for (let i = 0; i < series.length; i++) {
+    result.push(series[i]);
+
+    if (i < series.length - 1) {
+      const currentDate = new Date(series[i].date + "T00:00:00");
+      const nextDate = new Date(series[i + 1].date + "T00:00:00");
+      const diffDays = Math.round(
+        (nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      if (diffDays > 1) {
+        // Insert carry-forward one day after current
+        const dayAfter = new Date(currentDate);
+        dayAfter.setDate(dayAfter.getDate() + 1);
+        const dayAfterStr = dayAfter.toISOString().slice(0, 10);
+
+        result.push({
+          date: dayAfterStr,
+          balance: series[i].balance,
+          isForecasted: series[i].isForecasted,
+        });
+
+        // Insert carry-forward one day before next (only if it's a different day)
+        if (diffDays > 2) {
+          const dayBefore = new Date(nextDate);
+          dayBefore.setDate(dayBefore.getDate() - 1);
+          const dayBeforeStr = dayBefore.toISOString().slice(0, 10);
+
+          result.push({
+            date: dayBeforeStr,
+            balance: series[i].balance,
+            isForecasted: series[i + 1].isForecasted,
+          });
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
 export function BalanceChart({ data }: BalanceChartProps) {
   if (data.length === 0) {
     return (
@@ -57,11 +110,14 @@ export function BalanceChart({ data }: BalanceChartProps) {
     );
   }
 
-  const minBalance = Math.min(...data.map((d) => d.balance));
+  const filled = fillDateGaps(data);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const minBalance = Math.min(...filled.map((d) => d.balance));
   const hasNegative = minBalance < 0;
 
   // Split into concrete and forecasted segments
-  const chartData = data.map((d) => ({
+  const chartData = filled.map((d) => ({
     date: d.date,
     concrete: d.isForecasted ? undefined : d.balance,
     forecasted: d.isForecasted ? d.balance : undefined,
@@ -108,6 +164,15 @@ export function BalanceChart({ data }: BalanceChartProps) {
         {hasNegative && (
           <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} />
         )}
+
+        {/* Today marker — where actuals end and projections begin */}
+        <ReferenceLine
+          x={today}
+          stroke="var(--color-muted-foreground)"
+          strokeDasharray="4 4"
+          strokeWidth={1}
+          label={{ value: "Today", position: "top", fontSize: 11, fill: "var(--color-muted-foreground)" }}
+        />
 
         {/* Concrete balance area */}
         <Area
