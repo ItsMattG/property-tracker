@@ -161,6 +161,19 @@
   .animate-slide-down-reveal { animation: none; opacity: 1; max-height: none; transform: none; }
 }
 
+/* Autofill highlight pulse for address autocomplete */
+@keyframes autofill-highlight {
+  0% { box-shadow: 0 0 0 0 var(--ring); }
+  50% { box-shadow: 0 0 0 3px var(--ring); }
+  100% { box-shadow: 0 0 0 0 var(--ring); }
+}
+.animate-autofill-highlight {
+  animation: autofill-highlight 0.6s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-autofill-highlight { animation: none; }
+}
+
 /* Interactive card hover */
 .interactive-card {
   transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
