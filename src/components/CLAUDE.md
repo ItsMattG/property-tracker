@@ -210,3 +210,14 @@ const { data: trialStatus } = trpc.billing.getTrialStatus.useQuery();
 <ErrorState message="Failed to load" onRetry={() => refetch()} />
 toast.error(getErrorMessage(error));
 ```
+
+## Accessibility
+
+| DO | DON'T |
+|----|-------|
+| Semantic HTML (`<button>`, `<nav>`, `<main>`, `<section>`) | `<div onClick>` for interactive elements |
+| `aria-label` on icon-only buttons | Rely on visual-only context |
+| `aria-live="polite"` for async status updates | Custom notification without aria-live |
+| Keyboard-navigable: all interactive elements focusable | `tabIndex` hacks or skip links without reason |
+| `sr-only` class for screen-reader-only text | `display: none` for content that should be announced |
+| Test with `npm run test:a11y` before merge | Assume Radix handles everything |

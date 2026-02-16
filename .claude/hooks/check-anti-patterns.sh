@@ -3,7 +3,7 @@
 # Advisory only (exit 0) — reports findings as context feedback
 
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tool_input',{}).get('file_path',''))" 2>/dev/null)
 
 # Only check TypeScript/TSX files
 if [[ -z "$FILE_PATH" ]] || [[ ! "$FILE_PATH" =~ \.(ts|tsx)$ ]]; then
@@ -60,6 +60,48 @@ fi
 # 9. Promise<unknown> or Promise<any> in non-test files
 if grep -qn 'Promise<unknown>\|Promise<any>' "$FILE_PATH" 2>/dev/null; then
   ISSUES+="- Promise<unknown> or Promise<any> found (use typed return values)\n"
+fi
+
+# 10. getServerSideProps (doesn't exist in App Router)
+if grep -qn 'getServerSideProps' "$FILE_PATH" 2>/dev/null; then
+  ISSUES+="- getServerSideProps found (doesn't exist in App Router, use server components or route handlers)\n"
+fi
+
+# 11. size={ on Lucide icons (should use Tailwind classes)
+# Only flag in files that import from lucide-react
+if grep -q 'from "lucide-react"' "$FILE_PATH" 2>/dev/null && grep -n 'size={' "$FILE_PATH" 2>/dev/null | grep -v '// ok' | grep -q .; then
+  ISSUES+="- size={ prop found on Lucide icon (use Tailwind w-4 h-4 classes instead)\n"
+fi
+
+# 12. import * as from lucide (kills tree-shaking)
+if grep -qn 'import \* as.*lucide' "$FILE_PATH" 2>/dev/null; then
+  ISSUES+="- import * from lucide-react found (use named imports for tree-shaking)\n"
+fi
+
+# 13. .nonempty() on Zod (deprecated in v4, use .min(1))
+if grep -qn '\.nonempty()' "$FILE_PATH" 2>/dev/null; then
+  ISSUES+="- .nonempty() found (deprecated in Zod v4, use .min(1, \"Required\"))\n"
+fi
+
+# 14. console.log in server files (use logger)
+if [[ "$FILE_PATH" =~ src/server/ ]] && grep -qn 'console\.log' "$FILE_PATH" 2>/dev/null; then
+  ISSUES+="- console.log found in server code (use logger from @/lib/logger)\n"
+fi
+
+# 15. toast with type object (use toast.success/error directly)
+if grep -qn 'toast(.*type:' "$FILE_PATH" 2>/dev/null; then
+  ISSUES+="- toast() with type option found (use toast.success/error/warning directly)\n"
+fi
+
+# 16. SQL count(*) without ::int cast (returns string)
+if grep -n 'count(\*)' "$FILE_PATH" 2>/dev/null | grep -v '::int' | grep -q .; then
+  ISSUES+="- count(*) without ::int cast found (returns string, use count(*)::int)\n"
+fi
+
+# 17. z.enum().describe() on Zod (use { error: } option in v4)
+# Only flag .describe() when preceded by Zod-like patterns to avoid AI tool schema false positives
+if grep -n 'z\.\(enum\|string\|number\|object\).*\.describe(' "$FILE_PATH" 2>/dev/null | grep -v '// ok' | grep -q .; then
+  ISSUES+="- z.*.describe() found (in Zod v4, use { error: \"message\" } option instead)\n"
 fi
 
 if [[ -n "$ISSUES" ]]; then
