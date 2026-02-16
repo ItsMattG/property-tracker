@@ -22,3 +22,4 @@ export type { IPropertyManagerRepository, ConnectionWithMappings, ConnectionWith
 export type { IChangelogRepository, ChangelogListResult } from "./changelog.repository.interface";
 export type { ITaxRepository, TaxSuggestionWithProperty, DepreciationScheduleWithRelations } from "./tax.repository.interface";
 export type { IPersonalCategoryRepository } from "./personal-category.repository.interface";
+export type { IBudgetRepository, BudgetWithSpend } from "./budget.repository.interface";
