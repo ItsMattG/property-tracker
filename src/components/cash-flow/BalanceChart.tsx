@@ -32,7 +32,12 @@ function formatCompact(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
-function formatDateShort(dateStr: string): string {
+function formatAxisDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+}
+
+function formatTooltipDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -42,7 +47,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   return (
     <div className="bg-card border border-border rounded-lg p-3 shadow-lg min-w-[160px]">
       <p className="text-sm font-medium text-foreground mb-1">
-        {formatDateShort(label)}
+        {formatTooltipDate(label)}
       </p>
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">Balance</span>
@@ -158,7 +163,7 @@ export function BalanceChart({ data }: BalanceChartProps) {
         />
         <XAxis
           dataKey="date"
-          tickFormatter={formatDateShort}
+          tickFormatter={formatAxisDate}
           tick={{ fontSize: 11 }}
           tickLine={false}
           axisLine={false}
