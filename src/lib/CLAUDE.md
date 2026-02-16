@@ -92,3 +92,17 @@ URL.revokeObjectURL(url);
 import { generateTaxReportPDF, generateTransactionsExcel } from "@/lib/export-utils";
 const blob = await generateTaxReportPDF(data);
 ```
+
+## Logging (`src/lib/logger.ts`)
+
+| Method | When |
+|--------|------|
+| `logger.debug(msg, ctx)` | Dev-only detail, stripped in production |
+| `logger.info(msg, ctx)` | Business events (user signed up, property created) |
+| `logger.warn(msg, ctx)` | Recoverable issues (rate limit hit, retry succeeded) |
+| `logger.error(msg, error, ctx)` | Failures requiring investigation |
+| `logger.child({ domain })` | Scoped logger for a router/service |
+
+All logs auto-ship to Axiom in production via `@/lib/axiom`.
+
+**Never use `console.log/warn/error` in server code** — the `check-anti-patterns` hook will flag it.
