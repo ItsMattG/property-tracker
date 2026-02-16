@@ -38,7 +38,7 @@ MODIFIED=$(git -C "$PROJECT_DIR" diff --name-only 2>/dev/null | wc -l | tr -d ' 
 UNTRACKED=$(git -C "$PROJECT_DIR" ls-files --others --exclude-standard -- "src/" "e2e/" 2>/dev/null | wc -l | tr -d ' ')
 AHEAD=$(git -C "$PROJECT_DIR" rev-list --count @{upstream}..HEAD 2>/dev/null || echo "?")
 BEHIND=$(git -C "$PROJECT_DIR" rev-list --count HEAD..@{upstream} 2>/dev/null || echo "?")
-echo "[Session] Branch: $BRANCH | ${MODIFIED} modified | ${UNTRACKED} untracked in src/e2e | ↑${AHEAD} ↓${BEHIND}"
+echo "[Session] Branch: $BRANCH | ${MODIFIED} modified | ${UNTRACKED} untracked in src/ & e2e/ | ↑${AHEAD} ↓${BEHIND}"
 
 # 4. Beads task summary
 if command -v bd &>/dev/null; then
