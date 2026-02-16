@@ -27,7 +27,7 @@ export function LvrGaugeCard() {
   if (isLoading) {
     return (
       <Card data-testid="lvr-gauge-card">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium">Portfolio LVR</CardTitle>
           <Shield className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -41,7 +41,7 @@ export function LvrGaugeCard() {
   if (!metrics || metrics.length === 0) {
     return (
       <Card data-testid="lvr-gauge-card">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium">Portfolio LVR</CardTitle>
           <Shield className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -75,7 +75,7 @@ export function LvrGaugeCard() {
 
   return (
     <Card data-testid="lvr-gauge-card">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-sm font-medium">Portfolio LVR</CardTitle>
         <Shield className="h-4 w-4 text-muted-foreground" />
       </CardHeader>

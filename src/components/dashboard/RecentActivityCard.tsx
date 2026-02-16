@@ -55,13 +55,13 @@ export function RecentActivityCard() {
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader>
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-muted-foreground" />
           <CardTitle className="text-base">Recent Activity</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent>
         <div className="space-y-1">
           {activities.map((activity, i) => {
             const Icon = typeIcons[activity.type];

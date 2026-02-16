@@ -41,7 +41,7 @@ export function PropertyMapWidget({ properties }: AustraliaPropertiesMapProps) {
 
   return (
     <Card data-testid="property-map-widget">
-      <CardHeader className="pb-2">
+      <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">Property Locations</CardTitle>
           <div className="flex gap-0.5 bg-muted/80 backdrop-blur-sm rounded-md p-0.5">

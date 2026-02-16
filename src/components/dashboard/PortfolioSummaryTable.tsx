@@ -23,7 +23,7 @@ export function PortfolioSummaryTable() {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium">Portfolio Summary</CardTitle>
           <TableProperties className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -54,7 +54,7 @@ export function PortfolioSummaryTable() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-sm font-medium">Portfolio Summary</CardTitle>
         <TableProperties className="h-4 w-4 text-muted-foreground" />
       </CardHeader>

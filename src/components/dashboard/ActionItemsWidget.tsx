@@ -52,13 +52,13 @@ export function ActionItemsWidget() {
 
   return (
     <Card className="animate-card-entrance border-amber-200 dark:border-amber-900/50">
-      <CardHeader className="pb-3">
+      <CardHeader>
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <AlertCircle className="h-4 w-4 text-amber-500" />
           Needs Attention
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent>
         <div className="divide-y divide-border">
           {actionItems.map((item) => (
             <Link
