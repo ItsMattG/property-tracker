@@ -48,7 +48,6 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [previewRows, setPreviewRows] = useState<string[][]>([]);
   const [fallbackPropertyId, setFallbackPropertyId] = useState("");
-  const [, setColumnMap] = useState<CSVColumnMap | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedCSVRow[]>([]);
 
   // Properties query for preview step
@@ -61,7 +60,6 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
     setCsvHeaders([]);
     setPreviewRows([]);
     setFallbackPropertyId("");
-    setColumnMap(null);
     setParsedRows([]);
   }, []);
 
@@ -103,7 +101,6 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
 
   const handleMappingConfirm = useCallback(
     (mapping: CSVColumnMap) => {
-      setColumnMap(mapping);
       const rows = parseRichCSV(csvContent, mapping);
       setParsedRows(rows);
       setStep("preview");
