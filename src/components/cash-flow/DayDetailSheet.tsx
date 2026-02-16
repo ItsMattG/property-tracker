@@ -88,7 +88,7 @@ export function DayDetailSheet({
         </SheetHeader>
 
         {/* Summary */}
-        <div className="grid grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-3 gap-3 mt-4">
           <div className="text-center p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
             <div className="text-xs text-muted-foreground mb-1">Income</div>
             <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
@@ -128,13 +128,13 @@ export function DayDetailSheet({
         )}
 
         {/* Event list */}
-        <div className="mt-6 space-y-3">
+        <div className="mt-4 space-y-2">
           {events.map((event) => {
             const statusConfig = STATUS_CONFIG[event.status] ?? STATUS_CONFIG.pending;
             return (
               <div
                 key={event.id}
-                className="p-3 rounded-lg border space-y-2"
+                className="p-3 rounded-lg border space-y-2 cursor-pointer transition-colors hover:bg-muted/50"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">

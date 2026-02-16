@@ -168,7 +168,7 @@ export function TimelineView({
         return (
           <div key={date}>
             {/* Date section header */}
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-border">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-border px-3">
               <span className="text-sm font-semibold text-foreground">
                 {formatDateLabel(date)}
               </span>
@@ -203,7 +203,7 @@ export function TimelineView({
                     key={event.id}
                     onClick={() => onSelectDate(date)}
                     className={cn(
-                      "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/50 text-left",
+                      "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/50 text-left cursor-pointer",
                       date === selectedDate && "bg-muted ring-1 ring-primary",
                     )}
                   >
