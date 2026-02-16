@@ -3,7 +3,7 @@
 # Exit 0 = allow, Exit 2 = block (stderr shown to Claude)
 
 INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('command',''))" 2>/dev/null)
+COMMAND=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('tool_input',{}).get('command',''))" 2>/dev/null)
 
 # Patterns to block
 BLOCKED_PATTERNS=(

@@ -16,6 +16,11 @@
           },
           {
             "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/check-env-leaks.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/typecheck-changed.sh",
             "timeout": 30
           }
@@ -29,6 +34,11 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-destructive.sh"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/validate-commit-msg.sh",
+            "timeout": 5
           }
         ]
       }

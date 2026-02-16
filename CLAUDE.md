@@ -47,6 +47,23 @@
 - When compacting, preserve: beads task ID, modified files, plan path, test commands
 - At 40% context, consider `/compact` with specific preservation instructions
 
+## Commit Conventions
+
+Format: `<type>: <description>` (lowercase, imperative mood, no period)
+
+| Type | When |
+|------|------|
+| `feat` | New user-facing feature |
+| `fix` | Bug fix |
+| `refactor` | Code change with no behavior change |
+| `chore` | Tooling, config, dependencies |
+| `test` | Adding or fixing tests |
+| `docs` | Documentation only |
+| `perf` | Performance improvement |
+| `ci` | CI/CD changes |
+
+Enforced by `validate-commit-msg` hook.
+
 ## Worktree Requirement
 **NEVER start feature or task work in the main repository directory.**
 ```bash
@@ -86,6 +103,18 @@ Only trivial doc/config edits may be done directly on main/develop.
 - Feature branches → `develop`. Exception: `hotfix/*` → `main` (then merge main back to develop)
 - **Promote:** verify staging → PR `develop` → `main` → merge after CI
 - **Rollback:** Vercel dashboard → Promote previous deployment, or `git revert -m 1 <sha>`
+
+## Security Principles
+
+| Rule | Enforcement |
+|------|-------------|
+| All mutations require `writeProcedure` or higher | Code review |
+| All queries scoped by `ctx.portfolio.ownerId` | Anti-pattern hook + review |
+| Webhook payloads verified cryptographically | `constructEvent()` |
+| File uploads validated server-side (type, size) | Supabase signed URLs |
+| No secrets in code — use env vars | `check-env-leaks` hook |
+| AI-generated content sanitized before render | Code review |
+| Rate limiting on public/expensive endpoints | Upstash middleware |
 
 ## Notifications
 **CRITICAL: ALWAYS notify via ntfy when waiting for input, task complete, error, or CI done.**
