@@ -4,10 +4,10 @@
 # Exit 0 = success (stdout goes to Claude context)
 
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('file_path',''))" 2>/dev/null)
 
 # Only lint TypeScript/JavaScript files
-if [[ -z "$FILE_PATH" ]] || [[ \! "$FILE_PATH" =~ \.(ts|tsx|js|jsx)$ ]]; then
+if [[ -z "$FILE_PATH" ]] || [[ ! "$FILE_PATH" =~ \.(ts|tsx|js|jsx)$ ]]; then
   exit 0
 fi
 
