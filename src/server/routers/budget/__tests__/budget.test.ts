@@ -39,6 +39,7 @@ function createAuthCtxWithUow(uow: UnitOfWork) {
         findFirst: vi.fn().mockResolvedValue(mockUser),
       },
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
   return ctx;
 }
