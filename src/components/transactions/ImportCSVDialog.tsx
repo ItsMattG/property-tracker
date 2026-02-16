@@ -1,35 +1,37 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { PropertySelect } from "@/components/properties/PropertySelect";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { StepIndicator } from "./import/StepIndicator";
+import { UploadStep } from "./import/UploadStep";
 import { ColumnMappingStep } from "./import/ColumnMappingStep";
 import { PreviewStep, type ImportReadyRow } from "./import/PreviewStep";
 import {
   parseCSVHeaders,
   parseRichCSV,
-  splitCSVLine,
   type CSVColumnMap,
   type ParsedCSVRow,
 } from "@/server/services/banking/csv-import";
 import { trpc } from "@/lib/trpc/client";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet } from "lucide-react";
 
 // --- Types ---
 
 type WizardStep = "upload" | "mapping" | "preview";
 
-const STEPS: WizardStep[] = ["upload", "mapping", "preview"];
+const STEPS = [
+  { key: "upload", label: "Upload" },
+  { key: "mapping", label: "Map Columns" },
+  { key: "preview", label: "Preview & Import" },
+];
 
 interface ImportCSVDialogProps {
   onSuccess?: () => void;
@@ -42,15 +44,11 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
 
   // Wizard state
   const [step, setStep] = useState<WizardStep>("upload");
-  const [propertyId, setPropertyId] = useState("");
-  const [file, setFile] = useState<File | null>(null);
   const [csvContent, setCsvContent] = useState("");
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [previewRows, setPreviewRows] = useState<string[][]>([]);
-  const [, setColumnMap] = useState<CSVColumnMap | null>(null);
+  const [fallbackPropertyId, setFallbackPropertyId] = useState("");
   const [parsedRows, setParsedRows] = useState<ParsedCSVRow[]>([]);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Properties query for preview step
   const { data: properties } = trpc.property.list.useQuery();
@@ -58,16 +56,11 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
   // Reset all wizard state
   const resetState = useCallback(() => {
     setStep("upload");
-    setPropertyId("");
-    setFile(null);
     setCsvContent("");
     setCsvHeaders([]);
     setPreviewRows([]);
-    setColumnMap(null);
+    setFallbackPropertyId("");
     setParsedRows([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
   }, []);
 
   // tRPC mutation
@@ -89,206 +82,130 @@ export function ImportCSVDialog({ onSuccess }: ImportCSVDialogProps) {
 
   // --- Step transitions ---
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      const content = await selectedFile.text();
-      setCsvContent(content);
-
-      // Parse headers for the mapping step
-      const lines = content.trim().split("\n");
-      const headers = splitCSVLine(lines[0]).map((h) => h.replace(/"/g, ""));
-      setCsvHeaders(headers);
-
-      // Get first 3 data rows for preview context in column mapping
-      const preview = lines.slice(1, 4).map((line) => splitCSVLine(line));
-      setPreviewRows(preview);
-    }
-  };
-
-  const handleUploadContinue = () => {
-    if (file) {
+  const handleUploadContinue = useCallback(
+    (data: {
+      file: File;
+      csvContent: string;
+      csvHeaders: string[];
+      previewRows: string[][];
+      fallbackPropertyId: string;
+    }) => {
+      setCsvContent(data.csvContent);
+      setCsvHeaders(data.csvHeaders);
+      setPreviewRows(data.previewRows);
+      setFallbackPropertyId(data.fallbackPropertyId);
       setStep("mapping");
-    }
-  };
+    },
+    []
+  );
 
-  const handleMappingConfirm = (mapping: CSVColumnMap) => {
-    setColumnMap(mapping);
-    const rows = parseRichCSV(csvContent, mapping);
-    setParsedRows(rows);
-    setStep("preview");
-  };
+  const handleMappingConfirm = useCallback(
+    (mapping: CSVColumnMap) => {
+      const rows = parseRichCSV(csvContent, mapping);
+      setParsedRows(rows);
+      setStep("preview");
+    },
+    [csvContent]
+  );
 
-  const handleImport = (rows: ImportReadyRow[]) => {
-    // Cast rows to satisfy tRPC's stricter enum types — by this point,
-    // categories and transaction types have been resolved to valid values
-    // by the PreviewStep component.
-    importRichCSV.mutate({ rows: rows as unknown as Parameters<typeof importRichCSV.mutate>[0]["rows"] });
-  };
+  const handleImport = useCallback(
+    (rows: ImportReadyRow[]) => {
+      // Cast rows to satisfy tRPC's stricter enum types -- by this point,
+      // categories and transaction types have been resolved to valid values
+      // by the PreviewStep component.
+      importRichCSV.mutate({
+        rows: rows as unknown as Parameters<
+          typeof importRichCSV.mutate
+        >[0]["rows"],
+      });
+    },
+    [importRichCSV]
+  );
 
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen) {
-      resetState();
-    }
-  };
-
-  // --- Dialog size based on step ---
-
-  const dialogSizeClass =
-    step === "upload"
-      ? "max-w-md"
-      : step === "mapping"
-        ? "max-w-2xl"
-        : "max-w-5xl";
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      setOpen(newOpen);
+      if (!newOpen) {
+        resetState();
+      }
+    },
+    [resetState]
+  );
 
   // --- Step indicator ---
 
-  const currentStepIndex = STEPS.indexOf(step);
+  const currentStepIndex = STEPS.findIndex((s) => s.key === step);
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Upload className="w-4 h-4 mr-2" />
-          Import CSV
-        </Button>
-      </DialogTrigger>
-      <DialogContent
-        className={cn(dialogSizeClass, "transition-[max-width] duration-200")}
-        onPointerDownOutside={(e) => e.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle>Import Transactions from CSV</DialogTitle>
-          <DialogDescription>
-            {step === "upload" &&
-              "Upload a CSV file and select the default property for imported transactions."}
-            {step === "mapping" &&
-              "Map your CSV columns to BrickTrack fields."}
-            {step === "preview" &&
-              "Review and adjust your data before importing."}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        <Upload className="mr-2 size-4" />
+        Import CSV
+      </Button>
 
-        {/* Step indicator */}
-        <div className="flex items-center justify-center gap-2 mb-4">
-          {STEPS.map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div
-                className={cn(
-                  "w-2 h-2 rounded-full transition-colors",
-                  step === s
-                    ? "bg-primary"
-                    : currentStepIndex > i
-                      ? "bg-primary/50"
-                      : "bg-muted-foreground/30"
-                )}
-              />
-              {i < STEPS.length - 1 && (
-                <div className="w-8 h-px bg-muted-foreground/20" />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Step content */}
-        {step === "upload" && (
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Fallback Property</label>
-              <p className="text-xs text-muted-foreground mb-1">
-                Used for rows that don&apos;t specify a property column.
-              </p>
-              <PropertySelect
-                value={propertyId}
-                onValueChange={setPropertyId}
-                triggerClassName="mt-1"
-              />
-            </div>
-
-            <div>
-              <span className="text-sm font-medium">CSV File</span>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => fileInputRef.current?.click()}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    fileInputRef.current?.click();
-                  }
-                }}
-                className="mt-1 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileChange}
-                  className="sr-only"
-                />
-                {file ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <FileSpreadsheet className="w-5 h-5 text-primary" />
-                    <span className="text-sm">{file.name}</span>
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Click to select a CSV file
-                    </p>
-                  </>
-                )}
+      <Sheet open={open} onOpenChange={handleOpenChange}>
+        <SheetContent
+          side="bottom"
+          className="flex h-[100dvh] flex-col overflow-hidden p-0"
+          showCloseButton={true}
+        >
+          {/* Fixed header */}
+          <SheetHeader className="shrink-0 border-b px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <SheetTitle>Import Transactions from CSV</SheetTitle>
+                <SheetDescription className="mt-0.5">
+                  {step === "upload" &&
+                    "Upload a CSV file to get started."}
+                  {step === "mapping" &&
+                    "Map your CSV columns to BrickTrack fields."}
+                  {step === "preview" &&
+                    "Review and adjust your data before importing."}
+                </SheetDescription>
               </div>
+              <StepIndicator steps={STEPS} currentIndex={currentStepIndex} />
             </div>
+          </SheetHeader>
 
-            <div className="text-xs text-muted-foreground">
-              <p className="font-medium mb-1">Supported columns:</p>
-              <p>
-                Date, Description, Amount (or Debit/Credit), Property, Category,
-                Type, Deductible, Invoice URL, Notes, and more.
-              </p>
-            </div>
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {step === "upload" && (
+              <UploadStep onContinue={handleUploadContinue} />
+            )}
 
-            <Button
-              onClick={handleUploadContinue}
-              disabled={!file}
-              className="w-full"
-            >
-              Continue to Column Mapping
-            </Button>
+            {step === "mapping" && (
+              <div className="mx-auto max-w-4xl">
+                <ColumnMappingStep
+                  csvHeaders={csvHeaders}
+                  previewRows={previewRows}
+                  autoDetected={parseCSVHeaders(csvHeaders)}
+                  onConfirm={handleMappingConfirm}
+                  onBack={() => setStep("upload")}
+                />
+              </div>
+            )}
+
+            {step === "preview" && (
+              <div className="mx-auto max-w-6xl">
+                <PreviewStep
+                  parsedRows={parsedRows}
+                  properties={
+                    properties?.map((p) => ({
+                      id: p.id,
+                      address: p.address,
+                      suburb: p.suburb,
+                    })) ?? []
+                  }
+                  fallbackPropertyId={fallbackPropertyId}
+                  onImport={handleImport}
+                  onBack={() => setStep("mapping")}
+                  isImporting={importRichCSV.isPending}
+                />
+              </div>
+            )}
           </div>
-        )}
-
-        {step === "mapping" && (
-          <ColumnMappingStep
-            csvHeaders={csvHeaders}
-            previewRows={previewRows}
-            autoDetected={parseCSVHeaders(csvHeaders)}
-            onConfirm={handleMappingConfirm}
-            onBack={() => setStep("upload")}
-          />
-        )}
-
-        {step === "preview" && (
-          <PreviewStep
-            parsedRows={parsedRows}
-            properties={
-              properties?.map((p) => ({
-                id: p.id,
-                address: p.address,
-                suburb: p.suburb,
-              })) ?? []
-            }
-            fallbackPropertyId={propertyId}
-            onImport={handleImport}
-            onBack={() => setStep("mapping")}
-            isImporting={importRichCSV.isPending}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

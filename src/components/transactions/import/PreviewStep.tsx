@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, AlertTriangle, CheckCircle2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuickCreatePropertyDialog } from "./QuickCreatePropertyDialog";
@@ -274,6 +274,8 @@ export function PreviewStep({
     [createDialogRowIndex]
   );
 
+  const [filter, setFilter] = useState<"all" | "ready" | "warning" | "error">("all");
+
   const stats = useMemo(() => {
     let ready = 0;
     let warnings = 0;
@@ -285,6 +287,13 @@ export function PreviewStep({
     }
     return { ready, warnings, errors };
   }, [rows]);
+
+  const filteredRows = useMemo(() => {
+    if (filter === "all") return rows.map((row, idx) => ({ row, originalIndex: idx }));
+    return rows
+      .map((row, idx) => ({ row, originalIndex: idx }))
+      .filter((entry) => entry.row.status === filter);
+  }, [rows, filter]);
 
   const rowsWithIssues = useMemo(
     () => rows.filter((r) => r.issues.length > 0).slice(0, 10),
@@ -319,21 +328,21 @@ export function PreviewStep({
 
   return (
     <div className="space-y-4">
-      {/* Stats badges */}
-      <div className="flex items-center gap-2">
-        <Badge variant="default" className="bg-green-600 hover:bg-green-600">
-          {stats.ready} ready
-        </Badge>
-        {stats.warnings > 0 && (
-          <Badge variant="warning">{stats.warnings} warnings</Badge>
-        )}
-        {stats.errors > 0 && (
-          <Badge variant="destructive">{stats.errors} errors</Badge>
-        )}
-        <span className="text-xs text-muted-foreground ml-auto">
-          {rows.length} rows total
-        </span>
-      </div>
+      {/* Filter tabs */}
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+        <div className="flex items-center justify-between">
+          <TabsList variant="line">
+            <TabsTrigger value="all">All ({rows.length})</TabsTrigger>
+            <TabsTrigger value="ready">Ready ({stats.ready})</TabsTrigger>
+            {stats.warnings > 0 && (
+              <TabsTrigger value="warning">Warnings ({stats.warnings})</TabsTrigger>
+            )}
+            {stats.errors > 0 && (
+              <TabsTrigger value="error">Errors ({stats.errors})</TabsTrigger>
+            )}
+          </TabsList>
+        </div>
+      </Tabs>
 
       {/* Unassigned warning */}
       {unassignedCount > 0 && (
@@ -362,7 +371,7 @@ export function PreviewStep({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row, idx) => (
+            {filteredRows.map(({ row, originalIndex }) => (
               <TableRow
                 key={row.rowNumber}
                 className={
@@ -423,15 +432,15 @@ export function PreviewStep({
                     value={row.resolvedPropertyId ?? "__unassigned__"}
                     onValueChange={(val) => {
                       if (val === "__create_new__") {
-                        setCreateDialogRowIndex(idx);
+                        setCreateDialogRowIndex(originalIndex);
                         setCreateDialogOpen(true);
                         return;
                       }
                       if (val === "__unassigned__") {
-                        updateRow(idx, { resolvedPropertyId: null });
+                        updateRow(originalIndex, { resolvedPropertyId: null });
                         return;
                       }
-                      updateRow(idx, { resolvedPropertyId: val });
+                      updateRow(originalIndex, { resolvedPropertyId: val });
                     }}
                   >
                     <SelectTrigger
@@ -466,7 +475,7 @@ export function PreviewStep({
                   <Select
                     value={row.resolvedCategory ?? "uncategorized"}
                     onValueChange={(val) =>
-                      updateRow(idx, { resolvedCategory: val })
+                      updateRow(originalIndex, { resolvedCategory: val })
                     }
                   >
                     <SelectTrigger
@@ -494,7 +503,7 @@ export function PreviewStep({
                   <Select
                     value={row.resolvedType ?? "expense"}
                     onValueChange={(val) =>
-                      updateRow(idx, { resolvedType: val })
+                      updateRow(originalIndex, { resolvedType: val })
                     }
                   >
                     <SelectTrigger
@@ -522,7 +531,7 @@ export function PreviewStep({
                   <Checkbox
                     checked={row.resolvedDeductible}
                     onCheckedChange={(checked) =>
-                      updateRow(idx, {
+                      updateRow(originalIndex, {
                         resolvedDeductible: checked === true,
                       })
                     }
