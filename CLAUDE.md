@@ -15,19 +15,37 @@
 | Utilities & clients | `src/lib/CLAUDE.md` | Formatting, Supabase, auth client, exports |
 | E2E testing | `e2e/CLAUDE.md` | Standards, auth fixture, failure protocol |
 
-## Anti-Pattern Zero Tolerance (Wave Refactoring)
-**NEVER copy patterns from existing codebase without verifying them against context7 docs and this file's rules.**
+## On-Demand Skills
 
-The codebase contains known anti-patterns from before the refactor waves. When writing plans or implementing wave PRs:
+| Skill | Invoke | Purpose |
+|-------|--------|---------|
+| TDD Workflow | `/tdd-workflow` | Full development workflow with red-green-refactor |
+| Environment Spin-Up | `/env-spinup` | Docker, DB, schema push, test validation |
+| Task Completion | `/task-complete` | bd done, PR, merge, worktree cleanup |
+| Document & Continue | `/document-continue` | Save progress before /clear for context handoff |
+| New Router | `/new-router` | Scaffold tRPC router + repo + tests |
+| New Component | `/new-component` | React component following conventions |
+| New E2E Test | `/new-e2e-test` | Playwright test with auth + cleanup |
 
-1. **Context7 is mandatory** — Before writing ANY implementation plan, query context7 for every technology the plan touches. Verify that patterns you're using match current library APIs, not stale codebase conventions.
-2. **Existing code is not a source of truth** — If surrounding code uses `db: any`, dynamic imports, `Record<string, unknown>` where a schema type exists, `COUNT(*)` without `::int`, or any pattern listed in `.claude/rules/anti-patterns.md` — **fix it, don't copy it**.
-3. **Plans must include a "Tech Notes" section** — Summarize what context7 confirmed for each dependency. This proves the plan was validated against real docs, not just existing code.
-4. **When moving code, audit it** — Every `git mv` is an opportunity. If the file being moved contains anti-patterns, fix them in the same PR. Don't move broken code to a new location.
-5. **Type safety is non-negotiable** — No `any`, no `unknown` where a real type exists, no `Record<string, unknown>` when Drizzle infer types are available. Use `typeof schema.$inferInsert` / `$inferSelect` or explicit schema types.
+## Anti-Pattern Zero Tolerance
+**NEVER copy patterns from existing codebase without verifying against context7 and `.claude/rules/anti-patterns.md`.**
+
+1. **Context7 is mandatory** — query current docs for every technology before coding
+2. **Existing code is not a source of truth** — fix anti-patterns, don't copy them
+3. **Plans must include a "Tech Notes" section** — prove validation against real docs
+4. **When moving code, audit it** — fix anti-patterns in the same PR
+5. **Type safety is non-negotiable** — no `any`, no `unknown` where real types exist
 
 ## Token Efficiency
-Always pick the token-efficient approach. Minimize unnecessary exploration and verbose output.
+- Always pick the token-efficient approach
+- For investigation requiring 3+ file reads, delegate to Task subagent
+- Minimize unnecessary exploration and verbose output
+
+## Context Hygiene
+- `/clear` between unrelated tasks
+- Before `/clear` mid-task, invoke `/document-continue`
+- When compacting, preserve: beads task ID, modified files, plan path, test commands
+- At 40% context, consider `/compact` with specific preservation instructions
 
 ## Worktree Requirement
 **NEVER start feature or task work in the main repository directory.**
@@ -35,8 +53,6 @@ Always pick the token-efficient approach. Minimize unnecessary exploration and v
 git worktree add ~/worktrees/property-tracker/<name> -b feature/<name> develop
 cp ~/Documents/property-tracker/.env.local ~/worktrees/property-tracker/<name>/.env.local
 cd ~/worktrees/property-tracker/<name>
-# After merge:
-git worktree remove ~/worktrees/property-tracker/<name>
 ```
 Only trivial doc/config edits may be done directly on main/develop.
 
@@ -65,48 +81,11 @@ Only trivial doc/config edits may be done directly on main/develop.
 | `bd create "Title" -p 1` | Create task (0=urgent, 3=low) |
 | `bd dep add <child> <parent>` | Set dependencies |
 
-**Context hygiene:** `/clear` at 40% context. Re-read task with `bd show <id>` after clearing.
-
-## Task Completion Workflow
-1. `bd done <id>`
-2. Create PR targeting `develop` → merge
-3. When ready to release: PR `develop` → `main` → merge
-4. `/compact` → `bd ready` for next task
-
 ## Staging & Production
 - `develop` = staging (`staging.bricktrack.au`), `main` = production (`bricktrack.au`)
 - Feature branches → `develop`. Exception: `hotfix/*` → `main` (then merge main back to develop)
 - **Promote:** verify staging → PR `develop` → `main` → merge after CI
 - **Rollback:** Vercel dashboard → Promote previous deployment, or `git revert -m 1 <sha>`
-
-## Development Workflow (TDD)
-Every feature must be test-driven and E2E validated. See `e2e/CLAUDE.md` for test standards and failure protocol.
-
-1. **Pick task** → `bd ready` / `bd show <id>`
-2. **Create worktree** → branch from `develop`
-3. **Brainstorm** → `superpowers:brainstorming` + context7
-4. **Plan** → `superpowers:writing-plans` or `/feature-dev`
-5. **Write tests FIRST (Red)** → unit (Vitest) + E2E (Playwright)
-6. **Spin up env** → confirm tests fail (see Environment Spin-Up below)
-7. **Implement (Green)** → use context7, frontend-design, typescript-lsp, supabase as needed
-8. **Validate** → full env restart, all tests pass
-9. **Verify** → `superpowers:verification-before-completion` (lint, build, types)
-10. **PR** → `gh pr create --base develop` → `/code-review` → `gh pr checks --watch` → merge
-11. **Cleanup** → remove worktree → `bd done <id>` → `/clear`
-
-## Environment Spin-Up
-Run before every test validation. Full restart each time.
-```bash
-docker compose down && docker compose up -d
-until docker compose exec db pg_isready -U postgres 2>/dev/null; do sleep 1; done
-docker compose exec db psql -U postgres -c "CREATE DATABASE bricktrack;" 2>/dev/null || true
-npx drizzle-kit push
-npm run test:unit
-npm run test:e2e
-```
-- Playwright auto-starts dev server via `webServer` config
-- `.env.local` DATABASE_URL points to `bricktrack` (not `property_tracker`)
-- E2E requires: `BETTER_AUTH_SECRET`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD`
 
 ## Notifications
 **CRITICAL: ALWAYS notify via ntfy when waiting for input, task complete, error, or CI done.**
