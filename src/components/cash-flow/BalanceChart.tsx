@@ -21,6 +21,10 @@ interface BalanceChartProps {
   data: DailyBalance[];
 }
 
+function toLocalDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function formatCompact(value: number): string {
   if (Math.abs(value) >= 1_000_000)
     return `$${(value / 1_000_000).toFixed(1)}M`;
@@ -74,7 +78,7 @@ function fillDateGaps(series: DailyBalance[]): DailyBalance[] {
         // Insert carry-forward one day after current
         const dayAfter = new Date(currentDate);
         dayAfter.setDate(dayAfter.getDate() + 1);
-        const dayAfterStr = dayAfter.toISOString().slice(0, 10);
+        const dayAfterStr = toLocalDateStr(dayAfter);
 
         result.push({
           date: dayAfterStr,
@@ -86,7 +90,7 @@ function fillDateGaps(series: DailyBalance[]): DailyBalance[] {
         if (diffDays > 2) {
           const dayBefore = new Date(nextDate);
           dayBefore.setDate(dayBefore.getDate() - 1);
-          const dayBeforeStr = dayBefore.toISOString().slice(0, 10);
+          const dayBeforeStr = toLocalDateStr(dayBefore);
 
           result.push({
             date: dayBeforeStr,
@@ -111,7 +115,7 @@ export function BalanceChart({ data }: BalanceChartProps) {
   }
 
   const filled = fillDateGaps(data);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalDateStr(new Date());
 
   const minBalance = Math.min(...filled.map((d) => d.balance));
   const hasNegative = minBalance < 0;
