@@ -7,6 +7,7 @@ import {
   accountTypeEnum, connectionStatusEnum, syncStatusEnum, categoryEnum,
   transactionTypeEnum, transactionStatusEnum, suggestionStatusEnum,
   alertTypeEnum, alertStatusEnum, anomalyAlertTypeEnum, anomalySeverityEnum,
+  defaultTransactionTypeEnum,
 } from "./enums";
 import { users } from "./auth";
 import { properties } from "./properties";
@@ -29,6 +30,7 @@ export const bankAccounts = pgTable("bank_accounts", {
   defaultPropertyId: uuid("default_property_id").references(() => properties.id, {
     onDelete: "set null",
   }),
+  defaultTransactionType: defaultTransactionTypeEnum("default_transaction_type"),
   isConnected: boolean("is_connected").default(true).notNull(),
   connectionStatus: connectionStatusEnum("connection_status").default("connected").notNull(),
   lastSyncStatus: syncStatusEnum("last_sync_status"),
