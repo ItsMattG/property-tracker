@@ -168,7 +168,7 @@ export function BalanceChart({ data }: BalanceChartProps) {
           tickLine={false}
           axisLine={false}
           className="fill-muted-foreground"
-          interval="preserveStartEnd"
+          minTickGap={40}
         />
         <YAxis
           tickFormatter={formatCompact}
