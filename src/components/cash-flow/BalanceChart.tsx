@@ -117,6 +117,17 @@ export function BalanceChart({ data }: BalanceChartProps) {
   const filled = fillDateGaps(data);
   const today = toLocalDateStr(new Date());
 
+  // Ensure a data point exists at today so the concrete/forecasted series meet
+  const hasTodayPoint = filled.some((d) => d.date === today);
+  if (!hasTodayPoint) {
+    // Find the last concrete balance to carry forward to today
+    const lastConcrete = [...filled].reverse().find((d) => !d.isForecasted);
+    if (lastConcrete) {
+      filled.push({ date: today, balance: lastConcrete.balance, isForecasted: false });
+      filled.sort((a, b) => a.date.localeCompare(b.date));
+    }
+  }
+
   const minBalance = Math.min(...filled.map((d) => d.balance));
   const hasNegative = minBalance < 0;
 
@@ -128,10 +139,10 @@ export function BalanceChart({ data }: BalanceChartProps) {
     balance: d.balance,
   }));
 
-  // Find boundary between concrete and forecasted
+  // Bridge: last concrete point also gets a forecasted value so both series connect
   const lastConcreteIdx = chartData.findLastIndex((d) => d.concrete !== undefined);
   if (lastConcreteIdx >= 0 && lastConcreteIdx < chartData.length - 1) {
-    chartData[lastConcreteIdx + 1].forecasted = chartData[lastConcreteIdx].concrete;
+    chartData[lastConcreteIdx].forecasted = chartData[lastConcreteIdx].concrete;
   }
 
   return (

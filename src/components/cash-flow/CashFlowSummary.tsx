@@ -76,10 +76,10 @@ export function CashFlowSummary({ events }: CashFlowSummaryProps) {
       {cards.map((card, i) => (
         <Card
           key={card.label}
-          className="animate-card-entrance"
+          className="animate-card-entrance py-4"
           style={{ "--stagger-index": i } as React.CSSProperties}
         >
-          <CardContent className="flex items-center gap-4 pt-6">
+          <CardContent className="flex items-center gap-3">
             <div className={cn("p-2.5 rounded-lg", card.iconBg)}>
               <card.icon className={cn("h-5 w-5", card.iconColor)} />
             </div>
