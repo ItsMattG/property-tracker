@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-
 import { extractAddressFromComponents } from "../address-utils";
 
 describe("extractAddressFromComponents", () => {
@@ -70,7 +69,7 @@ describe("extractAddressFromComponents", () => {
       lat: -27.47,
       lng: 153.02,
     });
-    expect(result?.state).toBe("QLD");
+    expect(result.state).toBe("QLD");
   });
 
   it("falls back to shortText for unknown state names", () => {
@@ -87,7 +86,7 @@ describe("extractAddressFromComponents", () => {
     ];
 
     const result = extractAddressFromComponents(components, null);
-    expect(result?.state).toBe("XX");
+    expect(result.state).toBe("XX");
   });
 
   it("returns empty fields for empty components", () => {
