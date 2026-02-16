@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import { MapPin, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { extractAddressFromComponents } from "./address-utils";
@@ -14,6 +15,8 @@ interface AddressAutocompleteProps {
   name?: string;
   onBlur?: () => void;
 }
+
+export type { AddressResult };
 
 const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
 
@@ -52,7 +55,9 @@ function loadGoogleMapsScript(): Promise<void> {
 }
 
 interface Suggestion {
-  text: string;
+  placeId: string;
+  mainText: string;
+  secondaryText: string;
   placePrediction: google.maps.places.PlacePrediction;
 }
 
@@ -66,28 +71,25 @@ export function AddressAutocomplete({
 }: AddressAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isApiReady, setIsApiReady] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const sessionTokenRef =
     useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
 
   // Load Google Maps script
   useEffect(() => {
     if (!GOOGLE_PLACES_API_KEY) return;
     loadGoogleMapsScript()
-      .then(() => setIsLoaded(true))
+      .then(() => setIsApiReady(true))
       .catch(() => {
         /* Graceful degradation — input works as plain text */
       });
-  }, []);
-
-  // Clean up debounce timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
   }, []);
 
   // Click outside to close dropdown
@@ -106,11 +108,14 @@ export function AddressAutocomplete({
 
   const fetchSuggestions = useCallback(
     async (input: string) => {
-      if (!isLoaded || input.length < 3) {
+      if (!isApiReady || input.length < 3) {
         setSuggestions([]);
         setIsOpen(false);
         return;
       }
+
+      const currentRequestId = ++requestIdRef.current;
+      setIsLoading(true);
 
       try {
         if (!sessionTokenRef.current) {
@@ -118,23 +123,30 @@ export function AddressAutocomplete({
             new google.maps.places.AutocompleteSessionToken();
         }
 
-        const response =
+        const { suggestions: results } =
           await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(
             {
               input,
               sessionToken: sessionTokenRef.current,
-              includedPrimaryTypes: ["address"],
-              region: "au",
+              includedRegionCodes: ["au"],
             }
           );
 
-        const mapped = response.suggestions
+        // Stale request guard
+        if (currentRequestId !== requestIdRef.current) return;
+
+        const mapped: Suggestion[] = results
           .filter(
-            (s): s is typeof s & { placePrediction: NonNullable<typeof s.placePrediction> } =>
-              s.placePrediction != null
+            (
+              s
+            ): s is typeof s & {
+              placePrediction: NonNullable<typeof s.placePrediction>;
+            } => s.placePrediction != null
           )
           .map((s) => ({
-            text: s.placePrediction.text.text,
+            placeId: s.placePrediction.placeId,
+            mainText: s.placePrediction.mainText?.toString() ?? "",
+            secondaryText: s.placePrediction.secondaryText?.toString() ?? "",
             placePrediction: s.placePrediction,
           }));
 
@@ -142,17 +154,23 @@ export function AddressAutocomplete({
         setIsOpen(mapped.length > 0);
         setHighlightedIndex(-1);
       } catch {
+        // Silently degrade — input still works as plain text
         setSuggestions([]);
         setIsOpen(false);
+      } finally {
+        if (currentRequestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
       }
     },
-    [isLoaded]
+    [isApiReady]
   );
 
   const handleSelect = useCallback(
     async (suggestion: Suggestion) => {
       setIsOpen(false);
       setSuggestions([]);
+      setIsLoading(true);
 
       try {
         const place = suggestion.placePrediction.toPlace();
@@ -171,16 +189,19 @@ export function AddressAutocomplete({
           : null;
 
         const result = extractAddressFromComponents(components, location);
+        onChange(result.address);
         onAddressSelected(result);
       } catch {
         // If place details fetch fails, set the raw text
-        onChange(suggestion.text);
+        onChange(suggestion.mainText);
+      } finally {
+        setIsLoading(false);
       }
 
       // Reset session token after selection (new session for next search)
       sessionTokenRef.current = null;
     },
-    [onAddressSelected, onChange]
+    [onChange, onAddressSelected]
   );
 
   const handleInputChange = useCallback(
@@ -204,12 +225,14 @@ export function AddressAutocomplete({
         case "ArrowDown":
           e.preventDefault();
           setHighlightedIndex((i) =>
-            Math.min(i + 1, suggestions.length - 1)
+            i < suggestions.length - 1 ? i + 1 : 0
           );
           break;
         case "ArrowUp":
           e.preventDefault();
-          setHighlightedIndex((i) => Math.max(i - 1, 0));
+          setHighlightedIndex((i) =>
+            i > 0 ? i - 1 : suggestions.length - 1
+          );
           break;
         case "Enter":
           if (highlightedIndex >= 0) {
@@ -218,52 +241,92 @@ export function AddressAutocomplete({
           }
           break;
         case "Escape":
+          e.preventDefault();
           setIsOpen(false);
+          setHighlightedIndex(-1);
           break;
       }
     },
     [isOpen, suggestions, highlightedIndex, handleSelect]
   );
 
+  // Scroll active item into view
+  useEffect(() => {
+    if (highlightedIndex >= 0 && listRef.current) {
+      const items = listRef.current.querySelectorAll('[role="option"]');
+      items[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+    }
+  }, [highlightedIndex]);
+
+  const listboxId = "address-autocomplete-listbox";
+
   return (
     <div ref={containerRef} className="relative">
-      <Input
-        value={value}
-        onChange={(e) => handleInputChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={GOOGLE_PLACES_API_KEY ? placeholder : "123 Smith Street"}
-        name={name}
-        onBlur={() => {
-          // Delay closing so mousedown on suggestion fires first
-          setTimeout(() => setIsOpen(false), 150);
-          onBlur?.();
-        }}
-        autoComplete="off"
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-autocomplete="list"
-        aria-controls={isOpen ? "address-suggestions" : undefined}
-      />
+      <div className="relative">
+        <Input
+          value={value}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            if (suggestions.length > 0) setIsOpen(true);
+          }}
+          placeholder={GOOGLE_PLACES_API_KEY ? placeholder : "123 Smith Street"}
+          name={name}
+          onBlur={(e) => {
+            // Delay closing so mousedown on suggestion fires first
+            setTimeout(() => setIsOpen(false), 150);
+            onBlur?.();
+          }}
+          autoComplete="off"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-autocomplete="list"
+          aria-controls={isOpen ? listboxId : undefined}
+          aria-activedescendant={
+            highlightedIndex >= 0
+              ? `suggestion-${highlightedIndex}`
+              : undefined
+          }
+        />
+        {isLoading && (
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+      </div>
+
       {isOpen && suggestions.length > 0 && (
         <ul
-          id="address-suggestions"
+          ref={listRef}
+          id={listboxId}
           role="listbox"
-          className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+          className="absolute z-50 mt-1 w-full max-h-[300px] overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 slide-in-from-top-2"
         >
           {suggestions.map((suggestion, index) => (
             <li
-              key={suggestion.text}
+              key={suggestion.placeId}
+              id={`suggestion-${index}`}
               role="option"
               aria-selected={index === highlightedIndex}
               className={cn(
-                "cursor-pointer px-3 py-2 text-sm",
-                index === highlightedIndex &&
-                  "bg-accent text-accent-foreground"
+                "flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm select-none transition-colors",
+                index === highlightedIndex
+                  ? "bg-accent text-accent-foreground"
+                  : "hover:bg-accent/50"
               )}
-              onMouseDown={() => handleSelect(suggestion)}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleSelect(suggestion)}
               onMouseEnter={() => setHighlightedIndex(index)}
             >
-              {suggestion.text}
+              <MapPin className="w-4 h-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 truncate">
+                <span className="font-medium">{suggestion.mainText}</span>
+                {suggestion.secondaryText && (
+                  <span className="text-muted-foreground ml-1.5">
+                    {suggestion.secondaryText}
+                  </span>
+                )}
+              </div>
             </li>
           ))}
         </ul>
