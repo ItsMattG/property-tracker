@@ -149,7 +149,7 @@ export function BalanceChart({ data }: BalanceChartProps) {
     <ResponsiveContainer width="100%" height={200}>
       <AreaChart
         data={chartData}
-        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+        margin={{ top: 20, right: 10, left: 0, bottom: 0 }}
       >
         <CartesianGrid
           strokeDasharray="3 3"
