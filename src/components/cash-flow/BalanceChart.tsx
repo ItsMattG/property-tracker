@@ -21,6 +21,10 @@ interface BalanceChartProps {
   data: DailyBalance[];
 }
 
+function toLocalDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function formatCompact(value: number): string {
   if (Math.abs(value) >= 1_000_000)
     return `$${(value / 1_000_000).toFixed(1)}M`;
@@ -28,9 +32,14 @@ function formatCompact(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
-function formatDateShort(dateStr: string): string {
+function formatAxisDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+}
+
+function formatTooltipDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
@@ -38,7 +47,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   return (
     <div className="bg-card border border-border rounded-lg p-3 shadow-lg min-w-[160px]">
       <p className="text-sm font-medium text-foreground mb-1">
-        {formatDateShort(label)}
+        {formatTooltipDate(label)}
       </p>
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">Balance</span>
@@ -46,6 +55,59 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
       </div>
     </div>
   );
+}
+
+/**
+ * Fill date gaps in the balance series so Recharts draws continuous lines.
+ * For each pair of consecutive points more than 1 day apart, insert:
+ *   - one carry-forward entry the day after the first point
+ *   - one carry-forward entry the day before the second point
+ * This keeps the data sparse but ensures no visual gaps.
+ */
+function fillDateGaps(series: DailyBalance[]): DailyBalance[] {
+  if (series.length < 2) return series;
+
+  const result: DailyBalance[] = [];
+
+  for (let i = 0; i < series.length; i++) {
+    result.push(series[i]);
+
+    if (i < series.length - 1) {
+      const currentDate = new Date(series[i].date + "T00:00:00");
+      const nextDate = new Date(series[i + 1].date + "T00:00:00");
+      const diffDays = Math.round(
+        (nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      if (diffDays > 1) {
+        // Insert carry-forward one day after current
+        const dayAfter = new Date(currentDate);
+        dayAfter.setDate(dayAfter.getDate() + 1);
+        const dayAfterStr = toLocalDateStr(dayAfter);
+
+        result.push({
+          date: dayAfterStr,
+          balance: series[i].balance,
+          isForecasted: series[i].isForecasted,
+        });
+
+        // Insert carry-forward one day before next (only if it's a different day)
+        if (diffDays > 2) {
+          const dayBefore = new Date(nextDate);
+          dayBefore.setDate(dayBefore.getDate() - 1);
+          const dayBeforeStr = toLocalDateStr(dayBefore);
+
+          result.push({
+            date: dayBeforeStr,
+            balance: series[i].balance,
+            isForecasted: series[i + 1].isForecasted,
+          });
+        }
+      }
+    }
+  }
+
+  return result;
 }
 
 export function BalanceChart({ data }: BalanceChartProps) {
@@ -57,28 +119,42 @@ export function BalanceChart({ data }: BalanceChartProps) {
     );
   }
 
-  const minBalance = Math.min(...data.map((d) => d.balance));
+  const filled = fillDateGaps(data);
+  const today = toLocalDateStr(new Date());
+
+  // Ensure a data point exists at today so the concrete/forecasted series meet
+  const hasTodayPoint = filled.some((d) => d.date === today);
+  if (!hasTodayPoint) {
+    // Find the last concrete balance to carry forward to today
+    const lastConcrete = [...filled].reverse().find((d) => !d.isForecasted);
+    if (lastConcrete) {
+      filled.push({ date: today, balance: lastConcrete.balance, isForecasted: false });
+      filled.sort((a, b) => a.date.localeCompare(b.date));
+    }
+  }
+
+  const minBalance = Math.min(...filled.map((d) => d.balance));
   const hasNegative = minBalance < 0;
 
   // Split into concrete and forecasted segments
-  const chartData = data.map((d) => ({
+  const chartData = filled.map((d) => ({
     date: d.date,
     concrete: d.isForecasted ? undefined : d.balance,
     forecasted: d.isForecasted ? d.balance : undefined,
     balance: d.balance,
   }));
 
-  // Find boundary between concrete and forecasted
+  // Bridge: last concrete point also gets a forecasted value so both series connect
   const lastConcreteIdx = chartData.findLastIndex((d) => d.concrete !== undefined);
   if (lastConcreteIdx >= 0 && lastConcreteIdx < chartData.length - 1) {
-    chartData[lastConcreteIdx + 1].forecasted = chartData[lastConcreteIdx].concrete;
+    chartData[lastConcreteIdx].forecasted = chartData[lastConcreteIdx].concrete;
   }
 
   return (
     <ResponsiveContainer width="100%" height={200}>
       <AreaChart
         data={chartData}
-        margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+        margin={{ top: 20, right: 10, left: 0, bottom: 0 }}
       >
         <CartesianGrid
           strokeDasharray="3 3"
@@ -87,12 +163,12 @@ export function BalanceChart({ data }: BalanceChartProps) {
         />
         <XAxis
           dataKey="date"
-          tickFormatter={formatDateShort}
+          tickFormatter={formatAxisDate}
           tick={{ fontSize: 11 }}
           tickLine={false}
           axisLine={false}
           className="fill-muted-foreground"
-          interval="preserveStartEnd"
+          minTickGap={40}
         />
         <YAxis
           tickFormatter={formatCompact}
@@ -108,6 +184,15 @@ export function BalanceChart({ data }: BalanceChartProps) {
         {hasNegative && (
           <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} />
         )}
+
+        {/* Today marker — where actuals end and projections begin */}
+        <ReferenceLine
+          x={today}
+          stroke="var(--color-muted-foreground)"
+          strokeDasharray="4 4"
+          strokeWidth={1}
+          label={{ value: "Today", position: "top", fontSize: 11, fill: "var(--color-muted-foreground)" }}
+        />
 
         {/* Concrete balance area */}
         <Area
