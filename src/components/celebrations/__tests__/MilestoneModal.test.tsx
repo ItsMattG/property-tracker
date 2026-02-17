@@ -6,6 +6,16 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { MilestoneModal } from "../MilestoneModal";
 import type { MilestoneDefinition } from "@/server/services/milestone/types";
 
+// Mock SharePrompt to avoid tRPC context requirement
+vi.mock("@/components/referral/SharePrompt", () => ({
+  SharePrompt: ({ milestoneLabel, onDismiss }: { milestoneLabel: string; onDismiss: () => void }) => (
+    <div data-testid="share-prompt">
+      <span>{milestoneLabel}</span>
+      <button onClick={onDismiss}>Dismiss Share</button>
+    </div>
+  ),
+}));
+
 const mockMilestone: MilestoneDefinition = {
   id: "first-property",
   category: "portfolio",
