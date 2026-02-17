@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { Resend } from "resend";
-import { router, protectedProcedure, proProcedure } from "../../trpc";
+import { router, protectedProcedure, writeProcedure, proProcedure } from "../../trpc";
 import { properties, accountantPackSends } from "../../db/schema";
 import { eq, desc } from "drizzle-orm";
 import { generateAccountantPackPDF } from "@/lib/accountant-pack-pdf";
@@ -18,6 +18,17 @@ import { logger } from "@/lib/logger";
 import type { DB } from "../../repositories/base";
 
 const log = logger.child({ domain: "accountant-pack" });
+
+function getResendClient(): Resend {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Email service not configured",
+    });
+  }
+  return new Resend(apiKey);
+}
 
 const sectionsSchema = z.object({
   incomeExpenses: z.boolean(),
@@ -106,9 +117,9 @@ async function buildTaxReportData(userId: string, year: number, db: DB) {
 export const accountantPackRouter = router({
   /**
    * Generate accountant pack PDF for preview/download.
-   * Mutation because it does heavy server-side work (data aggregation + PDF generation).
+   * writeProcedure because it does heavy server-side computation on demand.
    */
-  generatePack: protectedProcedure
+  generatePack: writeProcedure
     .input(
       z.object({
         financialYear: z.number().min(2000).max(2100),
@@ -168,15 +179,13 @@ export const accountantPackRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { financialYear, sections } = input;
 
-      // Find connected accountant (joined member)
-      const members = await ctx.uow.team.listMembers(ctx.portfolio.ownerId);
+      // Find connected accountant (joined member) and pending invites in parallel
+      const [members, invites] = await Promise.all([
+        ctx.uow.team.listMembers(ctx.portfolio.ownerId),
+        ctx.uow.team.listPendingInvites(ctx.portfolio.ownerId),
+      ]);
       const accountant = members.find(
         (m) => m.role === "accountant" && m.joinedAt !== null
-      );
-
-      // Also check pending invites for accountant email
-      const invites = await ctx.uow.team.listPendingInvites(
-        ctx.portfolio.ownerId
       );
       const accountantInvite = invites.find(
         (inv) => inv.role === "accountant" && inv.status === "pending"
@@ -229,7 +238,7 @@ export const accountantPackRouter = router({
       });
 
       // Send via Resend with PDF attachment
-      const resend = new Resend(process.env.RESEND_API_KEY);
+      const resend = getResendClient();
       try {
         await resend.emails.send({
           from:

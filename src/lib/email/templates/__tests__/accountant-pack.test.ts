@@ -20,9 +20,9 @@ describe("accountantPackEmailTemplate", () => {
     expect(html).toContain("FY2025");
   });
 
-  it("lists all included sections", () => {
+  it("lists all included sections (HTML-escaped)", () => {
     const html = accountantPackEmailTemplate(baseProps);
-    expect(html).toContain("Income & Expenses");
+    expect(html).toContain("Income &amp; Expenses");
     expect(html).toContain("Depreciation Schedule");
     expect(html).toContain("Tax Position Summary");
   });
@@ -44,12 +44,17 @@ describe("accountantPackEmailTemplate", () => {
     expect(html).toContain("attached as a PDF");
   });
 
-  it("renders sections as list items", () => {
+  it("renders sections as list items (HTML-escaped)", () => {
     const html = accountantPackEmailTemplate(baseProps);
     expect(html).toContain("<li");
     expect(html).toContain("</li>");
-    // Each section should be in its own list item
-    for (const section of baseProps.sections) {
+    // Each section should be in its own list item, with HTML escaping applied
+    const expectedEscaped = [
+      "Income &amp; Expenses",
+      "Depreciation Schedule",
+      "Tax Position Summary",
+    ];
+    for (const section of expectedEscaped) {
       expect(html).toContain(`<li style="padding: 4px 0; color: #333;">${section}</li>`);
     }
   });
