@@ -35,6 +35,10 @@ import { RecentActivityCard } from "./RecentActivityCard";
 import { DEMO_STATS, DEMO_TRENDS } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Plus } from "lucide-react";
+import { MilestoneModal } from "@/components/celebrations/MilestoneModal";
+import { AchievementProgress } from "@/components/celebrations/AchievementProgress";
+import { useMilestoneCelebration } from "@/components/celebrations/useMilestoneCelebration";
+import type { MilestoneContext } from "@/server/services/milestone/types";
 
 // Server-side data structure from dashboard.getInitialData
 // Note: Dates are Date objects on server but get serialized to strings when passed to client
@@ -158,8 +162,40 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
     autoStart: !showWizard,
   });
 
+  // Build milestone context from available dashboard data
+  const milestoneContext: MilestoneContext | null =
+    stats && trends
+      ? {
+          propertyCount: stats.propertyCount,
+          totalEquity: trends.totalEquity.current,
+          monthsPositiveCashFlow: 0, // TODO: populate when cash flow history is available
+          categorizedTransactionPercent:
+            stats.transactionCount > 0
+              ? Math.round(
+                  ((stats.transactionCount - stats.uncategorizedCount) /
+                    stats.transactionCount) *
+                    100,
+                )
+              : 0,
+          bankAccountsConnected: 0, // TODO: populate from banking query
+          taxReportsGenerated: 0, // TODO: populate from tax query
+        }
+      : null;
+
+  const {
+    currentMilestone,
+    handleDismiss: handleMilestoneDismiss,
+    totalMilestones,
+    achievedCount,
+  } = useMilestoneCelebration(milestoneContext);
+
   return (
     <div className="space-y-6">
+      <MilestoneModal
+        milestone={currentMilestone}
+        onDismiss={handleMilestoneDismiss}
+      />
+
       {showWizard && (
         <EnhancedWizard onClose={() => setWizardClosed(true)} />
       )}
@@ -415,6 +451,10 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
           <TaxPositionCard />
         </div>
       </div>
+      )}
+
+      {achievedCount > 0 && (
+        <AchievementProgress achieved={achievedCount} total={totalMilestones} />
       )}
 
       <ActionItemsWidget />
