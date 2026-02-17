@@ -142,7 +142,7 @@ export class DocumentRepository
 
   async getMonthlyExtractionCount(userId: string): Promise<number> {
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
     const [result] = await this.db
       .select({ count: sql<number>`count(*)::int` })
