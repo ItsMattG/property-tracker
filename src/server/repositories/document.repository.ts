@@ -1,4 +1,4 @@
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, gte, sql } from "drizzle-orm";
 import { documents, documentExtractions } from "../db/schema";
 import type {
   Document,
@@ -22,31 +22,27 @@ export class DocumentRepository
     userId: string,
     filters?: DocumentFilters
   ): Promise<Document[]> {
-    let whereClause;
+    const conditions = [eq(documents.userId, userId)];
+
     if (filters?.propertyId && filters?.transactionId) {
-      whereClause = and(
-        eq(documents.userId, userId),
+      conditions.push(
         or(
           eq(documents.propertyId, filters.propertyId),
           eq(documents.transactionId, filters.transactionId)
-        )
+        )!
       );
     } else if (filters?.propertyId) {
-      whereClause = and(
-        eq(documents.userId, userId),
-        eq(documents.propertyId, filters.propertyId)
-      );
+      conditions.push(eq(documents.propertyId, filters.propertyId));
     } else if (filters?.transactionId) {
-      whereClause = and(
-        eq(documents.userId, userId),
-        eq(documents.transactionId, filters.transactionId)
-      );
-    } else {
-      whereClause = eq(documents.userId, userId);
+      conditions.push(eq(documents.transactionId, filters.transactionId));
+    }
+
+    if (filters?.category) {
+      conditions.push(eq(documents.category, filters.category));
     }
 
     return this.db.query.documents.findMany({
-      where: whereClause,
+      where: and(...conditions),
       orderBy: (d, { desc }) => [desc(d.createdAt)],
     });
   }
@@ -138,5 +134,23 @@ export class DocumentRepository
     await this.db
       .delete(documentExtractions)
       .where(eq(documentExtractions.id, id));
+  }
+
+  async getMonthlyExtractionCount(userId: string): Promise<number> {
+    const now = new Date();
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+    const [result] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(documentExtractions)
+      .innerJoin(documents, eq(documentExtractions.documentId, documents.id))
+      .where(
+        and(
+          eq(documents.userId, userId),
+          gte(documentExtractions.createdAt, startOfMonth)
+        )
+      );
+
+    return result?.count ?? 0;
   }
 }

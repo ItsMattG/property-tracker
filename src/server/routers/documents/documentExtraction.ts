@@ -2,8 +2,21 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import { documentExtractions, transactions, properties } from "../../db/schema";
+import { documentExtractions, transactions, properties, subscriptions } from "../../db/schema";
 import { extractDocument, matchPropertyByAddress } from "../../services/property-analysis";
+import { getPlanFromSubscription, PLAN_LIMITS } from "../../services/billing/subscription";
+import type { DB } from "../../repositories/base";
+import { logger } from "@/lib/logger";
+
+async function getUserPlan(db: DB, ownerId: string) {
+  // Cross-domain: reads subscription for plan gating
+  const sub = await db.query.subscriptions.findFirst({
+    where: eq(subscriptions.userId, ownerId),
+  });
+  return getPlanFromSubscription(
+    sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
+  );
+}
 
 export const documentExtractionRouter = router({
   /**
@@ -24,6 +37,20 @@ export const documentExtractionRouter = router({
 
       if (existing) {
         return existing;
+      }
+
+      // Plan gating: check monthly extraction limit
+      const currentPlan = await getUserPlan(ctx.db, ctx.portfolio.ownerId);
+      const limit = PLAN_LIMITS[currentPlan].maxReceiptScans;
+
+      if (limit !== Infinity) {
+        const monthlyCount = await ctx.uow.document.getMonthlyExtractionCount(ctx.portfolio.ownerId);
+        if (monthlyCount >= limit) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: `You've used all ${limit} receipt scans this month. Upgrade to Pro for unlimited scans.`,
+          });
+        }
       }
 
       // Create extraction record
@@ -95,7 +122,7 @@ export const documentExtractionRouter = router({
             completedAt: new Date(),
           }).where(eq(documentExtractions.id, extraction.id));
         } catch (error) {
-          console.error("Document extraction failed for extraction", extraction.id, error);
+          logger.error("Document extraction failed", error instanceof Error ? error : new Error(String(error)), { extractionId: extraction.id });
           try {
             await db.update(documentExtractions)
               .set({
@@ -105,7 +132,7 @@ export const documentExtractionRouter = router({
               })
               .where(eq(documentExtractions.id, extraction.id));
           } catch (dbError) {
-            console.error("Failed to update extraction status to failed for extraction", extraction.id, dbError);
+            logger.error("Failed to update extraction status to failed", dbError instanceof Error ? dbError : new Error(String(dbError)), { extractionId: extraction.id });
           }
         }
       })();
@@ -209,4 +236,19 @@ export const documentExtractionRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Returns remaining receipt scan quota for the current billing period
+   */
+  getRemainingScans: protectedProcedure.query(async ({ ctx }) => {
+    const currentPlan = await getUserPlan(ctx.db, ctx.portfolio.ownerId);
+    const limit = PLAN_LIMITS[currentPlan].maxReceiptScans;
+    const used = await ctx.uow.document.getMonthlyExtractionCount(ctx.portfolio.ownerId);
+
+    if (limit === Infinity) {
+      return { used, limit: null, remaining: null };
+    }
+
+    return { used, limit, remaining: Math.max(0, limit - used) };
+  }),
 });

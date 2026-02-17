@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc/client";
-import { List, Calendar, Plus, Download } from "lucide-react";
+import { List, Calendar, Plus, Download, Camera } from "lucide-react";
 import { TransactionIllustration } from "@/components/ui/illustrations/TransactionIllustration";
 import Link from "next/link";
 import type { Category, TransactionFilterInput } from "@/types/category";
@@ -30,6 +30,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { onCrossTabInvalidation } from "@/lib/trpc/cross-tab";
 import { TransactionTableSkeleton } from "@/components/skeletons";
 import { TransactionCardList } from "@/components/transactions/TransactionCardList";
+import { ReceiptScanner } from "@/components/documents/ReceiptScanner";
 
 type ViewMode = "transactions" | "reconciliation";
 
@@ -41,6 +42,7 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<TransactionFilterInput>({});
   const [deleteTransaction, setDeleteTransaction] = useState<{ id: string; description: string } | null>(null);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const { visibility, toggle, resetToDefaults } = useColumnVisibility();
   useTour({ tourId: "transactions" });
 
@@ -288,6 +290,14 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowReceiptScanner(true)}
+          >
+            <Camera className="w-4 h-4 mr-2" />
+            Scan Receipt
+          </Button>
           <ColumnVisibilityMenu
             visibility={visibility}
             onToggle={toggle}
@@ -397,6 +407,11 @@ export default function TransactionsPage() {
       ) : (
         <ReconciliationView propertyId={filters.propertyId} />
       )}
+
+      <ReceiptScanner
+        open={showReceiptScanner}
+        onOpenChange={setShowReceiptScanner}
+      />
 
       <AlertDialog
         open={!!deleteTransaction}

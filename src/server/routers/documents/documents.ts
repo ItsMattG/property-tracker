@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { extractDocument } from "../../services/property-analysis";
 import { matchPropertyByAddress } from "../../services/property-analysis";
+import { logger } from "@/lib/logger";
 
 const ALLOWED_FILE_TYPES = [
   "image/jpeg",
@@ -30,10 +31,10 @@ export const documentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { fileName, propertyId, transactionId } = input;
 
-      if ((!propertyId && !transactionId) || (propertyId && transactionId)) {
+      if (propertyId && transactionId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Exactly one of propertyId or transactionId must be provided",
+          message: "Cannot provide both propertyId and transactionId",
         });
       }
 
@@ -51,7 +52,7 @@ export const documentsRouter = router({
         }
       }
 
-      const entityId = propertyId || transactionId;
+      const entityId = propertyId || transactionId || "receipts";
       const timestamp = Date.now();
       const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
       const storagePath = `${ctx.portfolio.ownerId}/${entityId}/${timestamp}-${sanitizedFileName}`;
@@ -102,10 +103,10 @@ export const documentsRouter = router({
         description,
       } = input;
 
-      if ((!propertyId && !transactionId) || (propertyId && transactionId)) {
+      if (propertyId && transactionId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Exactly one of propertyId or transactionId must be provided",
+          message: "Cannot provide both propertyId and transactionId",
         });
       }
 
@@ -216,7 +217,7 @@ export const documentsRouter = router({
               })
               .where(eq(documentExtractions.id, extraction.id));
           } catch (error) {
-            console.error("Document extraction failed for extraction", extraction.id, error);
+            logger.error("Document extraction failed", error instanceof Error ? error : new Error(String(error)), { extractionId: extraction.id });
             try {
               await db
                 .update(documentExtractions)
@@ -227,7 +228,7 @@ export const documentsRouter = router({
                 })
                 .where(eq(documentExtractions.id, extraction.id));
             } catch (dbError) {
-              console.error("Failed to update extraction status to failed for extraction", extraction.id, dbError);
+              logger.error("Failed to update extraction status to failed", dbError instanceof Error ? dbError : new Error(String(dbError)), { extractionId: extraction.id });
             }
           }
         })();
@@ -241,12 +242,14 @@ export const documentsRouter = router({
       z.object({
         propertyId: z.string().uuid().optional(),
         transactionId: z.string().uuid().optional(),
+        category: z.enum(["receipt", "contract", "depreciation", "lease", "other"]).optional(),
       })
     )
     .query(async ({ ctx, input }) => {
       const docs = await ctx.uow.document.findByOwner(ctx.portfolio.ownerId, {
         propertyId: input.propertyId,
         transactionId: input.transactionId,
+        category: input.category,
       });
 
       const docsWithUrls = await Promise.all(
