@@ -290,11 +290,6 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ColumnVisibilityMenu
-            visibility={visibility}
-            onToggle={toggle}
-            onResetToDefaults={resetToDefaults}
-          />
           <Button
             variant="outline"
             size="sm"
@@ -303,6 +298,11 @@ export default function TransactionsPage() {
             <Camera className="w-4 h-4 mr-2" />
             Scan Receipt
           </Button>
+          <ColumnVisibilityMenu
+            visibility={visibility}
+            onToggle={toggle}
+            onResetToDefaults={resetToDefaults}
+          />
           <Button
             variant="outline"
             size="sm"
