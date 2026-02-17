@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -9,10 +10,33 @@ import {
 } from "lucide-react"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
+function useIsDark() {
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    // Read initial state
+    setIsDark(document.documentElement.classList.contains("dark"))
+
+    // Observe class changes on <html> to track theme toggle
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"))
+    })
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    })
+    return () => observer.disconnect()
+  }, [])
+
+  return isDark
+}
+
 const Toaster = ({ ...props }: ToasterProps) => {
+  const isDark = useIsDark()
+
   return (
     <Sonner
-      theme="light"
+      theme={isDark ? "dark" : "light"}
       className="toaster group"
       richColors
       icons={{

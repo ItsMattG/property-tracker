@@ -23,7 +23,7 @@ export const userRouter = router({
   // Set user theme preference
   setTheme: protectedProcedure
     .input(z.object({
-      theme: z.enum(["forest", "dark"]),
+      theme: z.enum(["forest", "dark", "system"]),
     }))
     .mutation(async ({ ctx, input }) => {
       await ctx.uow.user.update(ctx.user.id, { theme: input.theme });

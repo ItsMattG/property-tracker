@@ -14,37 +14,45 @@ import {
   UserPlus,
   ClipboardList,
   HeadphonesIcon,
+  Monitor,
   Sun,
   Moon,
 } from "lucide-react";
 import Link from "next/link";
 import { featureFlags } from "@/config/feature-flags";
 import { authClient } from "@/lib/auth-client";
-import { applyTheme, type Theme } from "@/components/theme/ThemeProvider";
+import { applyTheme, STORAGE_KEY, type Theme } from "@/components/theme/ThemeProvider";
 import { trpc } from "@/lib/trpc/client";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 // ── Theme Toggle ──────────────────────────────────────────────────────
 
+const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
+  { value: "forest", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
+];
+
 function ThemeToggle() {
   const [activeTheme, setActiveTheme] = useState<Theme>("forest");
   const setThemeMutation = trpc.user.setTheme.useMutation();
 
   useEffect(() => {
-    const stored = localStorage.getItem("bricktrack-theme") as Theme | null;
-    if (stored === "dark") setActiveTheme("dark");
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    if (stored && (stored === "dark" || stored === "system")) {
+      setActiveTheme(stored);
+    }
   }, []);
 
-  const isDark = activeTheme === "dark";
+  const activeIndex = THEME_OPTIONS.findIndex((o) => o.value === activeTheme);
 
-  const handleToggle = () => {
-    const next: Theme = isDark ? "forest" : "dark";
+  const handleSelect = (theme: Theme) => {
     const previous = activeTheme;
-    setActiveTheme(next);
-    applyTheme(next);
+    setActiveTheme(theme);
+    applyTheme(theme);
     setThemeMutation.mutate(
-      { theme: next },
+      { theme },
       {
         onError: () => {
           setActiveTheme(previous);
@@ -55,35 +63,38 @@ function ThemeToggle() {
   };
 
   return (
-    <button
-      onClick={handleToggle}
-      className="relative inline-flex h-8 w-[132px] items-center rounded-full border border-border bg-muted transition-colors cursor-pointer"
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    <div
+      className="relative inline-flex h-8 items-center rounded-full border border-border bg-muted"
+      role="radiogroup"
+      aria-label="Theme preference"
     >
       {/* Sliding indicator */}
       <span
         className={cn(
-          "absolute h-6 w-[60px] rounded-full transition-all duration-200 shadow-sm bg-card",
-          isDark ? "translate-x-[68px]" : "translate-x-1"
+          "absolute h-6 w-[60px] rounded-full transition-all duration-200 shadow-sm bg-card"
         )}
+        style={{ transform: `translateX(${4 + activeIndex * 64}px)` }}
       />
-      {/* Light label */}
-      <span className={cn(
-        "relative z-10 flex items-center justify-center gap-1.5 w-[66px] text-xs font-medium transition-colors",
-        isDark ? "text-muted-foreground" : "text-foreground"
-      )}>
-        <Sun className="h-3.5 w-3.5" />
-        Light
-      </span>
-      {/* Dark label */}
-      <span className={cn(
-        "relative z-10 flex items-center justify-center gap-1.5 w-[66px] text-xs font-medium transition-colors",
-        isDark ? "text-foreground" : "text-muted-foreground"
-      )}>
-        <Moon className="h-3.5 w-3.5" />
-        Dark
-      </span>
-    </button>
+      {THEME_OPTIONS.map((option) => {
+        const Icon = option.icon;
+        const isActive = activeTheme === option.value;
+        return (
+          <button
+            key={option.value}
+            role="radio"
+            aria-checked={isActive}
+            onClick={() => handleSelect(option.value)}
+            className={cn(
+              "relative z-10 flex items-center justify-center gap-1.5 w-[64px] text-xs font-medium transition-colors cursor-pointer",
+              isActive ? "text-foreground" : "text-muted-foreground"
+            )}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
