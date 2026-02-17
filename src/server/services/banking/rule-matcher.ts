@@ -44,6 +44,9 @@ function matchesRule(rule: CategorizationRule, txn: TransactionInput): boolean {
   return true;
 }
 
+/** Max regex pattern length to mitigate ReDoS */
+const MAX_REGEX_LENGTH = 100;
+
 function matchesPattern(matchType: string, pattern: string, value: string): boolean {
   const lower = value.toLowerCase();
   const patternLower = pattern.toLowerCase();
@@ -56,6 +59,7 @@ function matchesPattern(matchType: string, pattern: string, value: string): bool
     case "starts_with":
       return lower.startsWith(patternLower);
     case "regex":
+      if (pattern.length > MAX_REGEX_LENGTH) return false;
       try {
         return new RegExp(pattern, "i").test(value);
       } catch {

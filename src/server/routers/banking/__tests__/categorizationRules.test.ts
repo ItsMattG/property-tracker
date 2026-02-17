@@ -55,6 +55,9 @@ function setupCtx(overrides: Record<string, Record<string, unknown>> = {}) {
     transactions: {
       findRecent: vi.fn().mockResolvedValue([]),
     },
+    properties: {
+      findById: vi.fn().mockResolvedValue({ id: "prop-1", userId: "user-1" }),
+    },
     ...overrides,
   });
 
@@ -148,6 +151,26 @@ describe("categorizationRules router", () => {
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
     });
 
+    it("validates targetPropertyId ownership", async () => {
+      const { caller } = setupCtx({
+        properties: {
+          findById: vi.fn().mockResolvedValue(null), // Property not found/not owned
+        },
+      });
+
+      await expect(
+        caller.categorizationRules.create({
+          name: "With Property",
+          merchantPattern: "Test",
+          descriptionPattern: null,
+          targetCategory: "insurance",
+          targetPropertyId: "550e8400-e29b-41d4-a716-446655440001",
+          amountMin: null,
+          amountMax: null,
+        }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    });
+
     it("allows unlimited rules for pro plan", async () => {
       const createdRule = { ...mockRule, name: "Pro Rule" };
       const { caller } = setupCtx({
@@ -189,6 +212,21 @@ describe("categorizationRules router", () => {
         "user-1",
         expect.objectContaining({ name: "Updated Rule" }),
       );
+    });
+
+    it("validates targetPropertyId ownership on update", async () => {
+      const { caller } = setupCtx({
+        properties: {
+          findById: vi.fn().mockResolvedValue(null),
+        },
+      });
+
+      await expect(
+        caller.categorizationRules.update({
+          id: "550e8400-e29b-41d4-a716-446655440000",
+          targetPropertyId: "550e8400-e29b-41d4-a716-446655440099",
+        }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
     });
 
     it("returns NOT_FOUND for non-existent rule", async () => {

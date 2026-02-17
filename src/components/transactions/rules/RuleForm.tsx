@@ -48,7 +48,7 @@ const ruleFormSchema = z.object({
   amountMax: z.string(),
   targetCategory: z.string().min(1, "Category is required"),
   targetPropertyId: z.string(),
-  priority: z.number().int().min(0).max(100),
+  priority: z.coerce.number().int().min(0).max(100),
   isActive: z.boolean(),
 });
 

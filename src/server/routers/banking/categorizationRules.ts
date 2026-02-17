@@ -57,11 +57,19 @@ export const categorizationRulesRouter = router({
         }
       }
 
+      // Validate property ownership if targetPropertyId is provided
+      if (input.targetPropertyId) {
+        const property = await ctx.uow.properties.findById(input.targetPropertyId, ctx.portfolio.ownerId);
+        if (!property) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
+        }
+      }
+
+      // Safe cast: Zod enum validates identical values to the Drizzle categoryEnum
       return ctx.uow.categorizationRules.create({
         userId: ctx.portfolio.ownerId,
         ...input,
-        targetCategory: input.targetCategory as NewCategorizationRule["targetCategory"],
-      });
+      } as NewCategorizationRule);
     }),
 
   update: writeProcedure
@@ -73,13 +81,14 @@ export const categorizationRulesRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { id, ...data } = input;
 
-      // Validate patterns if both are being set to null
-      if (data.merchantPattern === null && data.descriptionPattern === null) {
-        // Check if the rule currently has at least one pattern
-        const existing = await ctx.uow.categorizationRules.findById(id, ctx.portfolio.ownerId);
-        if (!existing) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Rule not found" });
-        }
+      // Always fetch existing rule to validate final state
+      const existing = await ctx.uow.categorizationRules.findById(id, ctx.portfolio.ownerId);
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Rule not found" });
+      }
+
+      // Validate that at least one pattern remains after update
+      if (data.merchantPattern !== undefined || data.descriptionPattern !== undefined) {
         const finalMerchant = data.merchantPattern !== undefined ? data.merchantPattern : existing.merchantPattern;
         const finalDescription = data.descriptionPattern !== undefined ? data.descriptionPattern : existing.descriptionPattern;
         if (!finalMerchant && !finalDescription) {
@@ -90,6 +99,15 @@ export const categorizationRulesRouter = router({
         }
       }
 
+      // Validate property ownership if targetPropertyId is being changed
+      if (data.targetPropertyId) {
+        const property = await ctx.uow.properties.findById(data.targetPropertyId, ctx.portfolio.ownerId);
+        if (!property) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
+        }
+      }
+
+      // Safe cast: Zod enum validates identical values to the Drizzle categoryEnum
       const rule = await ctx.uow.categorizationRules.update(
         id,
         ctx.portfolio.ownerId,
@@ -118,7 +136,7 @@ export const categorizationRulesRouter = router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      let ruleToTest;
+      let ruleToTest: CategorizationRule;
 
       if (input.ruleId) {
         const existing = await ctx.uow.categorizationRules.findById(input.ruleId, ctx.portfolio.ownerId);
@@ -127,7 +145,7 @@ export const categorizationRulesRouter = router({
         }
         ruleToTest = existing;
       } else if (input.rule) {
-        // Build a temporary rule object for testing
+        // Safe cast: Zod validates same enum values as Drizzle schema
         ruleToTest = {
           id: "test-rule",
           userId: ctx.portfolio.ownerId,
@@ -135,7 +153,7 @@ export const categorizationRulesRouter = router({
           createdAt: new Date(),
           updatedAt: new Date(),
           ...input.rule,
-        };
+        } as CategorizationRule;
       } else {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -148,7 +166,7 @@ export const categorizationRulesRouter = router({
 
       const matches = recentTxns
         .filter((txn) => {
-          const result = matchTransaction([ruleToTest as Parameters<typeof matchTransaction>[0][number]], {
+          const result = matchTransaction([ruleToTest], {
             merchant: txn.description ?? "",
             description: txn.description ?? "",
             amount: parseFloat(txn.amount),
