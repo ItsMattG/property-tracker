@@ -136,6 +136,12 @@ export const bankingRouter = router({
         );
 
         // Insert new transactions (skip duplicates via unique constraint)
+        // TODO(budget-tracker): Route transactions based on account.defaultTransactionType
+        // - 'property' (default/null): insert into property transactions (current pipeline)
+        // - 'personal': insert into personalTransactions table for budget tracking
+        // - 'ask': flag for user review (fall back to property pipeline for V1)
+        // For V1, all transactions go through the existing property pipeline regardless
+        // of defaultTransactionType. Personal transaction import will be added in a follow-up.
         let transactionsAdded = 0;
         for (const txn of basiqTransactions) {
           try {
@@ -390,6 +396,23 @@ export const bankingRouter = router({
       }
       return ctx.uow.bankAccount.update(input.accountId, {
         defaultPropertyId: input.propertyId,
+      });
+    }),
+
+  updateDefaultTransactionType: writeProcedure
+    .input(
+      z.object({
+        accountId: z.string().uuid(),
+        defaultTransactionType: z.enum(["property", "personal", "ask"]).nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.uow.bankAccount.findById(input.accountId, ctx.portfolio.ownerId);
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
+      }
+      return ctx.uow.bankAccount.update(input.accountId, {
+        defaultTransactionType: input.defaultTransactionType,
       });
     }),
 

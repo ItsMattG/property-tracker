@@ -19,6 +19,7 @@ import { useTour } from "@/hooks/useTour";
 import { useReferralTracking } from "@/hooks/useReferralTracking";
 import { RentalYieldCard } from "@/components/rental-yield";
 import { PortfolioValueChart } from "./PortfolioValueChart";
+import { BudgetWidget } from "./BudgetWidget";
 import { CashFlowWidget } from "./CashFlowWidget";
 import { UpcomingCashFlowWidget } from "./UpcomingCashFlowWidget";
 import { ErrorState } from "@/components/ui/error-state";
@@ -436,6 +437,8 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       <CashFlowWidget />
 
       <UpcomingCashFlowWidget />
+
+      <BudgetWidget />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {properties && properties.length > 0 && (

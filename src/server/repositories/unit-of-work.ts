@@ -23,6 +23,9 @@ import type {
   INotificationRepository,
   IChangelogRepository,
   ITaxRepository,
+  IPersonalCategoryRepository,
+  IPersonalTransactionRepository,
+  IBudgetRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -49,6 +52,9 @@ import { PropertyManagerRepository } from "./property-manager.repository";
 import { NotificationRepository } from "./notification.repository";
 import { ChangelogRepository } from "./changelog.repository";
 import { TaxRepository } from "./tax.repository";
+import { PersonalCategoryRepository } from "./personal-category.repository";
+import { PersonalTransactionRepository } from "./personal-transaction.repository";
+import { BudgetRepository } from "./budget.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -75,6 +81,9 @@ export class UnitOfWork {
   private _notification?: INotificationRepository;
   private _changelog?: IChangelogRepository;
   private _tax?: ITaxRepository;
+  private _personalCategories?: IPersonalCategoryRepository;
+  private _personalTransactions?: IPersonalTransactionRepository;
+  private _budgets?: IBudgetRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -147,6 +156,15 @@ export class UnitOfWork {
   }
   get tax(): ITaxRepository {
     return (this._tax ??= new TaxRepository(this.db));
+  }
+  get personalCategories(): IPersonalCategoryRepository {
+    return (this._personalCategories ??= new PersonalCategoryRepository(this.db));
+  }
+  get personalTransactions(): IPersonalTransactionRepository {
+    return (this._personalTransactions ??= new PersonalTransactionRepository(this.db));
+  }
+  get budgets(): IBudgetRepository {
+    return (this._budgets ??= new BudgetRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */
