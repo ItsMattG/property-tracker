@@ -310,21 +310,23 @@ export const performanceBenchmarkingRouter = router({
       const lastYear = getLastYearDate();
       const propertyIds = userProperties.map((p) => p.id);
 
-      // Fetch benchmarks and transactions in parallel
-      const [benchmarks, allTransactions] = await Promise.all([
+      // Fetch benchmarks, transactions, and valuations in parallel
+      const [benchmarks, allTransactions, ...recentValueLists] = await Promise.all([
         ctx.uow.similarProperties.findPerformanceBenchmarksByProperties(propertyIds),
         ctx.uow.transactions.findAllByOwner(ownerId, {
           startDate: lastYear.toISOString().split("T")[0],
         }),
+        ...userProperties.map((p) => ctx.uow.propertyValue.findRecent(p.id, 1)),
       ]);
 
       const benchmarkMap = new Map(benchmarks.map((b) => [b.propertyId, b]));
+      const valuationMap = new Map(
+        userProperties.map((p, i) => [p.id, recentValueLists[i]?.[0] ?? null])
+      );
 
       // Build scorecard entries for each property
-      const entries: PropertyScorecardEntry[] = await Promise.all(
-        userProperties.map(async (property) => {
-          const recentValues = await ctx.uow.propertyValue.findRecent(property.id, 1);
-          const latestValue = recentValues[0] ?? null;
+      const entries: PropertyScorecardEntry[] = userProperties.map((property) => {
+          const latestValue = valuationMap.get(property.id) ?? null;
           const currentValue = latestValue?.estimatedValue
             ? parseFloat(latestValue.estimatedValue)
             : parseFloat(property.purchasePrice);
@@ -372,8 +374,7 @@ export const performanceBenchmarkingRouter = router({
                 )
               : false,
           };
-        })
-      );
+        });
 
       // Sort by performance score descending
       entries.sort((a, b) => b.performanceScore - a.performanceScore);

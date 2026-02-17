@@ -84,8 +84,8 @@ export function PropertyScorecard({ entry, highlight }: PropertyScorecardProps) 
               className={cn(
                 "text-sm font-bold",
                 entry.annualCashFlow >= 0
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
+                  ? "text-success"
+                  : "text-destructive"
               )}
             >
               {formatCurrency(entry.annualCashFlow)}
@@ -103,7 +103,7 @@ export function PropertyScorecard({ entry, highlight }: PropertyScorecardProps) 
           <ScoreIndicator
             label="Net Yield"
             value={`${entry.netYield}%`}
-            percentile={entry.yieldPercentile}
+            percentile={null}
           />
           <ScoreIndicator
             label="Expense Efficiency"
@@ -117,7 +117,7 @@ export function PropertyScorecard({ entry, highlight }: PropertyScorecardProps) 
         </div>
 
         {entry.isUnderperforming && (
-          <div className="p-2 rounded-md bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 text-xs">
+          <div className="p-2 rounded-md bg-destructive/10 text-destructive text-xs">
             This property is underperforming relative to similar properties in the area.
           </div>
         )}

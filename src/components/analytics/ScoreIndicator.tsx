@@ -25,23 +25,23 @@ function getPercentileCategory(percentile: number | null): {
     return {
       status: "excellent",
       label: "Excellent",
-      colorClass: "text-green-600 dark:text-green-400",
-      barColorClass: "bg-green-500",
+      colorClass: "text-success",
+      barColorClass: "bg-success",
     };
   }
   if (percentile >= 25) {
     return {
       status: "average",
       label: "Average",
-      colorClass: "text-amber-600 dark:text-amber-400",
-      barColorClass: "bg-amber-500",
+      colorClass: "text-warning",
+      barColorClass: "bg-warning",
     };
   }
   return {
     status: "below",
     label: "Below Average",
-    colorClass: "text-red-600 dark:text-red-400",
-    barColorClass: "bg-red-500",
+    colorClass: "text-destructive",
+    barColorClass: "bg-destructive",
   };
 }
 

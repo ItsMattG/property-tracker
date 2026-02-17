@@ -149,6 +149,7 @@ export function ScorecardComparison({
               <button
                 key={p.propertyId}
                 type="button"
+                aria-label={p.address}
                 onClick={() => handleToggleProperty(p.propertyId)}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer",
@@ -212,13 +213,13 @@ export function ScorecardComparison({
                           key={p.propertyId}
                           className={cn(
                             "text-right py-2.5 px-2 tabular-nums",
-                            isBest && "font-bold text-green-600 dark:text-green-400"
+                            isBest && "font-bold text-success"
                           )}
                         >
                           <span className="flex items-center justify-end gap-1">
                             {metric.getValue(p)}
                             {isBest && (
-                              <Trophy className="w-3 h-3 text-green-600 dark:text-green-400" />
+                              <Trophy className="w-3 h-3 text-success" />
                             )}
                           </span>
                         </td>
