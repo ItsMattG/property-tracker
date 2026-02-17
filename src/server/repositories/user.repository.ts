@@ -182,4 +182,16 @@ export class UserRepository extends BaseRepository implements IUserRepository {
       .delete(propertyMilestoneOverrides)
       .where(eq(propertyMilestoneOverrides.propertyId, propertyId));
   }
+
+  async getAchievedMilestones(userId: string): Promise<string[]> {
+    const prefs = await this.findMilestonePrefs(userId);
+    return prefs?.achievedMilestones ?? [];
+  }
+
+  async addAchievedMilestones(userId: string, milestoneIds: string[]): Promise<string[]> {
+    const existing = await this.getAchievedMilestones(userId);
+    const merged = [...new Set([...existing, ...milestoneIds])];
+    await this.upsertMilestonePrefs(userId, { achievedMilestones: merged });
+    return merged;
+  }
 }

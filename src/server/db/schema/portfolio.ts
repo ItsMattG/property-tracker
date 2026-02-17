@@ -176,6 +176,8 @@ export const milestonePreferences = pgTable("milestone_preferences", {
   lvrThresholds: jsonb("lvr_thresholds").$type<number[]>().default([80, 60, 40, 20]).notNull(),
   equityThresholds: jsonb("equity_thresholds").$type<number[]>().default([100000, 250000, 500000, 1000000]).notNull(),
   enabled: boolean("enabled").default(true).notNull(),
+  /** IDs of achievement milestones the user has already been celebrated for */
+  achievedMilestones: jsonb("achieved_milestones").$type<string[]>().default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

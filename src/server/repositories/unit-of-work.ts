@@ -26,6 +26,7 @@ import type {
   IPersonalCategoryRepository,
   IPersonalTransactionRepository,
   IBudgetRepository,
+  ICategorizationRuleRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -55,6 +56,7 @@ import { TaxRepository } from "./tax.repository";
 import { PersonalCategoryRepository } from "./personal-category.repository";
 import { PersonalTransactionRepository } from "./personal-transaction.repository";
 import { BudgetRepository } from "./budget.repository";
+import { CategorizationRuleRepository } from "./categorization-rule.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -84,6 +86,7 @@ export class UnitOfWork {
   private _personalCategories?: IPersonalCategoryRepository;
   private _personalTransactions?: IPersonalTransactionRepository;
   private _budgets?: IBudgetRepository;
+  private _categorizationRules?: ICategorizationRuleRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -165,6 +168,9 @@ export class UnitOfWork {
   }
   get budgets(): IBudgetRepository {
     return (this._budgets ??= new BudgetRepository(this.db));
+  }
+  get categorizationRules(): ICategorizationRuleRepository {
+    return (this._categorizationRules ??= new CategorizationRuleRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */

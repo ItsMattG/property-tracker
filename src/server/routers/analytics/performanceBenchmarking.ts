@@ -6,6 +6,8 @@ import {
   calculatePercentile,
   calculateInvertedPercentile,
   calculatePerformanceScore,
+  calculateGrossYield,
+  calculateNetYield,
   generateInsights,
   isUnderperforming,
   buildCohortDescription,
@@ -17,6 +19,8 @@ import type {
   PropertyPerformanceResult,
   PercentileResult,
   PortfolioPerformanceSummary,
+  PortfolioScorecardSummary,
+  PropertyScorecardEntry,
 } from "@/types/performance-benchmarking";
 
 function getLastYearDate() {
@@ -284,4 +288,124 @@ export const performanceBenchmarkingRouter = router({
         insights: b.insights ? JSON.parse(b.insights) : [],
       }));
   }),
+
+  getPortfolioScorecard: protectedProcedure.query(
+    async ({ ctx }): Promise<PortfolioScorecardSummary> => {
+      const ownerId = ctx.portfolio.ownerId;
+      const userProperties = await ctx.uow.property.findByOwner(ownerId);
+
+      if (userProperties.length === 0) {
+        return {
+          properties: [],
+          averageScore: 0,
+          averageGrossYield: 0,
+          averageNetYield: 0,
+          totalAnnualCashFlow: 0,
+          totalAnnualRent: 0,
+          totalAnnualExpenses: 0,
+          totalCurrentValue: 0,
+        };
+      }
+
+      const lastYear = getLastYearDate();
+      const propertyIds = userProperties.map((p) => p.id);
+
+      // Fetch benchmarks, transactions, and valuations in parallel
+      const [benchmarks, allTransactions, ...recentValueLists] = await Promise.all([
+        ctx.uow.similarProperties.findPerformanceBenchmarksByProperties(propertyIds),
+        ctx.uow.transactions.findAllByOwner(ownerId, {
+          startDate: lastYear.toISOString().split("T")[0],
+        }),
+        ...userProperties.map((p) => ctx.uow.propertyValue.findRecent(p.id, 1)),
+      ]);
+
+      const benchmarkMap = new Map(benchmarks.map((b) => [b.propertyId, b]));
+      const valuationMap = new Map(
+        userProperties.map((p, i) => [p.id, recentValueLists[i]?.[0] ?? null])
+      );
+
+      // Build scorecard entries for each property
+      const entries: PropertyScorecardEntry[] = userProperties.map((property) => {
+          const latestValue = valuationMap.get(property.id) ?? null;
+          const currentValue = latestValue?.estimatedValue
+            ? parseFloat(latestValue.estimatedValue)
+            : parseFloat(property.purchasePrice);
+          const purchasePrice = parseFloat(property.purchasePrice);
+
+          // Filter transactions for this property
+          const propTransactions = allTransactions.filter(
+            (t) => t.propertyId === property.id
+          );
+          const annualRent = propTransactions
+            .filter((t) => t.category === "rental_income")
+            .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
+          const annualExpenses = propTransactions
+            .filter((t) => t.transactionType === "expense")
+            .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
+
+          const grossYield = calculateGrossYield(annualRent, currentValue);
+          const netYield = calculateNetYield(annualRent, annualExpenses, currentValue);
+          const annualCashFlow = annualRent - annualExpenses;
+
+          const benchmark = benchmarkMap.get(property.id);
+          const performanceScore = benchmark?.performanceScore ?? 50;
+
+          return {
+            propertyId: property.id,
+            address: property.address,
+            suburb: property.suburb,
+            state: property.state,
+            purchasePrice,
+            currentValue,
+            grossYield: Math.round(grossYield * 10) / 10,
+            netYield: Math.round(netYield * 10) / 10,
+            annualCashFlow: Math.round(annualCashFlow),
+            annualRent: Math.round(annualRent),
+            annualExpenses: Math.round(annualExpenses),
+            performanceScore,
+            scoreLabel: getScoreLabel(performanceScore),
+            yieldPercentile: benchmark?.yieldPercentile ?? null,
+            expensePercentile: benchmark?.expensePercentile ?? null,
+            isUnderperforming: benchmark
+              ? isUnderperforming(
+                  benchmark.yieldPercentile,
+                  benchmark.expensePercentile,
+                  benchmark.vacancyPercentile
+                )
+              : false,
+          };
+        });
+
+      // Sort by performance score descending
+      entries.sort((a, b) => b.performanceScore - a.performanceScore);
+
+      const totalAnnualRent = entries.reduce((sum, e) => sum + e.annualRent, 0);
+      const totalAnnualExpenses = entries.reduce((sum, e) => sum + e.annualExpenses, 0);
+      const totalCurrentValue = entries.reduce((sum, e) => sum + e.currentValue, 0);
+      const totalAnnualCashFlow = totalAnnualRent - totalAnnualExpenses;
+      const avgScore =
+        entries.length > 0
+          ? entries.reduce((sum, e) => sum + e.performanceScore, 0) / entries.length
+          : 0;
+      const avgGrossYield =
+        entries.length > 0
+          ? entries.reduce((sum, e) => sum + e.grossYield, 0) / entries.length
+          : 0;
+      const avgNetYield =
+        entries.length > 0
+          ? entries.reduce((sum, e) => sum + e.netYield, 0) / entries.length
+          : 0;
+
+      return {
+        properties: entries,
+        averageScore: Math.round(avgScore),
+        averageGrossYield: Math.round(avgGrossYield * 10) / 10,
+        averageNetYield: Math.round(avgNetYield * 10) / 10,
+        totalAnnualCashFlow: Math.round(totalAnnualCashFlow),
+        totalAnnualRent: Math.round(totalAnnualRent),
+        totalAnnualExpenses: Math.round(totalAnnualExpenses),
+        totalCurrentValue: Math.round(totalCurrentValue),
+      };
+    }
+  ),
 });

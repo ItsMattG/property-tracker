@@ -18,13 +18,13 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await getAuthSession();
-  const theme = (session?.user as Record<string, unknown>)?.theme as string | null ?? null;
+  const theme = (session?.user.theme as string | null) ?? null;
 
   return (
     <ThemeProvider theme={theme}>
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem("bricktrack-theme");if(t&&t!=="forest")document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`,
+          __html: `(function(){try{var t=localStorage.getItem("bricktrack-theme");var d=t==="system"?window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"forest":t;if(d==="dark"){document.documentElement.setAttribute("data-theme","dark");document.documentElement.classList.add("dark")}else{document.documentElement.removeAttribute("data-theme");document.documentElement.classList.remove("dark")}}catch(e){}})()`,
         }}
       />
       <FinancialYearProvider>

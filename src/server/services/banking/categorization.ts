@@ -1,8 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { db } from "../../db";
 import { merchantCategories, categorizationExamples, transactions } from "../../db/schema";
+import type { CategorizationRule } from "../../db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { categories } from "@/lib/categories";
+import { matchTransaction } from "./rule-matcher";
 
 function getAnthropicClient(): Anthropic {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -182,16 +184,66 @@ export async function categorizeWithClaude(
   }
 }
 
+export interface RuleMatchResult extends CategorizationResult {
+  ruleId: string;
+  ruleName: string;
+  propertyId: string | null;
+}
+
 /**
- * Categorize a single transaction
+ * Categorize a single transaction.
+ * Priority order: user rules > merchant memory > AI categorization.
+ * Pass userRules from the caller (loaded via UoW) to enable rule-based categorization.
  */
 export async function categorizeTransaction(
   userId: string,
   transactionId: string,
   description: string,
-  amount: number
-): Promise<CategorizationResult | null> {
-  // Check merchant memory first
+  amount: number,
+  options?: {
+    userRules?: CategorizationRule[];
+    onRuleMatch?: (ruleId: string) => Promise<void>;
+  },
+): Promise<CategorizationResult | RuleMatchResult | null> {
+  // 1. Check user-defined categorization rules first (highest priority)
+  if (options?.userRules?.length) {
+    const matchedRule = matchTransaction(options.userRules, {
+      merchant: description,
+      description,
+      amount,
+    });
+
+    if (matchedRule) {
+      const ruleResult: RuleMatchResult = {
+        category: matchedRule.targetCategory,
+        confidence: 100, // User-defined rules are always 100% confidence
+        reasoning: `Matched rule: ${matchedRule.name}`,
+        ruleId: matchedRule.id,
+        ruleName: matchedRule.name,
+        propertyId: matchedRule.targetPropertyId,
+      };
+
+      // Update transaction with rule-matched category
+      await db
+        .update(transactions)
+        .set({
+          suggestedCategory: ruleResult.category as typeof transactions.suggestedCategory.enumValues[number],
+          suggestionConfidence: "100.00",
+          suggestionStatus: "pending",
+          ...(matchedRule.targetPropertyId ? { propertyId: matchedRule.targetPropertyId } : {}),
+        })
+        .where(eq(transactions.id, transactionId));
+
+      // Increment match count
+      if (options.onRuleMatch) {
+        await options.onRuleMatch(matchedRule.id);
+      }
+
+      return ruleResult;
+    }
+  }
+
+  // 2. Check merchant memory
   const merchantResult = await getMerchantCategory(userId, description);
   if (merchantResult) {
     // Update transaction with suggestion
@@ -289,11 +341,16 @@ export async function updateMerchantMemory(
 }
 
 /**
- * Batch categorize multiple transactions
+ * Batch categorize multiple transactions.
+ * Optionally pass userRules to check user-defined rules before AI.
  */
 export async function batchCategorize(
   userId: string,
-  transactionData: Array<{ id: string; description: string; amount: number }>
+  transactionData: Array<{ id: string; description: string; amount: number }>,
+  options?: {
+    userRules?: CategorizationRule[];
+    onRuleMatch?: (ruleId: string) => Promise<void>;
+  },
 ): Promise<Map<string, CategorizationResult | null>> {
   const results = new Map<string, CategorizationResult | null>();
 
@@ -303,7 +360,8 @@ export async function batchCategorize(
       userId,
       txn.id,
       txn.description,
-      txn.amount
+      txn.amount,
+      options,
     );
     results.set(txn.id, result);
   }

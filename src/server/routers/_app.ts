@@ -17,6 +17,7 @@ import {
   recurringRouter,
   anomalyRouter,
   auditChecksRouter,
+  categorizationRulesRouter,
 } from "./banking";
 // lending domain
 import {
@@ -150,6 +151,7 @@ export const appRouter = router({
   activity: activityRouter,
   cashFlowCalendar: cashFlowCalendarRouter,
   budget: budgetRouter,
+  categorizationRules: categorizationRulesRouter,
 });
 
 export type AppRouter = typeof appRouter;

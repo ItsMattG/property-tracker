@@ -47,7 +47,11 @@ export {
   buildCategorizationPrompt,
   parseCategorizationResponse,
 } from "./categorization";
-export type { CategorizationResult, Example } from "./categorization";
+export type { CategorizationResult, RuleMatchResult, Example } from "./categorization";
+
+// Rule matcher
+export { matchTransaction } from "./rule-matcher";
+export type { TransactionInput } from "./rule-matcher";
 
 // CSV import
 export {

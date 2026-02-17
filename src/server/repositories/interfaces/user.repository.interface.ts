@@ -71,4 +71,10 @@ export interface IUserRepository {
 
   /** Delete property milestone override */
   deletePropertyOverride(propertyId: string): Promise<void>;
+
+  /** Get achieved milestone IDs for a user */
+  getAchievedMilestones(userId: string): Promise<string[]>;
+
+  /** Add newly achieved milestone IDs for a user */
+  addAchievedMilestones(userId: string, milestoneIds: string[]): Promise<string[]>;
 }
