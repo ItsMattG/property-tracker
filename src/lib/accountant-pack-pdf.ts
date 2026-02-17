@@ -50,7 +50,7 @@ interface TaxReportData {
       category: string;
       label: string;
       amount: number;
-      atoReference: string | null;
+      atoReference: string | null | undefined;
       isDeductible: boolean;
     }>;
     transactionCount: number;
