@@ -21,3 +21,6 @@ export type { INotificationRepository } from "./notification.repository.interfac
 export type { IPropertyManagerRepository, ConnectionWithMappings, ConnectionWithDetails, MappingWithConnection, MappingWithProperty } from "./property-manager.repository.interface";
 export type { IChangelogRepository, ChangelogListResult } from "./changelog.repository.interface";
 export type { ITaxRepository, TaxSuggestionWithProperty, DepreciationScheduleWithRelations } from "./tax.repository.interface";
+export type { IPersonalCategoryRepository } from "./personal-category.repository.interface";
+export type { IBudgetRepository, BudgetWithSpend } from "./budget.repository.interface";
+export type { IPersonalTransactionRepository, PersonalTransactionWithCategory } from "./personal-transaction.repository.interface";

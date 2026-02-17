@@ -482,6 +482,19 @@ export const referralStatusEnum = pgEnum("referral_status", [
   "expired",
 ]);
 
+// Budget tracker
+export const budgetGroupEnum = pgEnum("budget_group", [
+  "needs",
+  "wants",
+  "savings",
+]);
+
+export const defaultTransactionTypeEnum = pgEnum("default_transaction_type", [
+  "property",
+  "personal",
+  "ask",
+]);
+
 // Stripe subscriptions
 export const subscriptionPlanEnum = pgEnum("subscription_plan", [
   "free",

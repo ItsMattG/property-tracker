@@ -17,3 +17,4 @@ export * from "./features";
 export * from "./notifications";
 export * from "./chat";
 export * from "./billing";
+export * from "./budget";
