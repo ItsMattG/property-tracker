@@ -18,3 +18,4 @@ export * from "./notifications";
 export * from "./chat";
 export * from "./billing";
 export * from "./budget";
+export * from "./categorization-rules";
