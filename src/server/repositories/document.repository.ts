@@ -22,31 +22,27 @@ export class DocumentRepository
     userId: string,
     filters?: DocumentFilters
   ): Promise<Document[]> {
-    let whereClause;
+    const conditions = [eq(documents.userId, userId)];
+
     if (filters?.propertyId && filters?.transactionId) {
-      whereClause = and(
-        eq(documents.userId, userId),
+      conditions.push(
         or(
           eq(documents.propertyId, filters.propertyId),
           eq(documents.transactionId, filters.transactionId)
-        )
+        )!
       );
     } else if (filters?.propertyId) {
-      whereClause = and(
-        eq(documents.userId, userId),
-        eq(documents.propertyId, filters.propertyId)
-      );
+      conditions.push(eq(documents.propertyId, filters.propertyId));
     } else if (filters?.transactionId) {
-      whereClause = and(
-        eq(documents.userId, userId),
-        eq(documents.transactionId, filters.transactionId)
-      );
-    } else {
-      whereClause = eq(documents.userId, userId);
+      conditions.push(eq(documents.transactionId, filters.transactionId));
+    }
+
+    if (filters?.category) {
+      conditions.push(eq(documents.category, filters.category));
     }
 
     return this.db.query.documents.findMany({
-      where: whereClause,
+      where: and(...conditions),
       orderBy: (d, { desc }) => [desc(d.createdAt)],
     });
   }

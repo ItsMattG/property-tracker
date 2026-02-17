@@ -1,10 +1,14 @@
 import type { Document, NewDocument, DocumentExtraction, NewDocumentExtraction, Property, Transaction } from "../../db/schema";
 import type { DB } from "../base";
 
+/** Valid document category values matching documentCategoryEnum */
+type DocumentCategory = "receipt" | "contract" | "depreciation" | "lease" | "other";
+
 /** Filters for listing documents */
 export interface DocumentFilters {
   propertyId?: string;
   transactionId?: string;
+  category?: DocumentCategory;
 }
 
 /** Extraction with optional relations (used when relations may or may not be loaded) */
