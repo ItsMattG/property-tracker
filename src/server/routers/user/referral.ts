@@ -14,7 +14,7 @@ export const referralRouter = router({
 
     return {
       code: existing.code,
-      shareUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.propertytracker.com.au"}/r/${existing.code}`,
+      shareUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.bricktrack.au"}/r/${existing.code}`,
     };
   }),
 
@@ -41,6 +41,53 @@ export const referralRouter = router({
   // Get referral list (for settings page)
   listReferrals: protectedProcedure.query(async ({ ctx }) => {
     return ctx.uow.referral.findByReferrer(ctx.user.id);
+  }),
+
+  // Get comprehensive referral details for the dashboard
+  getReferralDetails: protectedProcedure.query(async ({ ctx }) => {
+    let codeRecord = await ctx.uow.referral.findCodeByUserId(ctx.user.id);
+
+    if (!codeRecord) {
+      codeRecord = await ctx.uow.referral.createCode(
+        ctx.user.id,
+        generateReferralCode()
+      );
+    }
+
+    const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.bricktrack.au"}/r/${codeRecord.code}`;
+
+    const [referralList, totalCredits, pendingCount] = await Promise.all([
+      ctx.uow.referral.findByReferrer(ctx.user.id),
+      ctx.uow.referral.getCreditsTotal(ctx.user.id),
+      ctx.uow.referral.getPendingCount(ctx.user.id),
+    ]);
+
+    const qualified = referralList.filter(
+      (r) => r.status === "qualified" || r.status === "rewarded"
+    ).length;
+
+    return {
+      code: codeRecord.code,
+      shareUrl,
+      referrals: referralList.map((r) => ({
+        id: r.id,
+        displayName: r.refereeName || r.refereeEmail || "Anonymous",
+        status: r.status,
+        createdAt: r.createdAt,
+        qualifiedAt: r.qualifiedAt,
+      })),
+      stats: {
+        invited: referralList.length,
+        qualified,
+        pending: pendingCount,
+        totalCreditsEarned: totalCredits,
+      },
+      bannerCopy: {
+        headline: "Give a month, get a month",
+        description:
+          "Invite a friend to BrickTrack. When they add their first property, you both get 1 month of Pro free.",
+      },
+    };
   }),
 
   // Resolve referral code (for /r/[code] page)
