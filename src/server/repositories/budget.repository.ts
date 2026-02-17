@@ -4,20 +4,28 @@ import type { Budget, NewBudget } from "../db/schema";
 import { BaseRepository, type DB } from "./base";
 import type { IBudgetRepository, BudgetWithSpend } from "./interfaces";
 
-/** Compute the first day of the month for a given date */
-function monthStart(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
+/** Format a Date as YYYY-MM-DD using local date components (avoids UTC timezone shift) */
+function toDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
-/** Compute the first day of the next month */
-function monthEnd(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 1);
+/** Compute the first day of the month as YYYY-MM-DD string */
+function monthStartStr(date: Date): string {
+  return toDateStr(new Date(date.getFullYear(), date.getMonth(), 1));
+}
+
+/** Compute the first day of the next month as YYYY-MM-DD string */
+function monthEndStr(date: Date): string {
+  return toDateStr(new Date(date.getFullYear(), date.getMonth() + 1, 1));
 }
 
 export class BudgetRepository extends BaseRepository implements IBudgetRepository {
   async findByUser(userId: string, month: Date): Promise<BudgetWithSpend[]> {
-    const start = monthStart(month);
-    const end = monthEnd(month);
+    const startStr = monthStartStr(month);
+    const endStr = monthEndStr(month);
 
     // Get all budgets effective in this month, joined with category info and spend
     const rows = await this.db
@@ -33,8 +41,8 @@ export class BudgetRepository extends BaseRepository implements IBudgetRepositor
         categoryIcon: personalCategories.icon,
         categoryGroup: personalCategories.group,
         spent: sql<number>`COALESCE(ABS(SUM(
-          CASE WHEN ${personalTransactions.date} >= ${start}
-               AND ${personalTransactions.date} < ${end}
+          CASE WHEN ${personalTransactions.date} >= ${startStr}
+               AND ${personalTransactions.date} < ${endStr}
                AND ${personalTransactions.amount}::numeric < 0
           THEN ${personalTransactions.amount}::numeric
           ELSE 0 END
@@ -59,10 +67,10 @@ export class BudgetRepository extends BaseRepository implements IBudgetRepositor
       .where(
         and(
           eq(budgets.userId, userId),
-          lte(budgets.effectiveFrom, start),
+          sql`${budgets.effectiveFrom} <= ${startStr}::date`,
           or(
             isNull(budgets.effectiveTo),
-            gte(budgets.effectiveTo, start)
+            sql`${budgets.effectiveTo} >= ${startStr}::date`
           )
         )
       )
@@ -103,7 +111,7 @@ export class BudgetRepository extends BaseRepository implements IBudgetRepositor
   }
 
   async findOverallBudget(userId: string, month: Date): Promise<Budget | null> {
-    const start = monthStart(month);
+    const startStr = monthStartStr(month);
 
     const [budget] = await this.db
       .select()
@@ -112,10 +120,10 @@ export class BudgetRepository extends BaseRepository implements IBudgetRepositor
         and(
           eq(budgets.userId, userId),
           isNull(budgets.personalCategoryId),
-          lte(budgets.effectiveFrom, start),
+          sql`${budgets.effectiveFrom} <= ${startStr}::date`,
           or(
             isNull(budgets.effectiveTo),
-            gte(budgets.effectiveTo, start)
+            sql`${budgets.effectiveTo} >= ${startStr}::date`
           )
         )
       );
@@ -152,8 +160,8 @@ export class BudgetRepository extends BaseRepository implements IBudgetRepositor
     userId: string,
     month: Date
   ): Promise<{ categoryId: string | null; total: number }[]> {
-    const start = monthStart(month);
-    const end = monthEnd(month);
+    const startStr = monthStartStr(month);
+    const endStr = monthEndStr(month);
 
     const rows = await this.db
       .select({
@@ -164,8 +172,8 @@ export class BudgetRepository extends BaseRepository implements IBudgetRepositor
       .where(
         and(
           eq(personalTransactions.userId, userId),
-          gte(personalTransactions.date, start),
-          lt(personalTransactions.date, end),
+          sql`${personalTransactions.date} >= ${startStr}::date`,
+          sql`${personalTransactions.date} < ${endStr}::date`,
           sql`${personalTransactions.amount}::numeric < 0`
         )
       )
@@ -179,8 +187,8 @@ export class BudgetRepository extends BaseRepository implements IBudgetRepositor
 
   async getAverageMonthlyExpenses(userId: string, months: number): Promise<number> {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth() - months, 1);
-    const end = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startStr = toDateStr(new Date(now.getFullYear(), now.getMonth() - months, 1));
+    const endStr = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1));
 
     const [result] = await this.db
       .select({
@@ -190,8 +198,8 @@ export class BudgetRepository extends BaseRepository implements IBudgetRepositor
       .where(
         and(
           eq(personalTransactions.userId, userId),
-          gte(personalTransactions.date, start),
-          lt(personalTransactions.date, end),
+          sql`${personalTransactions.date} >= ${startStr}::date`,
+          sql`${personalTransactions.date} < ${endStr}::date`,
           sql`${personalTransactions.amount}::numeric < 0`
         )
       );
