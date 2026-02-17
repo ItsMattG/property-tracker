@@ -21,7 +21,7 @@ export const userRouter = router({
     }),
 
   // Set user theme preference
-  setTheme: protectedProcedure
+  setTheme: writeProcedure
     .input(z.object({
       theme: z.enum(["forest", "dark", "system"]),
     }))

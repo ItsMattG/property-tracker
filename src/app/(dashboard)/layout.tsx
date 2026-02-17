@@ -18,7 +18,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await getAuthSession();
-  const theme = (session?.user as Record<string, unknown>)?.theme as string | null ?? null;
+  const theme = (session?.user.theme as string | null) ?? null;
 
   return (
     <ThemeProvider theme={theme}>
