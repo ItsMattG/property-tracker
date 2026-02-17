@@ -51,4 +51,7 @@ export interface IDocumentRepository {
 
   /** Delete an extraction record */
   deleteExtraction(id: string): Promise<void>;
+
+  /** Count extractions created this calendar month for a user */
+  getMonthlyExtractionCount(userId: string): Promise<number>;
 }

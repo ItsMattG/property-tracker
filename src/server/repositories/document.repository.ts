@@ -1,4 +1,4 @@
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, gte, sql } from "drizzle-orm";
 import { documents, documentExtractions } from "../db/schema";
 import type {
   Document,
@@ -138,5 +138,23 @@ export class DocumentRepository
     await this.db
       .delete(documentExtractions)
       .where(eq(documentExtractions.id, id));
+  }
+
+  async getMonthlyExtractionCount(userId: string): Promise<number> {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [result] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(documentExtractions)
+      .innerJoin(documents, eq(documentExtractions.documentId, documents.id))
+      .where(
+        and(
+          eq(documents.userId, userId),
+          gte(documentExtractions.createdAt, startOfMonth)
+        )
+      );
+
+    return result?.count ?? 0;
   }
 }
