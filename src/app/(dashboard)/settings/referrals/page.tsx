@@ -1,5 +1,3 @@
-"use client";
-
 import { ReferralDashboard } from "@/components/referral/ReferralDashboard";
 
 export default function ReferralsPage() {

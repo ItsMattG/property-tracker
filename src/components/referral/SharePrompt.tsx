@@ -74,7 +74,7 @@ export function SharePrompt({ milestoneLabel, onDismiss }: SharePromptProps) {
             <X className="w-4 h-4" />
           </Button>
         </div>
-        <div className="flex gap-2 mt-3 ml-13">
+        <div className="flex gap-2 mt-3 ml-[52px]">
           <Button size="sm" onClick={handleNativeShare}>
             <Share2 className="w-3.5 h-3.5 mr-1.5" />
             Share
