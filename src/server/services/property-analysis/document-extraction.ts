@@ -178,7 +178,7 @@ export async function extractDocument(
 
     const message = fileType === "application/pdf"
       ? await getAnthropic().messages.create({
-          model: "claude-3-haiku-20240307",
+          model: "claude-sonnet-4-5-20250929",
           max_tokens: 2048,
           messages: [
             {
@@ -201,7 +201,7 @@ export async function extractDocument(
           ],
         })
       : await getAnthropic().messages.create({
-          model: "claude-3-haiku-20240307",
+          model: "claude-sonnet-4-5-20250929",
           max_tokens: 2048,
           messages: [
             {
