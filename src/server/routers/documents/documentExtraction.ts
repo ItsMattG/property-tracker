@@ -6,6 +6,7 @@ import { documentExtractions, transactions, properties, subscriptions } from "..
 import { extractDocument, matchPropertyByAddress } from "../../services/property-analysis";
 import { getPlanFromSubscription, PLAN_LIMITS } from "../../services/billing/subscription";
 import type { DB } from "../../repositories/base";
+import { logger } from "@/lib/logger";
 
 async function getUserPlan(db: DB, ownerId: string) {
   // Cross-domain: reads subscription for plan gating
@@ -121,7 +122,7 @@ export const documentExtractionRouter = router({
             completedAt: new Date(),
           }).where(eq(documentExtractions.id, extraction.id));
         } catch (error) {
-          console.error("Document extraction failed for extraction", extraction.id, error);
+          logger.error("Document extraction failed", error instanceof Error ? error : new Error(String(error)), { extractionId: extraction.id });
           try {
             await db.update(documentExtractions)
               .set({
@@ -131,7 +132,7 @@ export const documentExtractionRouter = router({
               })
               .where(eq(documentExtractions.id, extraction.id));
           } catch (dbError) {
-            console.error("Failed to update extraction status to failed for extraction", extraction.id, dbError);
+            logger.error("Failed to update extraction status to failed", dbError instanceof Error ? dbError : new Error(String(dbError)), { extractionId: extraction.id });
           }
         }
       })();
