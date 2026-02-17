@@ -185,7 +185,7 @@ export class UserRepository extends BaseRepository implements IUserRepository {
 
   async getAchievedMilestones(userId: string): Promise<string[]> {
     const prefs = await this.findMilestonePrefs(userId);
-    return (prefs?.achievedMilestones as string[]) ?? [];
+    return prefs?.achievedMilestones ?? [];
   }
 
   async addAchievedMilestones(userId: string, milestoneIds: string[]): Promise<string[]> {
