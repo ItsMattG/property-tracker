@@ -25,7 +25,7 @@ export const budgetRouter = router({
 
   // --- Budgets ---
   list: protectedProcedure
-    .input(z.object({ month: z.date() }))
+    .input(z.object({ month: z.coerce.date() }))
     .query(async ({ ctx, input }) => {
       return ctx.uow.budgets.findByUser(ctx.portfolio.ownerId, input.month);
     }),
@@ -35,7 +35,7 @@ export const budgetRouter = router({
       z.object({
         personalCategoryId: z.string().uuid().nullable(),
         monthlyAmount: z.string().regex(/^\d+(\.\d{1,2})?$/, "Invalid amount"),
-        effectiveFrom: z.date(),
+        effectiveFrom: z.coerce.date(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -144,8 +144,8 @@ export const budgetRouter = router({
     .input(
       z.object({
         categoryId: z.string().uuid().optional(),
-        startDate: z.date().optional(),
-        endDate: z.date().optional(),
+        startDate: z.coerce.date().optional(),
+        endDate: z.coerce.date().optional(),
         limit: z.number().min(1).max(100).default(50),
         offset: z.number().min(0).default(0),
       })
@@ -160,7 +160,7 @@ export const budgetRouter = router({
   transactionCreate: writeProcedure
     .input(
       z.object({
-        date: z.date(),
+        date: z.coerce.date(),
         description: z.string().min(1),
         amount: z.string().regex(/^-?\d+(\.\d{1,2})?$/),
         personalCategoryId: z.string().uuid().nullable(),
