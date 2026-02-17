@@ -43,6 +43,7 @@ import {
   performanceBenchmarkingRouter,
   dashboardRouter,
   reportsRouter,
+  accountantPackRouter,
 } from "./analytics";
 // compliance domain
 import {
@@ -152,6 +153,7 @@ export const appRouter = router({
   cashFlowCalendar: cashFlowCalendarRouter,
   budget: budgetRouter,
   categorizationRules: categorizationRulesRouter,
+  accountantPack: accountantPackRouter,
 });
 
 export type AppRouter = typeof appRouter;

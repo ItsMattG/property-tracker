@@ -18,6 +18,7 @@ export const PLAN_LIMITS = {
     teamMembers: false,
     advisorAccess: false,
     auditLog: false,
+    canEmailAccountant: false,
   },
   pro: {
     maxProperties: Infinity,
@@ -29,6 +30,7 @@ export const PLAN_LIMITS = {
     teamMembers: false,
     advisorAccess: false,
     auditLog: false,
+    canEmailAccountant: true,
   },
   team: {
     maxProperties: Infinity,
@@ -40,6 +42,7 @@ export const PLAN_LIMITS = {
     teamMembers: true,
     advisorAccess: true,
     auditLog: true,
+    canEmailAccountant: true,
   },
   lifetime: {
     maxProperties: Infinity,
@@ -51,6 +54,7 @@ export const PLAN_LIMITS = {
     teamMembers: true,
     advisorAccess: true,
     auditLog: true,
+    canEmailAccountant: true,
   },
 } as const;
 
