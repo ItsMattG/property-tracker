@@ -70,6 +70,12 @@ const navGroups: Array<{
       { href: "/reports/forecast", label: "Forecast", icon: TrendingUp, featureFlag: "forecast" },
     ],
   },
+  {
+    label: "Personal Finance",
+    items: [
+      { href: "/budget", label: "Budget", icon: Wallet },
+    ],
+  },
 ];
 
 function NavItem({
