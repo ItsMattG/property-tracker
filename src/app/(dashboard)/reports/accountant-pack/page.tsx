@@ -161,7 +161,7 @@ export default function AccountantPackPage() {
     try {
       const result = await packDataQuery.refetch();
       if (!result.data) throw new Error("Failed to fetch data");
-      const pdfBuffer = generateAccountantPackPDF(result.data);
+      const pdfBuffer = generateAccountantPackPDF(result.data as Parameters<typeof generateAccountantPackPDF>[0]);
       const blob = new Blob([pdfBuffer], { type: "application/pdf" });
       downloadBlob(blob, `accountant-pack-FY${selectedYear}.pdf`);
       toast.success("PDF downloaded");
@@ -177,7 +177,7 @@ export default function AccountantPackPage() {
     try {
       const result = await packDataQuery.refetch();
       if (!result.data) throw new Error("Failed to fetch data");
-      const excelBuffer = await generateAccountantPackExcel(result.data);
+      const excelBuffer = await generateAccountantPackExcel(result.data as Parameters<typeof generateAccountantPackExcel>[0]);
       const blob = new Blob([excelBuffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });

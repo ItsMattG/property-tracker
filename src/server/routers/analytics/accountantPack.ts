@@ -477,9 +477,9 @@ export const accountantPackRouter = router({
 
       return {
         financialYear,
+        userName: ctx.user.name || ctx.user.email || "Unknown",
         sections,
         data,
-        generatedAt: new Date().toISOString(),
       };
     }),
 

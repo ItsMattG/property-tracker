@@ -207,7 +207,7 @@ describe("generateAccountantPackExcel", () => {
 
     // Verify we can read it back and it has the correct sheet
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(Buffer.from(result));
+    await wb.xlsx.load(result);
     expect(wb.worksheets).toHaveLength(1);
     expect(wb.worksheets[0].name).toBe("Income & Expenses");
 
@@ -242,7 +242,7 @@ describe("generateAccountantPackExcel", () => {
     expect(result.byteLength).toBeGreaterThan(0);
 
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(Buffer.from(result));
+    await wb.xlsx.load(result);
 
     expect(wb.worksheets).toHaveLength(6);
     const sheetNames = wb.worksheets.map((ws) => ws.name);
@@ -275,7 +275,7 @@ describe("generateAccountantPackExcel", () => {
     expect(result.byteLength).toBeGreaterThan(0);
 
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(Buffer.from(result));
+    await wb.xlsx.load(result);
 
     expect(wb.worksheets).toHaveLength(1);
     expect(wb.worksheets[0].name).toBe("Tax Position");
@@ -297,7 +297,7 @@ describe("generateAccountantPackExcel", () => {
     expect(result).toBeInstanceOf(ArrayBuffer);
 
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(Buffer.from(result));
+    await wb.xlsx.load(result);
 
     // Only the sheet with data should be created
     expect(wb.worksheets).toHaveLength(1);
@@ -320,7 +320,7 @@ describe("generateAccountantPackExcel", () => {
     const result = await generateAccountantPackExcel(config);
 
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(Buffer.from(result));
+    await wb.xlsx.load(result);
 
     const sheet = wb.worksheets[0];
     expect(sheet.name).toBe("Capital Gains");
@@ -345,7 +345,7 @@ describe("generateAccountantPackExcel", () => {
     const result = await generateAccountantPackExcel(config);
 
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(Buffer.from(result));
+    await wb.xlsx.load(result);
 
     const sheet = wb.worksheets[0];
     // Row 2 is first data row; rate column is 5th (E)
@@ -371,7 +371,7 @@ describe("generateAccountantPackExcel", () => {
     const result = await generateAccountantPackExcel(config);
 
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(Buffer.from(result));
+    await wb.xlsx.load(result);
 
     const sheet = wb.worksheets[0];
     // Last row should be the TOTAL row and should be bold
@@ -395,7 +395,7 @@ describe("generateAccountantPackExcel", () => {
     expect(result.byteLength).toBeGreaterThan(0);
 
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(Buffer.from(result));
+    await wb.xlsx.load(result);
     expect(wb.worksheets).toHaveLength(0);
   });
 });
