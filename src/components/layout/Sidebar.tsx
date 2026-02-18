@@ -22,6 +22,7 @@ import {
   CalendarDays,
   Award,
   FileOutput,
+  GitBranch,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useSidebar } from "./SidebarProvider";
@@ -74,6 +75,7 @@ const navGroups: Array<{
       { href: "/cash-flow", label: "Cash Flow", icon: CalendarDays, featureFlag: "cashFlow" },
       { href: "/analytics/scorecard", label: "Scorecard", icon: Award },
       { href: "/reports/forecast", label: "Forecast", icon: TrendingUp, featureFlag: "forecast" },
+      { href: "/reports/scenarios", label: "Scenarios", icon: GitBranch },
     ],
   },
   {
