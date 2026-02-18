@@ -2,8 +2,9 @@
 
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import { transactions } from "../../db/schema";
+import { transactions, depreciationSchedules } from "../../db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
+import type { DB } from "../../repositories/base";
 import {
   calculateTaxPosition,
   estimatePropertySavings,
@@ -32,6 +33,34 @@ const taxProfileSchema = z.object({
   partnerIncome: z.number().min(0).optional(),
   isComplete: z.boolean().default(false),
 });
+
+/**
+ * Get total depreciation deductions for a financial year.
+ * Cross-domain: queries depreciation tables for financial year total.
+ */
+async function getDepreciationTotal(
+  db: DB,
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<number> {
+  const schedules = await db.query.depreciationSchedules.findMany({
+    where: and(
+      eq(depreciationSchedules.userId, userId),
+      gte(depreciationSchedules.effectiveDate, startDate),
+      lte(depreciationSchedules.effectiveDate, endDate)
+    ),
+    with: { assets: true },
+  });
+
+  return schedules.reduce((total, schedule) => {
+    const scheduleTotal = schedule.assets.reduce(
+      (sum, asset) => sum + parseFloat(asset.yearlyDeduction),
+      0
+    );
+    return total + scheduleTotal;
+  }, 0);
+}
 
 export const taxPositionRouter = router({
   /**
@@ -120,11 +149,15 @@ export const taxPositionRouter = router({
         }))
       );
 
+      // Cross-domain: queries depreciation tables for financial year total
+      const depreciationTotal = await getDepreciationTotal(ctx.db, ctx.portfolio.ownerId, startDate, endDate);
+
       return {
         totalIncome: metrics.totalIncome,
         totalExpenses: metrics.totalExpenses,
         netResult: metrics.netIncome, // negative = loss
         transactionCount: txns.length,
+        depreciationTotal,
       };
     }),
 
@@ -139,6 +172,7 @@ export const taxPositionRouter = router({
         paygWithheld: z.number().min(0),
         rentalNetResult: z.number(), // can be negative (loss) or positive (profit)
         otherDeductions: z.number().min(0).default(0),
+        depreciationDeductions: z.number().min(0).default(0),
         hasHecsDebt: z.boolean().default(false),
         hasPrivateHealth: z.boolean().default(false),
         familyStatus: familyStatusSchema.default("single"),
@@ -153,6 +187,7 @@ export const taxPositionRouter = router({
         paygWithheld: input.paygWithheld,
         rentalNetResult: input.rentalNetResult,
         otherDeductions: input.otherDeductions,
+        depreciationDeductions: input.depreciationDeductions,
         hasHecsDebt: input.hasHecsDebt,
         hasPrivateHealth: input.hasPrivateHealth,
         familyStatus: input.familyStatus,
@@ -195,6 +230,9 @@ export const taxPositionRouter = router({
 
       const rentalNetResult = metrics.netIncome;
 
+      // Cross-domain: queries depreciation tables for financial year total
+      const depreciationTotal = await getDepreciationTotal(ctx.db, ctx.portfolio.ownerId, startDate, endDate);
+
       // If no complete profile, return teaser data
       if (!profile?.isComplete) {
         const estimatedSavings = estimatePropertySavings(rentalNetResult, 0.37);
@@ -203,6 +241,7 @@ export const taxPositionRouter = router({
           financialYear: year,
           rentalNetResult,
           estimatedSavings,
+          depreciationTotal,
           refundOrOwing: null,
           propertySavings: null,
         };
@@ -215,6 +254,7 @@ export const taxPositionRouter = router({
         paygWithheld: Number(profile.paygWithheld ?? 0),
         rentalNetResult,
         otherDeductions: Number(profile.otherDeductions ?? 0),
+        depreciationDeductions: depreciationTotal,
         hasHecsDebt: profile.hasHecsDebt,
         hasPrivateHealth: profile.hasPrivateHealth,
         familyStatus: profile.familyStatus,
@@ -227,6 +267,7 @@ export const taxPositionRouter = router({
         financialYear: year,
         rentalNetResult,
         estimatedSavings: null,
+        depreciationTotal,
         refundOrOwing: result.refundOrOwing,
         propertySavings: result.propertySavings,
         isRefund: result.isRefund,
