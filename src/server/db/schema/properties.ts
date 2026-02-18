@@ -4,7 +4,7 @@ import {
   relations, sql, vector,
 } from "./_common";
 import {
-  stateEnum, propertyStatusEnum, listingSourceTypeEnum, propertyTypeEnum,
+  stateEnum, propertyStatusEnum, propertyPurposeEnum, listingSourceTypeEnum, propertyTypeEnum,
   shareLevelEnum, valuationSourceEnum,
 } from "./enums";
 import { users } from "./auth";
@@ -32,6 +32,7 @@ export const properties = pgTable("properties", {
   settlementDate: date("settlement_date"),
   entityName: text("entity_name").default("Personal").notNull(),
   status: propertyStatusEnum("status").default("active").notNull(),
+  purpose: propertyPurposeEnum("purpose").default("investment").notNull(),
   soldAt: date("sold_at"),
   climateRisk: jsonb("climate_risk").$type<import("@/types/climate-risk").ClimateRisk>(),
   latitude: decimal("latitude", { precision: 10, scale: 7 }),

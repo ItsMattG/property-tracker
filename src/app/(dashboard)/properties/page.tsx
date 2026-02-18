@@ -10,6 +10,8 @@ import { PropertyIllustration } from "@/components/ui/illustrations/PropertyIllu
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 import { PropertyListSkeleton } from "@/components/skeletons";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -22,9 +24,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+const purposes = ["investment", "owner_occupied", "commercial", "short_term_rental"] as const;
+const purposeLabels: Record<string, string> = {
+  investment: "Investment",
+  owner_occupied: "Owner-Occupied",
+  commercial: "Commercial",
+  short_term_rental: "Short-Term Rental",
+};
+
 export default function PropertiesPage() {
   const [deleteProperty, setDeleteProperty] = useState<{ id: string; address: string } | null>(null);
   const [excludedEntities, setExcludedEntities] = useState<Set<string>>(new Set());
+  const [activePurpose, setActivePurpose] = useState<string>("all");
+  const [showSold, setShowSold] = useState(false);
 
   const { data: properties, isLoading, refetch } = trpc.property.list.useQuery(
     undefined,
@@ -85,9 +97,28 @@ export default function PropertiesPage() {
     return new Map(metrics.map((m) => [m.propertyId, m]));
   }, [metrics]);
 
-  const filteredProperties = properties?.filter(
-    (p) => !excludedEntities.has(p.entityName)
-  );
+  const purposeCounts = useMemo(() => {
+    if (!properties) return new Map<string, number>();
+    const counts = new Map<string, number>();
+    for (const p of properties) {
+      const purpose = p.purpose ?? "investment";
+      counts.set(purpose, (counts.get(purpose) ?? 0) + 1);
+    }
+    return counts;
+  }, [properties]);
+
+  const filteredProperties = useMemo(() => {
+    if (!properties) return undefined;
+    return properties.filter((p) => {
+      // Purpose filter
+      if (activePurpose !== "all" && (p.purpose ?? "investment") !== activePurpose) return false;
+      // Sold toggle
+      if (!showSold && p.status === "sold") return false;
+      // Entity filter
+      if (excludedEntities.has(p.entityName)) return false;
+      return true;
+    });
+  }, [properties, activePurpose, showSold, excludedEntities]);
 
   return (
     <div className="space-y-6">
@@ -104,6 +135,68 @@ export default function PropertiesPage() {
             Add Property
           </Link>
         </Button>
+      </div>
+
+      {/* Purpose tabs */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setActivePurpose("all")}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border",
+              activePurpose === "all"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:text-foreground"
+            )}
+          >
+            All
+            <span className={cn(
+              "text-xs",
+              activePurpose === "all" ? "text-primary-foreground/70" : "text-muted-foreground"
+            )}>
+              {properties?.length ?? 0}
+            </span>
+          </button>
+          {purposes.map((purpose) => {
+            const count = purposeCounts.get(purpose) ?? 0;
+            const isActive = activePurpose === purpose;
+            return (
+              <button
+                key={purpose}
+                onClick={() => setActivePurpose(purpose)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border",
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : count === 0
+                      ? "bg-background text-muted-foreground/50 border-border/50 cursor-default"
+                      : "bg-background text-muted-foreground border-border hover:text-foreground"
+                )}
+                disabled={count === 0}
+              >
+                {purposeLabels[purpose]}
+                <span className={cn(
+                  "text-xs",
+                  isActive ? "text-primary-foreground/70" : "text-muted-foreground"
+                )}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Show sold toggle */}
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="show-sold"
+            checked={showSold}
+            onCheckedChange={(checked) => setShowSold(checked === true)}
+          />
+          <Label htmlFor="show-sold" className="text-sm text-muted-foreground cursor-pointer">
+            Show sold properties
+          </Label>
+        </div>
       </div>
 
       {/* Entity filter chips - only show when there are multiple entities */}
@@ -139,7 +232,7 @@ export default function PropertiesPage() {
               onClick={() => setExcludedEntities(new Set())}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer underline"
             >
-              Show all
+              Clear
             </button>
           )}
         </div>
@@ -164,10 +257,14 @@ export default function PropertiesPage() {
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground">No properties match your current filters.</p>
           <button
-            onClick={() => setExcludedEntities(new Set())}
+            onClick={() => {
+              setExcludedEntities(new Set());
+              setActivePurpose("all");
+              setShowSold(false);
+            }}
             className="text-sm text-primary hover:underline mt-2 cursor-pointer"
           >
-            Clear filters
+            Clear all filters
           </button>
         </div>
       ) : (
