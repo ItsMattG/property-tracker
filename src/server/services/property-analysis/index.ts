@@ -69,6 +69,9 @@ export {
   getClimateRisk,
 } from "./climate-risk";
 
+// duplicate-detection
+export { findPotentialDuplicate } from "./duplicate-detection";
+
 // vector-generation
 export {
   normalizePropertyType,
