@@ -10,7 +10,8 @@ import { PropertyIllustration } from "@/components/ui/illustrations/PropertyIllu
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/errors";
 import { PropertyListSkeleton } from "@/components/skeletons";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -111,6 +112,45 @@ export default function PropertiesPage() {
     const group = detailedGroups.find((g) => g.id === activeGroupId);
     return group ? new Set(group.propertyIds) : null;
   }, [activeGroupId, detailedGroups]);
+
+  // Aggregate financial rollup for the active group
+  const groupRollup = useMemo(() => {
+    if (!activeGroupId || !activeGroupPropertyIds || !metrics) return null;
+
+    const group = detailedGroups?.find((g) => g.id === activeGroupId);
+    if (!group) return null;
+
+    const groupMetrics = metrics.filter((m) =>
+      activeGroupPropertyIds.has(m.propertyId)
+    );
+    if (groupMetrics.length === 0) return null;
+
+    const totalValue = groupMetrics.reduce(
+      (sum, m) => sum + (m.currentValue ?? 0),
+      0
+    );
+    const totalEquity = groupMetrics.reduce(
+      (sum, m) => sum + (m.equity ?? 0),
+      0
+    );
+    const totalCashFlow = groupMetrics.reduce(
+      (sum, m) => sum + (m.cashFlow ?? 0),
+      0
+    );
+    const avgYield =
+      groupMetrics.reduce((sum, m) => sum + (m.grossYield ?? 0), 0) /
+      groupMetrics.length;
+
+    return {
+      groupName: group.name,
+      groupColour: group.colour,
+      propertyCount: groupMetrics.length,
+      totalValue,
+      totalEquity,
+      totalCashFlow,
+      avgYield,
+    };
+  }, [activeGroupId, activeGroupPropertyIds, metrics, detailedGroups]);
 
   const filteredProperties = useMemo(() => {
     if (!properties) return undefined;
@@ -214,6 +254,54 @@ export default function PropertiesPage() {
             </button>
           ))}
         </div>
+      )}
+
+      {/* Group financial rollup banner */}
+      {groupRollup && (
+        <Card
+          className="border-l-4 py-0"
+          style={{ borderLeftColor: groupRollup.groupColour }}
+        >
+          <CardContent className="py-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-semibold text-sm">
+                  {groupRollup.groupName}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {groupRollup.propertyCount}{" "}
+                  {groupRollup.propertyCount === 1 ? "property" : "properties"}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 sm:flex sm:gap-6 text-right">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Value</p>
+                  <p className="text-sm font-semibold">
+                    {formatCurrency(groupRollup.totalValue)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Equity</p>
+                  <p className="text-sm font-semibold">
+                    {formatCurrency(groupRollup.totalEquity)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Cash Flow</p>
+                  <p className="text-sm font-semibold">
+                    {formatCurrency(groupRollup.totalCashFlow)}/mo
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Avg Yield</p>
+                  <p className="text-sm font-semibold">
+                    {groupRollup.avgYield.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {isLoading ? (
