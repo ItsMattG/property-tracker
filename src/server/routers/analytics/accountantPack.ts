@@ -6,6 +6,7 @@ import { properties, accountantPackSends, transactions } from "../../db/schema";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 import { generateAccountantPackPDF } from "@/lib/accountant-pack-pdf";
 import type { AccountantPackConfig } from "@/lib/accountant-pack-pdf";
+import { generateAccountantPackExcel } from "@/lib/accountant-pack-excel";
 import { accountantPackEmailTemplate } from "@/lib/email/templates/accountant-pack";
 import {
   buildMyTaxReport,
@@ -580,6 +581,15 @@ export const accountantPackRouter = router({
         data,
       });
 
+      // Generate Excel
+      const excelBuffer = await generateAccountantPackExcel({
+        financialYear,
+        userName: ctx.user.name || ctx.user.email || "Unknown",
+        accountantName,
+        sections,
+        data,
+      });
+
       // Build enabled sections list for email template
       const enabledSections = Object.entries(sections)
         .filter(([, enabled]) => enabled)
@@ -607,6 +617,10 @@ export const accountantPackRouter = router({
             {
               filename: `accountant-pack-FY${financialYear}.pdf`,
               content: Buffer.from(pdfBuffer),
+            },
+            {
+              filename: `accountant-pack-FY${financialYear}.xlsx`,
+              content: Buffer.from(excelBuffer),
             },
           ],
         });
