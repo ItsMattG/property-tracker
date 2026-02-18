@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
 import { documentExtractions, transactions, properties, subscriptions } from "../../db/schema";
-import { extractDocument, matchPropertyByAddress } from "../../services/property-analysis";
+import { extractDocument, matchPropertyByAddress, findPotentialDuplicate } from "../../services/property-analysis";
 import { getPlanFromSubscription, PLAN_LIMITS } from "../../services/billing/subscription";
 import type { DB } from "../../repositories/base";
 import { logger } from "@/lib/logger";
@@ -94,6 +94,20 @@ export const documentExtractionRouter = router({
             }
           }
 
+          // Check for potential duplicate transactions
+          let duplicateOf: string | null = null;
+          if (result.data.amount) {
+            // Cross-domain: reads user transactions for duplicate detection
+            const existingTxs = await db.query.transactions.findMany({
+              where: eq(transactions.userId, ownerId),
+              columns: { id: true, date: true, amount: true, description: true, status: true },
+            });
+            duplicateOf = findPotentialDuplicate(
+              { amount: result.data.amount, date: result.data.date, vendor: result.data.vendor },
+              existingTxs
+            );
+          }
+
           // Create draft transaction if amount was extracted
           let draftTransactionId: string | null = null;
           if (result.data.amount) {
@@ -114,7 +128,7 @@ export const documentExtractionRouter = router({
           await db.update(documentExtractions).set({
             status: "completed",
             documentType: result.data.documentType,
-            extractedData: JSON.stringify(result.data),
+            extractedData: JSON.stringify({ ...result.data, duplicateOf }),
             confidence: String(result.data.confidence),
             matchedPropertyId,
             propertyMatchConfidence: propertyMatchConfidence ? String(propertyMatchConfidence) : null,
