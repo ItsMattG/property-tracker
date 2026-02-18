@@ -15,6 +15,7 @@ import {
   getPercentileStatus,
 } from "../../services/analytics";
 import { getMockSuburbBenchmark } from "../../services/property-analysis";
+import { categories } from "@/lib/categories";
 import type {
   PropertyPerformanceResult,
   PercentileResult,
@@ -304,18 +305,30 @@ export const performanceBenchmarkingRouter = router({
           totalAnnualRent: 0,
           totalAnnualExpenses: 0,
           totalCurrentValue: 0,
+          bestPerformer: null,
+          worstPerformer: null,
         };
       }
 
       const lastYear = getLastYearDate();
       const propertyIds = userProperties.map((p) => p.id);
 
-      // Fetch benchmarks, transactions, and valuations in parallel
-      const [benchmarks, allTransactions, ...recentValueLists] = await Promise.all([
+      // Pre-compute category sets for filtering
+      const deductibleCategoryValues = new Set(
+        categories.filter((c) => c.isDeductible).map((c) => c.value)
+      );
+      const capitalCategoryValues = new Set(
+        categories.filter((c) => c.type === "capital").map((c) => c.value)
+      );
+
+      // Fetch benchmarks, transactions, loans, and valuations in parallel
+      const [benchmarks, allTransactions, allTimeTransactions, allLoans, ...recentValueLists] = await Promise.all([
         ctx.uow.similarProperties.findPerformanceBenchmarksByProperties(propertyIds),
         ctx.uow.transactions.findAllByOwner(ownerId, {
           startDate: lastYear.toISOString().split("T")[0],
         }),
+        ctx.uow.transactions.findAllByOwner(ownerId, {}),
+        ctx.uow.loan.findByOwner(ownerId),
         ...userProperties.map((p) => ctx.uow.propertyValue.findRecent(p.id, 1)),
       ]);
 
@@ -323,6 +336,16 @@ export const performanceBenchmarkingRouter = router({
       const valuationMap = new Map(
         userProperties.map((p, i) => [p.id, recentValueLists[i]?.[0] ?? null])
       );
+
+      // Build loan balance map per property (summing multiple loans)
+      const loanBalanceMap = new Map<string, number>();
+      for (const loan of allLoans) {
+        const propId = loan.propertyId;
+        if (propId) {
+          const balance = parseFloat(loan.currentBalance ?? "0");
+          loanBalanceMap.set(propId, (loanBalanceMap.get(propId) ?? 0) + balance);
+        }
+      }
 
       // Build scorecard entries for each property
       const entries: PropertyScorecardEntry[] = userProperties.map((property) => {
@@ -350,6 +373,44 @@ export const performanceBenchmarkingRouter = router({
           const benchmark = benchmarkMap.get(property.id);
           const performanceScore = benchmark?.performanceScore ?? 50;
 
+          // Operating expenses = all expenses EXCEPT interest_on_loans
+          const operatingExpenses = propTransactions
+            .filter((t) => t.transactionType === "expense" && t.category !== "interest_on_loans")
+            .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
+
+          // Cap rate: (annualRent - operatingExpenses) / currentValue * 100
+          const capRate = currentValue > 0
+            ? Math.round(((annualRent - operatingExpenses) / currentValue) * 1000) / 10
+            : 0;
+
+          // Capital transactions (all-time) for this property
+          const propCapitalTransactions = allTimeTransactions.filter(
+            (t) => t.propertyId === property.id && capitalCategoryValues.has(t.category)
+          );
+          const capitalCosts = propCapitalTransactions.reduce(
+            (sum, t) => sum + Math.abs(parseFloat(t.amount)), 0
+          );
+
+          // Cash-on-cash: annualCashFlow / (purchasePrice + capitalCosts) * 100
+          const totalCashInvested = purchasePrice + capitalCosts;
+          const cashOnCash = propCapitalTransactions.length > 0 && totalCashInvested > 0
+            ? Math.round((annualCashFlow / totalCashInvested) * 1000) / 10
+            : null;
+
+          // Annual tax deductions: sum of |amount| for deductible categories (last year)
+          const annualTaxDeductions = propTransactions
+            .filter((t) => deductibleCategoryValues.has(t.category))
+            .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
+
+          // Capital growth percent: (currentValue - purchasePrice) / purchasePrice * 100
+          const capitalGrowthPercent = purchasePrice > 0
+            ? Math.round(((currentValue - purchasePrice) / purchasePrice) * 1000) / 10
+            : 0;
+
+          // Equity: currentValue - totalLoans
+          const totalLoans = loanBalanceMap.get(property.id) ?? 0;
+          const equity = Math.round(currentValue - totalLoans);
+
           return {
             propertyId: property.id,
             address: property.address,
@@ -373,6 +434,11 @@ export const performanceBenchmarkingRouter = router({
                   benchmark.vacancyPercentile
                 )
               : false,
+            capRate,
+            cashOnCash,
+            annualTaxDeductions: Math.round(annualTaxDeductions),
+            capitalGrowthPercent,
+            equity,
           };
         });
 
@@ -396,6 +462,14 @@ export const performanceBenchmarkingRouter = router({
           ? entries.reduce((sum, e) => sum + e.netYield, 0) / entries.length
           : 0;
 
+      // entries are already sorted by performanceScore descending
+      const bestPerformer = entries.length > 0
+        ? { propertyId: entries[0].propertyId, address: entries[0].address, score: entries[0].performanceScore }
+        : null;
+      const worstPerformer = entries.length > 0
+        ? { propertyId: entries[entries.length - 1].propertyId, address: entries[entries.length - 1].address, score: entries[entries.length - 1].performanceScore }
+        : null;
+
       return {
         properties: entries,
         averageScore: Math.round(avgScore),
@@ -405,6 +479,8 @@ export const performanceBenchmarkingRouter = router({
         totalAnnualRent: Math.round(totalAnnualRent),
         totalAnnualExpenses: Math.round(totalAnnualExpenses),
         totalCurrentValue: Math.round(totalCurrentValue),
+        bestPerformer,
+        worstPerformer,
       };
     }
   ),

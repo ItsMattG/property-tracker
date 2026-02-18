@@ -57,6 +57,11 @@ export interface PropertyScorecardEntry {
   yieldPercentile: number | null;
   expensePercentile: number | null;
   isUnderperforming: boolean;
+  capRate: number;                    // (annualRent - operatingExpenses) / currentValue * 100
+  cashOnCash: number | null;          // annualCashFlow / totalCashInvested * 100, null if no capital transactions
+  annualTaxDeductions: number;        // sum of deductible expenses
+  capitalGrowthPercent: number;       // (currentValue - purchasePrice) / purchasePrice * 100
+  equity: number;                     // currentValue - totalLoans
 }
 
 /** Portfolio-level scorecard summary */
@@ -69,4 +74,6 @@ export interface PortfolioScorecardSummary {
   totalAnnualRent: number;
   totalAnnualExpenses: number;
   totalCurrentValue: number;
+  bestPerformer: { propertyId: string; address: string; score: number } | null;
+  worstPerformer: { propertyId: string; address: string; score: number } | null;
 }

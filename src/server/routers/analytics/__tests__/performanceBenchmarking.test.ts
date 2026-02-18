@@ -119,6 +119,7 @@ function setupCtx(overrides: Record<string, Record<string, unknown>> = {}) {
       findByOwner: vi.fn().mockResolvedValue(mockProperties),
     },
     transactions: {
+      // Called twice: first for last-year transactions, second for all-time transactions
       findAllByOwner: vi.fn().mockResolvedValue(mockTransactions),
     },
     propertyValue: {
@@ -126,6 +127,9 @@ function setupCtx(overrides: Record<string, Record<string, unknown>> = {}) {
     },
     similarProperties: {
       findPerformanceBenchmarksByProperties: vi.fn().mockResolvedValue(mockBenchmarks),
+    },
+    loan: {
+      findByOwner: vi.fn().mockResolvedValue([]),
     },
     ...overrides,
   });
@@ -164,6 +168,8 @@ describe("performanceBenchmarking.getPortfolioScorecard", () => {
     expect(result.totalAnnualRent).toBe(0);
     expect(result.totalAnnualExpenses).toBe(0);
     expect(result.totalCurrentValue).toBe(0);
+    expect(result.bestPerformer).toBeNull();
+    expect(result.worstPerformer).toBeNull();
   });
 
   it("returns scorecard entries sorted by performance score descending", async () => {
@@ -291,5 +297,163 @@ describe("performanceBenchmarking.getPortfolioScorecard", () => {
 
     const prop2 = result.properties.find((p) => p.propertyId === "prop-2");
     expect(prop2!.isUnderperforming).toBe(false);
+  });
+
+  it("includes capRate computed from non-interest expenses", async () => {
+    const { caller } = setupCtx();
+
+    const result = await caller.performanceBenchmarking.getPortfolioScorecard();
+
+    // prop-1: rent=25000, only expense is insurance=2000 (no interest_on_loans)
+    // capRate = (25000 - 2000) / 500000 * 100 = 4.6%
+    const prop1 = result.properties.find((p) => p.propertyId === "prop-1");
+    expect(prop1!.capRate).toBe(4.6);
+  });
+
+  it("returns cashOnCash as null when no capital transactions", async () => {
+    // Default mockTransactions have no stamp_duty/conveyancing/etc.
+    const { caller } = setupCtx();
+
+    const result = await caller.performanceBenchmarking.getPortfolioScorecard();
+
+    const prop1 = result.properties.find((p) => p.propertyId === "prop-1");
+    expect(prop1!.cashOnCash).toBeNull();
+  });
+
+  it("calculates cashOnCash when capital transactions exist", async () => {
+    const transactionsWithCapital = [
+      ...mockTransactions,
+      {
+        id: "txn-cap-1",
+        propertyId: "prop-1",
+        category: "stamp_duty",
+        transactionType: "expense",
+        amount: "20000",
+        userId: "user-1",
+      },
+    ];
+
+    const { caller } = setupCtx({
+      transactions: {
+        findAllByOwner: vi.fn().mockResolvedValue(transactionsWithCapital),
+      },
+    });
+
+    const result = await caller.performanceBenchmarking.getPortfolioScorecard();
+
+    // prop-1: stamp_duty (20000) is type "expense", so annualExpenses = 2000 + 20000 = 22000
+    // annualCashFlow = 25000 - 22000 = 3000
+    // totalCashInvested = 500000 (purchase) + 20000 (stamp_duty) = 520000
+    // cashOnCash = 3000 / 520000 * 100 = 0.5769... => rounded to 0.6
+    const prop1 = result.properties.find((p) => p.propertyId === "prop-1");
+    expect(prop1!.cashOnCash).toBe(0.6);
+  });
+
+  it("includes annualTaxDeductions from deductible categories", async () => {
+    const transactionsWithMix = [
+      ...mockTransactions,
+      {
+        id: "txn-cap-2",
+        propertyId: "prop-1",
+        category: "stamp_duty",
+        transactionType: "expense",
+        amount: "15000",
+        userId: "user-1",
+      },
+    ];
+
+    const { caller } = setupCtx({
+      transactions: {
+        findAllByOwner: vi.fn().mockResolvedValue(transactionsWithMix),
+      },
+    });
+
+    const result = await caller.performanceBenchmarking.getPortfolioScorecard();
+
+    // prop-1: insurance=2000 (deductible), stamp_duty=15000 (NOT deductible)
+    // annualTaxDeductions should be 2000 only
+    const prop1 = result.properties.find((p) => p.propertyId === "prop-1");
+    expect(prop1!.annualTaxDeductions).toBe(2000);
+  });
+
+  it("includes capitalGrowthPercent", async () => {
+    const { caller } = setupCtx({
+      propertyValue: {
+        findRecent: vi.fn().mockImplementation((propertyId: string) => {
+          if (propertyId === "prop-1") {
+            return Promise.resolve([{ estimatedValue: "550000" }]);
+          }
+          return Promise.resolve([]);
+        }),
+      },
+    });
+
+    const result = await caller.performanceBenchmarking.getPortfolioScorecard();
+
+    // prop-1: (550000 - 500000) / 500000 * 100 = 10%
+    const prop1 = result.properties.find((p) => p.propertyId === "prop-1");
+    expect(prop1!.capitalGrowthPercent).toBe(10);
+
+    // prop-2: no valuation, currentValue = purchasePrice = 700000
+    // (700000 - 700000) / 700000 * 100 = 0%
+    const prop2 = result.properties.find((p) => p.propertyId === "prop-2");
+    expect(prop2!.capitalGrowthPercent).toBe(0);
+  });
+
+  it("calculates equity from currentValue minus loans", async () => {
+    const mockLoans = [
+      {
+        id: "loan-1",
+        propertyId: "prop-1",
+        currentBalance: "350000",
+        property: mockProperties[0],
+      },
+      {
+        id: "loan-2",
+        propertyId: "prop-1",
+        currentBalance: "50000",
+        property: mockProperties[0],
+      },
+      {
+        id: "loan-3",
+        propertyId: "prop-2",
+        currentBalance: "500000",
+        property: mockProperties[1],
+      },
+    ];
+
+    const { caller } = setupCtx({
+      loan: {
+        findByOwner: vi.fn().mockResolvedValue(mockLoans),
+      },
+    });
+
+    const result = await caller.performanceBenchmarking.getPortfolioScorecard();
+
+    // prop-1: currentValue=500000, loans=350000+50000=400000, equity=100000
+    const prop1 = result.properties.find((p) => p.propertyId === "prop-1");
+    expect(prop1!.equity).toBe(100000);
+
+    // prop-2: currentValue=700000, loans=500000, equity=200000
+    const prop2 = result.properties.find((p) => p.propertyId === "prop-2");
+    expect(prop2!.equity).toBe(200000);
+  });
+
+  it("includes bestPerformer and worstPerformer", async () => {
+    const { caller } = setupCtx();
+
+    const result = await caller.performanceBenchmarking.getPortfolioScorecard();
+
+    // prop-1 has score 72 (best), prop-2 has score 45 (worst)
+    expect(result.bestPerformer).toEqual({
+      propertyId: "prop-1",
+      address: "123 Main St",
+      score: 72,
+    });
+    expect(result.worstPerformer).toEqual({
+      propertyId: "prop-2",
+      address: "456 Oak Ave",
+      score: 45,
+    });
   });
 });
