@@ -393,13 +393,13 @@ export const performanceBenchmarkingRouter = router({
 
           // Cash-on-cash: annualCashFlow / (purchasePrice + capitalCosts) * 100
           const totalCashInvested = purchasePrice + capitalCosts;
-          const cashOnCash = propCapitalTransactions.length > 0 && totalCashInvested > 0
+          const cashOnCash = totalCashInvested > 0
             ? Math.round((annualCashFlow / totalCashInvested) * 1000) / 10
             : null;
 
-          // Annual tax deductions: sum of |amount| for deductible categories (last year)
+          // Annual tax deductions: sum of |amount| for deductible expense categories (last year)
           const annualTaxDeductions = propTransactions
-            .filter((t) => deductibleCategoryValues.has(t.category))
+            .filter((t) => t.transactionType === "expense" && deductibleCategoryValues.has(t.category))
             .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
 
           // Capital growth percent: (currentValue - purchasePrice) / purchasePrice * 100

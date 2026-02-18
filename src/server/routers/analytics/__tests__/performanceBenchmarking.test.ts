@@ -314,14 +314,17 @@ describe("performanceBenchmarking.getPortfolioScorecard", () => {
     expect(prop1!.capRate).toBe(4.6);
   });
 
-  it("returns cashOnCash as null when no capital transactions", async () => {
+  it("returns cashOnCash using purchasePrice when no capital transactions", async () => {
     // Default mockTransactions have no stamp_duty/conveyancing/etc.
+    // purchasePrice alone is a valid cash investment denominator
     const { caller } = setupCtx();
 
     const result = await caller.performanceBenchmarking.getPortfolioScorecard();
 
+    // prop-1: cashFlow=23000, totalCashInvested=500000 (purchase only)
+    // cashOnCash = 23000 / 500000 * 100 = 4.6%
     const prop1 = result.properties.find((p) => p.propertyId === "prop-1");
-    expect(prop1!.cashOnCash).toBeNull();
+    expect(prop1!.cashOnCash).toBe(4.6);
   });
 
   it("calculates cashOnCash when capital transactions exist", async () => {
