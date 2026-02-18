@@ -363,7 +363,7 @@ export const performanceBenchmarkingRouter = router({
             .filter((t) => t.category === "rental_income")
             .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
           const annualExpenses = propTransactions
-            .filter((t) => t.transactionType === "expense")
+            .filter((t) => t.transactionType === "expense" && !capitalCategoryValues.has(t.category))
             .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
 
           const grossYield = calculateGrossYield(annualRent, currentValue);
@@ -373,9 +373,9 @@ export const performanceBenchmarkingRouter = router({
           const benchmark = benchmarkMap.get(property.id);
           const performanceScore = benchmark?.performanceScore ?? 50;
 
-          // Operating expenses = all expenses EXCEPT interest_on_loans
+          // Operating expenses = all expenses EXCEPT interest_on_loans and capital categories
           const operatingExpenses = propTransactions
-            .filter((t) => t.transactionType === "expense" && t.category !== "interest_on_loans")
+            .filter((t) => t.transactionType === "expense" && t.category !== "interest_on_loans" && !capitalCategoryValues.has(t.category))
             .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
 
           // Cap rate: (annualRent - operatingExpenses) / currentValue * 100

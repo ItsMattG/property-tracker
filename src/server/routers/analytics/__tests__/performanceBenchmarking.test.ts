@@ -113,14 +113,18 @@ const mockBenchmarks = [
   },
 ];
 
-function setupCtx(overrides: Record<string, Record<string, unknown>> = {}) {
+function setupCtx(overrides: Partial<Parameters<typeof createMockUow>[0]> = {}) {
   const uow = createMockUow({
     property: {
       findByOwner: vi.fn().mockResolvedValue(mockProperties),
     },
     transactions: {
-      // Called twice: first for last-year transactions, second for all-time transactions
-      findAllByOwner: vi.fn().mockResolvedValue(mockTransactions),
+      // Called twice: with startDate (last-year) and without (all-time for capital costs)
+      findAllByOwner: vi.fn().mockImplementation(
+        (_ownerId: string, filters?: { startDate?: string }) =>
+          // Default: last-year returns mockTransactions, all-time returns empty (no capital txns)
+          Promise.resolve(filters?.startDate ? mockTransactions : [])
+      ),
     },
     propertyValue: {
       findRecent: vi.fn().mockResolvedValue([]),
@@ -321,7 +325,8 @@ describe("performanceBenchmarking.getPortfolioScorecard", () => {
   });
 
   it("calculates cashOnCash when capital transactions exist", async () => {
-    const transactionsWithCapital = [
+    // Capital transactions appear in the all-time query (no startDate filter)
+    const allTimeWithCapital = [
       ...mockTransactions,
       {
         id: "txn-cap-1",
@@ -335,22 +340,26 @@ describe("performanceBenchmarking.getPortfolioScorecard", () => {
 
     const { caller } = setupCtx({
       transactions: {
-        findAllByOwner: vi.fn().mockResolvedValue(transactionsWithCapital),
+        findAllByOwner: vi.fn().mockImplementation(
+          (_ownerId: string, filters?: { startDate?: string }) =>
+            Promise.resolve(filters?.startDate ? mockTransactions : allTimeWithCapital)
+        ),
       },
     });
 
     const result = await caller.performanceBenchmarking.getPortfolioScorecard();
 
-    // prop-1: stamp_duty (20000) is type "expense", so annualExpenses = 2000 + 20000 = 22000
-    // annualCashFlow = 25000 - 22000 = 3000
+    // prop-1: annualExpenses=2000 (insurance only, stamp_duty excluded from last-year)
+    // annualCashFlow = 25000 - 2000 = 23000
     // totalCashInvested = 500000 (purchase) + 20000 (stamp_duty) = 520000
-    // cashOnCash = 3000 / 520000 * 100 = 0.5769... => rounded to 0.6
+    // cashOnCash = 23000 / 520000 * 100 = 4.423... => rounded to 4.4
     const prop1 = result.properties.find((p) => p.propertyId === "prop-1");
-    expect(prop1!.cashOnCash).toBe(0.6);
+    expect(prop1!.cashOnCash).toBe(4.4);
   });
 
   it("includes annualTaxDeductions from deductible categories", async () => {
-    const transactionsWithMix = [
+    // Last-year transactions include stamp_duty — but it's not deductible
+    const lastYearWithCapital = [
       ...mockTransactions,
       {
         id: "txn-cap-2",
@@ -364,7 +373,10 @@ describe("performanceBenchmarking.getPortfolioScorecard", () => {
 
     const { caller } = setupCtx({
       transactions: {
-        findAllByOwner: vi.fn().mockResolvedValue(transactionsWithMix),
+        findAllByOwner: vi.fn().mockImplementation(
+          (_ownerId: string, filters?: { startDate?: string }) =>
+            Promise.resolve(filters?.startDate ? lastYearWithCapital : lastYearWithCapital)
+        ),
       },
     });
 
@@ -374,6 +386,8 @@ describe("performanceBenchmarking.getPortfolioScorecard", () => {
     // annualTaxDeductions should be 2000 only
     const prop1 = result.properties.find((p) => p.propertyId === "prop-1");
     expect(prop1!.annualTaxDeductions).toBe(2000);
+    // Also verify stamp_duty is excluded from annualExpenses
+    expect(prop1!.annualExpenses).toBe(2000);
   });
 
   it("includes capitalGrowthPercent", async () => {
