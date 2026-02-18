@@ -4,6 +4,7 @@ import { documents } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { extractDepreciationSchedule } from "../../services/property-analysis";
+import { validateAndRecalculate } from "../../services/tax/depreciation-calc";
 import {
   generateAllSuggestions,
   getCurrentFinancialYear,
@@ -100,9 +101,12 @@ export const taxOptimizationRouter = router({
         });
       }
 
+      const validatedAssets = validateAndRecalculate(result.assets);
+      const totalValue = validatedAssets.reduce((sum, a) => sum + a.originalCost, 0);
+
       return {
-        assets: result.assets,
-        totalValue: result.totalValue,
+        assets: validatedAssets,
+        totalValue,
         effectiveDate: result.effectiveDate,
       };
     }),
