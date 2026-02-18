@@ -222,7 +222,7 @@ export default function CompareScenarios() {
                   <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                   <XAxis dataKey="month" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v)} />
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                   <Legend />
                   <ReferenceLine y={0} stroke="var(--color-border)" strokeDasharray="3 3" />
                   {scenarioQueries.map((q, idx) => (
