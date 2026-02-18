@@ -76,6 +76,13 @@ export const rateTypeEnum = pgEnum("rate_type", [
 
 export const propertyStatusEnum = pgEnum("property_status", ["active", "sold"]);
 
+export const propertyPurposeEnum = pgEnum("property_purpose", [
+  "investment",
+  "owner_occupied",
+  "commercial",
+  "short_term_rental",
+]);
+
 export const documentCategoryEnum = pgEnum("document_category", [
   "receipt",
   "contract",
