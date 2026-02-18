@@ -163,7 +163,7 @@ export const documentExtractionRouter = router({
    * Lists extractions with pending_review transactions
    */
   listPendingReviews: protectedProcedure.query(async ({ ctx }) => {
-    const extractions = await ctx.uow.document.findCompletedExtractionsWithRelations();
+    const extractions = await ctx.uow.document.findCompletedExtractionsWithRelations(ctx.portfolio.ownerId);
 
     return extractions
       .filter((e) => e.draftTransaction?.status === "pending_review")
@@ -188,6 +188,7 @@ export const documentExtractionRouter = router({
     .mutation(async ({ ctx, input }) => {
       const extraction = await ctx.uow.document.findExtractionById(
         input.extractionId,
+        ctx.portfolio.ownerId,
         { withRelations: true }
       );
 
@@ -217,7 +218,10 @@ export const documentExtractionRouter = router({
   discardExtraction: writeProcedure
     .input(z.object({ extractionId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const extraction = await ctx.uow.document.findExtractionById(input.extractionId);
+      const extraction = await ctx.uow.document.findExtractionById(
+        input.extractionId,
+        ctx.portfolio.ownerId
+      );
 
       if (!extraction) {
         throw new TRPCError({
@@ -232,7 +236,7 @@ export const documentExtractionRouter = router({
       }
 
       // Delete extraction
-      await ctx.uow.document.deleteExtraction(input.extractionId);
+      await ctx.uow.document.deleteExtraction(input.extractionId, ctx.portfolio.ownerId);
 
       return { success: true };
     }),

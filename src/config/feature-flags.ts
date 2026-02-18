@@ -17,7 +17,7 @@ export const featureFlags = {
   brokerPortal: false,
   mytaxExport: false,
   loans: true,
-  compareLoans: false,
+  compareLoans: true,
   export: true,
   emails: false,
   tasks: false,
@@ -42,16 +42,16 @@ export const featureFlags = {
   // ── Property detail sections ────────────────────────────────────
   valuation: true,
   climateRisk: false,
-  milestones: false,
+  milestones: true,
   performanceBenchmark: false,
-  similarProperties: false,
+  similarProperties: true,
 
   // ── Property features ──────────────────────────────────────────────
-  documents: false,
+  documents: true,
 
   // ── Other UI ──────────────────────────────────────────────────────
   fySelector: false,
-  aiAssistant: false,
+  aiAssistant: true,
   whatsNew: false,
   helpMenu: false,
   quickAdd: false,
