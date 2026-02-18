@@ -67,7 +67,7 @@ export function ScorecardComparison({
     });
   };
 
-  const metrics: MetricRow[] = [
+  const metrics: MetricRow[] = useMemo(() => [
     {
       label: "Performance Score",
       getValue: (e) => `${e.performanceScore}`,
@@ -231,7 +231,7 @@ export function ScorecardComparison({
           ? selectedProperties.reduce((s, p) => s + p.annualTaxDeductions, 0) / selectedProperties.length
           : 0,
     },
-  ];
+  ], [selectedProperties, averageScore, averageGrossYield, averageNetYield]);
 
   function getBestValue(metric: MetricRow): number {
     if (selectedProperties.length === 0) return 0;
@@ -326,21 +326,25 @@ export function ScorecardComparison({
                       const numVal = metric.getNumericValue(p);
                       const isBest =
                         selectedProperties.length > 1 && numVal === best;
+                      const colorClass = isBest
+                        ? "font-bold text-success"
+                        : getMetricColor(numVal, metric.getAverageNumeric(), metric.higherIsBetter);
                       return (
                         <td
                           key={p.propertyId}
                           className={cn(
                             "text-right py-2.5 px-2 tabular-nums",
-                            isBest
-                              ? "font-bold text-success"
-                              : getMetricColor(numVal, metric.getAverageNumeric(), metric.higherIsBetter)
+                            colorClass
                           )}
                         >
                           <span className="flex items-center justify-end gap-1">
                             {metric.getValue(p)}
                             {isBest && (
-                              <Trophy className="w-3 h-3 text-success" />
+                              <Trophy className="w-3 h-3 text-success" aria-hidden="true" />
                             )}
+                            {isBest && <span className="sr-only">(best)</span>}
+                            {!isBest && colorClass === "text-success" && <span className="sr-only">(above avg)</span>}
+                            {!isBest && colorClass === "text-destructive" && <span className="sr-only">(below avg)</span>}
                           </span>
                         </td>
                       );
