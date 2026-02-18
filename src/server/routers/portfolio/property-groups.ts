@@ -30,6 +30,18 @@ export const propertyGroupsRouter = router({
     return ctx.uow.propertyGroup.findByOwner(ctx.portfolio.ownerId);
   }),
 
+  /** Returns all groups with their assigned property IDs in a single round trip */
+  listDetailed: protectedProcedure.query(async ({ ctx }) => {
+    const groups = await ctx.uow.propertyGroup.findByOwner(ctx.portfolio.ownerId);
+    const detailed = await Promise.all(
+      groups.map(async (g) => ({
+        ...g,
+        propertyIds: await ctx.uow.propertyGroup.getPropertyIds(g.id),
+      }))
+    );
+    return detailed;
+  }),
+
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {

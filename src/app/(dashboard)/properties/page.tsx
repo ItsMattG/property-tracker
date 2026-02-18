@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PropertyCard } from "@/components/properties/PropertyCard";
@@ -25,6 +25,7 @@ import {
 export default function PropertiesPage() {
   const [deleteProperty, setDeleteProperty] = useState<{ id: string; address: string } | null>(null);
   const [excludedEntities, setExcludedEntities] = useState<Set<string>>(new Set());
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
   const { data: properties, isLoading, refetch } = trpc.property.list.useQuery(
     undefined,
@@ -41,6 +42,11 @@ export default function PropertiesPage() {
       retry: false,
     }
   );
+  const { data: detailedGroups } = trpc.propertyGroup.listDetailed.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
   const deletePropertyMutation = trpc.property.delete.useMutation({
     onSuccess: () => {
       toast.success("Property deleted");
@@ -85,9 +91,40 @@ export default function PropertiesPage() {
     return new Map(metrics.map((m) => [m.propertyId, m]));
   }, [metrics]);
 
-  const filteredProperties = properties?.filter(
-    (p) => !excludedEntities.has(p.entityName)
-  );
+  // Reverse map: propertyId → groups that contain it
+  const propertyGroupMap = useMemo(() => {
+    const map = new Map<string, Array<{ id: string; name: string; colour: string }>>();
+    if (!detailedGroups) return map;
+    for (const group of detailedGroups) {
+      for (const propId of group.propertyIds) {
+        const existing = map.get(propId) ?? [];
+        existing.push({ id: group.id, name: group.name, colour: group.colour });
+        map.set(propId, existing);
+      }
+    }
+    return map;
+  }, [detailedGroups]);
+
+  // Set of property IDs in the active group (for filtering)
+  const activeGroupPropertyIds = useMemo(() => {
+    if (!activeGroupId || !detailedGroups) return null;
+    const group = detailedGroups.find((g) => g.id === activeGroupId);
+    return group ? new Set(group.propertyIds) : null;
+  }, [activeGroupId, detailedGroups]);
+
+  const filteredProperties = useMemo(() => {
+    if (!properties) return undefined;
+    return properties.filter((p) => {
+      if (excludedEntities.has(p.entityName)) return false;
+      if (activeGroupPropertyIds && !activeGroupPropertyIds.has(p.id)) return false;
+      return true;
+    });
+  }, [properties, excludedEntities, activeGroupPropertyIds]);
+
+  const handleClearFilters = useCallback(() => {
+    setExcludedEntities(new Set());
+    setActiveGroupId(null);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -145,6 +182,40 @@ export default function PropertiesPage() {
         </div>
       )}
 
+      {/* Group filter pills - only show when groups exist */}
+      {detailedGroups && detailedGroups.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-muted-foreground mr-1">Groups:</span>
+          <button
+            onClick={() => setActiveGroupId(null)}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer border",
+              !activeGroupId
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-background text-muted-foreground border-border hover:text-foreground"
+            )}
+          >
+            All
+          </button>
+          {detailedGroups.map((group) => (
+            <button
+              key={group.id}
+              onClick={() => setActiveGroupId(activeGroupId === group.id ? null : group.id)}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium transition-colors cursor-pointer border",
+                activeGroupId === group.id
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:text-foreground"
+              )}
+            >
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: group.colour }} />
+              {group.name}
+              <span className="text-xs opacity-70">{group.propertyIds.length}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {isLoading ? (
         <PropertyListSkeleton count={3} />
       ) : filteredProperties && filteredProperties.length > 0 ? (
@@ -156,6 +227,19 @@ export default function PropertiesPage() {
                 metrics={metricsMap.get(property.id)}
                 onDelete={handleDelete}
               />
+              {(propertyGroupMap.get(property.id)?.length ?? 0) > 0 && (
+                <div className="flex gap-1.5 mt-2 flex-wrap">
+                  {propertyGroupMap.get(property.id)!.map((g) => (
+                    <span
+                      key={g.id}
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full"
+                    >
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: g.colour }} />
+                      {g.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -164,7 +248,7 @@ export default function PropertiesPage() {
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground">No properties match your current filters.</p>
           <button
-            onClick={() => setExcludedEntities(new Set())}
+            onClick={handleClearFilters}
             className="text-sm text-primary hover:underline mt-2 cursor-pointer"
           >
             Clear filters
