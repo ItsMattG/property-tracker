@@ -18,6 +18,7 @@ export {
   customType,
   serial,
   real,
+  primaryKey,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
