@@ -1,12 +1,12 @@
 "use client";
 
-import { TrendingUp, Award, AlertTriangle } from "lucide-react";
+import { TrendingUp, AlertTriangle, Trophy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PropertyScorecard } from "@/components/analytics/PropertyScorecard";
 import { ScorecardComparison } from "@/components/analytics/ScorecardComparison";
 import { trpc } from "@/lib/trpc/client";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 function ScorecardSkeleton() {
   return (
@@ -76,10 +76,6 @@ export default function ScorecardPage() {
     );
   }
 
-  const underperformingCount = scorecard.properties.filter(
-    (p) => p.isUnderperforming
-  ).length;
-
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -95,43 +91,51 @@ export default function ScorecardPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">Portfolio Score</p>
-            <p className="text-2xl font-bold">{scorecard.averageScore}</p>
+            <p className={cn(
+              "text-2xl font-bold",
+              scorecard.averageScore >= 70 ? "text-success" :
+              scorecard.averageScore >= 40 ? "text-warning" : "text-destructive"
+            )}>
+              {scorecard.averageScore}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-1">
+              <Trophy className="w-4 h-4 text-success" />
+              <p className="text-sm text-muted-foreground">Best Performer</p>
+            </div>
+            {scorecard.bestPerformer ? (
+              <>
+                <p className="text-sm font-bold truncate">{scorecard.bestPerformer.address}</p>
+                <p className="text-xs text-muted-foreground">Score: {scorecard.bestPerformer.score}</p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">--</p>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-1">
+              <AlertTriangle className="w-4 h-4 text-warning" />
+              <p className="text-sm text-muted-foreground">Needs Attention</p>
+            </div>
+            {scorecard.worstPerformer ? (
+              <>
+                <p className="text-sm font-bold truncate">{scorecard.worstPerformer.address}</p>
+                <p className="text-xs text-muted-foreground">Score: {scorecard.worstPerformer.score}</p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">--</p>
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">Avg Gross Yield</p>
             <p className="text-2xl font-bold">{scorecard.averageGrossYield}%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">Total Cash Flow</p>
-            <p
-              className={cn(
-                "text-2xl font-bold",
-                scorecard.totalAnnualCashFlow >= 0
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
-              )}
-            >
-              {formatCurrency(scorecard.totalAnnualCashFlow)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              {underperformingCount > 0 ? (
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-              ) : (
-                <Award className="w-4 h-4 text-green-500" />
-              )}
-              <p className="text-sm text-muted-foreground">Underperforming</p>
-            </div>
-            <p className="text-2xl font-bold">
-              {underperformingCount} / {scorecard.properties.length}
-            </p>
           </CardContent>
         </Card>
       </div>

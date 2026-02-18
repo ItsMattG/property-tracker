@@ -67,12 +67,32 @@ export function PropertyScorecard({ entry, highlight }: PropertyScorecardProps) 
             <p className="text-sm font-semibold">{formatCurrency(entry.purchasePrice)}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Annual Rent</p>
-            <p className="text-sm font-semibold">{formatCurrency(entry.annualRent)}</p>
+            <p className="text-xs text-muted-foreground">Cap Rate</p>
+            <p className="text-sm font-semibold">{entry.capRate}%</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Annual Expenses</p>
-            <p className="text-sm font-semibold">{formatCurrency(entry.annualExpenses)}</p>
+            <p className="text-xs text-muted-foreground">Capital Growth</p>
+            <p className={cn("text-sm font-semibold", entry.capitalGrowthPercent >= 0 ? "text-success" : "text-destructive")}>
+              {entry.capitalGrowthPercent > 0 ? "+" : ""}{entry.capitalGrowthPercent}%
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Equity</p>
+            <p className="text-sm font-semibold">{formatCurrency(entry.equity)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Tax Deductions</p>
+            <p className="text-sm font-semibold">{formatCurrency(entry.annualTaxDeductions)}</p>
+          </div>
+          {entry.cashOnCash !== null && (
+            <div>
+              <p className="text-xs text-muted-foreground">Cash-on-Cash</p>
+              <p className="text-sm font-semibold">{entry.cashOnCash}%</p>
+            </div>
+          )}
+          <div>
+            <p className="text-xs text-muted-foreground">Annual Rent</p>
+            <p className="text-sm font-semibold">{formatCurrency(entry.annualRent)}</p>
           </div>
         </div>
 

@@ -31,6 +31,7 @@ import { PortfolioSummaryTable } from "./PortfolioSummaryTable";
 import { PropertyMapWidget } from "./PropertyMapWidget";
 import { LvrGaugeCard } from "./LvrGaugeCard";
 import { EquityProjectionCard } from "./EquityProjectionCard";
+import { BorrowingPowerCard } from "./BorrowingPowerCard";
 import { RecentActivityCard } from "./RecentActivityCard";
 import { DEMO_STATS, DEMO_TRENDS } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
@@ -463,11 +464,14 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
 
       <PortfolioSummaryTable />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <div className="animate-card-entrance" style={{ '--stagger-index': 0 } as React.CSSProperties}>
           <LvrGaugeCard />
         </div>
         <div className="animate-card-entrance" style={{ '--stagger-index': 1 } as React.CSSProperties}>
+          <BorrowingPowerCard />
+        </div>
+        <div className="animate-card-entrance" style={{ '--stagger-index': 2 } as React.CSSProperties}>
           <EquityProjectionCard />
         </div>
       </div>

@@ -8,6 +8,7 @@ import {
   calculateNetYield,
   getDateRangeForPeriod,
 } from "../../services/transaction";
+import { categories } from "@/lib/categories";
 
 const periodSchema = z.enum(["monthly", "quarterly", "annual"]);
 const sortBySchema = z.enum(["cashFlow", "equity", "lvr", "alphabetical"]);
@@ -234,4 +235,136 @@ export const portfolioRouter = router({
 
       return metrics;
     }),
+
+  getBorrowingPower: protectedProcedure.query(async ({ ctx }) => {
+    const ownerId = ctx.portfolio.ownerId;
+    const propertyList = await ctx.uow.portfolio.findProperties(ownerId);
+
+    if (propertyList.length === 0) {
+      return {
+        totalPortfolioValue: 0,
+        totalDebt: 0,
+        portfolioLVR: 0,
+        usableEquity: 0,
+        annualRentalIncome: 0,
+        annualExpenses: 0,
+        annualRepayments: 0,
+        netSurplus: 0,
+        debtServiceRatio: null as number | null,
+        estimatedBorrowingPower: 0,
+        weightedAvgRate: 0,
+        hasLoans: false,
+      };
+    }
+
+    const propertyIds = propertyList.map((p) => p.id);
+
+    // 1-year lookback for transactions
+    const now = new Date();
+    const oneYearAgo = new Date(now);
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    const [latestValues, allLoans, transactions] = await Promise.all([
+      ctx.uow.portfolio.getLatestPropertyValues(ownerId, propertyIds),
+      ctx.uow.portfolio.findLoansByProperties(ownerId, propertyIds),
+      ctx.uow.portfolio.findTransactionsInRange(
+        ownerId,
+        oneYearAgo.toISOString().split("T")[0],
+        now.toISOString().split("T")[0]
+      ),
+    ]);
+
+    // --- Portfolio value & debt ---
+    const totalPortfolioValue = propertyList.reduce(
+      (sum, p) => sum + (latestValues.get(p.id) || Number(p.purchasePrice)),
+      0
+    );
+
+    const totalDebt = allLoans.reduce(
+      (sum, loan) => sum + Number(loan.currentBalance),
+      0
+    );
+
+    const portfolioLVR = totalPortfolioValue > 0
+      ? (totalDebt / totalPortfolioValue) * 100
+      : 0;
+
+    const usableEquity = Math.max(0, totalPortfolioValue * 0.8 - totalDebt);
+
+    // --- Filter transactions to portfolio properties ---
+    const propertyIdSet = new Set(propertyIds);
+    const filteredTransactions = transactions.filter(
+      (t) => t.propertyId && propertyIdSet.has(t.propertyId)
+    );
+
+    // --- Capital categories to exclude from expenses ---
+    const capitalCategoryValues = new Set(
+      categories.filter((c) => c.type === "capital").map((c) => c.value)
+    );
+
+    // --- Annual income & expenses ---
+    const annualRentalIncome = filteredTransactions
+      .filter((t) => t.transactionType === "income")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const annualExpenses = filteredTransactions
+      .filter(
+        (t) =>
+          t.transactionType === "expense" &&
+          !capitalCategoryValues.has(t.category)
+      )
+      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+
+    // --- Annualize loan repayments ---
+    const frequencyMultiplier: Record<"weekly" | "fortnightly" | "monthly" | "quarterly", number> = {
+      weekly: 52,
+      fortnightly: 26,
+      monthly: 12,
+      quarterly: 4,
+    };
+
+    const annualRepayments = allLoans.reduce((sum, loan) => {
+      const freq = loan.repaymentFrequency as keyof typeof frequencyMultiplier;
+      const multiplier = frequencyMultiplier[freq] ?? 12;
+      return sum + Number(loan.repaymentAmount) * multiplier;
+    }, 0);
+
+    // --- Net surplus ---
+    const netSurplus = annualRentalIncome - annualExpenses - annualRepayments;
+
+    // --- Debt service ratio (null if no income) ---
+    const debtServiceRatio: number | null =
+      annualRentalIncome > 0 ? annualRepayments / annualRentalIncome : null;
+
+    // --- Weighted average interest rate (percentage, e.g. 5.79 = 5.79%) ---
+    const weightedAvgRate =
+      totalDebt > 0
+        ? allLoans.reduce(
+            (sum, loan) =>
+              sum + Number(loan.currentBalance) * Number(loan.interestRate),
+            0
+          ) / totalDebt
+        : 0;
+
+    // Simplified: full usable equity when serviceability is positive, zero otherwise.
+    // A more sophisticated model would cap by income-based lending multiples.
+    const estimatedBorrowingPower = netSurplus > 0 ? usableEquity : 0;
+
+    const hasLoans = allLoans.length > 0;
+
+    return {
+      totalPortfolioValue,
+      totalDebt,
+      portfolioLVR,
+      usableEquity,
+      annualRentalIncome,
+      annualExpenses,
+      annualRepayments,
+      netSurplus,
+      debtServiceRatio,
+      estimatedBorrowingPower,
+      weightedAvgRate,
+      hasLoans,
+    };
+  }),
 });
