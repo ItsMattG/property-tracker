@@ -18,6 +18,7 @@ import {
   getFinancialYearRange,
   calculatePropertyMetrics,
 } from "../../services/transaction";
+import { getCategoryInfo } from "@/lib/categories";
 
 const familyStatusSchema = z.enum(["single", "couple", "family"]);
 
@@ -60,6 +61,154 @@ async function getDepreciationTotal(
     );
     return total + scheduleTotal;
   }, 0);
+}
+
+// --- Property breakdown types ---
+
+interface CategoryBreakdown {
+  category: string;
+  label: string;
+  atoReference: string;
+  amount: number;
+  transactionCount: number;
+}
+
+interface PropertyBreakdown {
+  propertyId: string;
+  address: string;
+  suburb: string;
+  income: number;
+  expenses: number;
+  netResult: number;
+  categories: CategoryBreakdown[];
+}
+
+interface PropertyBreakdownResult {
+  properties: PropertyBreakdown[];
+  unallocated: {
+    income: number;
+    expenses: number;
+    netResult: number;
+    categories: CategoryBreakdown[];
+  };
+  totals: {
+    income: number;
+    expenses: number;
+    netResult: number;
+  };
+}
+
+type BreakdownTransaction = {
+  propertyId: string | null;
+  category: string;
+  amount: string;
+  transactionType: string;
+};
+
+type BreakdownProperty = {
+  id: string;
+  address: string;
+  suburb: string;
+};
+
+/**
+ * Pure function to group transactions by property with ATO category breakdown.
+ * Exported for unit testing — no DB dependency.
+ */
+export function groupTransactionsByProperty(
+  txns: BreakdownTransaction[],
+  properties: BreakdownProperty[]
+): PropertyBreakdownResult {
+  const propertyMap = new Map(properties.map((p) => [p.id, p]));
+  const groups = new Map<string | null, BreakdownTransaction[]>();
+
+  // Group transactions by propertyId, filtering to income/expense categories only
+  for (const t of txns) {
+    const info = getCategoryInfo(t.category);
+    if (!info || (info.type !== "income" && info.type !== "expense")) continue;
+
+    const key = t.propertyId;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(t);
+  }
+
+  const buildCategories = (groupTxns: BreakdownTransaction[]): CategoryBreakdown[] => {
+    const catMap = new Map<string, { amount: number; count: number }>();
+    for (const t of groupTxns) {
+      const curr = catMap.get(t.category) || { amount: 0, count: 0 };
+      curr.amount += Math.abs(Number(t.amount));
+      curr.count += 1;
+      catMap.set(t.category, curr);
+    }
+
+    return Array.from(catMap.entries())
+      .map(([cat, data]) => {
+        const info = getCategoryInfo(cat);
+        return {
+          category: cat,
+          label: info?.label ?? cat,
+          atoReference: info?.atoReference ?? "",
+          amount: data.amount,
+          transactionCount: data.count,
+        };
+      })
+      .sort((a, b) => a.atoReference.localeCompare(b.atoReference, undefined, { numeric: true }));
+  };
+
+  // Transactions are pre-filtered to income/expense category types,
+  // so transactionType will always be "income" or "expense" for well-formed data.
+  const buildTotals = (groupTxns: BreakdownTransaction[]) => {
+    let income = 0;
+    let expenses = 0;
+    for (const t of groupTxns) {
+      if (t.transactionType === "income") income += Number(t.amount);
+      else if (t.transactionType === "expense") expenses += Math.abs(Number(t.amount));
+    }
+    return { income, expenses, netResult: income - expenses };
+  };
+
+  // Build per-property results
+  const propertyResults: PropertyBreakdown[] = [];
+  let totalIncome = 0;
+  let totalExpenses = 0;
+
+  for (const [propId, groupTxns] of groups) {
+    if (propId === null) continue;
+    const prop = propertyMap.get(propId);
+    const totals = buildTotals(groupTxns);
+    totalIncome += totals.income;
+    totalExpenses += totals.expenses;
+
+    propertyResults.push({
+      propertyId: propId,
+      address: prop?.address ?? "Unknown property",
+      suburb: prop?.suburb ?? "",
+      ...totals,
+      categories: buildCategories(groupTxns),
+    });
+  }
+
+  // Sort by highest expense first
+  propertyResults.sort((a, b) => b.expenses - a.expenses);
+
+  // Build unallocated
+  const unallocatedTxns = groups.get(null) ?? [];
+  const unallocatedTotals = buildTotals(unallocatedTxns);
+  totalIncome += unallocatedTotals.income;
+  totalExpenses += unallocatedTotals.expenses;
+
+  return {
+    properties: propertyResults,
+    unallocated: {
+      ...unallocatedTotals,
+      categories: buildCategories(unallocatedTxns),
+    },
+    totals: {
+      income: totalIncome,
+      expenses: totalExpenses,
+      netResult: totalIncome - totalExpenses,
+    },
+  };
 }
 
 export const taxPositionRouter = router({
@@ -272,5 +421,37 @@ export const taxPositionRouter = router({
         propertySavings: result.propertySavings,
         isRefund: result.isRefund,
       };
+    }),
+
+  /**
+   * Get per-property tax breakdown for a financial year.
+   * Groups transactions by property with ATO category detail.
+   */
+  getPropertyBreakdown: protectedProcedure
+    .input(z.object({ financialYear: z.number().int().min(2020).max(2030) }))
+    .query(async ({ ctx, input }) => {
+      const { startDate, endDate } = getFinancialYearRange(input.financialYear);
+
+      // Cross-domain: queries transactions + properties for per-property tax breakdown
+      const [txns, props] = await Promise.all([
+        ctx.db.query.transactions.findMany({
+          where: and(
+            eq(transactions.userId, ctx.portfolio.ownerId),
+            gte(transactions.date, startDate),
+            lte(transactions.date, endDate)
+          ),
+        }),
+        ctx.uow.property.findByOwner(ctx.portfolio.ownerId),
+      ]);
+
+      return groupTransactionsByProperty(
+        txns.map((t) => ({
+          propertyId: t.propertyId,
+          category: t.category,
+          amount: t.amount,
+          transactionType: t.transactionType,
+        })),
+        props.map((p) => ({ id: p.id, address: p.address, suburb: p.suburb }))
+      );
     }),
 });
