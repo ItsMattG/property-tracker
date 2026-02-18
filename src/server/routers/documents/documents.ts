@@ -153,11 +153,15 @@ export const documentsRouter = router({
             const result = await extractDocument(storagePath, fileType);
 
             if (!result.success || !result.data) {
-              await ctx.uow.document.updateExtraction(extraction.id, {
-                status: "failed",
-                error: result.error || "Extraction failed",
-                completedAt: new Date(),
-              });
+              // Uses db directly: background closure runs outside request/UoW lifecycle
+              await db
+                .update(documentExtractions)
+                .set({
+                  status: "failed",
+                  error: result.error || "Extraction failed",
+                  completedAt: new Date(),
+                })
+                .where(eq(documentExtractions.id, extraction.id));
               return;
             }
 

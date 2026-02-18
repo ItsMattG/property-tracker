@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
 import { documentExtractions, transactions, properties, subscriptions } from "../../db/schema";
 import { extractDocument, matchPropertyByAddress, findPotentialDuplicate } from "../../services/property-analysis";
@@ -160,6 +160,10 @@ export const documentExtractionRouter = router({
   getExtraction: protectedProcedure
     .input(z.object({ documentId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
+      // Verify document belongs to user before returning extraction
+      const document = await ctx.uow.document.findById(input.documentId, ctx.portfolio.ownerId);
+      if (!document) return null;
+
       const extraction = await ctx.uow.document.findExtractionByDocumentId(
         input.documentId,
         { withRelations: true }
@@ -221,7 +225,10 @@ export const documentExtractionRouter = router({
         amount: input.amount ? String(input.amount) : extraction.draftTransaction.amount,
         date: input.date ?? extraction.draftTransaction.date,
         description: input.description ?? extraction.draftTransaction.description,
-      }).where(eq(transactions.id, extraction.draftTransaction.id));
+      }).where(and(
+        eq(transactions.id, extraction.draftTransaction.id),
+        eq(transactions.userId, ctx.portfolio.ownerId),
+      ));
 
       return { success: true };
     }),
@@ -246,7 +253,10 @@ export const documentExtractionRouter = router({
 
       // Cross-domain: deletes draft transaction from extraction context
       if (extraction.draftTransactionId) {
-        await ctx.db.delete(transactions).where(eq(transactions.id, extraction.draftTransactionId));
+        await ctx.db.delete(transactions).where(and(
+          eq(transactions.id, extraction.draftTransactionId),
+          eq(transactions.userId, ctx.portfolio.ownerId),
+        ));
       }
 
       // Delete extraction
