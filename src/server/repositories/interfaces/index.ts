@@ -25,3 +25,4 @@ export type { IPersonalCategoryRepository } from "./personal-category.repository
 export type { IBudgetRepository, BudgetWithSpend } from "./budget.repository.interface";
 export type { IPersonalTransactionRepository, PersonalTransactionWithCategory } from "./personal-transaction.repository.interface";
 export type { ICategorizationRuleRepository } from "./categorization-rule.repository.interface";
+export type { IPropertyGroupRepository, PropertyGroupWithCount } from "./property-group.repository.interface";
