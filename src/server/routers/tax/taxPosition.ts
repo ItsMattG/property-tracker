@@ -126,6 +126,8 @@ export function groupTransactionsByProperty(
       .sort((a, b) => a.atoReference.localeCompare(b.atoReference, undefined, { numeric: true }));
   };
 
+  // Transactions are pre-filtered to income/expense category types,
+  // so transactionType will always be "income" or "expense" for well-formed data.
   const buildTotals = (groupTxns: BreakdownTransaction[]) => {
     let income = 0;
     let expenses = 0;
@@ -385,7 +387,7 @@ export const taxPositionRouter = router({
    * Groups transactions by property with ATO category detail.
    */
   getPropertyBreakdown: protectedProcedure
-    .input(z.object({ financialYear: z.number().int() }))
+    .input(z.object({ financialYear: z.number().int().min(2020).max(2030) }))
     .query(async ({ ctx, input }) => {
       const { startDate, endDate } = getFinancialYearRange(input.financialYear);
 

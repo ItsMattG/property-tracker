@@ -45,6 +45,11 @@ describe("groupTransactionsByProperty", () => {
     expect(result.unallocated.income).toBe(1000);
     expect(result.unallocated.expenses).toBe(200);
     expect(result.unallocated.categories).toHaveLength(2);
+
+    // Totals should include unallocated amounts
+    expect(result.totals.income).toBe(1000);
+    expect(result.totals.expenses).toBe(200);
+    expect(result.totals.netResult).toBe(800);
   });
 
   it("returns empty results for no transactions", () => {
