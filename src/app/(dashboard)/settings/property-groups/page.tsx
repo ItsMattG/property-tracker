@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, FolderOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderOpen, LayoutList } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ const COLOURS = [
 
 export default function PropertyGroupsSettingsPage() {
   const { data: groups, isLoading } = trpc.propertyGroup.list.useQuery();
+  const { data: properties } = trpc.property.list.useQuery();
   const utils = trpc.useUtils();
 
   // Dialog state
@@ -50,6 +52,15 @@ export default function PropertyGroupsSettingsPage() {
   // Delete confirmation state
   const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
   const deleteGroup = groups?.find((g) => g.id === deleteGroupId);
+
+  // Manage properties dialog state
+  const [managingGroupId, setManagingGroupId] = useState<string | null>(null);
+  const managingGroup = groups?.find((g) => g.id === managingGroupId);
+  const { data: groupDetail } = trpc.propertyGroup.get.useQuery(
+    { id: managingGroupId! },
+    { enabled: !!managingGroupId }
+  );
+  const assignedIds = new Set(groupDetail?.propertyIds ?? []);
 
   // ── Mutations ────────────────────────────────────────────────────
 
@@ -76,6 +87,26 @@ export default function PropertyGroupsSettingsPage() {
       utils.propertyGroup.list.invalidate();
       toast.success("Group deleted");
       setDeleteGroupId(null);
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  const assignMutation = trpc.propertyGroup.assignProperties.useMutation({
+    onSuccess: () => {
+      utils.propertyGroup.list.invalidate();
+      if (managingGroupId) {
+        utils.propertyGroup.get.invalidate({ id: managingGroupId });
+      }
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  const unassignMutation = trpc.propertyGroup.unassignProperties.useMutation({
+    onSuccess: () => {
+      utils.propertyGroup.list.invalidate();
+      if (managingGroupId) {
+        utils.propertyGroup.get.invalidate({ id: managingGroupId });
+      }
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });
@@ -117,6 +148,15 @@ export default function PropertyGroupsSettingsPage() {
   function handleDelete() {
     if (!deleteGroupId) return;
     deleteMutation.mutate({ id: deleteGroupId });
+  }
+
+  function handleToggleProperty(propertyId: string, checked: boolean) {
+    if (!managingGroupId) return;
+    if (checked) {
+      assignMutation.mutate({ groupId: managingGroupId, propertyIds: [propertyId] });
+    } else {
+      unassignMutation.mutate({ groupId: managingGroupId, propertyIds: [propertyId] });
+    }
   }
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -195,6 +235,14 @@ export default function PropertyGroupsSettingsPage() {
 
                 {/* Actions */}
                 <div className="ml-auto flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setManagingGroupId(group.id)}
+                    aria-label={`Manage properties in ${group.name}`}
+                  >
+                    <LayoutList className="w-4 h-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon-sm"
@@ -317,6 +365,65 @@ export default function PropertyGroupsSettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Manage Properties Dialog */}
+      <Dialog
+        open={!!managingGroupId}
+        onOpenChange={(open) => {
+          if (!open) setManagingGroupId(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Manage Properties
+              {managingGroup && (
+                <>
+                  {" "}&mdash;{" "}
+                  <span style={{ color: managingGroup.colour }}>
+                    {managingGroup.name}
+                  </span>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          {properties && properties.length === 0 && (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No properties yet. Add a property first.
+            </p>
+          )}
+
+          {properties && properties.length > 0 && (
+            <div className="max-h-[400px] overflow-y-auto space-y-1">
+              {properties.map((property) => {
+                const isAssigned = assignedIds.has(property.id);
+                return (
+                  <label
+                    key={property.id}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={isAssigned}
+                      onCheckedChange={(checked) =>
+                        handleToggleProperty(property.id, !!checked)
+                      }
+                    />
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        {property.address}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {property.suburb}, {property.state}
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
