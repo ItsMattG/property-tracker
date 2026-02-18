@@ -65,6 +65,7 @@ import {
   portfolioRouter,
   teamRouter,
   shareRouter,
+  propertyGroupsRouter,
 } from "./portfolio";
 // documents domain
 import {
@@ -154,6 +155,7 @@ export const appRouter = router({
   budget: budgetRouter,
   categorizationRules: categorizationRulesRouter,
   accountantPack: accountantPackRouter,
+  propertyGroup: propertyGroupsRouter,
 });
 
 export type AppRouter = typeof appRouter;
