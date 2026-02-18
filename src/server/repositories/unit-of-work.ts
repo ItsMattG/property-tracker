@@ -27,6 +27,7 @@ import type {
   IPersonalTransactionRepository,
   IBudgetRepository,
   ICategorizationRuleRepository,
+  IPropertyGroupRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -57,6 +58,7 @@ import { PersonalCategoryRepository } from "./personal-category.repository";
 import { PersonalTransactionRepository } from "./personal-transaction.repository";
 import { BudgetRepository } from "./budget.repository";
 import { CategorizationRuleRepository } from "./categorization-rule.repository";
+import { PropertyGroupRepository } from "./property-group.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -87,6 +89,7 @@ export class UnitOfWork {
   private _personalTransactions?: IPersonalTransactionRepository;
   private _budgets?: IBudgetRepository;
   private _categorizationRules?: ICategorizationRuleRepository;
+  private _propertyGroup?: IPropertyGroupRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -171,6 +174,9 @@ export class UnitOfWork {
   }
   get categorizationRules(): ICategorizationRuleRepository {
     return (this._categorizationRules ??= new CategorizationRuleRepository(this.db));
+  }
+  get propertyGroup(): IPropertyGroupRepository {
+    return (this._propertyGroup ??= new PropertyGroupRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */

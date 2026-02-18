@@ -19,3 +19,4 @@ export * from "./chat";
 export * from "./billing";
 export * from "./budget";
 export * from "./categorization-rules";
+export * from "./property-groups";

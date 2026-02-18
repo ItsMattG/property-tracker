@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PropertyForm, PropertyFormValues } from "@/components/properties/PropertyForm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,20 +12,52 @@ export default function EditPropertyPage() {
   const router = useRouter();
   const propertyId = params?.id as string;
 
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+
   const { data: property, isLoading } = trpc.property.get.useQuery({ id: propertyId });
   const { data: entities } = trpc.entity.list.useQuery();
-  const updateProperty = trpc.property.update.useMutation({
-    onSuccess: () => {
+  const { data: groups } = trpc.propertyGroup.list.useQuery();
+  const { data: currentGroups } = trpc.propertyGroup.forProperty.useQuery(
+    { propertyId },
+    { enabled: !!property }
+  );
+
+  useEffect(() => {
+    if (currentGroups) {
+      setSelectedGroupIds(currentGroups.map((g) => g.id));
+    }
+  }, [currentGroups]);
+
+  const updateProperty = trpc.property.update.useMutation();
+  const assignGroupsMutation = trpc.propertyGroup.assignProperties.useMutation();
+  const unassignGroupsMutation = trpc.propertyGroup.unassignProperties.useMutation();
+
+  const handleSubmit = async (values: PropertyFormValues) => {
+    try {
+      await updateProperty.mutateAsync({ id: propertyId, ...values });
+
+      // Diff-based group assignment
+      const originalGroupIds = currentGroups?.map((g) => g.id) ?? [];
+      const toAssign = selectedGroupIds.filter((id) => !originalGroupIds.includes(id));
+      const toUnassign = originalGroupIds.filter((id) => !selectedGroupIds.includes(id));
+
+      if (toAssign.length > 0 || toUnassign.length > 0) {
+        await Promise.all([
+          ...toAssign.map((groupId) =>
+            assignGroupsMutation.mutateAsync({ groupId, propertyIds: [propertyId] })
+          ),
+          ...toUnassign.map((groupId) =>
+            unassignGroupsMutation.mutateAsync({ groupId, propertyIds: [propertyId] })
+          ),
+        ]);
+      }
+
       toast.success("Property updated successfully");
       router.push("/properties");
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update property");
-    },
-  });
-
-  const handleSubmit = (values: PropertyFormValues) => {
-    updateProperty.mutate({ id: propertyId, ...values });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update property";
+      toast.error(message);
+    }
   };
 
   if (isLoading) {
@@ -85,6 +118,9 @@ export default function EditPropertyPage() {
             onSubmit={handleSubmit}
             isLoading={updateProperty.isPending}
             entities={entities}
+            groups={groups}
+            selectedGroupIds={selectedGroupIds}
+            onGroupIdsChange={setSelectedGroupIds}
           />
         </CardContent>
       </Card>

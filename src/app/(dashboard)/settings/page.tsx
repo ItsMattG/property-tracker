@@ -10,6 +10,7 @@ import {
   Link2,
   Mail,
   FileText,
+  FolderOpen,
   Shield,
   UserPlus,
   ClipboardList,
@@ -130,6 +131,7 @@ const settingsSections = [
     title: "Account",
     items: [
       { href: "/settings/billing", icon: Wallet, title: "Billing", description: "Manage your subscription and payment method" },
+      { href: "/settings/property-groups", icon: FolderOpen, title: "Property Groups", description: "Organise properties into custom groups", featureFlag: "propertyGroups" as const },
       { href: "/settings/notifications", icon: Bell, title: "Notifications", description: "Configure email and push notification preferences", featureFlag: "notifications" as const },
       { href: "/settings/mobile", icon: Smartphone, title: "Mobile App", description: "Connect and manage the mobile companion app", featureFlag: "mobileApp" as const },
     ],

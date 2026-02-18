@@ -8,6 +8,7 @@ import { positiveAmountSchema, australianPostcodeSchema, suburbSchema } from "@/
 import { NumericFormat } from "react-number-format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { AddressAutocomplete } from "./AddressAutocomplete";
@@ -51,11 +52,20 @@ interface EntityOption {
   type: string;
 }
 
+interface GroupOption {
+  id: string;
+  name: string;
+  colour: string;
+}
+
 interface PropertyFormProps {
   defaultValues?: Partial<PropertyFormValues>;
   onSubmit: (values: PropertyFormValues) => void;
   isLoading?: boolean;
   entities?: EntityOption[];
+  groups?: GroupOption[];
+  selectedGroupIds?: string[];
+  onGroupIdsChange?: (groupIds: string[]) => void;
 }
 
 const purposeLabels: Record<string, string> = {
@@ -74,6 +84,9 @@ export function PropertyForm({
   onSubmit,
   isLoading,
   entities = [],
+  groups,
+  selectedGroupIds,
+  onGroupIdsChange,
 }: PropertyFormProps) {
   const [highlightedFields, setHighlightedFields] = useState<Set<string>>(new Set());
 
@@ -257,6 +270,44 @@ export function PropertyForm({
             </FormItem>
           )}
         />
+
+        {/* Groups */}
+        {groups && groups.length > 0 && onGroupIdsChange && (
+          <div className="space-y-2">
+            <Label>Groups</Label>
+            <div className="flex gap-2 flex-wrap">
+              {groups.map((group) => {
+                const isSelected = selectedGroupIds?.includes(group.id) ?? false;
+                return (
+                  <button
+                    key={group.id}
+                    type="button"
+                    onClick={() => {
+                      const current = selectedGroupIds ?? [];
+                      onGroupIdsChange(
+                        isSelected
+                          ? current.filter((id) => id !== group.id)
+                          : [...current, group.id]
+                      );
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer border",
+                      isSelected
+                        ? "bg-primary/10 text-primary border-primary/30"
+                        : "bg-background text-muted-foreground border-border hover:text-foreground"
+                    )}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: group.colour }}
+                    />
+                    {group.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Dates row: Contract Date + Settlement Date */}
         <div className="grid grid-cols-2 gap-4">
