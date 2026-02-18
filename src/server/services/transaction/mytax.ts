@@ -195,6 +195,7 @@ export async function buildMyTaxReport(
         paygWithheld,
         rentalNetResult: netRentalResult,
         otherDeductions,
+        depreciationDeductions: 0, // TODO: wire depreciation totals into mytax report
         hasHecsDebt: taxProfile.hasHecsDebt,
         hasPrivateHealth: taxProfile.hasPrivateHealth,
         familyStatus: taxProfile.familyStatus as "single" | "couple" | "family",
