@@ -316,7 +316,7 @@ export const portfolioRouter = router({
       .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
 
     // --- Annualize loan repayments ---
-    const frequencyMultiplier: Record<string, number> = {
+    const frequencyMultiplier: Record<"weekly" | "fortnightly" | "monthly" | "quarterly", number> = {
       weekly: 52,
       fortnightly: 26,
       monthly: 12,
@@ -324,7 +324,8 @@ export const portfolioRouter = router({
     };
 
     const annualRepayments = allLoans.reduce((sum, loan) => {
-      const multiplier = frequencyMultiplier[loan.repaymentFrequency] ?? 12;
+      const freq = loan.repaymentFrequency as keyof typeof frequencyMultiplier;
+      const multiplier = frequencyMultiplier[freq] ?? 12;
       return sum + Number(loan.repaymentAmount) * multiplier;
     }, 0);
 
@@ -335,7 +336,7 @@ export const portfolioRouter = router({
     const debtServiceRatio: number | null =
       annualRentalIncome > 0 ? annualRepayments / annualRentalIncome : null;
 
-    // --- Weighted average interest rate ---
+    // --- Weighted average interest rate (percentage, e.g. 5.79 = 5.79%) ---
     const weightedAvgRate =
       totalDebt > 0
         ? allLoans.reduce(
@@ -345,7 +346,8 @@ export const portfolioRouter = router({
           ) / totalDebt
         : 0;
 
-    // --- Estimated borrowing power ---
+    // Simplified: full usable equity when serviceability is positive, zero otherwise.
+    // A more sophisticated model would cap by income-based lending multiples.
     const estimatedBorrowingPower = netSurplus > 0 ? usableEquity : 0;
 
     const hasLoans = allLoans.length > 0;

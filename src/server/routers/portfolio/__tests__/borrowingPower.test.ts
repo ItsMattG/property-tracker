@@ -37,7 +37,7 @@ function createAuthCtxWithUow(uow: UnitOfWork) {
         findFirst: vi.fn().mockResolvedValue(mockUser),
       },
     },
-  } as never;
+  } as ReturnType<typeof createMockContext>["db"];
   return ctx;
 }
 
