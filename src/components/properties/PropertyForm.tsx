@@ -40,6 +40,7 @@ const propertyFormSchema = z.object({
   entityName: z.string().optional(),
   latitude: z.string().optional(),
   longitude: z.string().optional(),
+  purpose: z.enum(["investment", "owner_occupied", "commercial", "short_term_rental"]).optional(),
 });
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -56,6 +57,13 @@ interface PropertyFormProps {
   isLoading?: boolean;
   entities?: EntityOption[];
 }
+
+const purposeLabels: Record<string, string> = {
+  investment: "Investment",
+  owner_occupied: "Owner-Occupied",
+  commercial: "Commercial",
+  short_term_rental: "Short-Term Rental (Airbnb)",
+};
 
 function RequiredMark() {
   return <span className="text-destructive ml-0.5" aria-hidden="true">*</span>;
@@ -82,6 +90,7 @@ export function PropertyForm({
       entityName: "Personal",
       latitude: "",
       longitude: "",
+      purpose: "investment",
       ...defaultValues,
     },
   });
@@ -222,6 +231,32 @@ export function PropertyForm({
             )}
           />
         </div>
+
+        {/* Purpose */}
+        <FormField
+          control={form.control}
+          name="purpose"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Purpose</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || "investment"}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select purpose" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Object.entries(purposeLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Dates row: Contract Date + Settlement Date */}
         <div className="grid grid-cols-2 gap-4">
