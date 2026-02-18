@@ -1,6 +1,6 @@
 // Property groups domain: grouping, assignments + relations + types
 import {
-  pgTable, uuid, text, timestamp, integer, index, primaryKey,
+  pgTable, uuid, text, timestamp, integer, index, uniqueIndex, primaryKey,
   relations,
 } from "./_common";
 import { users } from "./auth";
@@ -21,6 +21,7 @@ export const propertyGroups = pgTable(
   },
   (table) => [
     index("property_groups_user_id_idx").on(table.userId),
+    uniqueIndex("property_groups_user_name_idx").on(table.userId, table.name),
   ]
 );
 
