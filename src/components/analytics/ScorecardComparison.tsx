@@ -20,6 +20,26 @@ interface MetricRow {
   getNumericValue: (entry: PropertyScorecardEntry) => number;
   higherIsBetter: boolean;
   averageValue: string;
+  getAverageNumeric: () => number;
+}
+
+/** Color-code a value relative to the portfolio average */
+function getMetricColor(
+  value: number,
+  average: number,
+  higherIsBetter: boolean
+): string {
+  if (average === 0) return "";
+  const threshold = Math.abs(average) * 0.2;
+  if (higherIsBetter) {
+    if (value >= average + threshold) return "text-success";
+    if (value <= average - threshold) return "text-destructive";
+    return "";
+  }
+  // Lower is better (expenses)
+  if (value <= average - threshold) return "text-success";
+  if (value >= average + threshold) return "text-destructive";
+  return "";
 }
 
 export function ScorecardComparison({
@@ -54,6 +74,7 @@ export function ScorecardComparison({
       getNumericValue: (e) => e.performanceScore,
       higherIsBetter: true,
       averageValue: `${averageScore}`,
+      getAverageNumeric: () => averageScore,
     },
     {
       label: "Gross Yield",
@@ -61,6 +82,7 @@ export function ScorecardComparison({
       getNumericValue: (e) => e.grossYield,
       higherIsBetter: true,
       averageValue: `${averageGrossYield}%`,
+      getAverageNumeric: () => averageGrossYield,
     },
     {
       label: "Net Yield",
@@ -68,6 +90,7 @@ export function ScorecardComparison({
       getNumericValue: (e) => e.netYield,
       higherIsBetter: true,
       averageValue: `${averageNetYield}%`,
+      getAverageNumeric: () => averageNetYield,
     },
     {
       label: "Annual Rent",
@@ -79,6 +102,10 @@ export function ScorecardComparison({
           ? selectedProperties.reduce((s, p) => s + p.annualRent, 0) / selectedProperties.length
           : 0
       ),
+      getAverageNumeric: () =>
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.annualRent, 0) / selectedProperties.length
+          : 0,
     },
     {
       label: "Annual Expenses",
@@ -90,6 +117,10 @@ export function ScorecardComparison({
           ? selectedProperties.reduce((s, p) => s + p.annualExpenses, 0) / selectedProperties.length
           : 0
       ),
+      getAverageNumeric: () =>
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.annualExpenses, 0) / selectedProperties.length
+          : 0,
     },
     {
       label: "Cash Flow",
@@ -101,6 +132,10 @@ export function ScorecardComparison({
           ? selectedProperties.reduce((s, p) => s + p.annualCashFlow, 0) / selectedProperties.length
           : 0
       ),
+      getAverageNumeric: () =>
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.annualCashFlow, 0) / selectedProperties.length
+          : 0,
     },
     {
       label: "Current Value",
@@ -112,6 +147,89 @@ export function ScorecardComparison({
           ? selectedProperties.reduce((s, p) => s + p.currentValue, 0) / selectedProperties.length
           : 0
       ),
+      getAverageNumeric: () =>
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.currentValue, 0) / selectedProperties.length
+          : 0,
+    },
+    {
+      label: "Cap Rate",
+      getValue: (e) => `${e.capRate}%`,
+      getNumericValue: (e) => e.capRate,
+      higherIsBetter: true,
+      averageValue: (() => {
+        const avg = selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.capRate, 0) / selectedProperties.length
+          : 0;
+        return `${avg.toFixed(1)}%`;
+      })(),
+      getAverageNumeric: () =>
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.capRate, 0) / selectedProperties.length
+          : 0,
+    },
+    {
+      label: "Cash-on-Cash",
+      getValue: (e) => e.cashOnCash !== null ? `${e.cashOnCash}%` : "N/A",
+      getNumericValue: (e) => e.cashOnCash ?? 0,
+      higherIsBetter: true,
+      averageValue: (() => {
+        const withCoc = selectedProperties.filter((p) => p.cashOnCash !== null);
+        if (withCoc.length === 0) return "N/A";
+        const avg = withCoc.reduce((s, p) => s + (p.cashOnCash ?? 0), 0) / withCoc.length;
+        return `${avg.toFixed(1)}%`;
+      })(),
+      getAverageNumeric: () => {
+        const withCoc = selectedProperties.filter((p) => p.cashOnCash !== null);
+        if (withCoc.length === 0) return 0;
+        return withCoc.reduce((s, p) => s + (p.cashOnCash ?? 0), 0) / withCoc.length;
+      },
+    },
+    {
+      label: "Capital Growth",
+      getValue: (e) => `${e.capitalGrowthPercent > 0 ? "+" : ""}${e.capitalGrowthPercent}%`,
+      getNumericValue: (e) => e.capitalGrowthPercent,
+      higherIsBetter: true,
+      averageValue: (() => {
+        const avg = selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.capitalGrowthPercent, 0) / selectedProperties.length
+          : 0;
+        return `${avg > 0 ? "+" : ""}${avg.toFixed(1)}%`;
+      })(),
+      getAverageNumeric: () =>
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.capitalGrowthPercent, 0) / selectedProperties.length
+          : 0,
+    },
+    {
+      label: "Equity",
+      getValue: (e) => formatCurrency(e.equity),
+      getNumericValue: (e) => e.equity,
+      higherIsBetter: true,
+      averageValue: formatCurrency(
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.equity, 0) / selectedProperties.length
+          : 0
+      ),
+      getAverageNumeric: () =>
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.equity, 0) / selectedProperties.length
+          : 0,
+    },
+    {
+      label: "Tax Deductions",
+      getValue: (e) => formatCurrency(e.annualTaxDeductions),
+      getNumericValue: (e) => e.annualTaxDeductions,
+      higherIsBetter: true,
+      averageValue: formatCurrency(
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.annualTaxDeductions, 0) / selectedProperties.length
+          : 0
+      ),
+      getAverageNumeric: () =>
+        selectedProperties.length > 0
+          ? selectedProperties.reduce((s, p) => s + p.annualTaxDeductions, 0) / selectedProperties.length
+          : 0,
     },
   ];
 
@@ -213,7 +331,9 @@ export function ScorecardComparison({
                           key={p.propertyId}
                           className={cn(
                             "text-right py-2.5 px-2 tabular-nums",
-                            isBest && "font-bold text-success"
+                            isBest
+                              ? "font-bold text-success"
+                              : getMetricColor(numVal, metric.getAverageNumeric(), metric.higherIsBetter)
                           )}
                         >
                           <span className="flex items-center justify-end gap-1">
