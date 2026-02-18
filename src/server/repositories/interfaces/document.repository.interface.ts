@@ -47,14 +47,14 @@ export interface IDocumentRepository {
   /** Find extraction by document ID */
   findExtractionByDocumentId(documentId: string, opts?: { withRelations?: boolean }): Promise<ExtractionWithRelations | null>;
 
-  /** Find extraction by ID with optional relations */
-  findExtractionById(id: string, opts?: { withRelations?: boolean }): Promise<ExtractionWithRelations | null>;
+  /** Find extraction by ID scoped to user (joins through document) */
+  findExtractionById(id: string, userId: string, opts?: { withRelations?: boolean }): Promise<ExtractionWithRelations | null>;
 
-  /** List completed extractions with all relations loaded */
-  findCompletedExtractionsWithRelations(): Promise<ExtractionWithFullRelations[]>;
+  /** List completed extractions for a user with all relations loaded */
+  findCompletedExtractionsWithRelations(userId: string): Promise<ExtractionWithFullRelations[]>;
 
-  /** Delete an extraction record */
-  deleteExtraction(id: string): Promise<void>;
+  /** Delete an extraction record scoped to user */
+  deleteExtraction(id: string, userId: string): Promise<void>;
 
   /** Count extractions created this calendar month for a user */
   getMonthlyExtractionCount(userId: string): Promise<number>;

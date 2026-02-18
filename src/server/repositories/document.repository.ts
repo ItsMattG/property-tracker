@@ -109,28 +109,43 @@ export class DocumentRepository
 
   async findExtractionById(
     id: string,
+    userId: string,
     opts?: { withRelations?: boolean }
   ): Promise<ExtractionWithRelations | null> {
     const result = await this.db.query.documentExtractions.findFirst({
       where: eq(documentExtractions.id, id),
-      ...(opts?.withRelations && {
-        with: { draftTransaction: true, matchedProperty: true },
-      }),
+      with: {
+        document: true,
+        ...(opts?.withRelations && {
+          draftTransaction: true,
+          matchedProperty: true,
+        }),
+      },
     });
-    return result ?? null;
+    // Verify ownership through document relation
+    if (!result || result.document?.userId !== userId) return null;
+    return result;
   }
 
-  async findCompletedExtractionsWithRelations(): Promise<
-    ExtractionWithFullRelations[]
-  > {
-    return this.db.query.documentExtractions.findMany({
+  async findCompletedExtractionsWithRelations(
+    userId: string
+  ): Promise<ExtractionWithFullRelations[]> {
+    const results = await this.db.query.documentExtractions.findMany({
       where: eq(documentExtractions.status, "completed"),
       with: { document: true, draftTransaction: true, matchedProperty: true },
       orderBy: desc(documentExtractions.createdAt),
     });
+    // Filter by document ownership
+    return results.filter((e) => e.document.userId === userId);
   }
 
-  async deleteExtraction(id: string): Promise<void> {
+  async deleteExtraction(id: string, userId: string): Promise<void> {
+    // Verify ownership through document relation before deleting
+    const extraction = await this.db.query.documentExtractions.findFirst({
+      where: eq(documentExtractions.id, id),
+      with: { document: true },
+    });
+    if (!extraction || extraction.document?.userId !== userId) return;
     await this.db
       .delete(documentExtractions)
       .where(eq(documentExtractions.id, id));
