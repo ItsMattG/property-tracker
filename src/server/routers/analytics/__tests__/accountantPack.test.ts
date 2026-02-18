@@ -114,4 +114,19 @@ describe("accountantPack router", () => {
     expect(uow.team.listMembers).toBeDefined();
     expect(uow.team.listPendingInvites).toBeDefined();
   });
+
+  it("router exposes generatePackData procedure", async () => {
+    const { accountantPackRouter } = await import("../accountantPack");
+    // Verify the procedure exists on the router definition
+    expect(accountantPackRouter._def.procedures).toHaveProperty("generatePackData");
+  });
+
+  it("router exposes all expected procedures", async () => {
+    const { accountantPackRouter } = await import("../accountantPack");
+    const procedures = Object.keys(accountantPackRouter._def.procedures);
+    expect(procedures).toContain("generatePackData");
+    expect(procedures).toContain("generatePack");
+    expect(procedures).toContain("sendToAccountant");
+    expect(procedures).toContain("getSendHistory");
+  });
 });
