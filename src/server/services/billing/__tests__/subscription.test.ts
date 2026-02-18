@@ -108,5 +108,21 @@ describe("subscription service", () => {
     it("pro allows bank feeds", () => {
       expect(PLAN_LIMITS.pro.bankFeeds).toBe(true);
     });
+
+    it("free allows 3 property groups", () => {
+      expect(PLAN_LIMITS.free.maxPropertyGroups).toBe(3);
+    });
+
+    it("pro allows unlimited property groups", () => {
+      expect(PLAN_LIMITS.pro.maxPropertyGroups).toBe(Infinity);
+    });
+
+    it("team allows unlimited property groups", () => {
+      expect(PLAN_LIMITS.team.maxPropertyGroups).toBe(Infinity);
+    });
+
+    it("lifetime allows unlimited property groups", () => {
+      expect(PLAN_LIMITS.lifetime.maxPropertyGroups).toBe(Infinity);
+    });
   });
 });
