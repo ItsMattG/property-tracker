@@ -15,7 +15,8 @@ import { trpc } from "@/lib/trpc/client";
 import { TaxReportView } from "@/components/reports/TaxReportView";
 import { SuggestionList } from "@/components/tax/SuggestionList";
 import { DepreciationUpload } from "@/components/tax/DepreciationUpload";
-import { FileText, Download, Loader2, Lightbulb } from "lucide-react";
+import { FileText, Download, Loader2, Lightbulb, ChevronDown, ChevronRight } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 export function TaxReportContent() {
   const currentYear = new Date().getMonth() >= 6
@@ -188,6 +189,7 @@ export function TaxReportContent() {
 function DepreciationSchedulesList() {
   const { data: schedules, isLoading } =
     trpc.taxOptimization.getDepreciationSchedules.useQuery({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Loading...</p>;
@@ -204,22 +206,92 @@ function DepreciationSchedulesList() {
   return (
     <div className="space-y-2">
       {schedules.map((schedule) => (
-        <div
-          key={schedule.id}
-          className="flex items-center justify-between p-3 border rounded-lg"
-        >
-          <div>
-            <p className="font-medium">{schedule.property?.address}</p>
-            <p className="text-sm text-muted-foreground">
-              {schedule.assets?.length || 0} assets • $
-              {parseFloat(schedule.totalValue).toLocaleString()} total
-            </p>
+        <div key={schedule.id} className="border rounded-lg">
+          <div className="flex items-center justify-between p-3">
+            <div>
+              <p className="font-medium">{schedule.property?.address}</p>
+              <p className="text-sm text-muted-foreground">
+                {schedule.assets?.length || 0} assets • $
+                {parseFloat(schedule.totalValue).toLocaleString()} total
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">
+                Effective {schedule.effectiveDate}
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setExpandedId(expandedId === schedule.id ? null : schedule.id)
+                }
+              >
+                {expandedId === schedule.id ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+                <span className="ml-1 text-xs">Projection</span>
+              </Button>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Effective {schedule.effectiveDate}
-          </p>
+          {expandedId === schedule.id && (
+            <DepreciationProjection scheduleId={schedule.id} />
+          )}
         </div>
       ))}
+    </div>
+  );
+}
+
+function DepreciationProjection({ scheduleId }: { scheduleId: string }) {
+  const { data, isLoading } = trpc.taxOptimization.getDepreciationProjection.useQuery({
+    scheduleId,
+    years: 10,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="px-3 pb-3">
+        <p className="text-sm text-muted-foreground">Loading projection...</p>
+      </div>
+    );
+  }
+
+  if (!data || data.yearlyTotals.length === 0) {
+    return (
+      <div className="px-3 pb-3">
+        <p className="text-sm text-muted-foreground">No projection data available.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-3 pb-3 space-y-3 border-t">
+      <div className="overflow-x-auto mt-3">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left py-1 pr-4 text-muted-foreground font-medium">Year</th>
+              <th className="text-right py-1 px-4 font-medium">Total Deduction</th>
+              <th className="text-right py-1 px-4 font-medium">Remaining Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.yearlyTotals.map((row) => (
+              <tr key={row.year} className="border-b last:border-0">
+                <td className="py-1 pr-4 text-muted-foreground">{row.year}</td>
+                <td className="text-right py-1 px-4 font-mono">
+                  {formatCurrency(row.totalDeduction)}
+                </td>
+                <td className="text-right py-1 px-4 font-mono">
+                  {formatCurrency(row.totalRemaining)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

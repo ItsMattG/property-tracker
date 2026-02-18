@@ -258,4 +258,159 @@ describe("generateAccountantPackPDF", () => {
     const result = generateAccountantPackPDF(emptyCgtConfig);
     expect(result).toBeInstanceOf(ArrayBuffer);
   });
+
+  it("generates income/expenses with ATO-sorted deductions and two-column layout", () => {
+    const multiDeductionConfig: AccountantPackConfig = {
+      ...baseConfig,
+      data: {
+        taxReport: {
+          ...baseConfig.data.taxReport!,
+          properties: [
+            {
+              property: {
+                id: "1",
+                address: "123 Test St",
+                suburb: "Sydney",
+                state: "NSW",
+                entityName: "Personal",
+              },
+              metrics: {
+                totalIncome: 30000,
+                totalExpenses: 20000,
+                netIncome: 10000,
+                totalDeductible: 20000,
+              },
+              atoBreakdown: [
+                {
+                  category: "rental_income",
+                  label: "Gross Rent",
+                  amount: 30000,
+                  atoReference: "Item 21",
+                  isDeductible: false,
+                },
+                {
+                  category: "capital_works",
+                  label: "Capital Works",
+                  amount: 5000,
+                  atoReference: "D14",
+                  isDeductible: true,
+                },
+                {
+                  category: "interest_on_loans",
+                  label: "Interest on Loans",
+                  amount: 12000,
+                  atoReference: "D5",
+                  isDeductible: true,
+                },
+                {
+                  category: "insurance",
+                  label: "Insurance",
+                  amount: 2000,
+                  atoReference: "D1",
+                  isDeductible: true,
+                },
+                {
+                  category: "other",
+                  label: "Sundry",
+                  amount: 1000,
+                  atoReference: null,
+                  isDeductible: true,
+                },
+              ],
+              transactionCount: 40,
+            },
+          ],
+        },
+      },
+    };
+    // Should not throw — deductions are sorted D1, D5, D14, then null ref last
+    const result = generateAccountantPackPDF(multiDeductionConfig);
+    expect(result).toBeInstanceOf(ArrayBuffer);
+  });
+
+  it("generates per-property summary table when 2+ properties exist", () => {
+    const multiPropertyConfig: AccountantPackConfig = {
+      ...baseConfig,
+      data: {
+        taxReport: {
+          ...baseConfig.data.taxReport!,
+          properties: [
+            {
+              property: {
+                id: "1",
+                address: "123 Test St",
+                suburb: "Sydney",
+                state: "NSW",
+                entityName: "Personal",
+              },
+              metrics: {
+                totalIncome: 26000,
+                totalExpenses: 18000,
+                netIncome: 8000,
+                totalDeductible: 18000,
+              },
+              atoBreakdown: [
+                {
+                  category: "rental_income",
+                  label: "Gross Rent",
+                  amount: 26000,
+                  atoReference: "Item 21",
+                  isDeductible: false,
+                },
+                {
+                  category: "interest_on_loans",
+                  label: "Interest on Loans",
+                  amount: 12000,
+                  atoReference: "D5",
+                  isDeductible: true,
+                },
+              ],
+              transactionCount: 24,
+            },
+            {
+              property: {
+                id: "2",
+                address: "456 Beach Rd",
+                suburb: "Melbourne",
+                state: "VIC",
+                entityName: "Personal",
+              },
+              metrics: {
+                totalIncome: 32000,
+                totalExpenses: 22000,
+                netIncome: 10000,
+                totalDeductible: 22000,
+              },
+              atoBreakdown: [
+                {
+                  category: "rental_income",
+                  label: "Gross Rent",
+                  amount: 32000,
+                  atoReference: "Item 21",
+                  isDeductible: false,
+                },
+                {
+                  category: "interest_on_loans",
+                  label: "Interest on Loans",
+                  amount: 15000,
+                  atoReference: "D5",
+                  isDeductible: true,
+                },
+              ],
+              transactionCount: 30,
+            },
+          ],
+          totals: {
+            totalIncome: 58000,
+            totalExpenses: 40000,
+            netIncome: 18000,
+            totalDeductible: 40000,
+          },
+        },
+      },
+    };
+    // Should not throw — includes the Net Rental Income Summary table
+    const result = generateAccountantPackPDF(multiPropertyConfig);
+    expect(result).toBeInstanceOf(ArrayBuffer);
+  });
 });
