@@ -40,7 +40,7 @@ export function accountantPackEmailTemplate({
       </ul>
     </div>
 
-    <p>The full report is attached as a PDF.</p>
+    <p>The full report is attached as a PDF and Excel spreadsheet.</p>
 
     <p style="color: #666; font-size: 14px; margin-top: 20px;">
       If you have questions about this report, please contact ${safeName} directly at

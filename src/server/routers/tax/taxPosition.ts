@@ -2,8 +2,9 @@
 
 import { z } from "zod";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import { transactions } from "../../db/schema";
+import { transactions, depreciationSchedules } from "../../db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
+import type { DB } from "../../repositories/base";
 import {
   calculateTaxPosition,
   estimatePropertySavings,
@@ -17,6 +18,7 @@ import {
   getFinancialYearRange,
   calculatePropertyMetrics,
 } from "../../services/transaction";
+import { getCategoryInfo } from "@/lib/categories";
 
 const familyStatusSchema = z.enum(["single", "couple", "family"]);
 
@@ -32,6 +34,182 @@ const taxProfileSchema = z.object({
   partnerIncome: z.number().min(0).optional(),
   isComplete: z.boolean().default(false),
 });
+
+/**
+ * Get total depreciation deductions for a financial year.
+ * Cross-domain: queries depreciation tables for financial year total.
+ */
+async function getDepreciationTotal(
+  db: DB,
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<number> {
+  const schedules = await db.query.depreciationSchedules.findMany({
+    where: and(
+      eq(depreciationSchedules.userId, userId),
+      gte(depreciationSchedules.effectiveDate, startDate),
+      lte(depreciationSchedules.effectiveDate, endDate)
+    ),
+    with: { assets: true },
+  });
+
+  return schedules.reduce((total, schedule) => {
+    const scheduleTotal = schedule.assets.reduce(
+      (sum, asset) => sum + parseFloat(asset.yearlyDeduction),
+      0
+    );
+    return total + scheduleTotal;
+  }, 0);
+}
+
+// --- Property breakdown types ---
+
+interface CategoryBreakdown {
+  category: string;
+  label: string;
+  atoReference: string;
+  amount: number;
+  transactionCount: number;
+}
+
+interface PropertyBreakdown {
+  propertyId: string;
+  address: string;
+  suburb: string;
+  income: number;
+  expenses: number;
+  netResult: number;
+  categories: CategoryBreakdown[];
+}
+
+interface PropertyBreakdownResult {
+  properties: PropertyBreakdown[];
+  unallocated: {
+    income: number;
+    expenses: number;
+    netResult: number;
+    categories: CategoryBreakdown[];
+  };
+  totals: {
+    income: number;
+    expenses: number;
+    netResult: number;
+  };
+}
+
+type BreakdownTransaction = {
+  propertyId: string | null;
+  category: string;
+  amount: string;
+  transactionType: string;
+};
+
+type BreakdownProperty = {
+  id: string;
+  address: string;
+  suburb: string;
+};
+
+/**
+ * Pure function to group transactions by property with ATO category breakdown.
+ * Exported for unit testing — no DB dependency.
+ */
+export function groupTransactionsByProperty(
+  txns: BreakdownTransaction[],
+  properties: BreakdownProperty[]
+): PropertyBreakdownResult {
+  const propertyMap = new Map(properties.map((p) => [p.id, p]));
+  const groups = new Map<string | null, BreakdownTransaction[]>();
+
+  // Group transactions by propertyId, filtering to income/expense categories only
+  for (const t of txns) {
+    const info = getCategoryInfo(t.category);
+    if (!info || (info.type !== "income" && info.type !== "expense")) continue;
+
+    const key = t.propertyId;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(t);
+  }
+
+  const buildCategories = (groupTxns: BreakdownTransaction[]): CategoryBreakdown[] => {
+    const catMap = new Map<string, { amount: number; count: number }>();
+    for (const t of groupTxns) {
+      const curr = catMap.get(t.category) || { amount: 0, count: 0 };
+      curr.amount += Math.abs(Number(t.amount));
+      curr.count += 1;
+      catMap.set(t.category, curr);
+    }
+
+    return Array.from(catMap.entries())
+      .map(([cat, data]) => {
+        const info = getCategoryInfo(cat);
+        return {
+          category: cat,
+          label: info?.label ?? cat,
+          atoReference: info?.atoReference ?? "",
+          amount: data.amount,
+          transactionCount: data.count,
+        };
+      })
+      .sort((a, b) => a.atoReference.localeCompare(b.atoReference, undefined, { numeric: true }));
+  };
+
+  // Transactions are pre-filtered to income/expense category types,
+  // so transactionType will always be "income" or "expense" for well-formed data.
+  const buildTotals = (groupTxns: BreakdownTransaction[]) => {
+    let income = 0;
+    let expenses = 0;
+    for (const t of groupTxns) {
+      if (t.transactionType === "income") income += Number(t.amount);
+      else if (t.transactionType === "expense") expenses += Math.abs(Number(t.amount));
+    }
+    return { income, expenses, netResult: income - expenses };
+  };
+
+  // Build per-property results
+  const propertyResults: PropertyBreakdown[] = [];
+  let totalIncome = 0;
+  let totalExpenses = 0;
+
+  for (const [propId, groupTxns] of groups) {
+    if (propId === null) continue;
+    const prop = propertyMap.get(propId);
+    const totals = buildTotals(groupTxns);
+    totalIncome += totals.income;
+    totalExpenses += totals.expenses;
+
+    propertyResults.push({
+      propertyId: propId,
+      address: prop?.address ?? "Unknown property",
+      suburb: prop?.suburb ?? "",
+      ...totals,
+      categories: buildCategories(groupTxns),
+    });
+  }
+
+  // Sort by highest expense first
+  propertyResults.sort((a, b) => b.expenses - a.expenses);
+
+  // Build unallocated
+  const unallocatedTxns = groups.get(null) ?? [];
+  const unallocatedTotals = buildTotals(unallocatedTxns);
+  totalIncome += unallocatedTotals.income;
+  totalExpenses += unallocatedTotals.expenses;
+
+  return {
+    properties: propertyResults,
+    unallocated: {
+      ...unallocatedTotals,
+      categories: buildCategories(unallocatedTxns),
+    },
+    totals: {
+      income: totalIncome,
+      expenses: totalExpenses,
+      netResult: totalIncome - totalExpenses,
+    },
+  };
+}
 
 export const taxPositionRouter = router({
   /**
@@ -120,11 +298,15 @@ export const taxPositionRouter = router({
         }))
       );
 
+      // Cross-domain: queries depreciation tables for financial year total
+      const depreciationTotal = await getDepreciationTotal(ctx.db, ctx.portfolio.ownerId, startDate, endDate);
+
       return {
         totalIncome: metrics.totalIncome,
         totalExpenses: metrics.totalExpenses,
         netResult: metrics.netIncome, // negative = loss
         transactionCount: txns.length,
+        depreciationTotal,
       };
     }),
 
@@ -139,6 +321,7 @@ export const taxPositionRouter = router({
         paygWithheld: z.number().min(0),
         rentalNetResult: z.number(), // can be negative (loss) or positive (profit)
         otherDeductions: z.number().min(0).default(0),
+        depreciationDeductions: z.number().min(0).default(0),
         hasHecsDebt: z.boolean().default(false),
         hasPrivateHealth: z.boolean().default(false),
         familyStatus: familyStatusSchema.default("single"),
@@ -153,6 +336,7 @@ export const taxPositionRouter = router({
         paygWithheld: input.paygWithheld,
         rentalNetResult: input.rentalNetResult,
         otherDeductions: input.otherDeductions,
+        depreciationDeductions: input.depreciationDeductions,
         hasHecsDebt: input.hasHecsDebt,
         hasPrivateHealth: input.hasPrivateHealth,
         familyStatus: input.familyStatus,
@@ -195,6 +379,9 @@ export const taxPositionRouter = router({
 
       const rentalNetResult = metrics.netIncome;
 
+      // Cross-domain: queries depreciation tables for financial year total
+      const depreciationTotal = await getDepreciationTotal(ctx.db, ctx.portfolio.ownerId, startDate, endDate);
+
       // If no complete profile, return teaser data
       if (!profile?.isComplete) {
         const estimatedSavings = estimatePropertySavings(rentalNetResult, 0.37);
@@ -203,6 +390,7 @@ export const taxPositionRouter = router({
           financialYear: year,
           rentalNetResult,
           estimatedSavings,
+          depreciationTotal,
           refundOrOwing: null,
           propertySavings: null,
         };
@@ -215,6 +403,7 @@ export const taxPositionRouter = router({
         paygWithheld: Number(profile.paygWithheld ?? 0),
         rentalNetResult,
         otherDeductions: Number(profile.otherDeductions ?? 0),
+        depreciationDeductions: depreciationTotal,
         hasHecsDebt: profile.hasHecsDebt,
         hasPrivateHealth: profile.hasPrivateHealth,
         familyStatus: profile.familyStatus,
@@ -227,9 +416,42 @@ export const taxPositionRouter = router({
         financialYear: year,
         rentalNetResult,
         estimatedSavings: null,
+        depreciationTotal,
         refundOrOwing: result.refundOrOwing,
         propertySavings: result.propertySavings,
         isRefund: result.isRefund,
       };
+    }),
+
+  /**
+   * Get per-property tax breakdown for a financial year.
+   * Groups transactions by property with ATO category detail.
+   */
+  getPropertyBreakdown: protectedProcedure
+    .input(z.object({ financialYear: z.number().int().min(2020).max(2030) }))
+    .query(async ({ ctx, input }) => {
+      const { startDate, endDate } = getFinancialYearRange(input.financialYear);
+
+      // Cross-domain: queries transactions + properties for per-property tax breakdown
+      const [txns, props] = await Promise.all([
+        ctx.db.query.transactions.findMany({
+          where: and(
+            eq(transactions.userId, ctx.portfolio.ownerId),
+            gte(transactions.date, startDate),
+            lte(transactions.date, endDate)
+          ),
+        }),
+        ctx.uow.property.findByOwner(ctx.portfolio.ownerId),
+      ]);
+
+      return groupTransactionsByProperty(
+        txns.map((t) => ({
+          propertyId: t.propertyId,
+          category: t.category,
+          amount: t.amount,
+          transactionType: t.transactionType,
+        })),
+        props.map((p) => ({ id: p.id, address: p.address, suburb: p.suburb }))
+      );
     }),
 });

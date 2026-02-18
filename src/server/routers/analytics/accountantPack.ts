@@ -2,9 +2,11 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { Resend } from "resend";
 import { router, protectedProcedure, writeProcedure, proProcedure } from "../../trpc";
-import { properties, accountantPackSends } from "../../db/schema";
-import { eq, desc } from "drizzle-orm";
+import { properties, accountantPackSends, transactions } from "../../db/schema";
+import { eq, desc, and, gte, lte } from "drizzle-orm";
 import { generateAccountantPackPDF } from "@/lib/accountant-pack-pdf";
+import type { AccountantPackConfig } from "@/lib/accountant-pack-pdf";
+import { generateAccountantPackExcel } from "@/lib/accountant-pack-excel";
 import { accountantPackEmailTemplate } from "@/lib/email/templates/accountant-pack";
 import {
   buildMyTaxReport,
@@ -12,10 +14,19 @@ import {
   getFinancialYearTransactions,
   calculatePropertyMetrics,
   calculateCategoryTotals,
+  calculateEquity,
+  calculateLVR,
 } from "../../services/transaction";
+import {
+  calculateTaxPosition,
+  calculateCostBase,
+  CAPITAL_CATEGORIES,
+  type TaxPositionInput,
+} from "../../services/tax";
 import { categories } from "@/lib/categories";
 import { logger } from "@/lib/logger";
 import type { DB } from "../../repositories/base";
+import type { UnitOfWork } from "../../repositories/unit-of-work";
 
 const log = logger.child({ domain: "accountant-pack" });
 
@@ -114,7 +125,364 @@ async function buildTaxReportData(userId: string, year: number, db: DB) {
   };
 }
 
+/** Sections toggle type inferred from schema */
+type Sections = z.infer<typeof sectionsSchema>;
+
+/** Type for the data object passed to the PDF generator */
+type PackData = AccountantPackConfig["data"];
+
+/**
+ * Convert a loan's repayment amount to a monthly figure based on its frequency.
+ */
+function toMonthlyRepayment(amount: number, frequency: string): number {
+  switch (frequency) {
+    case "weekly":
+      return (amount * 52) / 12;
+    case "fortnightly":
+      return (amount * 26) / 12;
+    case "monthly":
+    default:
+      return amount;
+  }
+}
+
+/**
+ * Build data for all 6 accountant pack sections in parallel.
+ * Only fetches data for sections that are enabled.
+ */
+async function buildAllSectionData(
+  userId: string,
+  financialYear: number,
+  sections: Sections,
+  db: DB,
+  uow: UnitOfWork,
+): Promise<PackData> {
+  const data: PackData = {};
+
+  // --- Always-needed: Income & Expenses ---
+  const taxReportPromise = buildTaxReportData(userId, financialYear, db);
+
+  // --- Depreciation (conditional) ---
+  const myTaxPromise = sections.depreciation
+    ? buildMyTaxReport(userId, financialYear)
+    : Promise.resolve(undefined);
+
+  // --- Tax Position (conditional) ---
+  const taxPositionPromise = sections.taxPosition
+    ? buildTaxPositionData(userId, financialYear, db, uow)
+    : Promise.resolve(undefined);
+
+  // --- Capital Gains (conditional) ---
+  const cgtPromise = sections.capitalGains
+    ? buildCgtData(userId, financialYear, uow)
+    : Promise.resolve(undefined);
+
+  // --- Portfolio Overview (conditional) ---
+  const portfolioPromise = sections.portfolioOverview
+    ? buildPortfolioData(userId, uow)
+    : Promise.resolve(undefined);
+
+  // --- Loan Details (conditional) ---
+  const loanPromise = sections.loanDetails
+    ? buildLoanData(userId, uow)
+    : Promise.resolve(undefined);
+
+  // Execute all in parallel
+  const [taxReport, myTaxReport, taxPosition, cgtData, portfolioSnapshot, loanPackSnapshot] =
+    await Promise.all([
+      taxReportPromise,
+      myTaxPromise,
+      taxPositionPromise,
+      cgtPromise,
+      portfolioPromise,
+      loanPromise,
+    ]);
+
+  data.taxReport = taxReport;
+  if (myTaxReport) data.myTaxReport = myTaxReport;
+  if (taxPosition) data.taxPosition = taxPosition;
+  if (cgtData) data.cgtData = cgtData;
+  if (portfolioSnapshot) data.portfolioSnapshot = portfolioSnapshot;
+  if (loanPackSnapshot) data.loanPackSnapshot = loanPackSnapshot;
+
+  return data;
+}
+
+/**
+ * Build tax position data from saved profile + rental metrics.
+ * Returns undefined if the user has no complete tax profile for this year.
+ */
+async function buildTaxPositionData(
+  userId: string,
+  financialYear: number,
+  db: DB,
+  uow: UnitOfWork,
+): Promise<PackData["taxPosition"] | undefined> {
+  const profile = await uow.tax.findProfileByUserAndYear(userId, financialYear);
+  if (!profile?.isComplete) return undefined;
+
+  // Cross-domain: queries transactions for financial year rental metrics
+  const { startDate, endDate } = getFinancialYearRange(financialYear);
+  const txns = await db.query.transactions.findMany({
+    where: and(
+      eq(transactions.userId, userId),
+      gte(transactions.date, startDate),
+      lte(transactions.date, endDate),
+    ),
+  });
+
+  const metrics = calculatePropertyMetrics(
+    txns.map((t) => ({
+      category: t.category,
+      amount: t.amount,
+      transactionType: t.transactionType,
+    })),
+  );
+
+  const taxInput: TaxPositionInput = {
+    financialYear,
+    grossSalary: Number(profile.grossSalary ?? 0),
+    paygWithheld: Number(profile.paygWithheld ?? 0),
+    rentalNetResult: metrics.netIncome,
+    otherDeductions: Number(profile.otherDeductions ?? 0),
+    hasHecsDebt: profile.hasHecsDebt,
+    hasPrivateHealth: profile.hasPrivateHealth,
+    familyStatus: profile.familyStatus,
+    dependentChildren: profile.dependentChildren,
+    partnerIncome: Number(profile.partnerIncome ?? 0),
+  };
+
+  const result = calculateTaxPosition(taxInput);
+
+  return {
+    taxableIncome: result.taxableIncome,
+    baseTax: result.baseTax,
+    medicareLevy: result.medicareLevy,
+    medicareLevySurcharge: result.medicareLevySurcharge,
+    hecsRepayment: result.hecsRepayment,
+    totalTaxLiability: result.totalTaxLiability,
+    paygWithheld: result.paygWithheld,
+    refundOrOwing: result.refundOrOwing,
+    isRefund: result.isRefund,
+    marginalRate: result.marginalRate,
+    propertySavings: result.propertySavings,
+  };
+}
+
+/**
+ * Build capital gains data for properties sold within the financial year.
+ */
+async function buildCgtData(
+  userId: string,
+  financialYear: number,
+  uow: UnitOfWork,
+): Promise<PackData["cgtData"] | undefined> {
+  const { startDate, endDate } = getFinancialYearRange(financialYear);
+
+  const [propertiesWithSales, allTxns] = await Promise.all([
+    uow.property.findByOwnerWithSales(userId),
+    uow.transactions.findAllByOwner(userId),
+  ]);
+
+  // Build capital transactions lookup by property
+  const capitalTxnsByProperty = new Map<string, { category: string; amount: string }[]>();
+  for (const txn of allTxns) {
+    if (txn.propertyId && CAPITAL_CATEGORIES.includes(txn.category)) {
+      const existing = capitalTxnsByProperty.get(txn.propertyId) ?? [];
+      existing.push({ category: txn.category, amount: txn.amount });
+      capitalTxnsByProperty.set(txn.propertyId, existing);
+    }
+  }
+
+  // Filter to properties sold in this FY
+  const soldInFY = propertiesWithSales.filter((p) => {
+    const sale = p.sales?.[0];
+    if (!sale) return false;
+    return sale.settlementDate >= startDate && sale.settlementDate <= endDate;
+  });
+
+  return soldInFY.map((p) => {
+    const sale = p.sales[0];
+    const capitalTxns = capitalTxnsByProperty.get(p.id) ?? [];
+    const costBase = calculateCostBase(p.purchasePrice, capitalTxns);
+
+    return {
+      propertyAddress: `${p.address}, ${p.suburb} ${p.state}`,
+      purchaseDate: p.purchaseDate,
+      saleDate: sale.settlementDate,
+      costBase,
+      salePrice: Number(sale.salePrice),
+      capitalGain: Number(sale.capitalGain),
+      discountedGain: sale.discountedGain ? Number(sale.discountedGain) : Number(sale.capitalGain),
+      heldOverTwelveMonths: sale.heldOverTwelveMonths,
+    };
+  });
+}
+
+/**
+ * Build portfolio overview snapshot with equity and LVR per property.
+ */
+async function buildPortfolioData(
+  userId: string,
+  uow: UnitOfWork,
+): Promise<PackData["portfolioSnapshot"] | undefined> {
+  const userProperties = await uow.portfolio.findProperties(userId);
+  if (userProperties.length === 0) return undefined;
+
+  const propertyIds = userProperties.map((p) => p.id);
+
+  const [valuations, loans] = await Promise.all([
+    uow.portfolio.getLatestPropertyValues(userId, propertyIds),
+    uow.portfolio.findLoansByProperties(userId, propertyIds),
+  ]);
+
+  // Group loans by property
+  const loansByProperty = new Map<string, number>();
+  for (const loan of loans) {
+    const existing = loansByProperty.get(loan.propertyId) ?? 0;
+    loansByProperty.set(loan.propertyId, existing + Number(loan.currentBalance));
+  }
+
+  let totalValue = 0;
+  let totalDebt = 0;
+
+  const propertySnapshots = userProperties.map((p) => {
+    const currentValue = valuations.get(p.id) ?? Number(p.purchasePrice);
+    const debt = loansByProperty.get(p.id) ?? 0;
+    const equity = calculateEquity(currentValue, debt);
+    // calculateLVR returns percentage (0-100), PDF expects ratio (0-1)
+    const lvrPct = calculateLVR(debt, currentValue);
+
+    totalValue += currentValue;
+    totalDebt += debt;
+
+    return {
+      address: p.address,
+      suburb: p.suburb,
+      state: p.state,
+      purchasePrice: Number(p.purchasePrice),
+      currentValue,
+      equity,
+      lvr: lvrPct != null ? lvrPct / 100 : 0,
+    };
+  });
+
+  const totalEquity = calculateEquity(totalValue, totalDebt);
+  const avgLvrPct = calculateLVR(totalDebt, totalValue);
+  const avgLvr = avgLvrPct != null ? avgLvrPct / 100 : 0;
+
+  return {
+    properties: propertySnapshots,
+    totals: {
+      totalValue,
+      totalDebt,
+      totalEquity,
+      avgLvr,
+      propertyCount: userProperties.length,
+    },
+  };
+}
+
+/**
+ * Build loan details snapshot grouped by property.
+ */
+async function buildLoanData(
+  userId: string,
+  uow: UnitOfWork,
+): Promise<PackData["loanPackSnapshot"] | undefined> {
+  const [loansWithRelations, userProperties] = await Promise.all([
+    uow.loan.findByOwner(userId),
+    uow.portfolio.findProperties(userId),
+  ]);
+
+  if (loansWithRelations.length === 0) return undefined;
+
+  // Build address lookup
+  const addressMap = new Map<string, string>();
+  for (const p of userProperties) {
+    addressMap.set(p.id, `${p.address}, ${p.suburb} ${p.state}`);
+  }
+
+  // Group loans by property
+  const loansByProperty = new Map<string, typeof loansWithRelations>();
+  for (const loan of loansWithRelations) {
+    const existing = loansByProperty.get(loan.propertyId) ?? [];
+    existing.push(loan);
+    loansByProperty.set(loan.propertyId, existing);
+  }
+
+  let totalDebt = 0;
+  let totalMonthlyRepayments = 0;
+  let weightedRateSum = 0;
+
+  const propertyLoans = Array.from(loansByProperty.entries()).map(([propertyId, propLoans]) => {
+    const loanDetails = propLoans.map((loan) => {
+      const balance = Number(loan.currentBalance);
+      const rate = Number(loan.interestRate);
+      const repayment = Number(loan.repaymentAmount);
+      const monthlyRepayment = toMonthlyRepayment(repayment, loan.repaymentFrequency);
+
+      totalDebt += balance;
+      totalMonthlyRepayments += monthlyRepayment;
+      weightedRateSum += rate * balance;
+
+      return {
+        lender: loan.lender,
+        balance,
+        rate,
+        type: loan.loanType === "principal_and_interest" ? "P&I" : "Interest Only",
+        monthlyRepayment,
+      };
+    });
+
+    return {
+      address: addressMap.get(propertyId) ?? "Unknown Property",
+      loans: loanDetails,
+    };
+  });
+
+  const avgRate = totalDebt > 0 ? weightedRateSum / totalDebt : 0;
+
+  return {
+    properties: propertyLoans,
+    totals: {
+      totalDebt,
+      avgRate,
+      monthlyRepayments: totalMonthlyRepayments,
+    },
+  };
+}
+
 export const accountantPackRouter = router({
+  /**
+   * Return raw section data for all 6 sections (for client-side preview / Excel export).
+   */
+  generatePackData: protectedProcedure
+    .input(
+      z.object({
+        financialYear: z.number().min(2000).max(2100),
+        sections: sectionsSchema,
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { financialYear, sections } = input;
+
+      const data = await buildAllSectionData(
+        ctx.portfolio.ownerId,
+        financialYear,
+        sections,
+        ctx.db,
+        ctx.uow,
+      );
+
+      return {
+        financialYear,
+        userName: ctx.user.name || ctx.user.email || "Unknown",
+        sections,
+        data,
+      };
+    }),
+
   /**
    * Generate accountant pack PDF for preview/download.
    * writeProcedure because it does heavy server-side computation on demand.
@@ -129,17 +497,14 @@ export const accountantPackRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { financialYear, sections } = input;
 
-      // Build tax report data (needed for income/expenses section)
-      const taxReport = await buildTaxReportData(
+      // Build all section data in parallel
+      const data = await buildAllSectionData(
         ctx.portfolio.ownerId,
         financialYear,
-        ctx.db
+        sections,
+        ctx.db,
+        ctx.uow,
       );
-
-      // Build MyTax report (needed for depreciation section)
-      const myTaxReport = sections.depreciation
-        ? await buildMyTaxReport(ctx.portfolio.ownerId, financialYear)
-        : undefined;
 
       // Get connected accountant name for the PDF cover page
       const members = await ctx.uow.team.listMembers(ctx.portfolio.ownerId);
@@ -152,11 +517,7 @@ export const accountantPackRouter = router({
         userName: ctx.user.name || ctx.user.email || "Unknown",
         accountantName: accountant?.user?.name || undefined,
         sections,
-        data: {
-          taxReport,
-          myTaxReport: myTaxReport || undefined,
-          // CGT, tax position, portfolio, loan data left as undefined for sections not yet wired
-        },
+        data,
       });
 
       return {
@@ -202,15 +563,14 @@ export const accountantPackRouter = router({
         });
       }
 
-      // Build report data
-      const taxReport = await buildTaxReportData(
+      // Build all section data in parallel
+      const data = await buildAllSectionData(
         ctx.portfolio.ownerId,
         financialYear,
-        ctx.db
+        sections,
+        ctx.db,
+        ctx.uow,
       );
-      const myTaxReport = sections.depreciation
-        ? await buildMyTaxReport(ctx.portfolio.ownerId, financialYear)
-        : undefined;
 
       // Generate PDF
       const pdfBuffer = generateAccountantPackPDF({
@@ -218,10 +578,16 @@ export const accountantPackRouter = router({
         userName: ctx.user.name || ctx.user.email || "Unknown",
         accountantName,
         sections,
-        data: {
-          taxReport,
-          myTaxReport: myTaxReport || undefined,
-        },
+        data,
+      });
+
+      // Generate Excel
+      const excelBuffer = await generateAccountantPackExcel({
+        financialYear,
+        userName: ctx.user.name || ctx.user.email || "Unknown",
+        accountantName,
+        sections,
+        data,
       });
 
       // Build enabled sections list for email template
@@ -251,6 +617,10 @@ export const accountantPackRouter = router({
             {
               filename: `accountant-pack-FY${financialYear}.pdf`,
               content: Buffer.from(pdfBuffer),
+            },
+            {
+              filename: `accountant-pack-FY${financialYear}.xlsx`,
+              content: Buffer.from(excelBuffer),
             },
           ],
         });

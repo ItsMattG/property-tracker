@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, PieChart, Download, TrendingUp, Calculator, ClipboardList, BarChart3, ShieldCheck } from "lucide-react";
+import { FileText, PieChart, Download, TrendingUp, Calculator, ClipboardList, BarChart3, ShieldCheck, GitBranch } from "lucide-react";
 
 const reportTypes = [
   {
@@ -52,6 +52,12 @@ const reportTypes = [
     description: "Automated tax readiness and data quality checks with per-property audit scores",
     icon: ShieldCheck,
     href: "/reports/audit-checks",
+  },
+  {
+    title: "Scenario Simulator",
+    description: "Model what-if scenarios: rate changes, vacancy, buy/sell decisions",
+    icon: GitBranch,
+    href: "/reports/scenarios",
   },
 ];
 
