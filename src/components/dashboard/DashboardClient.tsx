@@ -33,6 +33,7 @@ import { LvrGaugeCard } from "./LvrGaugeCard";
 import { EquityProjectionCard } from "./EquityProjectionCard";
 import { BorrowingPowerCard } from "./BorrowingPowerCard";
 import { RecentActivityCard } from "./RecentActivityCard";
+import { AIInsightsCard } from "./AIInsightsCard";
 import { UpcomingRemindersCard } from "./UpcomingRemindersCard";
 import { DEMO_STATS, DEMO_TRENDS } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
@@ -499,6 +500,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <AIInsightsCard />
         <RecentActivityCard />
         <SavingsWidget />
         <UpcomingRemindersCard />

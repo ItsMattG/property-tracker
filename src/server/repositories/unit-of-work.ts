@@ -28,6 +28,7 @@ import type {
   IBudgetRepository,
   ICategorizationRuleRepository,
   IPropertyGroupRepository,
+  IInsightsRepository,
   IReminderRepository,
 } from "./interfaces";
 
@@ -60,6 +61,7 @@ import { PersonalTransactionRepository } from "./personal-transaction.repository
 import { BudgetRepository } from "./budget.repository";
 import { CategorizationRuleRepository } from "./categorization-rule.repository";
 import { PropertyGroupRepository } from "./property-group.repository";
+import { InsightsRepository } from "./insights.repository";
 import { ReminderRepository } from "./reminder.repository";
 
 export class UnitOfWork {
@@ -92,6 +94,7 @@ export class UnitOfWork {
   private _budgets?: IBudgetRepository;
   private _categorizationRules?: ICategorizationRuleRepository;
   private _propertyGroup?: IPropertyGroupRepository;
+  private _insights?: IInsightsRepository;
   private _reminder?: IReminderRepository;
 
   constructor(private readonly db: DB) {}
@@ -180,6 +183,9 @@ export class UnitOfWork {
   }
   get propertyGroup(): IPropertyGroupRepository {
     return (this._propertyGroup ??= new PropertyGroupRepository(this.db));
+  }
+  get insights(): IInsightsRepository {
+    return (this._insights ??= new InsightsRepository(this.db));
   }
   get reminder(): IReminderRepository {
     return (this._reminder ??= new ReminderRepository(this.db));
