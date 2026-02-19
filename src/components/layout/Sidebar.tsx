@@ -22,6 +22,7 @@ import {
   CalendarDays,
   Award,
   FileOutput,
+  Bell,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useSidebar } from "./SidebarProvider";
@@ -63,6 +64,7 @@ const navGroups: Array<{
       { href: "/receipts", label: "Receipts", icon: Receipt },
       { href: "/banking", label: "Bank Feeds", icon: Landmark },
       { href: "/loans", label: "Loans", icon: Wallet, featureFlag: "loans" },
+      { href: "/reminders", label: "Reminders", icon: Bell, featureFlag: "reminders" },
     ],
   },
   {

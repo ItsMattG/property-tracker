@@ -21,6 +21,7 @@ export const featureFlags = {
   export: true,
   emails: false,
   tasks: false,
+  reminders: true,
 
   // ── Settings ──────────────────────────────────────────────────────
   propertyGroups: true,
@@ -74,6 +75,7 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/emails": "emails",
   "/tasks": "tasks",
   "/cash-flow": "cashFlow",
+  "/reminders": "reminders",
   "/settings/property-groups": "propertyGroups",
   "/settings/notifications": "notifications",
   "/settings/integrations": "integrations",
