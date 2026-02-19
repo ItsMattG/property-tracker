@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Copy, Check, Loader2 } from "lucide-react";
+import { Copy, Check, Loader2, Mail } from "lucide-react";
 import { format } from "date-fns";
 
 interface CreateShareModalProps {
@@ -116,6 +116,18 @@ export function CreateShareModal({ open, onOpenChange }: CreateShareModalProps) 
                 )}
               </Button>
             </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              asChild
+            >
+              <a
+                href={`mailto:?subject=${encodeURIComponent(`Portfolio snapshot — ${title}`)}&body=${encodeURIComponent(`View my portfolio snapshot on BrickTrack:\n\n${createdUrl}`)}`}
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Email Link
+              </a>
+            </Button>
             <p className="text-sm text-muted-foreground">
               This link will expire in {expiresInDays} days.
             </p>
