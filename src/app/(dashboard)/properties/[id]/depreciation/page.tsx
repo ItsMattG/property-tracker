@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Calculator,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   Pencil,
   Plus,
@@ -91,6 +93,14 @@ const INITIAL_CW_FORM: CapitalWorksFormState = {
   claimStartDate: "",
 };
 
+const DEFAULT_VISIBLE_YEARS = 6; // Current FY + 5
+const EXTENDED_VISIBLE_YEARS = 11; // Current FY + 10
+
+/** Format financial year integer as "FY2025-26". */
+function formatFY(fy: number): string {
+  return `FY${fy - 1}-${String(fy).slice(2)}`;
+}
+
 // ─── Page Component ───────────────────────────────────────────────
 
 export default function PropertyDepreciationPage() {
@@ -108,6 +118,8 @@ export default function PropertyDepreciationPage() {
   } | null>(null);
   const [assetForm, setAssetForm] = useState<AssetFormState>(INITIAL_ASSET_FORM);
   const [cwForm, setCwForm] = useState<CapitalWorksFormState>(INITIAL_CW_FORM);
+  const [projectionsExpanded, setProjectionsExpanded] = useState(true);
+  const [showAllYears, setShowAllYears] = useState(false);
 
   // ── Queries ────────────────────────────────────────────────────
   const { data: property, isLoading: propertyLoading } = trpc.property.get.useQuery(
@@ -180,6 +192,22 @@ export default function PropertyDepreciationPage() {
     onError: (error) => toast.error(getErrorMessage(error)),
   });
 
+  const claimFY = trpc.depreciation.claimFY.useMutation({
+    onSuccess: () => {
+      invalidateAll();
+      toast.success("Depreciation marked as claimed");
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  const unclaimFY = trpc.depreciation.unclaimFY.useMutation({
+    onSuccess: () => {
+      invalidateAll();
+      toast.success("Claim removed");
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
   // ── Derived data ───────────────────────────────────────────────
   const schedules = listData?.schedules ?? [];
   const capitalWorksList = listData?.capitalWorks ?? [];
@@ -203,6 +231,18 @@ export default function PropertyDepreciationPage() {
 
   const hasSchedule = schedules.length > 0;
   const isLoading = propertyLoading || listLoading;
+
+  // Build set of FYs that have been claimed
+  const claimedFYs = new Set(
+    schedules.flatMap((s) =>
+      s.assets.flatMap((a) => a.claims.map((c) => c.financialYear))
+    )
+  );
+
+  // Determine how many projection rows to show
+  const visibleYears = showAllYears ? EXTENDED_VISIBLE_YEARS : DEFAULT_VISIBLE_YEARS;
+  const visibleProjections = projections?.slice(0, visibleYears) ?? [];
+  const hasMoreProjections = (projections?.length ?? 0) > DEFAULT_VISIBLE_YEARS;
 
   // ── Handlers ───────────────────────────────────────────────────
   const handleCreateSchedule = () => {
@@ -688,6 +728,157 @@ export default function PropertyDepreciationPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Year-by-Year Projections */}
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Year-by-Year Projections</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setProjectionsExpanded((prev) => !prev)}
+          >
+            {projectionsExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+            {projectionsExpanded ? "Collapse" : "Expand"}
+          </Button>
+        </CardHeader>
+        {projectionsExpanded && (
+          <CardContent>
+            {projectionsLoading ? (
+              <TableSkeleton rows={6} cols={6} />
+            ) : !projections || projections.length === 0 ? (
+              <EmptyState
+                icon={Calculator}
+                title="No projections available"
+                description="Add assets to see depreciation projections."
+              />
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>FY</TableHead>
+                      <TableHead className="text-right">Div 40</TableHead>
+                      <TableHead className="text-right">Div 43</TableHead>
+                      <TableHead className="text-right">Low-Value Pool</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleProjections.map((row) => {
+                      const isClaimed = claimedFYs.has(row.financialYear);
+                      const isMutating =
+                        (claimFY.isPending &&
+                          claimFY.variables?.financialYear === row.financialYear) ||
+                        (unclaimFY.isPending &&
+                          unclaimFY.variables?.financialYear === row.financialYear);
+
+                      return (
+                        <TableRow
+                          key={row.financialYear}
+                          className={
+                            isClaimed
+                              ? "bg-green-50 dark:bg-green-950/20"
+                              : undefined
+                          }
+                        >
+                          <TableCell className="font-medium">
+                            {formatFY(row.financialYear)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(row.div40Total)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(row.div43Total)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(row.lowValuePoolTotal)}
+                          </TableCell>
+                          <TableCell className="text-right font-bold">
+                            {formatCurrency(row.grandTotal)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isMutating ? (
+                              <Loader2 className="ml-auto h-4 w-4 animate-spin" />
+                            ) : isClaimed ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <Badge variant="default" className="bg-green-600">
+                                  Claimed
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-auto px-1 py-0 text-xs text-muted-foreground"
+                                  onClick={() => {
+                                    if (!schedule) return;
+                                    unclaimFY.mutate({
+                                      scheduleId: schedule.id,
+                                      financialYear: row.financialYear,
+                                    });
+                                  }}
+                                >
+                                  Unclaim
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!schedule || row.grandTotal === 0}
+                                onClick={() => {
+                                  if (!schedule) return;
+                                  claimFY.mutate({
+                                    scheduleId: schedule.id,
+                                    financialYear: row.financialYear,
+                                    amounts: [
+                                      {
+                                        assetId: null,
+                                        amount: row.grandTotal,
+                                      },
+                                    ],
+                                  });
+                                }}
+                              >
+                                Mark as Claimed
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                {hasMoreProjections && (
+                  <div className="mt-4 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAllYears((prev) => !prev)}
+                    >
+                      {showAllYears ? (
+                        <>
+                          <ChevronUp className="h-4 w-4" />
+                          Show Less
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4" />
+                          Show More (10 years)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        )}
+      </Card>
 
       {/* Add Asset Dialog */}
       <Dialog open={assetDialogOpen} onOpenChange={setAssetDialogOpen}>
