@@ -55,6 +55,7 @@ export const featureFlags = {
   whatsNew: false,
   helpMenu: false,
   quickAdd: false,
+  borrowingPowerEstimator: true,
 } as const;
 
 export type FeatureFlag = keyof typeof featureFlags;
@@ -89,6 +90,7 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/settings/support-admin": "supportAdmin",
   "/settings/bug-reports": "bugReports",
   "/settings/support": "support",
+  "/tools/borrowing-power": "borrowingPowerEstimator",
 };
 
 /**
