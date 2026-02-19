@@ -13,6 +13,10 @@ export const featureFlags = {
   forecast: false,
   cashFlow: true,
   portfolioShares: true,
+  scorecard: false,
+  scenarios: false,
+  accountantPack: false,
+  receipts: false,
   compliance: false,
   brokerPortal: false,
   mytaxExport: false,
@@ -46,7 +50,7 @@ export const featureFlags = {
   rentReview: true,
   milestones: true,
   performanceBenchmark: false,
-  portfolioBenchmarking: true,
+  portfolioBenchmarking: false,
   similarProperties: true,
 
   // ── Property features ──────────────────────────────────────────────
@@ -59,7 +63,7 @@ export const featureFlags = {
   whatsNew: false,
   helpMenu: false,
   quickAdd: false,
-  borrowingPowerEstimator: true,
+  borrowingPowerEstimator: false,
 } as const;
 
 export type FeatureFlag = keyof typeof featureFlags;
@@ -79,6 +83,10 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/emails": "emails",
   "/tasks": "tasks",
   "/analytics/benchmarking": "portfolioBenchmarking",
+  "/analytics/scorecard": "scorecard",
+  "/reports/scenarios": "scenarios",
+  "/reports/accountant-pack": "accountantPack",
+  "/receipts": "receipts",
   "/cash-flow": "cashFlow",
   "/reminders": "reminders",
   "/settings/property-groups": "propertyGroups",
