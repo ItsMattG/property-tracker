@@ -27,7 +27,7 @@ import { SimilarPropertiesSection } from "@/components/similar-properties";
 import { RentReviewCard } from "@/components/property/RentReviewCard";
 import { PropertyCashFlowChart } from "@/components/properties/PropertyCashFlowChart";
 import { featureFlags } from "@/config/feature-flags";
-import { Building2, MapPin, Calendar, Briefcase, DollarSign, BarChart3, FileText } from "lucide-react";
+import { Building2, MapPin, Calendar, Briefcase, DollarSign, BarChart3, FileText, Calculator } from "lucide-react";
 import Link from "next/link";
 import { cn, formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
@@ -236,6 +236,13 @@ export default function PropertyDetailPage() {
             >
               <FileText className="h-4 w-4" />
               Upload Settlement Statement for CGT Cost Base
+            </Link>
+            <Link
+              href={`/properties/${propertyId}/depreciation`}
+              className="flex items-center gap-2 text-primary hover:underline"
+            >
+              <Calculator className="h-4 w-4" />
+              Depreciation Schedule & Tax Deductions
             </Link>
           </CardContent>
         </Card>
