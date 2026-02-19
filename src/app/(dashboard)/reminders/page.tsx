@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import { Bell, Check, List, CalendarDays, Plus, Trash2, MoreHorizontal } from "lucide-react";
@@ -8,6 +8,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,17 +27,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DataSkeleton } from "@/components/ui/data-skeleton";
 import { trpc } from "@/lib/trpc/client";
 import { getErrorMessage } from "@/lib/errors";
-import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Constants & helpers
@@ -369,6 +386,239 @@ function CalendarView({
 }
 
 // ---------------------------------------------------------------------------
+// Add Reminder dialog
+// ---------------------------------------------------------------------------
+
+const REMINDER_TYPES = [
+  "lease_expiry",
+  "insurance_renewal",
+  "fixed_rate_expiry",
+  "council_rates",
+  "body_corporate",
+  "smoke_alarm",
+  "pool_safety",
+  "tax_return",
+  "custom",
+] as const;
+
+const TIMING_OPTIONS = [
+  { value: 30, label: "30d" },
+  { value: 14, label: "14d" },
+  { value: 7, label: "7d" },
+  { value: 1, label: "1d" },
+];
+
+interface PropertyItem {
+  id: string;
+  address: string;
+  suburb: string;
+}
+
+function AddReminderDialog({
+  open,
+  onOpenChange,
+  properties,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  properties: PropertyItem[];
+}) {
+  const [propertyId, setPropertyId] = useState("");
+  const [reminderType, setReminderType] = useState("");
+  const [title, setTitle] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [timingChips, setTimingChips] = useState<number[]>([30, 7]);
+  const [notes, setNotes] = useState("");
+  const [titleManuallyEdited, setTitleManuallyEdited] = useState(false);
+
+  const utils = trpc.useUtils();
+
+  const createMutation = trpc.reminder.create.useMutation({
+    onSuccess: () => {
+      toast.success("Reminder created");
+      utils.reminder.list.invalidate();
+      utils.reminder.getUpcoming.invalidate();
+      resetForm();
+      onOpenChange(false);
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+
+  const resetForm = () => {
+    setPropertyId("");
+    setReminderType("");
+    setTitle("");
+    setDueDate("");
+    setTimingChips([30, 7]);
+    setNotes("");
+    setTitleManuallyEdited(false);
+  };
+
+  // Auto-generate title when type or property changes
+  useEffect(() => {
+    if (titleManuallyEdited) return;
+
+    const typeLabel = reminderType ? (REMINDER_TYPE_LABELS[reminderType] ?? reminderType) : "";
+    const prop = properties.find((p) => p.id === propertyId);
+    const propLabel = prop ? `${prop.address}, ${prop.suburb}` : "";
+
+    if (typeLabel && propLabel) {
+      setTitle(`${typeLabel} \u2014 ${propLabel}`);
+    } else if (typeLabel) {
+      setTitle(typeLabel);
+    } else {
+      setTitle("");
+    }
+  }, [reminderType, propertyId, properties, titleManuallyEdited]);
+
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+    setTitleManuallyEdited(true);
+  };
+
+  const toggleTiming = (value: number) => {
+    setTimingChips((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value].sort((a, b) => b - a)
+    );
+  };
+
+  const isValid = propertyId && title.trim() && dueDate && timingChips.length > 0;
+
+  const handleSubmit = () => {
+    if (!isValid) return;
+
+    createMutation.mutate({
+      propertyId,
+      reminderType: (reminderType || "custom") as typeof REMINDER_TYPES[number],
+      title: title.trim(),
+      dueDate,
+      reminderDaysBefore: timingChips,
+      notes: notes.trim() || null,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add Reminder</DialogTitle>
+          <DialogDescription>
+            Set up a reminder for an important property date.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Property select */}
+          <div className="space-y-2">
+            <Label htmlFor="reminder-property">Property</Label>
+            <Select value={propertyId} onValueChange={setPropertyId}>
+              <SelectTrigger className="w-full" id="reminder-property">
+                <SelectValue placeholder="Select a property" />
+              </SelectTrigger>
+              <SelectContent>
+                {properties.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.address}, {p.suburb}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Reminder type select */}
+          <div className="space-y-2">
+            <Label htmlFor="reminder-type">Reminder Type</Label>
+            <Select value={reminderType} onValueChange={setReminderType}>
+              <SelectTrigger className="w-full" id="reminder-type">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                {REMINDER_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {REMINDER_TYPE_LABELS[type]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="reminder-title">Title</Label>
+            <Input
+              id="reminder-title"
+              placeholder="e.g. Lease Expiry — 123 Main St"
+              value={title}
+              onChange={(e) => handleTitleChange(e.target.value)}
+            />
+          </div>
+
+          {/* Due date */}
+          <div className="space-y-2">
+            <Label htmlFor="reminder-due-date">Due Date</Label>
+            <Input
+              id="reminder-due-date"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </div>
+
+          {/* Timing chips */}
+          <div className="space-y-2">
+            <Label>Remind me before</Label>
+            <div className="flex gap-2">
+              {TIMING_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleTiming(option.value)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
+                    timingChips.includes(option.value)
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {timingChips.length === 0 && (
+              <p className="text-xs text-destructive">Select at least one timing option</p>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="reminder-notes">Notes (optional)</Label>
+            <Textarea
+              id="reminder-notes"
+              placeholder="Additional details..."
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!isValid || createMutation.isPending}
+          >
+            {createMutation.isPending ? "Creating..." : "Create Reminder"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page component
 // ---------------------------------------------------------------------------
 
@@ -607,6 +857,13 @@ export default function RemindersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add reminder dialog */}
+      <AddReminderDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        properties={(properties as PropertyItem[]) ?? []}
+      />
     </div>
   );
 }
