@@ -1,10 +1,11 @@
 "use client";
 
 import { TrendingUp, AlertTriangle, Trophy } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PropertyScorecard } from "@/components/analytics/PropertyScorecard";
 import { ScorecardComparison } from "@/components/analytics/ScorecardComparison";
+import { ScorecardInsights } from "@/components/analytics/ScorecardInsights";
 import { trpc } from "@/lib/trpc/client";
 import { cn } from "@/lib/utils";
 
@@ -149,6 +150,14 @@ export default function ScorecardPage() {
           averageScore={scorecard.averageScore}
         />
       )}
+
+      {/* AI Insights */}
+      <ScorecardInsights
+        properties={scorecard.properties.map((p) => ({
+          id: p.propertyId,
+          address: p.address,
+        }))}
+      />
 
       {/* Individual property scorecards */}
       <div>

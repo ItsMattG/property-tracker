@@ -1,0 +1,18 @@
+# Test files
+**/__tests__/**
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Development config
+.env.local
+.env.development
+
+# Documentation
+docs/
+README.md
+
+# IDE
+.vscode/
+.idea/
