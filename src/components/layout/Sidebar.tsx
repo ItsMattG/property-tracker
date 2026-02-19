@@ -73,6 +73,7 @@ const navGroups: Array<{
       { href: "/reports/accountant-pack", label: "Accountant Pack", icon: FileOutput },
       { href: "/cash-flow", label: "Cash Flow", icon: CalendarDays, featureFlag: "cashFlow" },
       { href: "/analytics/scorecard", label: "Scorecard", icon: Award },
+      { href: "/analytics/benchmarking", label: "Benchmarking", icon: BarChart3, featureFlag: "portfolioBenchmarking" },
       { href: "/reports/forecast", label: "Forecast", icon: TrendingUp, featureFlag: "forecast" },
     ],
   },
