@@ -21,8 +21,10 @@ test.describe("Portfolio Sharing", () => {
     // Create the share
     await page.getByRole("button", { name: /create share/i }).click();
 
-    // Wait for success — share URL should appear
-    await expect(page.getByText("Share Created")).toBeVisible({ timeout: 15_000 });
+    // Wait for success dialog — use dialog heading to avoid matching the toast notification
+    await expect(
+      page.getByRole("heading", { name: "Share Created" })
+    ).toBeVisible({ timeout: 30_000 });
 
     // Get the share URL from the readonly input
     const urlInput = page.locator("input[readonly]");

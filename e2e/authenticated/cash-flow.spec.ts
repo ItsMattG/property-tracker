@@ -71,9 +71,11 @@ test.describe("Cash Flow Calendar", () => {
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
-    // Cash Flow should be in sidebar
-    const navLink = page.getByRole("link", { name: "Cash Flow" });
-    await expect(navLink).toBeVisible();
+    // Cash Flow should be in sidebar — use longer timeout for CI where hydration is slower
+    const sidebar = page.locator("aside");
+    await expect(sidebar).toBeVisible({ timeout: 15000 });
+    const navLink = sidebar.getByRole("link", { name: "Cash Flow" });
+    await expect(navLink).toBeVisible({ timeout: 15000 });
 
     // Click it and verify navigation
     await navLink.click();

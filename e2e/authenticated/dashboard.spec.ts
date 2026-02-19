@@ -106,10 +106,13 @@ test.describe("Dashboard", () => {
   test("should display core sidebar nav items", async ({
     page,
   }) => {
+    await dismissTourIfVisible(page);
     const sidebar = page.locator("aside");
+    // Wait for sidebar to be fully rendered (hydration can be slow on CI)
+    await expect(sidebar).toBeVisible({ timeout: 15000 });
     await expect(
       sidebar.getByRole("link", { name: /dashboard/i })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15000 });
     await expect(
       sidebar.getByRole("link", { name: /properties/i })
     ).toBeVisible();
@@ -127,8 +130,11 @@ test.describe("Dashboard", () => {
   test("dashboard link should be active on /dashboard", async ({
     page,
   }) => {
+    await dismissTourIfVisible(page);
     const sidebar = page.locator("aside");
+    await expect(sidebar).toBeVisible({ timeout: 15000 });
     const dashboardLink = sidebar.getByRole("link", { name: /dashboard/i });
+    await expect(dashboardLink).toBeVisible({ timeout: 15000 });
     await expect(dashboardLink).toHaveClass(/bg-primary/);
   });
 

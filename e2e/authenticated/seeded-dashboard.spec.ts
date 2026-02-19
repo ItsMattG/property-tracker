@@ -8,8 +8,10 @@ test.describe("Dashboard (Seeded Data)", () => {
   });
 
   test("should display dashboard page", async ({ page }) => {
-    // Check for dashboard heading
-    await expect(page.getByRole("heading", { name: /dashboard/i }).first()).toBeVisible();
+    // Check for dashboard heading — actual heading is "Welcome to BrickTrack"
+    await expect(
+      page.getByRole("heading", { name: /welcome to bricktrack/i }).first()
+    ).toBeVisible({ timeout: 15000 });
   });
 
   test("should display Australia properties map when properties exist", async ({ page }) => {

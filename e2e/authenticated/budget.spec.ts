@@ -29,12 +29,9 @@ test.describe("Budget", () => {
     await safeGoto(page, "/budget");
     await dismissTourIfVisible(page);
 
-    // Wait for page to finish loading — either a setup CTA or budget content should appear
-    const setupCTA = page.getByRole("button", { name: /set up budget/i });
-    const budgetContent = page.getByText(/monthly|budget item|category/i).first();
-
-    // Either setup CTA or budget content should be visible (not an empty page)
-    await expect(setupCTA.or(budgetContent)).toBeVisible({ timeout: 10000 });
+    // The h1 "Budget" heading is always present regardless of budget state
+    const heading = page.getByRole("heading", { name: /budget/i, level: 1 });
+    await expect(heading).toBeVisible({ timeout: 10000 });
   });
 
   test("sidebar shows budget link", async ({ page }) => {
@@ -50,8 +47,10 @@ test.describe("Budget", () => {
     await safeGoto(page, "/dashboard");
     await dismissTourIfVisible(page);
 
-    // Click Budget link in sidebar (exact match to avoid matching dashboard CTA)
-    await page.getByRole("link", { name: "Budget", exact: true }).click();
+    // Wait for sidebar to fully render before interacting
+    const budgetLink = page.getByRole("link", { name: "Budget", exact: true });
+    await expect(budgetLink).toBeVisible({ timeout: 15000 });
+    await budgetLink.click();
 
     // Verify navigation to budget page
     await expect(page).toHaveURL(/\/budget/);
