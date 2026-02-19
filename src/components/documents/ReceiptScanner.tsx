@@ -76,6 +76,31 @@ export function ReceiptScanner({ open, onOpenChange, propertyId }: ReceiptScanne
     setExtractionId(null);
   }, []);
 
+  const pollExtraction = useCallback(async (documentId: string) => {
+    const maxAttempts = 30; // 30 seconds max
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((r) => setTimeout(r, 1000));
+
+      const extraction = await utils.documentExtraction.getExtraction.fetch({ documentId });
+
+      if (extraction?.status === "completed") {
+        setExtractionId(extraction.id);
+        setScanState("review");
+        utils.documentExtraction.getRemainingScans.invalidate();
+        return;
+      }
+
+      if (extraction?.status === "failed") {
+        toast.error("Extraction failed. The receipt may be unreadable.");
+        resetState();
+        return;
+      }
+    }
+
+    toast.error("Extraction timed out. Check the Review page later.");
+    resetState();
+  }, [utils, resetState]);
+
   const handleFileSelect = useCallback(async (file: File) => {
     if (file.size > MAX_FILE_SIZE) {
       toast.error("File must be under 10MB");
@@ -127,32 +152,7 @@ export function ReceiptScanner({ open, onOpenChange, propertyId }: ReceiptScanne
       toast.error(getErrorMessage(error));
       resetState();
     }
-  }, [getUploadUrl, createDocument, propertyId, resetState]);
-
-  const pollExtraction = useCallback(async (documentId: string) => {
-    const maxAttempts = 30; // 30 seconds max
-    for (let i = 0; i < maxAttempts; i++) {
-      await new Promise((r) => setTimeout(r, 1000));
-
-      const extraction = await utils.documentExtraction.getExtraction.fetch({ documentId });
-
-      if (extraction?.status === "completed") {
-        setExtractionId(extraction.id);
-        setScanState("review");
-        utils.documentExtraction.getRemainingScans.invalidate();
-        return;
-      }
-
-      if (extraction?.status === "failed") {
-        toast.error("Extraction failed. The receipt may be unreadable.");
-        resetState();
-        return;
-      }
-    }
-
-    toast.error("Extraction timed out. Check the Review page later.");
-    resetState();
-  }, [utils, resetState]);
+  }, [getUploadUrl, createDocument, propertyId, resetState, pollExtraction]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

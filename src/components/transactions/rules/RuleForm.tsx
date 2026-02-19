@@ -48,7 +48,7 @@ const ruleFormSchema = z.object({
   amountMax: z.string(),
   targetCategory: z.string().min(1, "Category is required"),
   targetPropertyId: z.string(),
-  priority: z.coerce.number().int().min(0).max(100),
+  priority: z.string(),
   isActive: z.boolean(),
 });
 
@@ -91,7 +91,7 @@ export function RuleForm({ initialValues, onSuccess, onCancel }: RuleFormProps) 
       amountMax: initialValues?.amountMax?.toString() ?? "",
       targetCategory: initialValues?.targetCategory ?? "",
       targetPropertyId: initialValues?.targetPropertyId ?? "",
-      priority: initialValues?.priority ?? 0,
+      priority: String(initialValues?.priority ?? 0),
       isActive: initialValues?.isActive ?? true,
     },
   });
@@ -130,7 +130,7 @@ export function RuleForm({ initialValues, onSuccess, onCancel }: RuleFormProps) 
         amountMax: form.getValues("amountMax") ? parseInt(form.getValues("amountMax"), 10) : null,
         targetCategory: form.getValues("targetCategory") || "uncategorized",
         targetPropertyId: null,
-        priority: form.getValues("priority"),
+        priority: parseInt(form.getValues("priority"), 10) || 0,
         isActive: true,
       },
       limit: 50,
@@ -160,7 +160,7 @@ export function RuleForm({ initialValues, onSuccess, onCancel }: RuleFormProps) 
       amountMax: values.amountMax ? parseInt(values.amountMax, 10) : null,
       targetCategory: values.targetCategory,
       targetPropertyId: values.targetPropertyId || null,
-      priority: values.priority,
+      priority: parseInt(values.priority, 10) || 0,
       isActive: values.isActive,
     };
 

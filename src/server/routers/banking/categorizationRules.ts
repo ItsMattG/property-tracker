@@ -59,7 +59,7 @@ export const categorizationRulesRouter = router({
 
       // Validate property ownership if targetPropertyId is provided
       if (input.targetPropertyId) {
-        const property = await ctx.uow.properties.findById(input.targetPropertyId, ctx.portfolio.ownerId);
+        const property = await ctx.uow.property.findById(input.targetPropertyId, ctx.portfolio.ownerId);
         if (!property) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
         }
@@ -101,7 +101,7 @@ export const categorizationRulesRouter = router({
 
       // Validate property ownership if targetPropertyId is being changed
       if (data.targetPropertyId) {
-        const property = await ctx.uow.properties.findById(data.targetPropertyId, ctx.portfolio.ownerId);
+        const property = await ctx.uow.property.findById(data.targetPropertyId, ctx.portfolio.ownerId);
         if (!property) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Property not found" });
         }

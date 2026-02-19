@@ -245,6 +245,7 @@ async function buildTaxPositionData(
     paygWithheld: Number(profile.paygWithheld ?? 0),
     rentalNetResult: metrics.netIncome,
     otherDeductions: Number(profile.otherDeductions ?? 0),
+    depreciationDeductions: 0,
     hasHecsDebt: profile.hasHecsDebt,
     hasPrivateHealth: profile.hasPrivateHealth,
     familyStatus: profile.familyStatus,
