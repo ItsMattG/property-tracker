@@ -4,8 +4,7 @@ import { router, protectedProcedure, writeProcedure } from "../../trpc";
 import { properties, transactions, documentExtractions } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { extractDocument } from "../../services/property-analysis";
-import { matchPropertyByAddress } from "../../services/property-analysis";
+import { extractDocument, matchPropertyByAddress, findPotentialDuplicate } from "../../services/property-analysis";
 import { logger } from "@/lib/logger";
 
 const ALLOWED_FILE_TYPES = [
@@ -154,11 +153,15 @@ export const documentsRouter = router({
             const result = await extractDocument(storagePath, fileType);
 
             if (!result.success || !result.data) {
-              await ctx.uow.document.updateExtraction(extraction.id, {
-                status: "failed",
-                error: result.error || "Extraction failed",
-                completedAt: new Date(),
-              });
+              // Uses db directly: background closure runs outside request/UoW lifecycle
+              await db
+                .update(documentExtractions)
+                .set({
+                  status: "failed",
+                  error: result.error || "Extraction failed",
+                  completedAt: new Date(),
+                })
+                .where(eq(documentExtractions.id, extraction.id));
               return;
             }
 
@@ -179,6 +182,20 @@ export const documentsRouter = router({
                 matchedPropertyId = match.propertyId;
                 propertyMatchConfidence = match.confidence;
               }
+            }
+
+            // Check for potential duplicate transactions
+            let duplicateOf: string | null = null;
+            if (result.data.amount) {
+              // Cross-domain: reads user transactions for duplicate detection
+              const existingTxs = await db.query.transactions.findMany({
+                where: eq(transactions.userId, ownerId),
+                columns: { id: true, date: true, amount: true, description: true, status: true },
+              });
+              duplicateOf = findPotentialDuplicate(
+                { amount: result.data.amount, date: result.data.date, vendor: result.data.vendor },
+                existingTxs
+              );
             }
 
             let draftTransactionId: string | null = null;
@@ -206,7 +223,7 @@ export const documentsRouter = router({
               .set({
                 status: "completed",
                 documentType: result.data.documentType,
-                extractedData: JSON.stringify(result.data),
+                extractedData: JSON.stringify({ ...result.data, duplicateOf }),
                 confidence: String(result.data.confidence),
                 matchedPropertyId,
                 propertyMatchConfidence: propertyMatchConfidence
