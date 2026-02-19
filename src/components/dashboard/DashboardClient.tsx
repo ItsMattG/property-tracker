@@ -33,6 +33,7 @@ import { LvrGaugeCard } from "./LvrGaugeCard";
 import { EquityProjectionCard } from "./EquityProjectionCard";
 import { BorrowingPowerCard } from "./BorrowingPowerCard";
 import { RecentActivityCard } from "./RecentActivityCard";
+import { RentReviewSummary } from "./RentReviewSummary";
 import { DEMO_STATS, DEMO_TRENDS } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Plus } from "lucide-react";
@@ -489,6 +490,10 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
           <PropertyMapWidget properties={properties} />
         )}
         <RentalYieldCard />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RentReviewSummary />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
