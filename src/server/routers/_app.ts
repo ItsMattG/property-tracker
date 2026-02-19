@@ -8,6 +8,7 @@ import {
   settlementRouter,
   rentalYieldRouter,
   similarPropertiesRouter,
+  rentReviewRouter,
 } from "./property";
 // banking domain
 import {
@@ -158,6 +159,7 @@ export const appRouter = router({
   categorizationRules: categorizationRulesRouter,
   accountantPack: accountantPackRouter,
   propertyGroup: propertyGroupsRouter,
+  rentReview: rentReviewRouter,
   reminder: reminderRouter,
 });
 

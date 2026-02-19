@@ -26,5 +26,6 @@ export type { IBudgetRepository, BudgetWithSpend } from "./budget.repository.int
 export type { IPersonalTransactionRepository, PersonalTransactionWithCategory } from "./personal-transaction.repository.interface";
 export type { ICategorizationRuleRepository } from "./categorization-rule.repository.interface";
 export type { IPropertyGroupRepository, PropertyGroupWithCount } from "./property-group.repository.interface";
+export type { IRentReviewRepository } from "./rent-review.repository.interface";
 export type { IInsightsRepository } from "./insights.repository.interface";
 export type { IReminderRepository } from "./reminder.repository.interface";

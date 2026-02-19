@@ -33,6 +33,7 @@ import { LvrGaugeCard } from "./LvrGaugeCard";
 import { EquityProjectionCard } from "./EquityProjectionCard";
 import { BorrowingPowerCard } from "./BorrowingPowerCard";
 import { RecentActivityCard } from "./RecentActivityCard";
+import { RentReviewSummary } from "./RentReviewSummary";
 import { AIInsightsCard } from "./AIInsightsCard";
 import { UpcomingRemindersCard } from "./UpcomingRemindersCard";
 import { DEMO_STATS, DEMO_TRENDS } from "@/lib/demo-data";
@@ -491,6 +492,10 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
           <PropertyMapWidget properties={properties} />
         )}
         <RentalYieldCard />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RentReviewSummary />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -24,6 +24,7 @@ import { ClimateRiskCard } from "@/components/climate-risk";
 import { BenchmarkCard } from "@/components/benchmarking";
 import { PerformanceCard } from "@/components/performance-benchmarking";
 import { SimilarPropertiesSection } from "@/components/similar-properties";
+import { RentReviewCard } from "@/components/property/RentReviewCard";
 import { PropertyCashFlowChart } from "@/components/properties/PropertyCashFlowChart";
 import { featureFlags } from "@/config/feature-flags";
 import { Building2, MapPin, Calendar, Briefcase, DollarSign, BarChart3, FileText } from "lucide-react";
@@ -265,6 +266,9 @@ export default function PropertyDetailPage() {
 
       {/* Milestones Card */}
       {featureFlags.milestones && <MilestonesCard propertyId={propertyId} />}
+
+      {/* Rent Review Card */}
+      {featureFlags.rentReview && <RentReviewCard propertyId={propertyId} />}
 
       {/* Similar Properties Section */}
       {featureFlags.similarProperties && (

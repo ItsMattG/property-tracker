@@ -43,6 +43,7 @@ export const featureFlags = {
   // ── Property detail sections ────────────────────────────────────
   valuation: true,
   climateRisk: false,
+  rentReview: true,
   milestones: true,
   performanceBenchmark: false,
   similarProperties: true,
