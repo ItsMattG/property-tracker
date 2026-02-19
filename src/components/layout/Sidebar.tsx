@@ -22,6 +22,7 @@ import {
   CalendarDays,
   Award,
   FileOutput,
+  Bell,
   FileText,
   GitBranch,
 } from "lucide-react";
@@ -66,6 +67,7 @@ const navGroups: Array<{
       { href: "/documents", label: "Documents", icon: FileText, showBadge: true },
       { href: "/banking", label: "Bank Feeds", icon: Landmark },
       { href: "/loans", label: "Loans", icon: Wallet, featureFlag: "loans" },
+      { href: "/reminders", label: "Reminders", icon: Bell, featureFlag: "reminders" },
     ],
   },
   {
