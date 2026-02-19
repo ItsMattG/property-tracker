@@ -37,6 +37,26 @@ function calculateYearlyDeduction(
 
 export const depreciationRouter = router({
   /**
+   * Create a new depreciation schedule for a property.
+   * Used when setting up depreciation tracking without a QS report upload.
+   */
+  createSchedule: writeProcedure
+    .input(
+      z.object({
+        propertyId: z.string().uuid(),
+        effectiveDate: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.uow.depreciation.createSchedule({
+        propertyId: input.propertyId,
+        userId: ctx.portfolio.ownerId,
+        effectiveDate: input.effectiveDate,
+        totalValue: "0.00",
+      });
+    }),
+
+  /**
    * List all depreciation schedules and capital works for a property.
    * Returns { schedules, capitalWorks } fetched in parallel.
    */

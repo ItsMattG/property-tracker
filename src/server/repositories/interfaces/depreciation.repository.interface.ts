@@ -6,6 +6,7 @@ import type {
   CapitalWork,
   NewCapitalWork,
   DepreciationSchedule,
+  NewDepreciationSchedule,
 } from "../../db/schema";
 import type { DB } from "../base";
 
@@ -18,6 +19,9 @@ export type ScheduleWithAssets = DepreciationSchedule & {
 };
 
 export interface IDepreciationRepository {
+  /** Create a new depreciation schedule */
+  createSchedule(data: NewDepreciationSchedule, tx?: DB): Promise<DepreciationSchedule>;
+
   /** Find all schedules for a property with nested assets and claims */
   findSchedulesByProperty(propertyId: string, userId: string): Promise<ScheduleWithAssets[]>;
 

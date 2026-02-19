@@ -10,6 +10,8 @@ import type {
   NewDepreciationAsset,
   DepreciationClaim,
   NewDepreciationClaim,
+  DepreciationSchedule,
+  NewDepreciationSchedule,
   CapitalWork,
   NewCapitalWork,
 } from "../db/schema";
@@ -23,6 +25,18 @@ export class DepreciationRepository
   extends BaseRepository
   implements IDepreciationRepository
 {
+  async createSchedule(
+    data: NewDepreciationSchedule,
+    tx?: DB
+  ): Promise<DepreciationSchedule> {
+    const client = this.resolve(tx);
+    const [schedule] = await client
+      .insert(depreciationSchedules)
+      .values(data)
+      .returning();
+    return schedule;
+  }
+
   async findSchedulesByProperty(
     propertyId: string,
     userId: string
