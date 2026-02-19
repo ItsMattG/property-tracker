@@ -39,7 +39,7 @@ function createAuthCtxWithUow(uow: UnitOfWork) {
         findFirst: vi.fn().mockResolvedValue(mockUser),
       },
     },
-  } as any;
+  } as any; // eslint-disable-line @typescript-eslint/no-explicit-any -- partial mock of Drizzle DB for test context
   return ctx;
 }
 

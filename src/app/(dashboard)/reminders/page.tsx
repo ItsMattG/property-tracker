@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/style.css";
 import { Bell, Check, List, CalendarDays, Plus, Trash2, MoreHorizontal } from "lucide-react";
@@ -454,22 +454,30 @@ function AddReminderDialog({
     setTitleManuallyEdited(false);
   };
 
-  // Auto-generate title when type or property changes
-  useEffect(() => {
-    if (titleManuallyEdited) return;
-
-    const typeLabel = reminderType ? (REMINDER_TYPE_LABELS[reminderType] ?? reminderType) : "";
-    const prop = properties.find((p) => p.id === propertyId);
+  // Compute auto-title from type and property selections
+  const computeAutoTitle = (type: string, propId: string) => {
+    const typeLabel = type ? (REMINDER_TYPE_LABELS[type] ?? type) : "";
+    const prop = properties.find((p) => p.id === propId);
     const propLabel = prop ? `${prop.address}, ${prop.suburb}` : "";
 
-    if (typeLabel && propLabel) {
-      setTitle(`${typeLabel} \u2014 ${propLabel}`);
-    } else if (typeLabel) {
-      setTitle(typeLabel);
-    } else {
-      setTitle("");
+    if (typeLabel && propLabel) return `${typeLabel} \u2014 ${propLabel}`;
+    if (typeLabel) return typeLabel;
+    return "";
+  };
+
+  const handlePropertyChange = (value: string) => {
+    setPropertyId(value);
+    if (!titleManuallyEdited) {
+      setTitle(computeAutoTitle(reminderType, value));
     }
-  }, [reminderType, propertyId, properties, titleManuallyEdited]);
+  };
+
+  const handleTypeChange = (value: string) => {
+    setReminderType(value);
+    if (!titleManuallyEdited) {
+      setTitle(computeAutoTitle(value, propertyId));
+    }
+  };
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -511,7 +519,7 @@ function AddReminderDialog({
           {/* Property select */}
           <div className="space-y-2">
             <Label htmlFor="reminder-property">Property</Label>
-            <Select value={propertyId} onValueChange={setPropertyId}>
+            <Select value={propertyId} onValueChange={handlePropertyChange}>
               <SelectTrigger className="w-full" id="reminder-property">
                 <SelectValue placeholder="Select a property" />
               </SelectTrigger>
@@ -528,7 +536,7 @@ function AddReminderDialog({
           {/* Reminder type select */}
           <div className="space-y-2">
             <Label htmlFor="reminder-type">Reminder Type</Label>
-            <Select value={reminderType} onValueChange={setReminderType}>
+            <Select value={reminderType} onValueChange={handleTypeChange}>
               <SelectTrigger className="w-full" id="reminder-type">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
