@@ -97,9 +97,10 @@ export function ScorecardInsights({ properties }: ScorecardInsightsProps) {
   const sortBySeverity = (a: Insight, b: Insight) =>
     SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity);
 
+  const [now] = useState(() => Date.now());
   const canRefresh =
     !data?.generatedAt ||
-    new Date(data.generatedAt).getTime() < Date.now() - 60 * 60 * 1000;
+    new Date(data.generatedAt).getTime() < now - 60 * 60 * 1000;
 
   return (
     <Card>

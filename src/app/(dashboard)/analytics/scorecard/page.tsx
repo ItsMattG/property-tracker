@@ -1,7 +1,7 @@
 "use client";
 
 import { TrendingUp, AlertTriangle, Trophy } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PropertyScorecard } from "@/components/analytics/PropertyScorecard";
 import { ScorecardComparison } from "@/components/analytics/ScorecardComparison";

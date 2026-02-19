@@ -485,7 +485,6 @@ export const portfolioRouter = router({
       propertyList.map((p) => {
         const value =
           latestValues.get(p.id) || Number(p.purchasePrice);
-        const debt = loansByProperty.get(p.id) || 0;
         const propertyTransactions = filteredTransactions.filter(
           (t) => t.propertyId === p.id
         );
