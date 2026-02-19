@@ -5,7 +5,7 @@ import {
 } from "./_common";
 import {
   familyStatusEnum, depreciationCategoryEnum, depreciationMethodEnum,
-  taxSuggestionTypeEnum, taxSuggestionStatusEnum, categoryEnum,
+  poolTypeEnum, taxSuggestionTypeEnum, taxSuggestionStatusEnum, categoryEnum,
 } from "./enums";
 import { users } from "./auth";
 import { properties } from "./properties";
@@ -93,12 +93,55 @@ export const depreciationAssets = pgTable(
     originalCost: decimal("original_cost", { precision: 12, scale: 2 }).notNull(),
     effectiveLife: decimal("effective_life", { precision: 5, scale: 2 }).notNull(),
     method: depreciationMethodEnum("method").notNull(),
+    purchaseDate: date("purchase_date"),
+    poolType: poolTypeEnum("pool_type").default("individual").notNull(),
+    openingWrittenDownValue: decimal("opening_written_down_value", { precision: 12, scale: 2 }),
     yearlyDeduction: decimal("yearly_deduction", { precision: 12, scale: 2 }).notNull(),
     remainingValue: decimal("remaining_value", { precision: 12, scale: 2 }).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     index("depreciation_assets_schedule_id_idx").on(table.scheduleId),
+  ]
+);
+
+export const depreciationClaims = pgTable(
+  "depreciation_claims",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    assetId: uuid("asset_id").references(() => depreciationAssets.id, { onDelete: "cascade" }),
+    scheduleId: uuid("schedule_id")
+      .references(() => depreciationSchedules.id, { onDelete: "cascade" })
+      .notNull(),
+    financialYear: integer("financial_year").notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    claimedAt: timestamp("claimed_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("depreciation_claims_schedule_id_idx").on(table.scheduleId),
+    index("depreciation_claims_fy_idx").on(table.scheduleId, table.financialYear),
+  ]
+);
+
+export const capitalWorks = pgTable(
+  "capital_works",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    propertyId: uuid("property_id")
+      .references(() => properties.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: text("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    description: text("description").notNull(),
+    constructionDate: date("construction_date").notNull(),
+    constructionCost: decimal("construction_cost", { precision: 12, scale: 2 }).notNull(),
+    claimStartDate: date("claim_start_date").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("capital_works_property_id_idx").on(table.propertyId),
+    index("capital_works_user_id_idx").on(table.userId),
   ]
 );
 
@@ -201,18 +244,42 @@ export const depreciationSchedulesRelations = relations(
       references: [documents.id],
     }),
     assets: many(depreciationAssets),
+    claims: many(depreciationClaims),
   })
 );
 
 export const depreciationAssetsRelations = relations(
   depreciationAssets,
-  ({ one }) => ({
+  ({ one, many }) => ({
     schedule: one(depreciationSchedules, {
       fields: [depreciationAssets.scheduleId],
       references: [depreciationSchedules.id],
     }),
+    claims: many(depreciationClaims),
   })
 );
+
+export const depreciationClaimsRelations = relations(depreciationClaims, ({ one }) => ({
+  asset: one(depreciationAssets, {
+    fields: [depreciationClaims.assetId],
+    references: [depreciationAssets.id],
+  }),
+  schedule: one(depreciationSchedules, {
+    fields: [depreciationClaims.scheduleId],
+    references: [depreciationSchedules.id],
+  }),
+}));
+
+export const capitalWorksRelations = relations(capitalWorks, ({ one }) => ({
+  property: one(properties, {
+    fields: [capitalWorks.propertyId],
+    references: [properties.id],
+  }),
+  user: one(users, {
+    fields: [capitalWorks.userId],
+    references: [users.id],
+  }),
+}));
 
 export const taxSuggestionsRelations = relations(taxSuggestions, ({ one }) => ({
   user: one(users, {
@@ -254,3 +321,7 @@ export type MerchantCategory = typeof merchantCategories.$inferSelect;
 export type NewMerchantCategory = typeof merchantCategories.$inferInsert;
 export type CategorizationExample = typeof categorizationExamples.$inferSelect;
 export type NewCategorizationExample = typeof categorizationExamples.$inferInsert;
+export type DepreciationClaim = typeof depreciationClaims.$inferSelect;
+export type NewDepreciationClaim = typeof depreciationClaims.$inferInsert;
+export type CapitalWork = typeof capitalWorks.$inferSelect;
+export type NewCapitalWork = typeof capitalWorks.$inferInsert;

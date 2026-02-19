@@ -218,6 +218,12 @@ export const depreciationMethodEnum = pgEnum("depreciation_method", [
   "prime_cost",
 ]);
 
+export const poolTypeEnum = pgEnum("pool_type", [
+  "individual",
+  "low_value",
+  "immediate_writeoff",
+]);
+
 export const taxSuggestionTypeEnum = pgEnum("tax_suggestion_type", [
   "prepay_interest",
   "schedule_repairs",
