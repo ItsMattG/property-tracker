@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "BrickTrack",
+    "slug": "bricktrack",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "bricktrack",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "au.com.bricktrack.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "BrickTrack uses the camera to capture receipts and property documents.",
+        "NSFaceIDUsageDescription": "Use Face ID to quickly unlock BrickTrack."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "au.com.bricktrack.app",
+      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-camera",
+      ["expo-notifications", {
+        "icon": "./assets/images/notification-icon.png",
+        "color": "#2563eb"
+      }]
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
