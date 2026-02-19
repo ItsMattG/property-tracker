@@ -46,6 +46,7 @@ export const featureFlags = {
   rentReview: true,
   milestones: true,
   performanceBenchmark: false,
+  portfolioBenchmarking: true,
   similarProperties: true,
 
   // ── Property features ──────────────────────────────────────────────
@@ -76,6 +77,7 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/export": "export",
   "/emails": "emails",
   "/tasks": "tasks",
+  "/analytics/benchmarking": "portfolioBenchmarking",
   "/cash-flow": "cashFlow",
   "/reminders": "reminders",
   "/settings/property-groups": "propertyGroups",
