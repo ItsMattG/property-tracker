@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock expo-secure-store
 vi.mock("expo-secure-store", () => ({
   getItemAsync: vi.fn(),
   setItemAsync: vi.fn(),
@@ -23,12 +22,12 @@ describe("auth token storage", () => {
     mockGetItem.mockResolvedValue("test-jwt-token");
     const token = await getToken();
     expect(token).toBe("test-jwt-token");
-    expect(mockGetItem).toHaveBeenCalledWith("bricktrack_auth_token");
+    expect(mockGetItem).toHaveBeenCalledWith("bricktrack_token");
   });
 
   it("setToken stores token in SecureStore", async () => {
     await setToken("new-token");
-    expect(mockSetItem).toHaveBeenCalledWith("bricktrack_auth_token", "new-token");
+    expect(mockSetItem).toHaveBeenCalledWith("bricktrack_token", "new-token");
   });
 
   it("getUser retrieves and parses user from SecureStore", async () => {
@@ -52,7 +51,7 @@ describe("auth token storage", () => {
 
   it("clearAuth removes both token and user", async () => {
     await clearAuth();
-    expect(mockDeleteItem).toHaveBeenCalledWith("bricktrack_auth_token");
+    expect(mockDeleteItem).toHaveBeenCalledWith("bricktrack_token");
     expect(mockDeleteItem).toHaveBeenCalledWith("bricktrack_user");
   });
 });

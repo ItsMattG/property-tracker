@@ -3,33 +3,33 @@ import { formatCurrency, formatPercent, formatDate, cn } from "../utils";
 
 describe("formatCurrency", () => {
   it("formats positive amounts in AUD", () => {
-    expect(formatCurrency(1234.56)).toBe("$1,234.56");
+    expect(formatCurrency(1234)).toBe("$1,234");
   });
 
   it("formats zero", () => {
-    expect(formatCurrency(0)).toBe("$0.00");
+    expect(formatCurrency(0)).toBe("$0");
   });
 
   it("formats negative amounts", () => {
-    expect(formatCurrency(-500)).toBe("-$500.00");
+    expect(formatCurrency(-500)).toBe("-$500");
   });
 
   it("formats large amounts", () => {
-    expect(formatCurrency(1_500_000)).toBe("$1,500,000.00");
+    expect(formatCurrency(1_500_000)).toBe("$1,500,000");
   });
 });
 
 describe("formatPercent", () => {
   it("formats decimal as percentage", () => {
-    expect(formatPercent(0.0525)).toBe("5.25%");
+    expect(formatPercent(5.25)).toBe("5.3%");
   });
 
   it("formats zero", () => {
-    expect(formatPercent(0)).toBe("0.00%");
+    expect(formatPercent(0)).toBe("0.0%");
   });
 
-  it("formats whole number percentage", () => {
-    expect(formatPercent(0.1)).toBe("10.00%");
+  it("formats whole number", () => {
+    expect(formatPercent(10)).toBe("10.0%");
   });
 });
 
