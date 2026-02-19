@@ -256,6 +256,7 @@ export async function buildTaxForecast(
       grossSalary: Number(taxProfile.grossSalary ?? 0),
       paygWithheld: Number(taxProfile.paygWithheld ?? 0),
       otherDeductions: Number(taxProfile.otherDeductions ?? 0),
+      depreciationDeductions: 0, // TODO: wire depreciation totals into tax forecast
       hasHecsDebt: taxProfile.hasHecsDebt,
       hasPrivateHealth: taxProfile.hasPrivateHealth,
       familyStatus: taxProfile.familyStatus as "single" | "couple" | "family",

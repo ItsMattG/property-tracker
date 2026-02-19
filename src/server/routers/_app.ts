@@ -95,6 +95,8 @@ import {
 } from "./feedback";
 // budget domain
 import { budgetRouter } from "./budget";
+// reminders domain
+import { reminderRouter } from "./reminders";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -158,6 +160,7 @@ export const appRouter = router({
   accountantPack: accountantPackRouter,
   propertyGroup: propertyGroupsRouter,
   rentReview: rentReviewRouter,
+  reminder: reminderRouter,
 });
 
 export type AppRouter = typeof appRouter;
