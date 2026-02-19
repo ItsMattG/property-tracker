@@ -37,12 +37,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { generateAccountantPackPDF } from "@/lib/accountant-pack-pdf";
+import { generateAccountantPackExcel } from "@/lib/accountant-pack-excel";
 import { trpc } from "@/lib/trpc/client";
 import { downloadBlob } from "@/lib/export-utils";
 import { getErrorMessage } from "@/lib/errors";
 import {
   Briefcase,
   Download,
+  FileSpreadsheet,
   Loader2,
   Lock,
   Mail,
@@ -107,6 +110,8 @@ export default function AccountantPackPage() {
       ) as Record<SectionKey, boolean>
   );
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
 
   const { data: availableYears } = trpc.reports.getAvailableYears.useQuery();
   const { data: members } = trpc.team.listMembers.useQuery(undefined, {
@@ -120,9 +125,10 @@ export default function AccountantPackPage() {
 
   const utils = trpc.useUtils();
 
-  const generateMutation = trpc.accountantPack.generatePack.useMutation({
-    onError: (error) => toast.error(getErrorMessage(error)),
-  });
+  const packDataQuery = trpc.accountantPack.generatePackData.useQuery(
+    { financialYear: selectedYear, sections },
+    { enabled: false }
+  );
 
   const sendMutation = trpc.accountantPack.sendToAccountant.useMutation({
     onSuccess: (data) => {
@@ -150,16 +156,38 @@ export default function AccountantPackPage() {
     setSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleDownloadPreview = async () => {
-    const result = await generateMutation.mutateAsync({
-      financialYear: selectedYear,
-      sections,
-    });
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      const result = await packDataQuery.refetch();
+      if (!result.data) throw new Error("Failed to fetch data");
+      const pdfBuffer = generateAccountantPackPDF(result.data as Parameters<typeof generateAccountantPackPDF>[0]);
+      const blob = new Blob([pdfBuffer], { type: "application/pdf" });
+      downloadBlob(blob, `accountant-pack-FY${selectedYear}.pdf`);
+      toast.success("PDF downloaded");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
-    const bytes = Uint8Array.from(atob(result.pdf), (c) => c.charCodeAt(0));
-    const blob = new Blob([bytes], { type: "application/pdf" });
-    downloadBlob(blob, result.filename);
-    toast.success("PDF downloaded");
+  const handleDownloadExcel = async () => {
+    setIsGeneratingExcel(true);
+    try {
+      const result = await packDataQuery.refetch();
+      if (!result.data) throw new Error("Failed to fetch data");
+      const excelBuffer = await generateAccountantPackExcel(result.data as Parameters<typeof generateAccountantPackExcel>[0]);
+      const blob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      downloadBlob(blob, `accountant-pack-FY${selectedYear}.xlsx`);
+      toast.success("Excel downloaded");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsGeneratingExcel(false);
+    }
   };
 
   const handleSend = () => {
@@ -284,15 +312,28 @@ export default function AccountantPackPage() {
           <div className="flex gap-3 pt-2">
             <Button
               variant="outline"
-              onClick={handleDownloadPreview}
-              disabled={generateMutation.isPending || !anySectionEnabled}
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPdf || !anySectionEnabled}
             >
-              {generateMutation.isPending ? (
+              {isGeneratingPdf ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Download className="w-4 h-4 mr-2" />
               )}
-              Download Preview
+              Download PDF
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleDownloadExcel}
+              disabled={isGeneratingExcel || !anySectionEnabled}
+            >
+              {isGeneratingExcel ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+              )}
+              Download Excel
             </Button>
 
             {isPro ? (

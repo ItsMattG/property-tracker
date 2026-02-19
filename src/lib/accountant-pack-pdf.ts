@@ -213,8 +213,13 @@ function addIncomeExpenses(
       doc.setFont("helvetica", "normal");
       for (const item of incomeItems) {
         y = checkNewPage(doc, y, 6);
-        const ref = item.atoReference ? `[${item.atoReference}] ` : "";
-        doc.text(`${ref}${item.label}`, MARGIN_LEFT + 10, y);
+        const ref = item.atoReference ?? "";
+        if (ref) {
+          doc.setFont("helvetica", "bold");
+          doc.text(ref, MARGIN_LEFT + 10, y);
+          doc.setFont("helvetica", "normal");
+        }
+        doc.text(item.label, MARGIN_LEFT + 25, y);
         doc.text(formatCurrencyWithCents(item.amount), MARGIN_RIGHT, y, {
           align: "right",
         });
@@ -223,10 +228,14 @@ function addIncomeExpenses(
       y += 3;
     }
 
-    // Deduction items
-    const deductionItems = prop.atoBreakdown.filter(
-      (item) => item.isDeductible && item.amount !== 0
-    );
+    // Deduction items sorted by ATO D-number
+    const deductionItems = prop.atoBreakdown
+      .filter((item) => item.isDeductible && item.amount !== 0)
+      .sort((a, b) => {
+        const aNum = parseInt(a.atoReference?.replace("D", "") ?? "99");
+        const bNum = parseInt(b.atoReference?.replace("D", "") ?? "99");
+        return aNum - bNum;
+      });
     if (deductionItems.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.text("Deductions", MARGIN_LEFT + 5, y);
@@ -234,8 +243,11 @@ function addIncomeExpenses(
       doc.setFont("helvetica", "normal");
       for (const item of deductionItems) {
         y = checkNewPage(doc, y, 6);
-        const ref = item.atoReference ? `[${item.atoReference}] ` : "";
-        doc.text(`${ref}${item.label}`, MARGIN_LEFT + 10, y);
+        const ref = item.atoReference ?? "";
+        doc.setFont("helvetica", "bold");
+        doc.text(ref, MARGIN_LEFT + 10, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(item.label, MARGIN_LEFT + 25, y);
         doc.text(
           formatCurrencyWithCents(Math.abs(item.amount)),
           MARGIN_RIGHT,
@@ -305,6 +317,59 @@ function addIncomeExpenses(
     y
   );
   y += 12;
+
+  // Per-property summary table (only when 2+ properties)
+  if (data.properties.length > 1) {
+    y = checkNewPage(doc, y, 15 + data.properties.length * 6);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Net Rental Income Summary", MARGIN_LEFT, y);
+    y += 7;
+
+    // Header
+    doc.setFontSize(8);
+    doc.text("Property", MARGIN_LEFT + 5, y);
+    doc.text("Income", 95, y, { align: "right" });
+    doc.text("Deductions", 125, y, { align: "right" });
+    doc.text("Net Result", MARGIN_RIGHT, y, { align: "right" });
+    y += 1;
+    doc.line(MARGIN_LEFT + 5, y, MARGIN_RIGHT, y);
+    y += 4;
+
+    doc.setFont("helvetica", "normal");
+    for (const prop of data.properties) {
+      y = checkNewPage(doc, y, 6);
+      const label = `${prop.property.suburb} ${prop.property.state}`;
+      doc.text(label, MARGIN_LEFT + 5, y);
+      doc.text(formatCurrencyWithCents(prop.metrics.totalIncome), 95, y, {
+        align: "right",
+      });
+      doc.text(formatCurrencyWithCents(prop.metrics.totalDeductible), 125, y, {
+        align: "right",
+      });
+      doc.text(formatCurrencyWithCents(prop.metrics.netIncome), MARGIN_RIGHT, y, {
+        align: "right",
+      });
+      y += 5;
+    }
+
+    // Totals row
+    y += 1;
+    doc.line(MARGIN_LEFT + 5, y, MARGIN_RIGHT, y);
+    y += 4;
+    doc.setFont("helvetica", "bold");
+    doc.text("Total", MARGIN_LEFT + 5, y);
+    doc.text(formatCurrencyWithCents(data.totals.totalIncome), 95, y, {
+      align: "right",
+    });
+    doc.text(formatCurrencyWithCents(data.totals.totalDeductible), 125, y, {
+      align: "right",
+    });
+    doc.text(formatCurrencyWithCents(data.totals.netIncome), MARGIN_RIGHT, y, {
+      align: "right",
+    });
+    y += 10;
+  }
 
   return y;
 }
@@ -692,6 +757,9 @@ export function generateAccountantPackPDF(
     MARGIN_LEFT,
     y
   );
+
+  y += 5;
+  doc.text("Prepared using BrickTrack — bricktrack.au", MARGIN_LEFT, y);
 
   // --- Content Pages ---
   if (config.sections.incomeExpenses && config.data.taxReport) {

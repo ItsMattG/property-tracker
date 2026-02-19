@@ -159,26 +159,3 @@ export async function extractDepreciationSchedule(
     };
   }
 }
-
-/**
- * Calculate remaining value after N years of depreciation
- */
-export function calculateRemainingValue(
-  originalCost: number,
-  effectiveLife: number,
-  method: "diminishing_value" | "prime_cost",
-  yearsElapsed: number
-): number {
-  if (method === "prime_cost") {
-    const annualDeduction = originalCost / effectiveLife;
-    return Math.max(0, originalCost - annualDeduction * yearsElapsed);
-  } else {
-    // Diminishing value: rate = 2 / effective life
-    const rate = 2 / effectiveLife;
-    let value = originalCost;
-    for (let i = 0; i < yearsElapsed; i++) {
-      value = value * (1 - rate);
-    }
-    return Math.max(0, value);
-  }
-}
