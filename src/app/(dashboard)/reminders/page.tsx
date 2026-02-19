@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/style.css";
 import { Bell, Check, List, CalendarDays, Plus, Trash2, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -156,6 +158,215 @@ const GROUP_CONFIG: {
   { key: "later", label: "Later", emptyLabel: "No upcoming reminders" },
   { key: "completed", label: "Completed", emptyLabel: "No completed reminders" },
 ];
+
+// ---------------------------------------------------------------------------
+// Calendar view
+// ---------------------------------------------------------------------------
+
+function buildDateReminderMap(reminders: ReminderItem[]): Map<string, ReminderItem[]> {
+  const map = new Map<string, ReminderItem[]>();
+  for (const r of reminders) {
+    if (r.completedAt) continue;
+    const key = r.dueDate; // YYYY-MM-DD
+    const existing = map.get(key);
+    if (existing) {
+      existing.push(r);
+    } else {
+      map.set(key, [r]);
+    }
+  }
+  return map;
+}
+
+function CalendarView({
+  reminders,
+  propertyMap,
+  onComplete,
+  onDelete,
+  completePending,
+}: {
+  reminders: ReminderItem[];
+  propertyMap: Map<string, string>;
+  onComplete: (id: string) => void;
+  onDelete: (id: string) => void;
+  completePending: boolean;
+}) {
+  const [month, setMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  const dateMap = useMemo(() => buildDateReminderMap(reminders), [reminders]);
+
+  // Build modifier date arrays for DayPicker
+  const modifiers = useMemo(() => {
+    const overdueDates: Date[] = [];
+    const urgentDates: Date[] = [];
+    const futureDates: Date[] = [];
+
+    for (const [dateStr] of dateMap) {
+      const days = getDaysUntil(dateStr);
+      const d = new Date(dateStr + "T00:00:00");
+      if (days < 0) {
+        overdueDates.push(d);
+      } else if (days <= 7) {
+        urgentDates.push(d);
+      } else {
+        futureDates.push(d);
+      }
+    }
+
+    return { hasOverdue: overdueDates, hasUrgent: urgentDates, hasFuture: futureDates };
+  }, [dateMap]);
+
+  const handleSelect = useCallback((date: Date | undefined) => {
+    setSelectedDate(date);
+  }, []);
+
+  // Get reminders for selected date
+  const selectedDateStr = selectedDate
+    ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`
+    : null;
+  const selectedReminders = selectedDateStr ? (dateMap.get(selectedDateStr) ?? []) : [];
+
+  return (
+    <div className="space-y-4">
+      {/* Custom dot styles for DayPicker modifiers */}
+      <style>{`
+        .rdp-day.rdp-day_has-overdue .rdp-day_button::after,
+        .rdp-day_has-overdue > button::after,
+        [data-modifiers~="hasOverdue"] button::after {
+          content: '';
+          position: absolute;
+          bottom: 2px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: var(--color-destructive, #ef4444);
+        }
+        .rdp-day.rdp-day_has-urgent .rdp-day_button::after,
+        .rdp-day_has-urgent > button::after,
+        [data-modifiers~="hasUrgent"] button::after {
+          content: '';
+          position: absolute;
+          bottom: 2px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #f59e0b;
+        }
+        .rdp-day.rdp-day_has-future .rdp-day_button::after,
+        .rdp-day_has-future > button::after,
+        [data-modifiers~="hasFuture"] button::after {
+          content: '';
+          position: absolute;
+          bottom: 2px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: var(--color-primary, #3b82f6);
+        }
+        .rdp-day button {
+          position: relative;
+        }
+      `}</style>
+
+      <Card>
+        <CardContent className="flex flex-col items-center py-4">
+          <DayPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleSelect}
+            month={month}
+            onMonthChange={setMonth}
+            showOutsideDays
+            modifiers={modifiers}
+            modifiersClassNames={{
+              hasOverdue: "rdp-day_has-overdue",
+              hasUrgent: "rdp-day_has-urgent",
+              hasFuture: "rdp-day_has-future",
+            }}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Selected day detail panel */}
+      {selectedDate && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">
+              {selectedDate.toLocaleDateString("en-AU", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedReminders.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">
+                No reminders on this date.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {selectedReminders.map((reminder) => (
+                  <div
+                    key={reminder.id}
+                    className="flex items-center justify-between rounded-md border p-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm truncate">
+                          {reminder.title}
+                        </span>
+                        <CountdownBadge dueDate={reminder.dueDate} />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {propertyMap.get(reminder.propertyId) ?? "Unknown property"}
+                        {" \u00B7 "}
+                        {REMINDER_TYPE_LABELS[reminder.reminderType] ?? reminder.reminderType}
+                      </p>
+                      {reminder.notes && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {reminder.notes}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => onComplete(reminder.id)}
+                        disabled={completePending}
+                        aria-label="Mark as complete"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => onDelete(reminder.id)}
+                        className="text-destructive"
+                        aria-label="Delete reminder"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Page component
@@ -367,12 +578,13 @@ export default function RemindersPage() {
           })}
         </div>
       ) : (
-        /* Calendar view placeholder — Task 6 */
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Calendar view coming soon...
-          </CardContent>
-        </Card>
+        <CalendarView
+          reminders={(reminders as ReminderItem[]) ?? []}
+          propertyMap={propertyMap}
+          onComplete={handleComplete}
+          onDelete={(id) => setDeleteId(id)}
+          completePending={completeMutation.isPending}
+        />
       )}
 
       {/* Delete confirmation */}
