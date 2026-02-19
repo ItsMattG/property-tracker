@@ -199,9 +199,9 @@ export default function NewTransactionPage() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes (optional)</FormLabel>
+                    <FormLabel>Details (optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Additional details..." {...field} />
+                      <Input placeholder="Additional context about this transaction..." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
