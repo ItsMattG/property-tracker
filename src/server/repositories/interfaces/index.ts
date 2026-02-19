@@ -29,3 +29,4 @@ export type { IPropertyGroupRepository, PropertyGroupWithCount } from "./propert
 export type { IRentReviewRepository } from "./rent-review.repository.interface";
 export type { IInsightsRepository } from "./insights.repository.interface";
 export type { IReminderRepository } from "./reminder.repository.interface";
+export type { IDepreciationRepository, DepreciationAssetWithClaims, ScheduleWithAssets } from "./depreciation.repository.interface";

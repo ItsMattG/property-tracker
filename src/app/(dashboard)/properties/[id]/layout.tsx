@@ -55,6 +55,9 @@ export default function PropertyDetailLayout({
       } else if (pathname?.includes("/settlement")) {
         items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
         items.push({ label: "Settlement" });
+      } else if (pathname?.includes("/depreciation")) {
+        items.push({ label: propertyLabel, href: `/properties/${propertyId}` });
+        items.push({ label: "Depreciation" });
       } else {
         items.push({ label: propertyLabel });
       }

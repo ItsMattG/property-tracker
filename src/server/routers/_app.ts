@@ -36,6 +36,7 @@ import {
   taxOptimizationRouter,
   mytaxRouter,
   yoyComparisonRouter,
+  depreciationRouter,
 } from "./tax";
 // analytics domain
 import {
@@ -161,6 +162,7 @@ export const appRouter = router({
   propertyGroup: propertyGroupsRouter,
   rentReview: rentReviewRouter,
   reminder: reminderRouter,
+  depreciation: depreciationRouter,
 });
 
 export type AppRouter = typeof appRouter;

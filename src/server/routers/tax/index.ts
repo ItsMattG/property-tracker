@@ -3,3 +3,4 @@ export { taxForecastRouter } from "./taxForecast";
 export { taxOptimizationRouter } from "./taxOptimization";
 export { mytaxRouter } from "./mytax";
 export { yoyComparisonRouter } from "./yoyComparison";
+export { depreciationRouter } from "./depreciation";
