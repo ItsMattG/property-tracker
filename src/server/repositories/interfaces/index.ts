@@ -27,3 +27,4 @@ export type { IPersonalTransactionRepository, PersonalTransactionWithCategory } 
 export type { ICategorizationRuleRepository } from "./categorization-rule.repository.interface";
 export type { IPropertyGroupRepository, PropertyGroupWithCount } from "./property-group.repository.interface";
 export type { IInsightsRepository } from "./insights.repository.interface";
+export type { IReminderRepository } from "./reminder.repository.interface";

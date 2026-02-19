@@ -14,6 +14,7 @@ describe("calculateTaxPosition", () => {
     paygWithheld: 22000,
     rentalNetResult: -12400, // loss
     otherDeductions: 2500,
+    depreciationDeductions: 0,
     hasHecsDebt: false,
     hasPrivateHealth: true,
     familyStatus: "single",

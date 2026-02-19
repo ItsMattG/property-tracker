@@ -34,6 +34,7 @@ import { EquityProjectionCard } from "./EquityProjectionCard";
 import { BorrowingPowerCard } from "./BorrowingPowerCard";
 import { RecentActivityCard } from "./RecentActivityCard";
 import { AIInsightsCard } from "./AIInsightsCard";
+import { UpcomingRemindersCard } from "./UpcomingRemindersCard";
 import { DEMO_STATS, DEMO_TRENDS } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Plus } from "lucide-react";
@@ -502,6 +503,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         <AIInsightsCard />
         <RecentActivityCard />
         <SavingsWidget />
+        <UpcomingRemindersCard />
       </div>
 
       <TopPerformerMatchesWidget />
