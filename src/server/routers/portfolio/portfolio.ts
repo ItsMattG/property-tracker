@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../../trpc";
+import { TRPCError } from "@trpc/server";
+import { router, protectedProcedure, writeProcedure } from "../../trpc";
 import {
   calculateEquity,
   calculateLVR,
@@ -9,6 +10,10 @@ import {
   getDateRangeForPeriod,
 } from "../../services/transaction";
 import { categories } from "@/lib/categories";
+import {
+  generatePortfolioInsights,
+  type PortfolioDataForInsights,
+} from "../../services/ai/insight-generator";
 
 const periodSchema = z.enum(["monthly", "quarterly", "annual"]);
 const sortBySchema = z.enum(["cashFlow", "equity", "lvr", "alphabetical"]);
@@ -366,5 +371,227 @@ export const portfolioRouter = router({
       weightedAvgRate,
       hasLoans,
     };
+  }),
+
+  getInsights: protectedProcedure.query(async ({ ctx }) => {
+    const cached = await ctx.uow.insights.findFreshByUser(ctx.portfolio.ownerId);
+
+    if (cached) {
+      return {
+        stale: false,
+        insights: cached.insights,
+        generatedAt: cached.generatedAt,
+      };
+    }
+
+    return {
+      stale: true,
+      insights: null as null,
+      generatedAt: null as null,
+    };
+  }),
+
+  generateInsights: writeProcedure.mutation(async ({ ctx }) => {
+    const ownerId = ctx.portfolio.ownerId;
+
+    // Rate limit: 1 generation per hour
+    const existing = await ctx.uow.insights.findFreshByUser(ownerId);
+    if (existing) {
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      if (existing.generatedAt > hourAgo) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message:
+            "Insights were generated recently. Please wait before refreshing.",
+        });
+      }
+    }
+
+    // Gather portfolio data
+    const propertyList = await ctx.uow.portfolio.findProperties(ownerId);
+
+    const now = new Date();
+
+    if (propertyList.length === 0) {
+      return { insights: [], generatedAt: now };
+    }
+
+    const propertyIds = propertyList.map((p) => p.id);
+
+    const oneYearAgo = new Date(now);
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    const [latestValues, allLoans, transactions] = await Promise.all([
+      ctx.uow.portfolio.getLatestPropertyValues(ownerId, propertyIds),
+      ctx.uow.portfolio.findLoansByProperties(ownerId, propertyIds),
+      ctx.uow.portfolio.findTransactionsInRange(
+        ownerId,
+        oneYearAgo.toISOString().split("T")[0],
+        now.toISOString().split("T")[0]
+      ),
+    ]);
+
+    // Filter transactions to portfolio properties
+    const propertyIdSet = new Set(propertyIds);
+    const filteredTransactions = transactions.filter(
+      (t) => t.propertyId && propertyIdSet.has(t.propertyId)
+    );
+
+    // Capital categories to exclude from operating expenses
+    const capitalCategoryValues = new Set(
+      categories.filter((c) => c.type === "capital").map((c) => c.value)
+    );
+
+    // Sum loans per property
+    const loansByProperty = new Map<string, number>();
+    for (const loan of allLoans) {
+      const current = loansByProperty.get(loan.propertyId) || 0;
+      loansByProperty.set(
+        loan.propertyId,
+        current + Number(loan.currentBalance)
+      );
+    }
+
+    // Portfolio-level metrics
+    const totalValue = propertyList.reduce(
+      (sum, p) =>
+        sum + (latestValues.get(p.id) || Number(p.purchasePrice)),
+      0
+    );
+    const totalDebt = allLoans.reduce(
+      (sum, loan) => sum + Number(loan.currentBalance),
+      0
+    );
+    const totalEquity = totalValue - totalDebt;
+    const portfolioLVR =
+      totalValue > 0 ? (totalDebt / totalValue) * 100 : 0;
+
+    const annualRentalIncome = filteredTransactions
+      .filter((t) => t.transactionType === "income")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const annualExpenses = filteredTransactions
+      .filter(
+        (t) =>
+          t.transactionType === "expense" &&
+          !capitalCategoryValues.has(t.category)
+      )
+      .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+
+    const netSurplus = annualRentalIncome - annualExpenses;
+
+    // Build per-property metrics
+    const properties: PortfolioDataForInsights["properties"] =
+      propertyList.map((p) => {
+        const value =
+          latestValues.get(p.id) || Number(p.purchasePrice);
+        const propertyTransactions = filteredTransactions.filter(
+          (t) => t.propertyId === p.id
+        );
+        const income = propertyTransactions
+          .filter((t) => t.transactionType === "income")
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+        const expenses = propertyTransactions
+          .filter(
+            (t) =>
+              t.transactionType === "expense" &&
+              !capitalCategoryValues.has(t.category)
+          )
+          .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+
+        const grossYield = value > 0 ? (income / value) * 100 : null;
+        const netYield =
+          value > 0 ? ((income - expenses) / value) * 100 : null;
+
+        return {
+          id: p.id,
+          address: p.address,
+          suburb: p.suburb,
+          state: p.state,
+          purchasePrice: Number(p.purchasePrice),
+          currentValue: value,
+          grossYield,
+          netYield,
+          performanceScore: null,
+        };
+      });
+
+    // Suburb concentration
+    const suburbCounts = new Map<string, { state: string; count: number }>();
+    for (const p of propertyList) {
+      const key = `${p.suburb}|${p.state}`;
+      const entry = suburbCounts.get(key) || {
+        state: p.state,
+        count: 0,
+      };
+      entry.count++;
+      suburbCounts.set(key, entry);
+    }
+    const suburbConcentration: PortfolioDataForInsights["suburbConcentration"] =
+      Array.from(suburbCounts.entries()).map(([key, entry]) => ({
+        suburb: key.split("|")[0],
+        state: entry.state,
+        count: entry.count,
+        percentage: (entry.count / propertyList.length) * 100,
+      }));
+
+    // Expense breakdown by property and category
+    const expenseBreakdown: PortfolioDataForInsights["expenseBreakdown"] = [];
+    for (const t of filteredTransactions) {
+      if (
+        t.transactionType === "expense" &&
+        !capitalCategoryValues.has(t.category)
+      ) {
+        const property = propertyList.find((p) => p.id === t.propertyId);
+        expenseBreakdown.push({
+          propertyAddress: property?.address ?? "Unknown",
+          category: t.category,
+          annualAmount: Math.abs(Number(t.amount)),
+        });
+      }
+    }
+
+    // Loan data for insights
+    const loans: PortfolioDataForInsights["loans"] = allLoans.map(
+      (loan) => ({
+        propertyId: loan.propertyId,
+        balance: Number(loan.currentBalance),
+        rate: Number(loan.interestRate),
+        repaymentAmount: Number(loan.repaymentAmount),
+        repaymentFrequency: loan.repaymentFrequency,
+      })
+    );
+
+    const portfolioData: PortfolioDataForInsights = {
+      properties,
+      loans,
+      portfolioMetrics: {
+        totalValue,
+        totalDebt,
+        totalEquity,
+        portfolioLVR,
+        annualRentalIncome,
+        annualExpenses,
+        netSurplus,
+      },
+      suburbConcentration,
+      expenseBreakdown,
+    };
+
+    const result = await generatePortfolioInsights(portfolioData);
+
+    // Cache with 24h expiry
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    await ctx.uow.insights.upsert({
+      userId: ownerId,
+      insights: result.insights,
+      generatedAt: now,
+      expiresAt,
+      modelUsed: result.modelUsed,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+    });
+
+    return { insights: result.insights, generatedAt: now };
   }),
 });

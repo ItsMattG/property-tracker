@@ -22,6 +22,9 @@ import {
   CalendarDays,
   Award,
   FileOutput,
+  Bell,
+  FileText,
+  GitBranch,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useSidebar } from "./SidebarProvider";
@@ -61,8 +64,10 @@ const navGroups: Array<{
       { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
       { href: "/transactions/review", label: "Review", icon: Sparkles, showBadge: true },
       { href: "/receipts", label: "Receipts", icon: Receipt },
+      { href: "/documents", label: "Documents", icon: FileText, showBadge: true },
       { href: "/banking", label: "Bank Feeds", icon: Landmark },
       { href: "/loans", label: "Loans", icon: Wallet, featureFlag: "loans" },
+      { href: "/reminders", label: "Reminders", icon: Bell, featureFlag: "reminders" },
     ],
   },
   {
@@ -73,13 +78,21 @@ const navGroups: Array<{
       { href: "/reports/accountant-pack", label: "Accountant Pack", icon: FileOutput },
       { href: "/cash-flow", label: "Cash Flow", icon: CalendarDays, featureFlag: "cashFlow" },
       { href: "/analytics/scorecard", label: "Scorecard", icon: Award },
+      { href: "/analytics/benchmarking", label: "Benchmarking", icon: BarChart3, featureFlag: "portfolioBenchmarking" },
       { href: "/reports/forecast", label: "Forecast", icon: TrendingUp, featureFlag: "forecast" },
+      { href: "/reports/scenarios", label: "Scenarios", icon: GitBranch },
     ],
   },
   {
     label: "Personal Finance",
     items: [
       { href: "/budget", label: "Budget", icon: Wallet },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { href: "/tools/borrowing-power", label: "Borrowing Power", icon: Calculator, featureFlag: "borrowingPowerEstimator" },
     ],
   },
 ];
@@ -169,6 +182,11 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
     enabled: shouldFetchPendingCount,
   });
 
+  const { data: pendingReviews } = trpc.documentExtraction.listPendingReviews.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
   const handlePrefetch = (href: string) => {
     if (href === "/dashboard") {
       utils.stats.dashboard.prefetch();
@@ -202,7 +220,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const renderNavItem = (item: NavItemConfig) => {
     if (item.featureFlag && !featureFlags[item.featureFlag]) return null;
     const itemIsActive = isItemActive(item.href);
-    const showBadge = item.showBadge && pendingCount?.count && pendingCount.count > 0;
+    // Determine badge count based on item href
+    let badgeCount = 0;
+    if (item.showBadge && item.href === "/transactions/review") {
+      badgeCount = pendingCount?.count ?? 0;
+    } else if (item.showBadge && item.href === "/documents") {
+      badgeCount = pendingReviews?.length ?? 0;
+    }
 
     return (
       <NavItem
@@ -215,9 +239,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
         onMouseEnter={() => handlePrefetch(item.href)}
         onNavigate={onNavigate}
         badge={
-          showBadge ? (
+          badgeCount > 0 ? (
             <span className="ml-auto bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full font-medium">
-              {pendingCount.count > 99 ? "99+" : pendingCount.count}
+              {badgeCount > 99 ? "99+" : badgeCount}
             </span>
           ) : undefined
         }
