@@ -22,6 +22,7 @@ import {
   CalendarDays,
   Award,
   FileOutput,
+  Share2,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useSidebar } from "./SidebarProvider";
@@ -71,6 +72,7 @@ const navGroups: Array<{
       { href: "/reports", label: "Reports", icon: BarChart3 },
       { href: "/reports/tax-position", label: "Tax Position", icon: Calculator },
       { href: "/reports/accountant-pack", label: "Accountant Pack", icon: FileOutput },
+      { href: "/reports/share", label: "Portfolio Shares", icon: Share2, featureFlag: "portfolioShares" },
       { href: "/cash-flow", label: "Cash Flow", icon: CalendarDays, featureFlag: "cashFlow" },
       { href: "/analytics/scorecard", label: "Scorecard", icon: Award },
       { href: "/reports/forecast", label: "Forecast", icon: TrendingUp, featureFlag: "forecast" },

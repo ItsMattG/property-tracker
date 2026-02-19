@@ -12,7 +12,7 @@ export const featureFlags = {
   portfolio: false,
   forecast: false,
   cashFlow: true,
-  portfolioShares: false,
+  portfolioShares: true,
   compliance: false,
   brokerPortal: false,
   mytaxExport: false,
