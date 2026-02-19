@@ -154,6 +154,13 @@ export function CreateShareModal({ open, onOpenChange }: CreateShareModalProps) 
                   ))}
                 </SelectContent>
               </Select>
+              <div className="rounded-lg border bg-muted/50 p-3">
+                <p className="text-sm text-muted-foreground">
+                  {privacyMode === "full" && "Recipients will see all property addresses, values, loan details, and cash flow."}
+                  {privacyMode === "summary" && "Recipients will see portfolio totals only — no individual property data."}
+                  {privacyMode === "redacted" && "Recipients will see suburbs, percentages, and ratios — no addresses or dollar amounts."}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">
