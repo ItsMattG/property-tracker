@@ -52,6 +52,7 @@ export const featureFlags = {
   // ── Other UI ──────────────────────────────────────────────────────
   fySelector: false,
   aiAssistant: true,
+  aiInsights: true,
   whatsNew: false,
   helpMenu: false,
   quickAdd: false,
