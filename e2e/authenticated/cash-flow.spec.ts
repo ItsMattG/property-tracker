@@ -69,7 +69,6 @@ test.describe("Cash Flow Calendar", () => {
     authenticatedPage: page,
   }) => {
     await page.goto("/dashboard");
-    await page.waitForLoadState("networkidle");
 
     // Cash Flow is in the Reports & Tax nav group — wait for sidebar to fully render
     const sidebar = page.locator("aside");

@@ -36,7 +36,6 @@ test.describe("Budget", () => {
 
   test("sidebar shows budget link", async ({ page }) => {
     await safeGoto(page, "/dashboard");
-    await page.waitForLoadState("networkidle");
     await dismissTourIfVisible(page);
 
     // Scope to sidebar to avoid matching Budget widget on the dashboard
@@ -48,7 +47,6 @@ test.describe("Budget", () => {
 
   test("budget link navigates correctly", async ({ page }) => {
     await safeGoto(page, "/dashboard");
-    await page.waitForLoadState("networkidle");
     await dismissTourIfVisible(page);
 
     // Scope to sidebar to avoid matching Budget widget on the dashboard

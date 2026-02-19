@@ -9,8 +9,8 @@ test.describe("Dashboard", () => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
     await safeGoto(page, "/dashboard");
-    // Wait for page content to fully render (server component + client hydration)
-    await page.waitForLoadState("networkidle");
+    // Give page time to render before tests (keep short to leave time for test body)
+    await page.waitForTimeout(2000);
     await dismissTourIfVisible(page);
   });
 

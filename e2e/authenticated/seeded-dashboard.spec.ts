@@ -4,7 +4,7 @@ import { safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
 test.describe("Dashboard (Seeded Data)", () => {
   test.beforeEach(async ({ page }) => {
     await safeGoto(page, "/dashboard");
-    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(2000);
     await dismissTourIfVisible(page);
   });
 
