@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, inArray, isNotNull, sql } from "drizzle-orm";
+import { eq, and, asc, desc, gte, lte, inArray, isNotNull, sql } from "drizzle-orm";
 import { transactions, transactionNotes } from "../db/schema";
 import type { Transaction, NewTransaction, TransactionNote } from "../db/schema";
 import { BaseRepository, type DB } from "./base";
@@ -50,7 +50,7 @@ export class TransactionRepository
 
     const results = await this.db.query.transactions.findMany({
       where: whereClause,
-      orderBy: [desc(transactions.date)],
+      orderBy: [filters?.sortOrder === "asc" ? asc(transactions.date) : desc(transactions.date)],
       limit,
       offset,
       with: {

@@ -41,6 +41,7 @@ export default function TransactionsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("transactions");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<TransactionFilterInput>({});
+  const [dateSortOrder, setDateSortOrder] = useState<"asc" | "desc">("desc");
   const [deleteTransaction, setDeleteTransaction] = useState<{ id: string; description: string } | null>(null);
   const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const { visibility, toggle, resetToDefaults } = useColumnVisibility();
@@ -69,6 +70,7 @@ export default function TransactionsPage() {
     startDate: filters.startDate,
     endDate: filters.endDate,
     isVerified: filters.isVerified,
+    sortOrder: dateSortOrder,
     limit: PAGE_SIZE,
     offset,
   });
@@ -89,6 +91,7 @@ export default function TransactionsPage() {
         startDate: filters.startDate,
         endDate: filters.endDate,
         isVerified: filters.isVerified,
+        sortOrder: dateSortOrder,
         limit: PAGE_SIZE,
         offset,
       };
@@ -139,6 +142,7 @@ export default function TransactionsPage() {
         startDate: filters.startDate,
         endDate: filters.endDate,
         isVerified: filters.isVerified,
+        sortOrder: dateSortOrder,
         limit: PAGE_SIZE,
         offset,
       };
@@ -268,6 +272,11 @@ export default function TransactionsPage() {
     setPage(newPage);
   };
 
+  const handleToggleDateSort = () => {
+    setDateSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
+    setPage(1);
+  };
+
   // Reset to page 1 when filters change
   const handleFiltersChange = (newFilters: {
     propertyId?: string;
@@ -382,6 +391,8 @@ export default function TransactionsPage() {
                   columnVisibility={visibility}
                   onToggleColumn={toggle}
                   onResetColumns={resetToDefaults}
+                  dateSortOrder={dateSortOrder}
+                  onToggleDateSort={handleToggleDateSort}
                 />
               </div>
               {totalPages > 1 && (

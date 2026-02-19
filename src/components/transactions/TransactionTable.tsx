@@ -31,7 +31,7 @@ import { MakeRecurringDialog } from "@/components/recurring/MakeRecurringDialog"
 import { TRANSACTION_COLUMNS } from "./ColumnVisibilityMenu";
 import { getCategoryLabel, getCategoryInfo } from "@/lib/categories";
 import { format } from "date-fns";
-import { Check, X, MoreHorizontal, Sparkles, MessageSquare, ExternalLink } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, X, MoreHorizontal, Sparkles, MessageSquare, ExternalLink } from "lucide-react";
 import type { Transaction, Property, BankAccount } from "@/server/db/schema";
 import type { Serialized } from "@/lib/types";
 
@@ -57,6 +57,8 @@ interface TransactionTableProps {
   columnVisibility?: Record<string, boolean>;
   onToggleColumn?: (columnId: string) => void;
   onResetColumns?: () => void;
+  dateSortOrder?: "asc" | "desc";
+  onToggleDateSort?: () => void;
 }
 
 const TYPE_BADGE_VARIANTS: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
@@ -79,6 +81,8 @@ export function TransactionTable({
   columnVisibility,
   onToggleColumn,
   onResetColumns,
+  dateSortOrder = "desc",
+  onToggleDateSort,
 }: TransactionTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [recurringDialogOpen, setRecurringDialogOpen] = useState(false);
@@ -198,7 +202,26 @@ export function TransactionTable({
                   onCheckedChange={toggleAll}
                 />
               </TableHead>
-              {isVisible("date") && <TableHead>Date</TableHead>}
+              {isVisible("date") && (
+                <TableHead>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        className="inline-flex items-center gap-1 cursor-pointer hover:text-foreground transition-colors"
+                        onClick={() => onToggleDateSort?.()}
+                      >
+                        Date
+                        {dateSortOrder === "asc"
+                          ? <ArrowUp className="w-3.5 h-3.5" />
+                          : <ArrowDown className="w-3.5 h-3.5" />}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {dateSortOrder === "desc" ? "Sort oldest first" : "Sort newest first"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TableHead>
+              )}
               {isVisible("description") && <TableHead>Description</TableHead>}
               {isVisible("amount") && <TableHead>Amount</TableHead>}
               {isVisible("type") && <TableHead>Type</TableHead>}
