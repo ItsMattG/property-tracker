@@ -21,6 +21,7 @@ export const featureFlags = {
   export: true,
   emails: false,
   tasks: false,
+  reminders: true,
 
   // ── Settings ──────────────────────────────────────────────────────
   propertyGroups: true,
@@ -42,8 +43,10 @@ export const featureFlags = {
   // ── Property detail sections ────────────────────────────────────
   valuation: true,
   climateRisk: false,
+  rentReview: true,
   milestones: true,
   performanceBenchmark: false,
+  portfolioBenchmarking: true,
   similarProperties: true,
 
   // ── Property features ──────────────────────────────────────────────
@@ -52,6 +55,7 @@ export const featureFlags = {
   // ── Other UI ──────────────────────────────────────────────────────
   fySelector: false,
   aiAssistant: true,
+  aiInsights: true,
   whatsNew: false,
   helpMenu: false,
   quickAdd: false,
@@ -74,7 +78,9 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/export": "export",
   "/emails": "emails",
   "/tasks": "tasks",
+  "/analytics/benchmarking": "portfolioBenchmarking",
   "/cash-flow": "cashFlow",
+  "/reminders": "reminders",
   "/settings/property-groups": "propertyGroups",
   "/settings/notifications": "notifications",
   "/settings/integrations": "integrations",

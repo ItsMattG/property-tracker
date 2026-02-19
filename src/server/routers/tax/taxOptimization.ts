@@ -4,6 +4,7 @@ import { documents } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { extractDepreciationSchedule } from "../../services/property-analysis";
+import { validateAndRecalculate, generateMultiYearSchedule } from "../../services/tax/depreciation-calc";
 import {
   generateAllSuggestions,
   getCurrentFinancialYear,
@@ -100,9 +101,12 @@ export const taxOptimizationRouter = router({
         });
       }
 
+      const validatedAssets = validateAndRecalculate(result.assets);
+      const totalValue = validatedAssets.reduce((sum, a) => sum + a.originalCost, 0);
+
       return {
-        assets: result.assets,
-        totalValue: result.totalValue,
+        assets: validatedAssets,
+        totalValue,
         effectiveDate: result.effectiveDate,
       };
     }),
@@ -169,5 +173,63 @@ export const taxOptimizationRouter = router({
     .mutation(async ({ ctx, input }) => {
       await ctx.uow.tax.deleteSchedule(input.scheduleId, ctx.portfolio.ownerId);
       return { success: true };
+    }),
+
+  // Get multi-year depreciation projection for a schedule
+  getDepreciationProjection: protectedProcedure
+    .input(
+      z.object({
+        scheduleId: z.string().uuid(),
+        years: z.number().int().min(1).max(40).optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const schedules = await ctx.uow.tax.findSchedules(ctx.portfolio.ownerId);
+      const schedule = schedules.find((s) => s.id === input.scheduleId);
+
+      if (!schedule) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Schedule not found" });
+      }
+
+      const assetProjections = schedule.assets.map((asset) => {
+        const originalCost = parseFloat(asset.originalCost);
+        const effectiveLife = parseFloat(asset.effectiveLife);
+        const method = asset.method;
+        const years = input.years ?? Math.ceil(effectiveLife);
+
+        return {
+          assetName: asset.assetName,
+          category: asset.category,
+          schedule: generateMultiYearSchedule(originalCost, effectiveLife, method, years),
+        };
+      });
+
+      const maxYears = Math.max(...assetProjections.map((a) => a.schedule.length), 0);
+      const yearlyTotals: Array<{ year: number; totalDeduction: number; totalRemaining: number }> = [];
+
+      for (let y = 0; y < maxYears; y++) {
+        let totalDeduction = 0;
+        let totalRemaining = 0;
+
+        for (const ap of assetProjections) {
+          if (y < ap.schedule.length) {
+            totalDeduction += ap.schedule[y].deduction;
+            totalRemaining += ap.schedule[y].closingValue;
+          }
+        }
+
+        yearlyTotals.push({
+          year: y + 1,
+          totalDeduction: Math.round(totalDeduction * 100) / 100,
+          totalRemaining: Math.round(totalRemaining * 100) / 100,
+        });
+      }
+
+      return {
+        scheduleId: schedule.id,
+        propertyAddress: schedule.property?.address ?? "Unknown",
+        assetProjections,
+        yearlyTotals,
+      };
     }),
 });

@@ -517,3 +517,15 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
   "trialing",
   "incomplete",
 ]);
+
+export const reminderTypeEnum = pgEnum("reminder_type", [
+  "lease_expiry",
+  "insurance_renewal",
+  "fixed_rate_expiry",
+  "council_rates",
+  "body_corporate",
+  "smoke_alarm",
+  "pool_safety",
+  "tax_return",
+  "custom",
+]);
