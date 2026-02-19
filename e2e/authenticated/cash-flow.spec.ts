@@ -71,15 +71,22 @@ test.describe("Cash Flow Calendar", () => {
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
-    // Cash Flow should be in sidebar — use longer timeout for CI where hydration is slower
+    // Cash Flow is in the Reports & Tax nav group — wait for sidebar to fully render
     const sidebar = page.locator("aside");
     await expect(sidebar).toBeVisible({ timeout: 15000 });
-    const navLink = sidebar.getByRole("link", { name: "Cash Flow" });
+
+    // Wait for sidebar hydration by checking a known top-level link exists
+    await expect(
+      sidebar.getByRole("link", { name: /dashboard/i })
+    ).toBeVisible({ timeout: 15000 });
+
+    // Cash Flow link — use href selector as fallback for accessible name matching
+    const navLink = sidebar.locator('a[href="/cash-flow"]');
     await expect(navLink).toBeVisible({ timeout: 15000 });
 
     // Click it and verify navigation
     await navLink.click();
-    await page.waitForURL("**/cash-flow");
-    await expect(page.getByRole("heading", { name: "Cash Flow" })).toBeVisible();
+    await page.waitForURL("**/cash-flow", { timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Cash Flow" })).toBeVisible({ timeout: 10000 });
   });
 });

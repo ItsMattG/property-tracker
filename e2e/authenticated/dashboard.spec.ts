@@ -9,8 +9,9 @@ test.describe("Dashboard", () => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
     await safeGoto(page, "/dashboard");
-    // Wait for initial React render (shorter wait to leave more time for test body)
-    await page.waitForTimeout(1000);
+    // Wait for page content to fully render (server component + client hydration)
+    await page.waitForLoadState("networkidle");
+    await dismissTourIfVisible(page);
   });
 
   test.afterEach(() => {
@@ -25,10 +26,10 @@ test.describe("Dashboard", () => {
   }) => {
     await expect(
       page.getByRole("heading", { name: /welcome to bricktrack/i })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15000 });
     await expect(
       page.getByText(/track your investment properties/i)
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("should display the BrickTrack logo in sidebar", async ({
@@ -106,9 +107,7 @@ test.describe("Dashboard", () => {
   test("should display core sidebar nav items", async ({
     page,
   }) => {
-    await dismissTourIfVisible(page);
     const sidebar = page.locator("aside");
-    // Wait for sidebar to be fully rendered (hydration can be slow on CI)
     await expect(sidebar).toBeVisible({ timeout: 15000 });
     await expect(
       sidebar.getByRole("link", { name: /dashboard/i })
@@ -130,7 +129,6 @@ test.describe("Dashboard", () => {
   test("dashboard link should be active on /dashboard", async ({
     page,
   }) => {
-    await dismissTourIfVisible(page);
     const sidebar = page.locator("aside");
     await expect(sidebar).toBeVisible({ timeout: 15000 });
     const dashboardLink = sidebar.getByRole("link", { name: /dashboard/i });
@@ -286,9 +284,6 @@ test.describe("Dashboard", () => {
   test("should collapse and expand the sidebar", async ({
     page,
   }) => {
-    // Dismiss onboarding tour first — its overlay intercepts clicks
-    await dismissTourIfVisible(page);
-
     const sidebar = page.locator("aside");
 
     // Sidebar starts expanded (give extra time on slow staging)
@@ -320,34 +315,39 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await sidebar.getByRole("link", { name: /properties/i }).click();
-    await expect(page).toHaveURL(/\/properties/);
+    const link = sidebar.getByRole("link", { name: /properties/i });
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/properties/, { timeout: 10000 });
   });
 
   test("should navigate to transactions from sidebar", async ({
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await sidebar.getByRole("link", { name: /transactions/i }).click();
-    await page.waitForURL(/\/transactions/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/transactions/);
+    const link = sidebar.getByRole("link", { name: /transactions/i });
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/transactions/, { timeout: 10000 });
   });
 
   test("should navigate to reports from sidebar", async ({
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await sidebar.getByRole("link", { name: "Reports", exact: true }).click();
-    await page.waitForURL(/\/reports/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/reports/);
+    const link = sidebar.getByRole("link", { name: "Reports", exact: true });
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/reports/, { timeout: 10000 });
   });
 
   test("should navigate to banking from sidebar", async ({
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await sidebar.getByRole("link", { name: /bank feeds/i }).click();
-    await page.waitForURL(/\/banking/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/banking/);
+    const link = sidebar.getByRole("link", { name: /bank feeds/i });
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/banking/, { timeout: 10000 });
   });
 });

@@ -1,17 +1,19 @@
 import { test, expect } from "@playwright/test";
-import { safeGoto } from "../fixtures/test-helpers";
+import { safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
 
 test.describe("Dashboard (Seeded Data)", () => {
   test.beforeEach(async ({ page }) => {
     await safeGoto(page, "/dashboard");
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState("networkidle");
+    await dismissTourIfVisible(page);
   });
 
   test("should display dashboard page", async ({ page }) => {
     // Check for dashboard heading — actual heading is "Welcome to BrickTrack"
+    // DashboardClient is a server-rendered client component; give extra time for hydration
     await expect(
       page.getByRole("heading", { name: /welcome to bricktrack/i }).first()
-    ).toBeVisible({ timeout: 15000 });
+    ).toBeVisible({ timeout: 20000 });
   });
 
   test("should display Australia properties map when properties exist", async ({ page }) => {

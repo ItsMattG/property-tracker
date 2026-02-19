@@ -36,24 +36,30 @@ test.describe("Budget", () => {
 
   test("sidebar shows budget link", async ({ page }) => {
     await safeGoto(page, "/dashboard");
+    await page.waitForLoadState("networkidle");
     await dismissTourIfVisible(page);
 
-    // Look for Budget link in sidebar (exact match to avoid matching "Set up your budget" CTA)
-    const budgetLink = page.getByRole("link", { name: "Budget", exact: true });
-    await expect(budgetLink).toBeVisible();
+    // Scope to sidebar to avoid matching Budget widget on the dashboard
+    const sidebar = page.locator("aside");
+    await expect(sidebar).toBeVisible({ timeout: 15000 });
+    const budgetLink = sidebar.getByRole("link", { name: "Budget", exact: true });
+    await expect(budgetLink).toBeVisible({ timeout: 10000 });
   });
 
   test("budget link navigates correctly", async ({ page }) => {
     await safeGoto(page, "/dashboard");
+    await page.waitForLoadState("networkidle");
     await dismissTourIfVisible(page);
 
-    // Wait for sidebar to fully render before interacting
-    const budgetLink = page.getByRole("link", { name: "Budget", exact: true });
+    // Scope to sidebar to avoid matching Budget widget on the dashboard
+    const sidebar = page.locator("aside");
+    await expect(sidebar).toBeVisible({ timeout: 15000 });
+    const budgetLink = sidebar.getByRole("link", { name: "Budget", exact: true });
     await expect(budgetLink).toBeVisible({ timeout: 15000 });
     await budgetLink.click();
 
     // Verify navigation to budget page
-    await expect(page).toHaveURL(/\/budget/);
+    await expect(page).toHaveURL(/\/budget/, { timeout: 15000 });
   });
 
   test("dashboard shows budget widget", async ({ page }) => {
