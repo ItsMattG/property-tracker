@@ -1,5 +1,43 @@
-// Service Worker for Push Notifications
+// Service Worker for BrickTrack PWA
+// Handles: push notifications, offline fallback
 
+const CACHE_NAME = "bricktrack-v1";
+const OFFLINE_URL = "/offline.html";
+
+// Install: pre-cache offline fallback
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.add(OFFLINE_URL))
+  );
+  self.skipWaiting();
+});
+
+// Activate: clean up old caches
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+// Fetch: network-first for navigations, serve offline page on failure
+self.addEventListener("fetch", (event) => {
+  if (event.request.mode !== "navigate") return;
+
+  event.respondWith(
+    fetch(event.request).catch(() =>
+      caches.match(OFFLINE_URL)
+    )
+  );
+});
+
+// Push notifications
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
@@ -35,7 +73,6 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      // Check if there's already a window open
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && "focus" in client) {
           client.focus();
@@ -43,7 +80,6 @@ self.addEventListener("notificationclick", (event) => {
           return;
         }
       }
-      // Open new window if none found
       return clients.openWindow(url);
     })
   );
