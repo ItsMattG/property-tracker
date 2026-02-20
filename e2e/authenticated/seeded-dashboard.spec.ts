@@ -2,18 +2,23 @@ import { test, expect } from "@playwright/test";
 import { safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
 
 test.describe("Dashboard (Seeded Data)", () => {
+  // Dashboard server component makes tRPC calls that can be slow on CI
+  test.setTimeout(60_000);
+
   test.beforeEach(async ({ page }) => {
     await safeGoto(page, "/dashboard");
-    await page.waitForTimeout(2000);
+    // Wait for actual content instead of arbitrary timeout
+    await expect(
+      page.getByRole("heading", { name: /welcome to bricktrack/i }).first()
+    ).toBeVisible({ timeout: 30_000 });
     await dismissTourIfVisible(page);
   });
 
   test("should display dashboard page", async ({ page }) => {
-    // Check for dashboard heading — actual heading is "Welcome to BrickTrack"
-    // DashboardClient is a server-rendered client component; give extra time for hydration
+    // Heading already confirmed visible in beforeEach — verify description too
     await expect(
-      page.getByRole("heading", { name: /welcome to bricktrack/i }).first()
-    ).toBeVisible({ timeout: 20000 });
+      page.getByText(/track your investment properties/i)
+    ).toBeVisible();
   });
 
   test("should display Australia properties map when properties exist", async ({ page }) => {

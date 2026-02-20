@@ -3,14 +3,19 @@ import { featureFlags } from "../../src/config/feature-flags";
 import { isBenignError, safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
 
 test.describe("Dashboard", () => {
+  // Dashboard server component makes tRPC calls that can be slow on CI
+  test.setTimeout(60_000);
+
   let pageErrors: Error[];
 
   test.beforeEach(async ({ page }) => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
     await safeGoto(page, "/dashboard");
-    // Give page time to render before tests (keep short to leave time for test body)
-    await page.waitForTimeout(2000);
+    // Wait for actual content instead of arbitrary timeout
+    await expect(
+      page.getByRole("heading", { name: /welcome to bricktrack/i })
+    ).toBeVisible({ timeout: 30_000 });
     await dismissTourIfVisible(page);
   });
 
@@ -24,12 +29,10 @@ test.describe("Dashboard", () => {
   test("should display welcome heading and description", async ({
     page,
   }) => {
-    await expect(
-      page.getByRole("heading", { name: /welcome to bricktrack/i })
-    ).toBeVisible({ timeout: 15000 });
+    // Heading already confirmed visible in beforeEach
     await expect(
       page.getByText(/track your investment properties/i)
-    ).toBeVisible({ timeout: 10000 });
+    ).toBeVisible();
   });
 
   test("should display the BrickTrack logo in sidebar", async ({
@@ -108,10 +111,10 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await expect(sidebar).toBeVisible({ timeout: 15000 });
+    await expect(sidebar).toBeVisible();
     await expect(
       sidebar.getByRole("link", { name: /dashboard/i })
-    ).toBeVisible({ timeout: 15000 });
+    ).toBeVisible();
     await expect(
       sidebar.getByRole("link", { name: /properties/i })
     ).toBeVisible();
@@ -130,9 +133,9 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await expect(sidebar).toBeVisible({ timeout: 15000 });
+    await expect(sidebar).toBeVisible();
     const dashboardLink = sidebar.getByRole("link", { name: /dashboard/i });
-    await expect(dashboardLink).toBeVisible({ timeout: 15000 });
+    await expect(dashboardLink).toBeVisible();
     await expect(dashboardLink).toHaveClass(/bg-primary/);
   });
 
@@ -252,19 +255,15 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     // CashFlowWidget renders a CardTitle "Cash Flow" in all states (loading, empty, data)
-    // On slow staging, give extra time for tRPC data to load
-    await page.waitForTimeout(1000);
-    const hasCashFlow = await page.getByRole("heading", { name: "Cash Flow", exact: true }).isVisible({ timeout: 10000 }).catch(() => false);
-    const hasDashboard = await page.getByRole("heading", { name: /dashboard/i }).first().isVisible().catch(() => false);
-    // Cash Flow widget should be visible, but if page is still loading, dashboard heading is enough
-    expect(hasCashFlow || hasDashboard).toBe(true);
+    await expect(
+      page.getByRole("heading", { name: "Cash Flow", exact: true })
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test("should display Portfolio Summary table", async ({
     page,
   }) => {
-    // Wait for dashboard to fully render
-    await expect(page.getByRole("heading", { name: /welcome to bricktrack/i })).toBeVisible({ timeout: 10000 });
+    // Dashboard already loaded via beforeEach
 
     // Portfolio Summary has 3 states: loading (heading + skeleton), empty (null), data (heading + table).
     // Wait for loading to settle — either the table appears or the component unmounts.
