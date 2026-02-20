@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "../../src/config/feature-flags";
-import { isBenignError, safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
+import { isBenignError, safeGoto, dismissTourIfVisible, dismissDialogsIfVisible } from "../fixtures/test-helpers";
 
 test.describe("Dashboard", () => {
   // Dashboard server component makes tRPC calls that can be slow on CI
@@ -17,6 +17,7 @@ test.describe("Dashboard", () => {
       page.getByRole("heading", { name: /welcome to bricktrack/i })
     ).toBeVisible({ timeout: 30_000 });
     await dismissTourIfVisible(page);
+    await dismissDialogsIfVisible(page);
   });
 
   test.afterEach(() => {

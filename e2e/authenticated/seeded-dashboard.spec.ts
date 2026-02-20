@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
+import { safeGoto, dismissTourIfVisible, dismissDialogsIfVisible } from "../fixtures/test-helpers";
 
 test.describe("Dashboard (Seeded Data)", () => {
   // Dashboard server component makes tRPC calls that can be slow on CI
@@ -12,6 +12,7 @@ test.describe("Dashboard (Seeded Data)", () => {
       page.getByRole("heading", { name: /welcome to bricktrack/i }).first()
     ).toBeVisible({ timeout: 30_000 });
     await dismissTourIfVisible(page);
+    await dismissDialogsIfVisible(page);
   });
 
   test("should display dashboard page", async ({ page }) => {
