@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { downloadBlob } from "@/lib/export-utils";
+import { getErrorMessage } from "@/lib/utils";
 import type { LoanPackSnapshot } from "@/server/services/lending/loan-pack";
 
 interface DownloadLoanPackPDFButtonProps {
@@ -20,6 +22,8 @@ export function DownloadLoanPackPDFButton({ data }: DownloadLoanPackPDFButtonPro
       const blob = generateLoanPackPDF(data);
       const filename = `loan-pack-${new Date(data.generatedAt).toISOString().split("T")[0]}.pdf`;
       downloadBlob(blob, filename);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
