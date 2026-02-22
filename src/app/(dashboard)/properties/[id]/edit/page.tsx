@@ -114,6 +114,7 @@ export default function EditPropertyPage() {
               latitude: property.latitude ?? "",
               longitude: property.longitude ?? "",
               purpose: property.purpose ?? "investment",
+              colour: property.colour,
             }}
             onSubmit={handleSubmit}
             isLoading={updateProperty.isPending}

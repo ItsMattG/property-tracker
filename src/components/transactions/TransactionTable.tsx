@@ -368,7 +368,14 @@ export function TransactionTable({
                     {isVisible("property") && (
                       <TableCell>
                         {transaction.property ? (
-                          <Badge variant="outline">
+                          <Badge
+                            variant="outline"
+                            style={{
+                              backgroundColor: transaction.property.colour + "15",
+                              borderColor: transaction.property.colour + "40",
+                              color: transaction.property.colour,
+                            }}
+                          >
                             {transaction.property.address}
                           </Badge>
                         ) : onAllocate && transaction.category === "uncategorized" ? (

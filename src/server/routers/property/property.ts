@@ -20,6 +20,7 @@ const propertySchema = z.object({
   latitude: z.string().optional(),
   longitude: z.string().optional(),
   purpose: z.enum(purposes).optional(),
+  colour: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
 });
 
 export const propertyRouter = router({
@@ -120,6 +121,7 @@ export const propertyRouter = router({
         longitude: input.longitude || null,
         climateRisk,
         ...(input.purpose && { purpose: input.purpose }),
+        ...(input.colour && { colour: input.colour }),
       });
 
       // Check if this is the user's first property (for referral qualification)

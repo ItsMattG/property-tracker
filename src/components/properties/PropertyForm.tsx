@@ -42,6 +42,7 @@ const propertyFormSchema = z.object({
   latitude: z.string().optional(),
   longitude: z.string().optional(),
   purpose: z.enum(["investment", "owner_occupied", "commercial", "short_term_rental"]).optional(),
+  colour: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
 });
 
 export type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -104,6 +105,7 @@ export function PropertyForm({
       latitude: "",
       longitude: "",
       purpose: "investment",
+      colour: "#6366F1",
       ...defaultValues,
     },
   });
@@ -266,6 +268,35 @@ export function PropertyForm({
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Colour */}
+        <FormField
+          control={form.control}
+          name="colour"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Colour</FormLabel>
+              <div className="flex gap-2 flex-wrap">
+                {["#6366F1", "#EC4899", "#F59E0B", "#10B981", "#3B82F6", "#EF4444", "#8B5CF6", "#6B7280"].map((hex) => (
+                  <button
+                    key={hex}
+                    type="button"
+                    onClick={() => field.onChange(hex)}
+                    className={cn(
+                      "w-8 h-8 rounded-full cursor-pointer transition-all border-2",
+                      field.value === hex
+                        ? "border-foreground scale-110"
+                        : "border-transparent hover:scale-105"
+                    )}
+                    style={{ backgroundColor: hex }}
+                    aria-label={`Select colour ${hex}`}
+                  />
+                ))}
+              </div>
               <FormMessage />
             </FormItem>
           )}
