@@ -12,6 +12,7 @@ test.describe("Dashboard", () => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
     await safeGoto(page, "/dashboard");
+    // Wait for actual content instead of arbitrary timeout
     await expect(
       page.getByRole("heading", { name: /welcome to bricktrack/i })
     ).toBeVisible({ timeout: 30_000 });
@@ -29,9 +30,7 @@ test.describe("Dashboard", () => {
   test("should display welcome heading and description", async ({
     page,
   }) => {
-    await expect(
-      page.getByRole("heading", { name: /welcome to bricktrack/i })
-    ).toBeVisible();
+    // Heading already confirmed visible in beforeEach
     await expect(
       page.getByText(/track your investment properties/i)
     ).toBeVisible();
@@ -113,6 +112,7 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     const sidebar = page.locator("aside");
+    await expect(sidebar).toBeVisible();
     await expect(
       sidebar.getByRole("link", { name: /dashboard/i })
     ).toBeVisible();
@@ -134,7 +134,9 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     const sidebar = page.locator("aside");
+    await expect(sidebar).toBeVisible();
     const dashboardLink = sidebar.getByRole("link", { name: /dashboard/i });
+    await expect(dashboardLink).toBeVisible();
     await expect(dashboardLink).toHaveClass(/bg-primary/);
   });
 
@@ -253,20 +255,18 @@ test.describe("Dashboard", () => {
   test("should display Cash Flow widget", async ({
     page,
   }) => {
-    // CashFlowWidget renders a CardTitle "Cash Flow" in all states (loading, empty, data)
-    // On slow staging, give extra time for tRPC data to load
-    await page.waitForTimeout(1000);
-    const hasCashFlow = await page.getByRole("heading", { name: "Cash Flow", exact: true }).isVisible({ timeout: 10000 }).catch(() => false);
-    const hasDashboard = await page.getByRole("heading", { name: /dashboard/i }).first().isVisible().catch(() => false);
-    // Cash Flow widget should be visible, but if page is still loading, dashboard heading is enough
-    expect(hasCashFlow || hasDashboard).toBe(true);
+    // CashFlowWidget renders a CardTitle (div, not heading) in all states
+    // Use locator scoped to main content to avoid matching sidebar "Cash Flow" link
+    const main = page.locator("main");
+    await expect(
+      main.getByText("Cash Flow", { exact: true }).first()
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   test("should display Portfolio Summary table", async ({
     page,
   }) => {
-    // Wait for dashboard to fully render
-    await expect(page.getByRole("heading", { name: /welcome to bricktrack/i })).toBeVisible({ timeout: 10000 });
+    // Dashboard already loaded via beforeEach
 
     // Portfolio Summary has 3 states: loading (heading + skeleton), empty (null), data (heading + table).
     // Wait for loading to settle — either the table appears or the component unmounts.
@@ -286,9 +286,6 @@ test.describe("Dashboard", () => {
   test("should collapse and expand the sidebar", async ({
     page,
   }) => {
-    // Dismiss onboarding tour first — its overlay intercepts clicks
-    await dismissTourIfVisible(page);
-
     const sidebar = page.locator("aside");
 
     // Sidebar starts expanded (give extra time on slow staging)
@@ -320,34 +317,39 @@ test.describe("Dashboard", () => {
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await sidebar.getByRole("link", { name: /properties/i }).click();
-    await expect(page).toHaveURL(/\/properties/);
+    const link = sidebar.getByRole("link", { name: /properties/i });
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/properties/, { timeout: 10000 });
   });
 
   test("should navigate to transactions from sidebar", async ({
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await sidebar.getByRole("link", { name: /transactions/i }).click();
-    await page.waitForURL(/\/transactions/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/transactions/);
+    const link = sidebar.getByRole("link", { name: /transactions/i });
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/transactions/, { timeout: 10000 });
   });
 
   test("should navigate to reports from sidebar", async ({
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await sidebar.getByRole("link", { name: "Reports", exact: true }).click();
-    await page.waitForURL(/\/reports/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/reports/);
+    const link = sidebar.getByRole("link", { name: "Reports", exact: true });
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/reports/, { timeout: 10000 });
   });
 
   test("should navigate to banking from sidebar", async ({
     page,
   }) => {
     const sidebar = page.locator("aside");
-    await sidebar.getByRole("link", { name: /bank feeds/i }).click();
-    await page.waitForURL(/\/banking/, { timeout: 10000 });
-    await expect(page).toHaveURL(/\/banking/);
+    const link = sidebar.getByRole("link", { name: /bank feeds/i });
+    await expect(link).toBeVisible({ timeout: 10000 });
+    await link.click();
+    await expect(page).toHaveURL(/\/banking/, { timeout: 10000 });
   });
 });

@@ -19,10 +19,12 @@ export default function NewPropertyPage() {
 
   const [showTrialModal, setShowTrialModal] = useState(false);
   const [pendingValues, setPendingValues] = useState<PropertyFormValues | null>(null);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
   const { data: trialStatus } = trpc.billing.getTrialStatus.useQuery();
   const { data: entities } = trpc.entity.list.useQuery();
   const { data: properties } = trpc.property.list.useQuery();
+  const { data: groups } = trpc.propertyGroup.list.useQuery();
 
   const createProperty = trpc.property.create.useMutation({
     onSuccess: (property) => {
@@ -30,6 +32,7 @@ export default function NewPropertyPage() {
       utils.property.get.setData({ id: property.id }, property);
     },
   });
+  const assignGroupsMutation = trpc.propertyGroup.assignProperties.useMutation();
 
   const handleSubmit = async (values: PropertyFormValues) => {
     // Check if this will be the 2nd property for a trial user
@@ -41,6 +44,13 @@ export default function NewPropertyPage() {
 
     try {
       const property = await createProperty.mutateAsync(values);
+      if (selectedGroupIds.length > 0) {
+        await Promise.all(
+          selectedGroupIds.map((groupId) =>
+            assignGroupsMutation.mutateAsync({ groupId, propertyIds: [property.id] })
+          )
+        );
+      }
       if (trialStatus?.isOnTrial && trialStatus.propertyCount >= 2) {
         toast.info("Reminder: Only your first property stays active after your trial", {
           action: {
@@ -61,6 +71,13 @@ export default function NewPropertyPage() {
     if (pendingValues) {
       try {
         const property = await createProperty.mutateAsync(pendingValues);
+        if (selectedGroupIds.length > 0) {
+          await Promise.all(
+            selectedGroupIds.map((groupId) =>
+              assignGroupsMutation.mutateAsync({ groupId, propertyIds: [property.id] })
+            )
+          );
+        }
         setShowTrialModal(false);
         setPendingValues(null);
         utils.property.list.invalidate();
@@ -92,6 +109,9 @@ export default function NewPropertyPage() {
             onSubmit={handleSubmit}
             isLoading={createProperty.isPending}
             entities={entities}
+            groups={groups}
+            selectedGroupIds={selectedGroupIds}
+            onGroupIdsChange={setSelectedGroupIds}
           />
         </CardContent>
       </Card>

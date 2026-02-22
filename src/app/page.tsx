@@ -80,7 +80,7 @@ export default async function HomePage() {
       <StatsBar />
 
       {/* Features */}
-      <section className="py-12 md:py-20 px-4 bg-secondary">
+      <section id="features" className="py-12 md:py-20 px-4 bg-secondary">
         <div className="container mx-auto max-w-5xl">
           <h2 className="text-3xl font-bold text-center mb-12">
             Built for Australian investors
@@ -243,7 +243,7 @@ export default async function HomePage() {
           <LifetimeBanner />
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 items-stretch">
             {/* Free */}
             <div className="rounded-xl border bg-card p-8 flex flex-col">
               <h3 className="text-lg font-semibold">Free</h3>
@@ -346,21 +346,62 @@ export default async function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-8 px-4 mt-auto">
-        <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-primary" />
-            <span className="text-sm text-muted-foreground">
-              BrickTrack &copy; {new Date().getFullYear()}
-            </span>
+      <footer className="border-t py-12 px-4 mt-auto">
+        <div className="container mx-auto max-w-5xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Brand */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <span className="font-semibold">BrickTrack</span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Track your investment properties, automate bank feeds, and generate tax reports.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                ABN 60 225 077 041
+              </p>
+            </div>
+
+            {/* Product */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Product</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="#features" className="hover:text-foreground transition-colors">Features</Link>
+                </li>
+                <li>
+                  <Link href="#pricing" className="hover:text-foreground transition-colors">Pricing</Link>
+                </li>
+                <li>
+                  <Link href="#faq" className="hover:text-foreground transition-colors">FAQ</Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3">Legal</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
+                </li>
+                <li>
+                  <a href="mailto:support@bricktrack.au" className="hover:text-foreground transition-colors">
+                    support@bricktrack.au
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-sm text-muted-foreground">
-            <Link href="/privacy" className="hover:text-foreground">
-              Privacy Policy
-            </Link>
-            <Link href="/terms" className="hover:text-foreground">
-              Terms of Service
-            </Link>
+
+          <div className="border-t mt-8 pt-6 text-center text-xs text-muted-foreground">
+            BrickTrack &copy; {new Date().getFullYear()}. All rights reserved.
           </div>
         </div>
       </footer>

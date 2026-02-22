@@ -4,6 +4,7 @@ import { properties, propertyVectors, propertyValues, transactions, suburbBenchm
 import { eq, and, desc } from "drizzle-orm";
 import { generatePropertyVector } from "@/server/services/property-analysis/vector-generation";
 import { verifyCronRequest, unauthorizedResponse } from "@/lib/cron-auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   if (!verifyCronRequest(request.headers)) {
@@ -95,7 +96,7 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Vector regeneration cron error:", error);
+    logger.error("Vector regeneration cron failed", error instanceof Error ? error : new Error(String(error)), { domain: "cron" });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

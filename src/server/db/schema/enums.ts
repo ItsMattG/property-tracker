@@ -76,6 +76,13 @@ export const rateTypeEnum = pgEnum("rate_type", [
 
 export const propertyStatusEnum = pgEnum("property_status", ["active", "sold"]);
 
+export const propertyPurposeEnum = pgEnum("property_purpose", [
+  "investment",
+  "owner_occupied",
+  "commercial",
+  "short_term_rental",
+]);
+
 export const documentCategoryEnum = pgEnum("document_category", [
   "receipt",
   "contract",
@@ -209,6 +216,12 @@ export const depreciationCategoryEnum = pgEnum("depreciation_category", [
 export const depreciationMethodEnum = pgEnum("depreciation_method", [
   "diminishing_value",
   "prime_cost",
+]);
+
+export const poolTypeEnum = pgEnum("pool_type", [
+  "individual",
+  "low_value",
+  "immediate_writeoff",
 ]);
 
 export const taxSuggestionTypeEnum = pgEnum("tax_suggestion_type", [
@@ -509,4 +522,16 @@ export const subscriptionStatusEnum = pgEnum("subscription_status", [
   "canceled",
   "trialing",
   "incomplete",
+]);
+
+export const reminderTypeEnum = pgEnum("reminder_type", [
+  "lease_expiry",
+  "insurance_renewal",
+  "fixed_rate_expiry",
+  "council_rates",
+  "body_corporate",
+  "smoke_alarm",
+  "pool_safety",
+  "tax_return",
+  "custom",
 ]);

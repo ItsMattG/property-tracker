@@ -8,6 +8,7 @@ import {
   settlementRouter,
   rentalYieldRouter,
   similarPropertiesRouter,
+  rentReviewRouter,
 } from "./property";
 // banking domain
 import {
@@ -17,6 +18,7 @@ import {
   recurringRouter,
   anomalyRouter,
   auditChecksRouter,
+  categorizationRulesRouter,
 } from "./banking";
 // lending domain
 import {
@@ -34,6 +36,7 @@ import {
   taxOptimizationRouter,
   mytaxRouter,
   yoyComparisonRouter,
+  depreciationRouter,
 } from "./tax";
 // analytics domain
 import {
@@ -42,6 +45,7 @@ import {
   performanceBenchmarkingRouter,
   dashboardRouter,
   reportsRouter,
+  accountantPackRouter,
 } from "./analytics";
 // compliance domain
 import {
@@ -63,6 +67,7 @@ import {
   portfolioRouter,
   teamRouter,
   shareRouter,
+  propertyGroupsRouter,
 } from "./portfolio";
 // documents domain
 import {
@@ -91,6 +96,8 @@ import {
 } from "./feedback";
 // budget domain
 import { budgetRouter } from "./budget";
+// reminders domain
+import { reminderRouter } from "./reminders";
 
 export const appRouter = router({
   property: propertyRouter,
@@ -150,6 +157,12 @@ export const appRouter = router({
   activity: activityRouter,
   cashFlowCalendar: cashFlowCalendarRouter,
   budget: budgetRouter,
+  categorizationRules: categorizationRulesRouter,
+  accountantPack: accountantPackRouter,
+  propertyGroup: propertyGroupsRouter,
+  rentReview: rentReviewRouter,
+  reminder: reminderRouter,
+  depreciation: depreciationRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,5 +1,3 @@
-// src/app/api/integrations/propertyme/callback/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { db } from "@/server/db";
@@ -7,6 +5,8 @@ import { propertyManagerConnections, users } from "@/server/db/schema";
 import { getPropertyMeProvider } from "@/server/services/property-manager/propertyme";
 import { eq } from "drizzle-orm";
 import { encrypt } from "@/lib/encryption";
+import { validateOAuthState, clearOAuthNonceCookie } from "@/lib/oauth-state";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const session = await getAuthSession();
@@ -34,16 +34,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Verify state matches current user (CSRF protection)
-  try {
-    const decodedState = Buffer.from(state, "base64url").toString();
-    const [stateUserId] = decodedState.split(":");
-    if (stateUserId !== session.user.id) {
-      return NextResponse.redirect(
-        new URL("/settings/integrations?error=invalid_state", request.url)
-      );
-    }
-  } catch {
+  // Validate state: userId must match session AND nonce must match cookie
+  const stateError = validateOAuthState("propertyme", state, session.user.id, request);
+  if (stateError) {
+    logger.error("PropertyMe OAuth state validation failed", new Error(stateError), { domain: "integrations", provider: "propertyme" });
     return NextResponse.redirect(
       new URL("/settings/integrations?error=invalid_state", request.url)
     );
@@ -83,14 +77,16 @@ export async function GET(request: NextRequest) {
       })
       .returning();
 
-    return NextResponse.redirect(
+    const response = NextResponse.redirect(
       new URL(
         `/settings/integrations/propertyme?connection=${connection.id}`,
         request.url
       )
     );
+    clearOAuthNonceCookie("propertyme", response);
+    return response;
   } catch (err) {
-    console.error("PropertyMe OAuth error:", err);
+    logger.error("PropertyMe OAuth callback failed", err instanceof Error ? err : new Error(String(err)), { domain: "integrations", provider: "propertyme" });
     return NextResponse.redirect(
       new URL("/settings/integrations?error=oauth_failed", request.url)
     );

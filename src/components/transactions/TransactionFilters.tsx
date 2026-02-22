@@ -34,7 +34,7 @@ export function TransactionFilters({
   onFiltersChange,
 }: TransactionFiltersProps) {
   return (
-    <div className="flex flex-wrap gap-4 p-4 bg-card rounded-lg border">
+    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-4 p-4 bg-card rounded-lg border">
       <div className="space-y-1">
         <Label htmlFor="property-filter">Property</Label>
         <Select
@@ -46,7 +46,7 @@ export function TransactionFilters({
             })
           }
         >
-          <SelectTrigger id="property-filter" className="w-[200px]">
+          <SelectTrigger id="property-filter" className="w-full sm:w-[200px]">
             <SelectValue placeholder="All properties" />
           </SelectTrigger>
           <SelectContent>
@@ -71,7 +71,7 @@ export function TransactionFilters({
             })
           }
         >
-          <SelectTrigger id="category-filter" className="w-[200px]">
+          <SelectTrigger id="category-filter" className="w-full sm:w-[200px]">
             <SelectValue placeholder="All categories" />
           </SelectTrigger>
           <SelectContent>
@@ -103,7 +103,7 @@ export function TransactionFilters({
             })
           }
         >
-          <SelectTrigger id="verified-filter" className="w-[150px]">
+          <SelectTrigger id="verified-filter" className="w-full sm:w-[150px]">
             <SelectValue placeholder="All" />
           </SelectTrigger>
           <SelectContent>
@@ -125,7 +125,7 @@ export function TransactionFilters({
             })
           }
           placeholder="Start date"
-          className="w-[200px]"
+          className="w-full sm:w-[200px]"
         />
       </div>
 
@@ -140,7 +140,7 @@ export function TransactionFilters({
             })
           }
           placeholder="End date"
-          className="w-[200px]"
+          className="w-full sm:w-[200px]"
         />
       </div>
     </div>

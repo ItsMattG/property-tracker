@@ -2,9 +2,10 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 import { router, protectedProcedure } from "../../trpc";
-import { entities } from "../../db/schema";
+import { entities, smsfAuditItems } from "../../db/schema";
 import type { SmsfMember } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
+import type { DB } from "../../repositories/base";
 import {
   calculateMinimumPension,
   getContributionCapStatus,
@@ -15,18 +16,27 @@ import {
   CONTRIBUTION_CAPS,
 } from "../../services/compliance";
 
+/** Verify the calling user owns the SMSF entity. Throws NOT_FOUND if not found or not owned. */
+async function verifySmsfEntityOwnership(
+  ctx: { db: DB; portfolio: { ownerId: string } },
+  entityId: string,
+) {
+  // Cross-domain: entity ownership validation requires direct db query
+  const entity = await ctx.db.query.entities.findFirst({
+    where: and(eq(entities.id, entityId), eq(entities.type, "smsf")),
+  });
+  if (!entity || entity.userId !== ctx.portfolio.ownerId) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "SMSF entity not found" });
+  }
+  return entity;
+}
+
 export const smsfComplianceRouter = router({
   // Member Management
   getMembers: protectedProcedure
     .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      // Cross-domain: entity ownership validation
-      const entity = await ctx.db.query.entities.findFirst({
-        where: and(eq(entities.id, input.entityId), eq(entities.type, "smsf")),
-      });
-      if (!entity || entity.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "SMSF entity not found" });
-      }
+      await verifySmsfEntityOwnership(ctx, input.entityId);
       return ctx.uow.compliance.findSmsfMembers(input.entityId);
     }),
 
@@ -40,13 +50,7 @@ export const smsfComplianceRouter = router({
       currentBalance: z.number().min(0),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Cross-domain: entity ownership validation
-      const entity = await ctx.db.query.entities.findFirst({
-        where: and(eq(entities.id, input.entityId), eq(entities.type, "smsf")),
-      });
-      if (!entity || entity.userId !== ctx.user.id) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "SMSF entity not found" });
-      }
+      await verifySmsfEntityOwnership(ctx, input.entityId);
       return ctx.uow.compliance.createSmsfMember({
         entityId: input.entityId,
         name: input.name,
@@ -66,7 +70,7 @@ export const smsfComplianceRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const member = await ctx.uow.compliance.findSmsfMemberById(input.memberId);
-      if (!member || member.entity.userId !== ctx.user.id) {
+      if (!member || member.entity.userId !== ctx.portfolio.ownerId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Member not found" });
       }
       const updates: Partial<SmsfMember> = { updatedAt: new Date() };
@@ -81,6 +85,7 @@ export const smsfComplianceRouter = router({
   getContributions: protectedProcedure
     .input(z.object({ entityId: z.string().uuid(), year: z.string().optional() }))
     .query(async ({ ctx, input }) => {
+      await verifySmsfEntityOwnership(ctx, input.entityId);
       const year = input.year || getCurrentFinancialYear();
       const contributions = await ctx.uow.compliance.findSmsfContributions(input.entityId, year);
       return contributions.map((c) => ({
@@ -104,6 +109,7 @@ export const smsfComplianceRouter = router({
       nonConcessional: z.number().min(0).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await verifySmsfEntityOwnership(ctx, input.entityId);
       const year = input.year || getCurrentFinancialYear();
 
       // Check if record exists for this member/year
@@ -147,6 +153,7 @@ export const smsfComplianceRouter = router({
   getPensionStatus: protectedProcedure
     .input(z.object({ entityId: z.string().uuid(), year: z.string().optional() }))
     .query(async ({ ctx, input }) => {
+      await verifySmsfEntityOwnership(ctx, input.entityId);
       const year = input.year || getCurrentFinancialYear();
       const pensions = await ctx.uow.compliance.findSmsfPensions(input.entityId, year);
 
@@ -174,6 +181,7 @@ export const smsfComplianceRouter = router({
       year: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      await verifySmsfEntityOwnership(ctx, input.entityId);
       const year = input.year || getCurrentFinancialYear();
 
       const existing = await ctx.uow.compliance.findSmsfPensionByMemberYear(
@@ -216,6 +224,7 @@ export const smsfComplianceRouter = router({
   getAuditChecklist: protectedProcedure
     .input(z.object({ entityId: z.string().uuid(), year: z.string().optional() }))
     .query(async ({ ctx, input }) => {
+      await verifySmsfEntityOwnership(ctx, input.entityId);
       const year = input.year || getCurrentFinancialYear();
 
       let items = await ctx.uow.compliance.findSmsfAuditItems(input.entityId, year);
@@ -236,6 +245,15 @@ export const smsfComplianceRouter = router({
   updateChecklistItem: protectedProcedure
     .input(z.object({ itemId: z.string().uuid(), completed: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
+      // Cross-domain: look up audit item to verify entity ownership
+      const auditItem = await ctx.db.query.smsfAuditItems.findFirst({
+        where: eq(smsfAuditItems.id, input.itemId),
+        with: { entity: true },
+      });
+      if (!auditItem || auditItem.entity.userId !== ctx.portfolio.ownerId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Checklist item not found" });
+      }
+
       return ctx.uow.compliance.updateSmsfAuditItem(input.itemId, {
         completed: input.completed,
         completedAt: input.completed ? new Date() : null,
@@ -246,6 +264,7 @@ export const smsfComplianceRouter = router({
   getDashboard: protectedProcedure
     .input(z.object({ entityId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
+      await verifySmsfEntityOwnership(ctx, input.entityId);
       const year = getCurrentFinancialYear();
 
       const [members, contributions, pensions, auditItems] = await Promise.all([

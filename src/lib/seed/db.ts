@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import type { DemoData } from "./profiles/demo";
 import type { DevData } from "./profiles/dev";
 import type { SeedSummary } from "./types";
+import { MILESTONES } from "@/server/services/milestone/types";
 
 /**
  * Ensure a BetterAuth credential account exists for the user.
@@ -96,7 +97,26 @@ export async function cleanupUserData(userId: string): Promise<void> {
   await db.delete(schema.bankAccounts).where(eq(schema.bankAccounts.userId, userId));
   await db.delete(schema.properties).where(eq(schema.properties.userId, userId));
   await db.delete(schema.notificationPreferences).where(eq(schema.notificationPreferences.userId, userId));
+  await db.delete(schema.milestonePreferences).where(eq(schema.milestonePreferences.userId, userId));
   await db.delete(schema.userOnboarding).where(eq(schema.userOnboarding.userId, userId));
+}
+
+/**
+ * Seed milestone preferences with all milestones marked as achieved.
+ * Prevents celebration dialogs from appearing during E2E tests.
+ */
+async function seedMilestonePreferences(userId: string): Promise<void> {
+  const allMilestoneIds = MILESTONES.map((m) => m.id);
+  await db
+    .insert(schema.milestonePreferences)
+    .values({
+      userId,
+      achievedMilestones: allMilestoneIds,
+    })
+    .onConflictDoUpdate({
+      target: schema.milestonePreferences.userId,
+      set: { achievedMilestones: allMilestoneIds },
+    });
 }
 
 /**
@@ -130,6 +150,9 @@ export async function insertDemoData(data: DemoData): Promise<SeedSummary> {
   if (data.complianceRecords.length > 0) {
     await db.insert(schema.complianceRecords).values(data.complianceRecords);
   }
+
+  // Mark all milestones as achieved so celebration dialogs don't appear in E2E tests
+  await seedMilestonePreferences(data.properties[0].userId);
 
   return {
     users: 1,
@@ -167,6 +190,9 @@ export async function insertDevData(data: DevData): Promise<SeedSummary> {
   if (data.complianceRecords.length > 0) {
     await db.insert(schema.complianceRecords).values(data.complianceRecords);
   }
+
+  // Mark all milestones as achieved so celebration dialogs don't appear in E2E tests
+  await seedMilestonePreferences(data.properties[0].userId);
 
   return {
     users: 1,

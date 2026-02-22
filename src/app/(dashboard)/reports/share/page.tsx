@@ -19,15 +19,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, MoreHorizontal, Copy, Trash2, Eye, Share2 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { CreateShareModal } from "@/components/share/CreateShareModal";
-
-// Moved outside component to avoid impure function calls during render
-function isExpired(expiresAt: Date): boolean {
-  return new Date(expiresAt) < new Date();
-}
 
 function isExpiringSoon(expiresAt: Date): boolean {
   const daysUntil = (new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
@@ -36,6 +41,7 @@ function isExpiringSoon(expiresAt: Date): boolean {
 
 export default function ManageSharesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState<{ id: string; title: string } | null>(null);
   const utils = trpc.useUtils();
 
   const { data: shares, isLoading } = trpc.share.list.useQuery();
@@ -110,7 +116,7 @@ export default function ManageSharesPage() {
                   <TableHead>Created</TableHead>
                   <TableHead>Expires</TableHead>
                   <TableHead>Views</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -130,10 +136,15 @@ export default function ManageSharesPage() {
                         <Badge variant="destructive">Expired</Badge>
                       ) : isExpiringSoon(new Date(share.expiresAt)) ? (
                         <Badge variant="secondary">
-                          {format(new Date(share.expiresAt), "MMM d")}
+                          {format(new Date(share.expiresAt), "MMM d")} — expires soon
                         </Badge>
                       ) : (
-                        format(new Date(share.expiresAt), "MMM d, yyyy")
+                        <span className="text-sm">
+                          {format(new Date(share.expiresAt), "MMM d, yyyy")}
+                          <span className="text-muted-foreground ml-1">
+                            ({formatDistanceToNow(new Date(share.expiresAt), { addSuffix: true })})
+                          </span>
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -143,29 +154,41 @@ export default function ManageSharesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Share actions">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => copyLink(share.url)}
-                            disabled={share.isExpired}
-                          >
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copy Link
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => revokeMutation.mutate({ id: share.id })}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Revoke
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => copyLink(share.url)}
+                          disabled={share.isExpired}
+                          aria-label="Copy share link"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Share actions">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => copyLink(share.url)}
+                              disabled={share.isExpired}
+                            >
+                              <Copy className="w-4 h-4 mr-2" />
+                              Copy Link
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setRevokeTarget({ id: share.id, title: share.title })}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Revoke
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -179,6 +202,30 @@ export default function ManageSharesPage() {
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
       />
+
+      <AlertDialog open={!!revokeTarget} onOpenChange={(open) => !open && setRevokeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke share link?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently disable the share link for &ldquo;{revokeTarget?.title}&rdquo;. Anyone with this link will no longer be able to view the portfolio.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (revokeTarget) {
+                  revokeMutation.mutate({ id: revokeTarget.id });
+                  setRevokeTarget(null);
+                }
+              }}
+            >
+              Revoke
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

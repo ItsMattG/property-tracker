@@ -19,6 +19,10 @@ export interface ExtractedData {
   propertyAddress: string | null;
   lineItems: LineItem[] | null;
   rawText: string | null;
+  gstAmount: number | null;
+  renewalDate: string | null;
+  referenceNumber: string | null;
+  abn: string | null;
   error?: string;
 }
 
@@ -75,7 +79,11 @@ Return ONLY valid JSON in this format:
   "lineItems": [
     {"description": "item", "quantity": 1, "amount": 50.00}
   ] or null,
-  "rawText": "key text from document"
+  "rawText": "key text from document",
+  "gstAmount": 12.34 or null,
+  "renewalDate": "YYYY-MM-DD or null",
+  "referenceNumber": "policy or reference number or null",
+  "abn": "vendor ABN (11 digits) or null"
 }
 
 Category suggestions (for Australian property investors):
@@ -95,7 +103,11 @@ Rules:
 - If a field cannot be determined, use null
 - Extract property address from rate notices and insurance documents
 - For invoices, extract line items if visible
-- confidence should reflect how readable the document is`;
+- confidence should reflect how readable the document is
+- Extract GST amount if shown separately on receipts/invoices (common in Australia)
+- For insurance documents, extract renewal/expiry date as renewalDate
+- Extract policy number or reference number from insurance, rates notices
+- Extract vendor ABN (11-digit Australian Business Number) if shown on invoices/receipts`;
 
 export function buildExtractionPrompt(): string {
   return EXTRACTION_PROMPT_BASE;
@@ -139,6 +151,10 @@ export function parseExtractionResponse(response: string): ExtractedData {
     propertyAddress: null,
     lineItems: null,
     rawText: null,
+    gstAmount: null,
+    renewalDate: null,
+    referenceNumber: null,
+    abn: null,
     error: "Failed to parse extraction response",
   };
 
@@ -161,6 +177,10 @@ export function parseExtractionResponse(response: string): ExtractedData {
       propertyAddress: parsed.propertyAddress || null,
       lineItems: Array.isArray(parsed.lineItems) ? parsed.lineItems : null,
       rawText: parsed.rawText || null,
+      gstAmount: typeof parsed.gstAmount === "number" ? parsed.gstAmount : null,
+      renewalDate: parsed.renewalDate || null,
+      referenceNumber: parsed.referenceNumber || null,
+      abn: parsed.abn || null,
     };
   } catch {
     return defaultResult;
@@ -178,7 +198,7 @@ export async function extractDocument(
 
     const message = fileType === "application/pdf"
       ? await getAnthropic().messages.create({
-          model: "claude-3-haiku-20240307",
+          model: "claude-sonnet-4-5-20250929",
           max_tokens: 2048,
           messages: [
             {
@@ -201,7 +221,7 @@ export async function extractDocument(
           ],
         })
       : await getAnthropic().messages.create({
-          model: "claude-3-haiku-20240307",
+          model: "claude-sonnet-4-5-20250929",
           max_tokens: 2048,
           messages: [
             {

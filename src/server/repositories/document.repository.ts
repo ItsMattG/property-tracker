@@ -1,4 +1,4 @@
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, gte, sql } from "drizzle-orm";
 import { documents, documentExtractions } from "../db/schema";
 import type {
   Document,
@@ -22,31 +22,27 @@ export class DocumentRepository
     userId: string,
     filters?: DocumentFilters
   ): Promise<Document[]> {
-    let whereClause;
+    const conditions = [eq(documents.userId, userId)];
+
     if (filters?.propertyId && filters?.transactionId) {
-      whereClause = and(
-        eq(documents.userId, userId),
+      conditions.push(
         or(
           eq(documents.propertyId, filters.propertyId),
           eq(documents.transactionId, filters.transactionId)
-        )
+        )!
       );
     } else if (filters?.propertyId) {
-      whereClause = and(
-        eq(documents.userId, userId),
-        eq(documents.propertyId, filters.propertyId)
-      );
+      conditions.push(eq(documents.propertyId, filters.propertyId));
     } else if (filters?.transactionId) {
-      whereClause = and(
-        eq(documents.userId, userId),
-        eq(documents.transactionId, filters.transactionId)
-      );
-    } else {
-      whereClause = eq(documents.userId, userId);
+      conditions.push(eq(documents.transactionId, filters.transactionId));
+    }
+
+    if (filters?.category) {
+      conditions.push(eq(documents.category, filters.category));
     }
 
     return this.db.query.documents.findMany({
-      where: whereClause,
+      where: and(...conditions),
       orderBy: (d, { desc }) => [desc(d.createdAt)],
     });
   }
@@ -113,30 +109,63 @@ export class DocumentRepository
 
   async findExtractionById(
     id: string,
+    userId: string,
     opts?: { withRelations?: boolean }
   ): Promise<ExtractionWithRelations | null> {
     const result = await this.db.query.documentExtractions.findFirst({
       where: eq(documentExtractions.id, id),
-      ...(opts?.withRelations && {
-        with: { draftTransaction: true, matchedProperty: true },
-      }),
+      with: {
+        document: true,
+        ...(opts?.withRelations && {
+          draftTransaction: true,
+          matchedProperty: true,
+        }),
+      },
     });
-    return result ?? null;
+    // Verify ownership through document relation
+    if (!result || result.document?.userId !== userId) return null;
+    return result;
   }
 
-  async findCompletedExtractionsWithRelations(): Promise<
-    ExtractionWithFullRelations[]
-  > {
-    return this.db.query.documentExtractions.findMany({
+  async findCompletedExtractionsWithRelations(
+    userId: string
+  ): Promise<ExtractionWithFullRelations[]> {
+    const results = await this.db.query.documentExtractions.findMany({
       where: eq(documentExtractions.status, "completed"),
       with: { document: true, draftTransaction: true, matchedProperty: true },
       orderBy: desc(documentExtractions.createdAt),
     });
+    // Filter by document ownership (guard against null document from orphaned extractions)
+    return results.filter((e) => e.document?.userId === userId);
   }
 
-  async deleteExtraction(id: string): Promise<void> {
+  async deleteExtraction(id: string, userId: string): Promise<void> {
+    // Verify ownership through document relation before deleting
+    const extraction = await this.db.query.documentExtractions.findFirst({
+      where: eq(documentExtractions.id, id),
+      with: { document: true },
+    });
+    if (!extraction || extraction.document?.userId !== userId) return;
     await this.db
       .delete(documentExtractions)
       .where(eq(documentExtractions.id, id));
+  }
+
+  async getMonthlyExtractionCount(userId: string): Promise<number> {
+    const now = new Date();
+    const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+    const [result] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(documentExtractions)
+      .innerJoin(documents, eq(documentExtractions.documentId, documents.id))
+      .where(
+        and(
+          eq(documents.userId, userId),
+          gte(documentExtractions.createdAt, startOfMonth)
+        )
+      );
+
+    return result?.count ?? 0;
   }
 }

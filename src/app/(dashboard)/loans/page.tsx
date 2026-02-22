@@ -56,13 +56,13 @@ export default function LoansPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Loans</h2>
-          <p className="text-muted-foreground">Manage your investment property loans</p>
+          <h2 className="text-xl sm:text-2xl font-bold">Loans</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage your investment property loans</p>
         </div>
         {!isLoading && loans && loans.length > 0 && (
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/loans/new">
               <Plus className="w-4 h-4 mr-2" />
               Add Loan

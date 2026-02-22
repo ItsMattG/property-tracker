@@ -49,7 +49,7 @@ export interface ParsedCSVRow {
 
 const HEADER_MATCHERS: Record<keyof CSVColumnMap, string[]> = {
   date: ["date", "transaction date", "trans date"],
-  description: ["description", "desc", "narrative", "details", "memo"],
+  description: ["description", "desc", "narrative", "memo"],
   amount: ["amount", "value", "debit/credit", "amount (aud)", "amount(aud)"],
   debit: ["debit", "withdrawal"],
   credit: ["credit", "deposit"],
@@ -59,7 +59,7 @@ const HEADER_MATCHERS: Record<keyof CSVColumnMap, string[]> = {
   isDeductible: ["deductible", "deductible?", "tax deductible"],
   invoiceUrl: ["linked invoice", "invoice url", "invoice link", "linked invoice (url)"],
   invoicePresent: ["invoice present", "invoice present?", "has invoice"],
-  notes: ["notes", "note", "comments"],
+  notes: ["notes", "note", "comments", "details"],
 };
 
 // --- Core utility functions ---
@@ -83,6 +83,43 @@ export function sanitizeField(value: string): string {
   }
 
   return sanitized;
+}
+
+/**
+ * Split CSV content into rows, handling quoted fields that contain newlines.
+ * Standard split("\n") breaks when a quoted field spans multiple lines.
+ */
+export function splitCSVRows(csvContent: string): string[] {
+  const rows: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < csvContent.length; i++) {
+    const char = csvContent[i];
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      current += char;
+    } else if ((char === "\n" || char === "\r") && !inQuotes) {
+      // Skip \n after \r in \r\n sequences
+      if (char === "\r" && csvContent[i + 1] === "\n") {
+        i++;
+      }
+      if (current.trim()) {
+        rows.push(current);
+      }
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  // Push final row
+  if (current.trim()) {
+    rows.push(current);
+  }
+
+  return rows;
 }
 
 /**
@@ -144,6 +181,19 @@ export function parseCSVHeaders(headers: string[]): CSVColumnMap {
  * Fuzzy match a category string to a category enum value.
  * Matching order: exact value -> exact label (case-insensitive) -> snake_case conversion -> partial/contains.
  */
+/**
+ * Normalize a string for fuzzy comparison: lowercase, strip punctuation like
+ * parentheses, ampersands, slashes, and collapse whitespace.
+ */
+function normalizeForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\(s\)/g, "s") // "loan(s)" → "loans"
+    .replace(/[()&/\\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function matchCategory(input: string): string | null {
   if (!input) return null;
 
@@ -164,11 +214,18 @@ export function matchCategory(input: string): string | null {
   const snakeMatch = categories.find((c) => c.value === snakeCased);
   if (snakeMatch) return snakeMatch.value;
 
-  // 4. Partial/contains match — check if input is contained in label or label in input
+  // 4. Normalized match — strip punctuation then compare
+  const normalizedInput = normalizeForMatch(trimmed);
+  const normalizedMatch = categories.find(
+    (c) => normalizeForMatch(c.label) === normalizedInput
+  );
+  if (normalizedMatch) return normalizedMatch.value;
+
+  // 5. Partial/contains match — check if input is contained in label or label in input
   const partialMatch = categories.find(
     (c) =>
-      c.label.toLowerCase().includes(lowerInput) ||
-      lowerInput.includes(c.label.toLowerCase())
+      normalizeForMatch(c.label).includes(normalizedInput) ||
+      normalizedInput.includes(normalizeForMatch(c.label))
   );
   if (partialMatch) return partialMatch.value;
 
@@ -249,7 +306,7 @@ function tryNormalizeDate(dateStr: string): string | null {
 // --- Legacy parseCSV (refactored to use splitCSVLine) ---
 
 export function parseCSV(csvContent: string): CSVRow[] {
-  const lines = csvContent.trim().split("\n");
+  const lines = splitCSVRows(csvContent);
   if (lines.length < 2) {
     throw new ValidationError("CSV must have at least a header row and one data row");
   }
@@ -262,7 +319,7 @@ export function parseCSV(csvContent: string): CSVRow[] {
     ["date", "transaction date", "trans date"].includes(h)
   );
   const descIdx = headers.findIndex((h) =>
-    ["description", "desc", "narrative", "details", "memo"].includes(h)
+    ["description", "desc", "narrative", "memo"].includes(h)
   );
   const amountIdx = headers.findIndex((h) =>
     ["amount", "value", "debit/credit"].includes(h)
@@ -316,7 +373,7 @@ export function parseCSV(csvContent: string): CSVRow[] {
  * Returns ParsedCSVRow[] with all detectable fields.
  */
 export function parseRichCSV(csvContent: string, columnMap: CSVColumnMap): ParsedCSVRow[] {
-  const lines = csvContent.trim().split("\n");
+  const lines = splitCSVRows(csvContent);
   if (lines.length < 2) return [];
 
   const rows: ParsedCSVRow[] = [];

@@ -12,17 +12,23 @@ export const featureFlags = {
   portfolio: false,
   forecast: false,
   cashFlow: true,
-  portfolioShares: false,
+  portfolioShares: true,
+  scorecard: false,
+  scenarios: false,
+  accountantPack: false,
+  receipts: false,
   compliance: false,
   brokerPortal: false,
   mytaxExport: false,
   loans: true,
-  compareLoans: false,
+  compareLoans: true,
   export: true,
   emails: false,
   tasks: false,
+  reminders: true,
 
   // ── Settings ──────────────────────────────────────────────────────
+  propertyGroups: true,
   notifications: false,
   integrations: false,
   loanPacks: false,
@@ -41,19 +47,23 @@ export const featureFlags = {
   // ── Property detail sections ────────────────────────────────────
   valuation: true,
   climateRisk: false,
-  milestones: false,
+  rentReview: true,
+  milestones: true,
   performanceBenchmark: false,
-  similarProperties: false,
+  portfolioBenchmarking: false,
+  similarProperties: true,
 
   // ── Property features ──────────────────────────────────────────────
-  documents: false,
+  documents: true,
 
   // ── Other UI ──────────────────────────────────────────────────────
   fySelector: false,
-  aiAssistant: false,
+  aiAssistant: true,
+  aiInsights: true,
   whatsNew: false,
   helpMenu: false,
   quickAdd: false,
+  borrowingPowerEstimator: false,
 } as const;
 
 export type FeatureFlag = keyof typeof featureFlags;
@@ -72,7 +82,14 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/export": "export",
   "/emails": "emails",
   "/tasks": "tasks",
+  "/analytics/benchmarking": "portfolioBenchmarking",
+  "/analytics/scorecard": "scorecard",
+  "/reports/scenarios": "scenarios",
+  "/reports/accountant-pack": "accountantPack",
+  "/receipts": "receipts",
   "/cash-flow": "cashFlow",
+  "/reminders": "reminders",
+  "/settings/property-groups": "propertyGroups",
   "/settings/notifications": "notifications",
   "/settings/integrations": "integrations",
   "/settings/loan-packs": "loanPacks",
@@ -87,6 +104,7 @@ export const routeToFlag: Record<string, FeatureFlag> = {
   "/settings/support-admin": "supportAdmin",
   "/settings/bug-reports": "bugReports",
   "/settings/support": "support",
+  "/tools/borrowing-power": "borrowingPowerEstimator",
 };
 
 /**

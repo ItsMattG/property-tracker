@@ -6,6 +6,8 @@ import { eq } from "drizzle-orm";
 import { createOAuth2Client } from "@/lib/gmail/config";
 import { encrypt } from "@/lib/encryption";
 import { google } from "googleapis";
+import { validateOAuthState, clearOAuthNonceCookie } from "@/lib/oauth-state";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,7 +23,7 @@ export async function GET(request: NextRequest) {
 
   // Handle OAuth errors
   if (error) {
-    console.error("Gmail OAuth error:", error);
+    logger.error("Gmail OAuth error", new Error(String(error)), { domain: "auth", provider: "gmail" });
     return NextResponse.redirect(
       new URL(`${settingsUrl}?error=${encodeURIComponent(error)}`, baseUrl)
     );
@@ -39,17 +41,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/sign-in", baseUrl));
   }
 
-  // Verify state matches current user (CSRF protection)
-  try {
-    const decodedState = Buffer.from(state, "base64url").toString();
-    const [stateUserId] = decodedState.split(":");
-    if (stateUserId !== session.user.id) {
-      console.error("State mismatch:", { stateUserId, userId: session.user.id });
-      return NextResponse.redirect(
-        new URL(`${settingsUrl}?error=invalid_state`, baseUrl)
-      );
-    }
-  } catch {
+  // Validate state: userId must match session AND nonce must match cookie
+  const stateError = validateOAuthState("gmail", state, session.user.id, request);
+  if (stateError) {
+    logger.error("Gmail OAuth state validation failed", new Error(stateError), { domain: "auth", provider: "gmail" });
     return NextResponse.redirect(
       new URL(`${settingsUrl}?error=invalid_state`, baseUrl)
     );
@@ -118,11 +113,13 @@ export async function GET(request: NextRequest) {
         },
       });
 
-    return NextResponse.redirect(
+    const response = NextResponse.redirect(
       new URL(`${settingsUrl}?success=gmail_connected`, baseUrl)
     );
+    clearOAuthNonceCookie("gmail", response);
+    return response;
   } catch (error) {
-    console.error("Gmail OAuth callback error:", error);
+    logger.error("Gmail OAuth callback failed", error instanceof Error ? error : new Error(String(error)), { domain: "auth", provider: "gmail" });
     return NextResponse.redirect(
       new URL(`${settingsUrl}?error=oauth_failed`, baseUrl)
     );

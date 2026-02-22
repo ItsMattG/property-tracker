@@ -1,9 +1,36 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { router, protectedProcedure, writeProcedure } from "../../trpc";
-import { documentExtractions, transactions, properties } from "../../db/schema";
-import { extractDocument, matchPropertyByAddress } from "../../services/property-analysis";
+import { documentExtractions, transactions, properties, subscriptions } from "../../db/schema";
+import { extractDocument, matchPropertyByAddress, findPotentialDuplicate } from "../../services/property-analysis";
+import { getPlanFromSubscription, PLAN_LIMITS } from "../../services/billing/subscription";
+import type { DB } from "../../repositories/base";
+import { logger } from "@/lib/logger";
+
+interface ExtractedData {
+  vendor: string | null;
+  amount: number | null;
+  date: string | null;
+  category: string | null;
+  propertyAddress: string | null;
+  duplicateOf?: string | null;
+}
+
+function safeJsonParse(str: string | null): ExtractedData | null {
+  if (!str) return null;
+  try { return JSON.parse(str) as ExtractedData; } catch { return null; }
+}
+
+async function getUserPlan(db: DB, ownerId: string) {
+  // Cross-domain: reads subscription for plan gating
+  const sub = await db.query.subscriptions.findFirst({
+    where: eq(subscriptions.userId, ownerId),
+  });
+  return getPlanFromSubscription(
+    sub ? { plan: sub.plan, status: sub.status, currentPeriodEnd: sub.currentPeriodEnd } : null
+  );
+}
 
 export const documentExtractionRouter = router({
   /**
@@ -24,6 +51,20 @@ export const documentExtractionRouter = router({
 
       if (existing) {
         return existing;
+      }
+
+      // Plan gating: check monthly extraction limit
+      const currentPlan = await getUserPlan(ctx.db, ctx.portfolio.ownerId);
+      const limit = PLAN_LIMITS[currentPlan].maxReceiptScans;
+
+      if (limit !== Infinity) {
+        const monthlyCount = await ctx.uow.document.getMonthlyExtractionCount(ctx.portfolio.ownerId);
+        if (monthlyCount >= limit) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: `You've used all ${limit} receipt scans this month. Upgrade to Pro for unlimited scans.`,
+          });
+        }
       }
 
       // Create extraction record
@@ -67,6 +108,20 @@ export const documentExtractionRouter = router({
             }
           }
 
+          // Check for potential duplicate transactions
+          let duplicateOf: string | null = null;
+          if (result.data.amount) {
+            // Cross-domain: reads user transactions for duplicate detection
+            const existingTxs = await db.query.transactions.findMany({
+              where: eq(transactions.userId, ownerId),
+              columns: { id: true, date: true, amount: true, description: true, status: true },
+            });
+            duplicateOf = findPotentialDuplicate(
+              { amount: result.data.amount, date: result.data.date, vendor: result.data.vendor },
+              existingTxs
+            );
+          }
+
           // Create draft transaction if amount was extracted
           let draftTransactionId: string | null = null;
           if (result.data.amount) {
@@ -87,7 +142,7 @@ export const documentExtractionRouter = router({
           await db.update(documentExtractions).set({
             status: "completed",
             documentType: result.data.documentType,
-            extractedData: JSON.stringify(result.data),
+            extractedData: JSON.stringify({ ...result.data, duplicateOf }),
             confidence: String(result.data.confidence),
             matchedPropertyId,
             propertyMatchConfidence: propertyMatchConfidence ? String(propertyMatchConfidence) : null,
@@ -95,7 +150,7 @@ export const documentExtractionRouter = router({
             completedAt: new Date(),
           }).where(eq(documentExtractions.id, extraction.id));
         } catch (error) {
-          console.error("Document extraction failed for extraction", extraction.id, error);
+          logger.error("Document extraction failed", error instanceof Error ? error : new Error(String(error)), { extractionId: extraction.id });
           try {
             await db.update(documentExtractions)
               .set({
@@ -105,7 +160,7 @@ export const documentExtractionRouter = router({
               })
               .where(eq(documentExtractions.id, extraction.id));
           } catch (dbError) {
-            console.error("Failed to update extraction status to failed for extraction", extraction.id, dbError);
+            logger.error("Failed to update extraction status to failed", dbError instanceof Error ? dbError : new Error(String(dbError)), { extractionId: extraction.id });
           }
         }
       })();
@@ -119,6 +174,10 @@ export const documentExtractionRouter = router({
   getExtraction: protectedProcedure
     .input(z.object({ documentId: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
+      // Verify document belongs to user before returning extraction
+      const document = await ctx.uow.document.findById(input.documentId, ctx.portfolio.ownerId);
+      if (!document) return null;
+
       const extraction = await ctx.uow.document.findExtractionByDocumentId(
         input.documentId,
         { withRelations: true }
@@ -128,7 +187,7 @@ export const documentExtractionRouter = router({
 
       return {
         ...extraction,
-        extractedData: extraction.extractedData ? JSON.parse(extraction.extractedData) : null,
+        extractedData: safeJsonParse(extraction.extractedData),
       };
     }),
 
@@ -136,13 +195,13 @@ export const documentExtractionRouter = router({
    * Lists extractions with pending_review transactions
    */
   listPendingReviews: protectedProcedure.query(async ({ ctx }) => {
-    const extractions = await ctx.uow.document.findCompletedExtractionsWithRelations();
+    const extractions = await ctx.uow.document.findCompletedExtractionsWithRelations(ctx.portfolio.ownerId);
 
     return extractions
       .filter((e) => e.draftTransaction?.status === "pending_review")
       .map((e) => ({
         ...e,
-        extractedData: e.extractedData ? JSON.parse(e.extractedData) : null,
+        extractedData: safeJsonParse(e.extractedData),
       }));
   }),
 
@@ -161,6 +220,7 @@ export const documentExtractionRouter = router({
     .mutation(async ({ ctx, input }) => {
       const extraction = await ctx.uow.document.findExtractionById(
         input.extractionId,
+        ctx.portfolio.ownerId,
         { withRelations: true }
       );
 
@@ -179,7 +239,10 @@ export const documentExtractionRouter = router({
         amount: input.amount ? String(input.amount) : extraction.draftTransaction.amount,
         date: input.date ?? extraction.draftTransaction.date,
         description: input.description ?? extraction.draftTransaction.description,
-      }).where(eq(transactions.id, extraction.draftTransaction.id));
+      }).where(and(
+        eq(transactions.id, extraction.draftTransaction.id),
+        eq(transactions.userId, ctx.portfolio.ownerId),
+      ));
 
       return { success: true };
     }),
@@ -190,7 +253,10 @@ export const documentExtractionRouter = router({
   discardExtraction: writeProcedure
     .input(z.object({ extractionId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const extraction = await ctx.uow.document.findExtractionById(input.extractionId);
+      const extraction = await ctx.uow.document.findExtractionById(
+        input.extractionId,
+        ctx.portfolio.ownerId
+      );
 
       if (!extraction) {
         throw new TRPCError({
@@ -201,12 +267,30 @@ export const documentExtractionRouter = router({
 
       // Cross-domain: deletes draft transaction from extraction context
       if (extraction.draftTransactionId) {
-        await ctx.db.delete(transactions).where(eq(transactions.id, extraction.draftTransactionId));
+        await ctx.db.delete(transactions).where(and(
+          eq(transactions.id, extraction.draftTransactionId),
+          eq(transactions.userId, ctx.portfolio.ownerId),
+        ));
       }
 
       // Delete extraction
-      await ctx.uow.document.deleteExtraction(input.extractionId);
+      await ctx.uow.document.deleteExtraction(input.extractionId, ctx.portfolio.ownerId);
 
       return { success: true };
     }),
+
+  /**
+   * Returns remaining receipt scan quota for the current billing period
+   */
+  getRemainingScans: protectedProcedure.query(async ({ ctx }) => {
+    const currentPlan = await getUserPlan(ctx.db, ctx.portfolio.ownerId);
+    const limit = PLAN_LIMITS[currentPlan].maxReceiptScans;
+    const used = await ctx.uow.document.getMonthlyExtractionCount(ctx.portfolio.ownerId);
+
+    if (limit === Infinity) {
+      return { used, limit: null, remaining: null };
+    }
+
+    return { used, limit, remaining: Math.max(0, limit - used) };
+  }),
 });

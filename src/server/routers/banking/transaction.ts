@@ -16,6 +16,7 @@ export const transactionRouter = router({
         startDate: z.string().optional(),
         endDate: z.string().optional(),
         bankAccountId: z.string().uuid().optional(),
+        sortOrder: z.enum(["asc", "desc"]).optional(),
         limit: z.number().min(1).max(100).default(50),
         offset: z.number().min(0).default(0),
       })

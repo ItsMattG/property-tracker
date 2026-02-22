@@ -38,3 +38,42 @@ export interface PortfolioPerformanceSummary {
   topPerformer: { propertyId: string; address: string; score: number } | null;
   worstPerformer: { propertyId: string; address: string; score: number } | null;
 }
+
+/** Scorecard entry for a single property in the portfolio summary */
+export interface PropertyScorecardEntry {
+  propertyId: string;
+  address: string;
+  suburb: string;
+  state: string;
+  purchasePrice: number;
+  currentValue: number;
+  grossYield: number;
+  netYield: number;
+  annualCashFlow: number;
+  annualRent: number;
+  annualExpenses: number;
+  performanceScore: number;
+  scoreLabel: "Excellent" | "Good" | "Average" | "Below Average" | "Poor";
+  yieldPercentile: number | null;
+  expensePercentile: number | null;
+  isUnderperforming: boolean;
+  capRate: number;                    // (annualRent - operatingExpenses) / currentValue * 100
+  cashOnCash: number | null;          // annualCashFlow / totalCashInvested * 100, null if no capital transactions
+  annualTaxDeductions: number;        // sum of deductible expenses
+  capitalGrowthPercent: number;       // (currentValue - purchasePrice) / purchasePrice * 100
+  equity: number;                     // currentValue - totalLoans
+}
+
+/** Portfolio-level scorecard summary */
+export interface PortfolioScorecardSummary {
+  properties: PropertyScorecardEntry[];
+  averageScore: number;
+  averageGrossYield: number;
+  averageNetYield: number;
+  totalAnnualCashFlow: number;
+  totalAnnualRent: number;
+  totalAnnualExpenses: number;
+  totalCurrentValue: number;
+  bestPerformer: { propertyId: string; address: string; score: number } | null;
+  worstPerformer: { propertyId: string; address: string; score: number } | null;
+}

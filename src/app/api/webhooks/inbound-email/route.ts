@@ -7,6 +7,7 @@ import {
   isSenderApproved,
   processEmailBackground,
 } from "@/server/services/email";
+import { logger } from "@/lib/logger";
 import { waitUntil } from "@vercel/functions";
 import { timingSafeEqual } from "crypto";
 
@@ -17,7 +18,7 @@ const INBOUND_SECRET = process.env.SENDGRID_INBOUND_SECRET;
 function verifyBasicAuth(request: NextRequest): boolean {
   if (!INBOUND_SECRET) {
     if (process.env.NODE_ENV === "production") return false;
-    console.warn("SENDGRID_INBOUND_SECRET not set — skipping auth in development");
+    logger.warn("SENDGRID_INBOUND_SECRET not set — skipping auth in development");
     return true;
   }
 
@@ -129,18 +130,23 @@ export async function POST(request: NextRequest) {
 
     // Parse attachments from SendGrid multipart
     const attachments: { filename: string; contentType: string; content: Buffer }[] = [];
-    const attachmentCount = parseInt((formData.get("attachments") as string) ?? "0", 10);
+    const MAX_ATTACHMENTS = 50;
+    const rawAttachmentCount = parseInt((formData.get("attachments") as string) ?? "0", 10);
+    const attachmentCount = Math.min(isNaN(rawAttachmentCount) ? 0 : rawAttachmentCount, MAX_ATTACHMENTS);
 
     for (let i = 1; i <= attachmentCount; i++) {
       const file = formData.get(`attachment${i}`) as File | null;
-      if (file) {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        attachments.push({
-          filename: file.name,
-          contentType: file.type,
-          content: buffer,
-        });
+      if (!file) continue;
+      if (file.size > 25 * 1024 * 1024) {
+        logger.warn("Skipping oversized email attachment", { fileName: file.name, size: file.size });
+        continue;
       }
+      const buffer = Buffer.from(await file.arrayBuffer());
+      attachments.push({
+        filename: file.name,
+        contentType: file.type,
+        content: buffer,
+      });
     }
 
     // Background processing: attachments, invoice matching, notification
@@ -159,7 +165,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Inbound email webhook error:", error);
+    logger.error("Inbound email webhook error", error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ received: true });
   }
 }

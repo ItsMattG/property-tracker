@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import { getAuthUrl } from "@/lib/gmail/config";
-import { randomBytes } from "crypto";
+import { createOAuthState, setOAuthNonceCookie } from "@/lib/oauth-state";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,11 +15,10 @@ export async function GET() {
     );
   }
 
-  // Create state with user ID and random nonce for CSRF protection
-  const nonce = randomBytes(16).toString("hex");
-  const state = Buffer.from(`${session.user.id}:${nonce}`).toString("base64url");
-
+  const { state, nonce } = createOAuthState(session.user.id);
   const authUrl = getAuthUrl(state);
+  const response = NextResponse.redirect(authUrl);
+  setOAuthNonceCookie("gmail", nonce, response);
 
-  return NextResponse.redirect(authUrl);
+  return response;
 }

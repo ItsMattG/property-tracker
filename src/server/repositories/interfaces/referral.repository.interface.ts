@@ -2,7 +2,7 @@ import type { ReferralCode, Referral } from "../../db/schema";
 
 export interface ReferralWithReferee {
   id: string;
-  status: string;
+  status: "pending" | "qualified" | "rewarded" | "expired";
   createdAt: Date;
   qualifiedAt: Date | null;
   refereeName: string | null;
@@ -37,6 +37,9 @@ export interface IReferralRepository {
 
   /** Get total months of free credits for a user */
   getCreditsTotal(userId: string): Promise<number>;
+
+  /** Get count of pending referrals (invited but not yet qualified) */
+  getPendingCount(userId: string): Promise<number>;
 
   /** Insert multiple credit records */
   createCredits(

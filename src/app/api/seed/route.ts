@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { seed } from "@/lib/seed";
 import type { SeedMode } from "@/lib/seed";
 
@@ -37,9 +38,14 @@ export async function POST(request: NextRequest) {
       summary,
     });
   } catch (error) {
-    console.error("Seed API error:", error);
+    logger.error("Seed operation failed", error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json(
-      { error: "Seed failed", details: error instanceof Error ? error.message : "Unknown error" },
+      {
+        error: "Seed operation failed",
+        ...(process.env.NODE_ENV === "development" && {
+          details: error instanceof Error ? error.message : "Unknown error",
+        }),
+      },
       { status: 500 }
     );
   }

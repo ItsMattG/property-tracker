@@ -6,6 +6,8 @@ import { TRPCError } from "@trpc/server";
 import { getClimateRisk } from "../../services/property-analysis";
 import { getPlanFromSubscription, PLAN_LIMITS, type Plan } from "../../services/billing/subscription";
 
+const purposes = ["investment", "owner_occupied", "commercial", "short_term_rental"] as const;
+
 const propertySchema = z.object({
   address: z.string().min(1, "Address is required"),
   suburb: z.string().min(1, "Suburb is required"),
@@ -17,6 +19,8 @@ const propertySchema = z.object({
   entityName: z.string().optional(),
   latitude: z.string().optional(),
   longitude: z.string().optional(),
+  purpose: z.enum(purposes).optional(),
+  colour: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
 });
 
 export const propertyRouter = router({
@@ -116,6 +120,8 @@ export const propertyRouter = router({
         latitude: input.latitude || null,
         longitude: input.longitude || null,
         climateRisk,
+        ...(input.purpose && { purpose: input.purpose }),
+        ...(input.colour && { colour: input.colour }),
       });
 
       // Check if this is the user's first property (for referral qualification)

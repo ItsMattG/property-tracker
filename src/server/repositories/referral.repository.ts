@@ -1,4 +1,4 @@
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { referralCodes, referrals, referralCredits, users } from "../db/schema";
 import type { ReferralCode, Referral } from "../db/schema";
 import { BaseRepository } from "./base";
@@ -73,6 +73,21 @@ export class ReferralRepository
       .update(referrals)
       .set({ status: "qualified", qualifiedAt: new Date() })
       .where(eq(referrals.id, referralId));
+  }
+
+  async getPendingCount(userId: string): Promise<number> {
+    const [result] = await this.db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(referrals)
+      .where(
+        and(
+          eq(referrals.referrerUserId, userId),
+          eq(referrals.status, "pending")
+        )
+      );
+    return result?.count ?? 0;
   }
 
   async getCreditsTotal(userId: string): Promise<number> {

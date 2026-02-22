@@ -176,7 +176,7 @@ describe("documents router", () => {
       expect(result.storagePath).toContain("550e8400-e29b-41d4-a716-446655440000");
     });
 
-    it("rejects when neither propertyId nor transactionId provided", async () => {
+    it("allows upload without propertyId or transactionId (standalone receipt)", async () => {
       const ctx = createMockContext({ userId: "user-1", user: mockUser });
 
       ctx.db = {
@@ -185,15 +185,24 @@ describe("documents router", () => {
         },
       };
 
+      const mockFrom = vi.mocked(supabaseAdmin.storage.from);
+      mockFrom.mockReturnValue({
+        createSignedUploadUrl: vi.fn().mockResolvedValue({
+          data: { signedUrl: "https://example.com/upload", token: "test-token" },
+          error: null,
+        }),
+      } as unknown as ReturnType<typeof supabaseAdmin.storage.from>);
+
       const caller = createTestCaller(ctx);
 
-      await expect(
-        caller.documents.getUploadUrl({
-          fileName: "receipt.pdf",
-          fileType: "application/pdf",
-          fileSize: 1024,
-        })
-      ).rejects.toThrow("Exactly one of propertyId or transactionId must be provided");
+      const result = await caller.documents.getUploadUrl({
+        fileName: "receipt.pdf",
+        fileType: "application/pdf",
+        fileSize: 1024,
+      });
+
+      expect(result.signedUrl).toBe("https://example.com/upload");
+      expect(result.storagePath).toContain("receipts");
     });
 
     it("rejects when both propertyId and transactionId provided", async () => {
@@ -215,7 +224,7 @@ describe("documents router", () => {
           propertyId: "550e8400-e29b-41d4-a716-446655440000",
           transactionId: "660e8400-e29b-41d4-a716-446655440001",
         })
-      ).rejects.toThrow("Exactly one of propertyId or transactionId must be provided");
+      ).rejects.toThrow("Cannot provide both propertyId and transactionId");
     });
 
     it("rejects non-existent property", async () => {
