@@ -255,9 +255,11 @@ test.describe("Dashboard", () => {
   test("should display Cash Flow widget", async ({
     page,
   }) => {
-    // CashFlowWidget renders a CardTitle "Cash Flow" in all states (loading, empty, data)
+    // CashFlowWidget renders a CardTitle (div, not heading) in all states
+    // Use locator scoped to main content to avoid matching sidebar "Cash Flow" link
+    const main = page.locator("main");
     await expect(
-      page.getByRole("heading", { name: "Cash Flow", exact: true })
+      main.getByText("Cash Flow", { exact: true }).first()
     ).toBeVisible({ timeout: 10_000 });
   });
 
