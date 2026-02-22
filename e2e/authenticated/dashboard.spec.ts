@@ -1,16 +1,22 @@
 import { test, expect } from "@playwright/test";
 import { featureFlags } from "../../src/config/feature-flags";
-import { isBenignError, safeGoto, dismissTourIfVisible } from "../fixtures/test-helpers";
+import { isBenignError, safeGoto, dismissTourIfVisible, dismissDialogsIfVisible } from "../fixtures/test-helpers";
 
 test.describe("Dashboard", () => {
+  // Dashboard server component makes tRPC calls that can be slow on CI
+  test.setTimeout(60_000);
+
   let pageErrors: Error[];
 
   test.beforeEach(async ({ page }) => {
     pageErrors = [];
     page.on("pageerror", (err) => pageErrors.push(err));
     await safeGoto(page, "/dashboard");
-    // Wait for initial React render (shorter wait to leave more time for test body)
-    await page.waitForTimeout(1000);
+    await expect(
+      page.getByRole("heading", { name: /welcome to bricktrack/i })
+    ).toBeVisible({ timeout: 30_000 });
+    await dismissTourIfVisible(page);
+    await dismissDialogsIfVisible(page);
   });
 
   test.afterEach(() => {
