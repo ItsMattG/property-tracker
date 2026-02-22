@@ -225,7 +225,7 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                     }
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="wiz-suburb">Suburb</Label>
                     <Input
@@ -284,7 +284,7 @@ export function EnhancedWizard({ onClose }: EnhancedWizardProps) {
                     <p className="text-xs text-destructive">{fieldErrors.postcode}</p>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="wiz-price">Purchase Price</Label>
                     <NumericFormat

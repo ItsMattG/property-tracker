@@ -18,7 +18,6 @@ export type {
 // depreciation-extract
 export {
   extractDepreciationSchedule,
-  calculateRemainingValue,
 } from "./depreciation-extract";
 export type { ExtractedAsset } from "./depreciation-extract";
 // Note: ExtractionResult type in depreciation-extract conflicts with document-extraction.
@@ -68,6 +67,9 @@ export {
   calculateOverallRisk,
   getClimateRisk,
 } from "./climate-risk";
+
+// duplicate-detection
+export { findPotentialDuplicate } from "./duplicate-detection";
 
 // vector-generation
 export {

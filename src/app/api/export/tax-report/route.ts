@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthSession } from "@/lib/auth";
 import jsPDF from "jspdf";
 import { formatCurrencyWithCents } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 interface TaxReportData {
   financialYear: string;
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Failed to generate tax report PDF:", error);
+    logger.error("Failed to generate tax report PDF", error instanceof Error ? error : new Error(String(error)), { domain: "export", format: "pdf" });
     return NextResponse.json(
       { error: "Failed to generate PDF" },
       { status: 500 }

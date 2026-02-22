@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { formatCurrency } from "@/lib/utils";
-import { Calculator, Home, ArrowRight, Loader2, TrendingUp } from "lucide-react";
+import { Calculator, Home, ArrowRight, Loader2, TrendingUp, RefreshCw } from "lucide-react";
 
 export function TaxPositionCard() {
-  const { data: summary, isLoading } = trpc.taxPosition.getSummary.useQuery({});
+  const { data: summary, isLoading, isError, refetch } = trpc.taxPosition.getSummary.useQuery({});
   const { data: currentYear } = trpc.taxPosition.getCurrentYear.useQuery();
   const { data: forecast } = trpc.taxForecast.getForecast.useQuery(
     { financialYear: currentYear! },
@@ -33,7 +33,7 @@ export function TaxPositionCard() {
     );
   }
 
-  if (!summary) {
+  if (isError || !summary) {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -41,7 +41,16 @@ export function TaxPositionCard() {
           <Calculator className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Unable to load</p>
+          <p className="text-sm text-muted-foreground">Unable to load tax position</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            className="mt-2 h-7 text-xs"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );

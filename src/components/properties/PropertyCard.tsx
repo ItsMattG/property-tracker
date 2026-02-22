@@ -42,6 +42,13 @@ interface PropertyCardProps {
   onDelete?: (id: string) => void;
 }
 
+const purposeLabels: Record<string, string> = {
+  investment: "Investment",
+  owner_occupied: "Owner-Occupied",
+  commercial: "Commercial",
+  short_term_rental: "Short-Term Rental",
+};
+
 export function PropertyCard({ property, metrics, onEdit, onDelete }: PropertyCardProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
@@ -180,6 +187,9 @@ export function PropertyCard({ property, metrics, onEdit, onDelete }: PropertyCa
         )}
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
+            {property.purpose && property.purpose !== "investment" && (
+              <Badge variant="outline">{purposeLabels[property.purpose] ?? property.purpose}</Badge>
+            )}
             <Badge variant="secondary">{property.entityName}</Badge>
             {metrics && (
               <PerformanceBadge

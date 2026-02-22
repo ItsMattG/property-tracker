@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc/client";
-import { List, Calendar, Plus, Download } from "lucide-react";
+import { List, Calendar, Plus, Download, Camera } from "lucide-react";
 import { TransactionIllustration } from "@/components/ui/illustrations/TransactionIllustration";
 import Link from "next/link";
 import type { Category, TransactionFilterInput } from "@/types/category";
@@ -30,6 +30,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { onCrossTabInvalidation } from "@/lib/trpc/cross-tab";
 import { TransactionTableSkeleton } from "@/components/skeletons";
 import { TransactionCardList } from "@/components/transactions/TransactionCardList";
+import { ReceiptScanner } from "@/components/documents/ReceiptScanner";
 
 type ViewMode = "transactions" | "reconciliation";
 
@@ -40,7 +41,9 @@ export default function TransactionsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("transactions");
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<TransactionFilterInput>({});
+  const [dateSortOrder, setDateSortOrder] = useState<"asc" | "desc">("desc");
   const [deleteTransaction, setDeleteTransaction] = useState<{ id: string; description: string } | null>(null);
+  const [showReceiptScanner, setShowReceiptScanner] = useState(false);
   const { visibility, toggle, resetToDefaults } = useColumnVisibility();
   useTour({ tourId: "transactions" });
 
@@ -67,6 +70,7 @@ export default function TransactionsPage() {
     startDate: filters.startDate,
     endDate: filters.endDate,
     isVerified: filters.isVerified,
+    sortOrder: dateSortOrder,
     limit: PAGE_SIZE,
     offset,
   });
@@ -87,6 +91,7 @@ export default function TransactionsPage() {
         startDate: filters.startDate,
         endDate: filters.endDate,
         isVerified: filters.isVerified,
+        sortOrder: dateSortOrder,
         limit: PAGE_SIZE,
         offset,
       };
@@ -137,6 +142,7 @@ export default function TransactionsPage() {
         startDate: filters.startDate,
         endDate: filters.endDate,
         isVerified: filters.isVerified,
+        sortOrder: dateSortOrder,
         limit: PAGE_SIZE,
         offset,
       };
@@ -266,6 +272,11 @@ export default function TransactionsPage() {
     setPage(newPage);
   };
 
+  const handleToggleDateSort = () => {
+    setDateSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
+    setPage(1);
+  };
+
   // Reset to page 1 when filters change
   const handleFiltersChange = (newFilters: {
     propertyId?: string;
@@ -280,14 +291,23 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Transactions</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold">Transactions</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Review and categorise your transactions
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowReceiptScanner(true)}
+            className="hidden sm:inline-flex"
+          >
+            <Camera className="w-4 h-4 mr-2" />
+            Scan Receipt
+          </Button>
           <ColumnVisibilityMenu
             visibility={visibility}
             onToggle={toggle}
@@ -298,12 +318,13 @@ export default function TransactionsPage() {
             size="sm"
             onClick={handleExportCSV}
             disabled={exportCSV.isFetching}
+            className="hidden sm:inline-flex"
           >
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
           <ImportCSVDialog onSuccess={() => utils.transaction.list.invalidate()} />
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/transactions/new">
               <Plus className="w-4 h-4 mr-2" />
               Add Transaction
@@ -372,6 +393,8 @@ export default function TransactionsPage() {
                   columnVisibility={visibility}
                   onToggleColumn={toggle}
                   onResetColumns={resetToDefaults}
+                  dateSortOrder={dateSortOrder}
+                  onToggleDateSort={handleToggleDateSort}
                 />
               </div>
               {totalPages > 1 && (
@@ -397,6 +420,11 @@ export default function TransactionsPage() {
       ) : (
         <ReconciliationView propertyId={filters.propertyId} />
       )}
+
+      <ReceiptScanner
+        open={showReceiptScanner}
+        onOpenChange={setShowReceiptScanner}
+      />
 
       <AlertDialog
         open={!!deleteTransaction}

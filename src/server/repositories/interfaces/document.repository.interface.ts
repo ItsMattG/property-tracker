@@ -1,10 +1,14 @@
 import type { Document, NewDocument, DocumentExtraction, NewDocumentExtraction, Property, Transaction } from "../../db/schema";
 import type { DB } from "../base";
 
+/** Valid document category values matching documentCategoryEnum */
+type DocumentCategory = "receipt" | "contract" | "depreciation" | "lease" | "other";
+
 /** Filters for listing documents */
 export interface DocumentFilters {
   propertyId?: string;
   transactionId?: string;
+  category?: DocumentCategory;
 }
 
 /** Extraction with optional relations (used when relations may or may not be loaded) */
@@ -43,12 +47,15 @@ export interface IDocumentRepository {
   /** Find extraction by document ID */
   findExtractionByDocumentId(documentId: string, opts?: { withRelations?: boolean }): Promise<ExtractionWithRelations | null>;
 
-  /** Find extraction by ID with optional relations */
-  findExtractionById(id: string, opts?: { withRelations?: boolean }): Promise<ExtractionWithRelations | null>;
+  /** Find extraction by ID scoped to user (joins through document) */
+  findExtractionById(id: string, userId: string, opts?: { withRelations?: boolean }): Promise<ExtractionWithRelations | null>;
 
-  /** List completed extractions with all relations loaded */
-  findCompletedExtractionsWithRelations(): Promise<ExtractionWithFullRelations[]>;
+  /** List completed extractions for a user with all relations loaded */
+  findCompletedExtractionsWithRelations(userId: string): Promise<ExtractionWithFullRelations[]>;
 
-  /** Delete an extraction record */
-  deleteExtraction(id: string): Promise<void>;
+  /** Delete an extraction record scoped to user */
+  deleteExtraction(id: string, userId: string): Promise<void>;
+
+  /** Count extractions created this calendar month for a user */
+  getMonthlyExtractionCount(userId: string): Promise<number>;
 }

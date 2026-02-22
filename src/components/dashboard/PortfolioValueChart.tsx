@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { trpc } from "@/lib/trpc/client";
+import { useChartColors } from "@/hooks/useChartColors";
 import { TrendingUp } from "lucide-react";
 import { TimeRangeToggle } from "./TimeRangeToggle";
 import { formatCurrency } from "@/lib/utils";
@@ -47,6 +48,7 @@ function generateMonthLabels(count: number): string[] {
 
 export function PortfolioValueChart() {
   const [months, setMonths] = useState(6);
+  const colors = useChartColors();
   const { data: properties } = trpc.property.list.useQuery(undefined, {
     staleTime: 5 * 60_000,
   });
@@ -119,22 +121,20 @@ export function PortfolioValueChart() {
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
-              className="stroke-muted"
+              stroke={colors.gridStroke}
             />
             <XAxis
               dataKey="month"
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: colors.textMuted }}
               tickLine={false}
               axisLine={false}
-              className="fill-muted-foreground"
             />
             <YAxis
               tickFormatter={formatCompact}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: colors.textMuted }}
               tickLine={false}
               axisLine={false}
               width={55}
-              className="fill-muted-foreground"
             />
             <Tooltip content={<CustomTooltip />} />
             <Area

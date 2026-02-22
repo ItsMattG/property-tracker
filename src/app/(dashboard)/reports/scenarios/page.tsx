@@ -11,6 +11,7 @@ import {
   GitBranch,
   Trash2,
   Calculator,
+  BarChart3,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -69,12 +70,20 @@ export default function ScenariosPage() {
           <h2 className="text-2xl font-bold">Scenario Simulator</h2>
           <p className="text-muted-foreground">Model what-if scenarios for your portfolio</p>
         </div>
-        <Button asChild>
-          <Link href="/reports/scenarios/new">
-            <Plus className="w-4 h-4 mr-2" />
-            New Scenario
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/reports/scenarios/compare">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Compare
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/reports/scenarios/new">
+              <Plus className="w-4 h-4 mr-2" />
+              New Scenario
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {!scenarios || scenarios.length === 0 ? (

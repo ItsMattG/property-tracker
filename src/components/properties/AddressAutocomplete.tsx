@@ -18,47 +18,10 @@ interface AddressAutocompleteProps {
 
 export type { AddressResult };
 
-const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
-
-// Module-level script loading state
-let scriptLoaded = false;
-let scriptLoading = false;
-const loadCallbacks: Array<() => void> = [];
-
-function loadGoogleMapsScript(): Promise<void> {
-  if (scriptLoaded) return Promise.resolve();
-  if (!GOOGLE_PLACES_API_KEY)
-    return Promise.reject(new Error("No Google Places API key"));
-
-  return new Promise((resolve, reject) => {
-    if (scriptLoading) {
-      loadCallbacks.push(resolve);
-      return;
-    }
-    scriptLoading = true;
-    const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_PLACES_API_KEY}&libraries=places&v=weekly`;
-    script.async = true;
-    script.onload = () => {
-      scriptLoaded = true;
-      scriptLoading = false;
-      resolve();
-      loadCallbacks.forEach((cb) => cb());
-      loadCallbacks.length = 0;
-    };
-    script.onerror = () => {
-      scriptLoading = false;
-      reject(new Error("Failed to load Google Maps script"));
-    };
-    document.head.appendChild(script);
-  });
-}
-
 interface Suggestion {
   placeId: string;
   mainText: string;
   secondaryText: string;
-  placePrediction: google.maps.places.PlacePrediction;
 }
 
 export function AddressAutocomplete({
@@ -73,24 +36,11 @@ export function AddressAutocomplete({
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const [isApiReady, setIsApiReady] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const sessionTokenRef =
-    useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const requestIdRef = useRef(0);
-
-  // Load Google Maps script
-  useEffect(() => {
-    if (!GOOGLE_PLACES_API_KEY) return;
-    loadGoogleMapsScript()
-      .then(() => setIsApiReady(true))
-      .catch(() => {
-        /* Graceful degradation — input works as plain text */
-      });
-  }, []);
 
   // Click outside to close dropdown
   useEffect(() => {
@@ -108,7 +58,7 @@ export function AddressAutocomplete({
 
   const fetchSuggestions = useCallback(
     async (input: string) => {
-      if (!isApiReady || input.length < 3) {
+      if (input.length < 3) {
         setSuggestions([]);
         setIsOpen(false);
         return;
@@ -118,43 +68,46 @@ export function AddressAutocomplete({
       setIsLoading(true);
 
       try {
-        if (!sessionTokenRef.current) {
-          sessionTokenRef.current =
-            new google.maps.places.AutocompleteSessionToken();
-        }
+        const response = await fetch("/api/places/autocomplete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input }),
+        });
 
-        const { suggestions: results } =
-          await google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(
-            {
-              input,
-              sessionToken: sessionTokenRef.current,
-              includedRegionCodes: ["au"],
-            }
-          );
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
 
         // Stale request guard
         if (currentRequestId !== requestIdRef.current) return;
 
-        const mapped: Suggestion[] = results
+        const data = await response.json();
+        const mapped: Suggestion[] = (data.suggestions ?? [])
           .filter(
-            (
-              s
-            ): s is typeof s & {
-              placePrediction: NonNullable<typeof s.placePrediction>;
-            } => s.placePrediction != null
+            (s: { placePrediction?: unknown }) => s.placePrediction != null
           )
-          .map((s) => ({
-            placeId: s.placePrediction.placeId,
-            mainText: s.placePrediction.mainText?.toString() ?? "",
-            secondaryText: s.placePrediction.secondaryText?.toString() ?? "",
-            placePrediction: s.placePrediction,
-          }));
+          .map(
+            (s: {
+              placePrediction: {
+                placeId: string;
+                structuredFormat?: {
+                  mainText?: { text?: string };
+                  secondaryText?: { text?: string };
+                };
+              };
+            }) => ({
+              placeId: s.placePrediction.placeId,
+              mainText:
+                s.placePrediction.structuredFormat?.mainText?.text ?? "",
+              secondaryText:
+                s.placePrediction.structuredFormat?.secondaryText?.text ?? "",
+            })
+          );
 
         setSuggestions(mapped);
         setIsOpen(mapped.length > 0);
         setHighlightedIndex(-1);
       } catch {
-        // Silently degrade — input still works as plain text
         setSuggestions([]);
         setIsOpen(false);
       } finally {
@@ -163,7 +116,7 @@ export function AddressAutocomplete({
         }
       }
     },
-    [isApiReady]
+    []
   );
 
   const handleSelect = useCallback(
@@ -173,33 +126,38 @@ export function AddressAutocomplete({
       setIsLoading(true);
 
       try {
-        const place = suggestion.placePrediction.toPlace();
-        await place.fetchFields({
-          fields: ["addressComponents", "location"],
+        const response = await fetch("/api/places/details", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ placeId: suggestion.placeId }),
         });
 
-        const components = (place.addressComponents ?? []).map((c) => ({
-          types: c.types,
-          longText: c.longText ?? undefined,
-          shortText: c.shortText ?? undefined,
-        }));
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
 
-        const location = place.location
-          ? { lat: place.location.lat(), lng: place.location.lng() }
+        const data = await response.json();
+
+        const components = (data.addressComponents ?? []).map(
+          (c: { types: string[]; longText?: string; shortText?: string }) => ({
+            types: c.types,
+            longText: c.longText ?? undefined,
+            shortText: c.shortText ?? undefined,
+          })
+        );
+
+        const location = data.location
+          ? { lat: data.location.latitude, lng: data.location.longitude }
           : null;
 
         const result = extractAddressFromComponents(components, location);
         onChange(result.address);
         onAddressSelected(result);
       } catch {
-        // If place details fetch fails, set the raw text
         onChange(suggestion.mainText);
       } finally {
         setIsLoading(false);
       }
-
-      // Reset session token after selection (new session for next search)
-      sessionTokenRef.current = null;
     },
     [onChange, onAddressSelected]
   );
@@ -270,7 +228,7 @@ export function AddressAutocomplete({
           onFocus={() => {
             if (suggestions.length > 0) setIsOpen(true);
           }}
-          placeholder={GOOGLE_PLACES_API_KEY ? placeholder : "123 Smith Street"}
+          placeholder={placeholder}
           name={name}
           onBlur={(e) => {
             // Delay closing so mousedown on suggestion fires first

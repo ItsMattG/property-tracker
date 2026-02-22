@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { calculateYearlyDeduction } from "@/lib/depreciation";
 
 interface Asset {
   assetName: string;
@@ -24,6 +25,7 @@ interface Asset {
   effectiveLife: number;
   method: "diminishing_value" | "prime_cost";
   yearlyDeduction: number;
+  discrepancy?: boolean;
 }
 
 interface DepreciationTableProps {
@@ -44,6 +46,7 @@ export function DepreciationTable({
     }).format(amount);
 
   return (
+    <>
     <div className="border rounded-lg overflow-hidden">
       <Table>
         <TableHeader>
@@ -74,7 +77,14 @@ export function DepreciationTable({
                 {editable ? (
                   <Select
                     value={asset.category}
-                    onValueChange={(v) => onUpdate?.(index, "category", v)}
+                    onValueChange={(v) => {
+                      onUpdate?.(index, "category", v);
+                      if (v === "capital_works") {
+                        onUpdate?.(index, "method", "prime_cost");
+                        onUpdate?.(index, "effectiveLife", 40);
+                        onUpdate?.(index, "yearlyDeduction", calculateYearlyDeduction(asset.originalCost, 40, "prime_cost"));
+                      }
+                    }}
                   >
                     <SelectTrigger className="h-8 w-[140px]">
                       <SelectValue />
@@ -93,7 +103,11 @@ export function DepreciationTable({
                   <Input
                     type="number"
                     value={asset.originalCost}
-                    onChange={(e) => onUpdate?.(index, "originalCost", parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const newCost = parseFloat(e.target.value) || 0;
+                      onUpdate?.(index, "originalCost", newCost);
+                      onUpdate?.(index, "yearlyDeduction", calculateYearlyDeduction(newCost, asset.effectiveLife, asset.method));
+                    }}
                     className="h-8 w-24 text-right"
                   />
                 ) : (
@@ -105,7 +119,11 @@ export function DepreciationTable({
                   <Input
                     type="number"
                     value={asset.effectiveLife}
-                    onChange={(e) => onUpdate?.(index, "effectiveLife", parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const newLife = parseFloat(e.target.value) || 0;
+                      onUpdate?.(index, "effectiveLife", newLife);
+                      onUpdate?.(index, "yearlyDeduction", calculateYearlyDeduction(asset.originalCost, newLife, asset.method));
+                    }}
                     className="h-8 w-16 text-right"
                   />
                 ) : (
@@ -116,7 +134,14 @@ export function DepreciationTable({
                 {editable ? (
                   <Select
                     value={asset.method}
-                    onValueChange={(v) => onUpdate?.(index, "method", v)}
+                    onValueChange={(v) => {
+                      onUpdate?.(index, "method", v);
+                      onUpdate?.(index, "yearlyDeduction", calculateYearlyDeduction(
+                        asset.originalCost,
+                        asset.effectiveLife,
+                        v as "diminishing_value" | "prime_cost"
+                      ));
+                    }}
                   >
                     <SelectTrigger className="h-8 w-[140px]">
                       <SelectValue />
@@ -131,12 +156,23 @@ export function DepreciationTable({
                 )}
               </TableCell>
               <TableCell className="text-right font-medium">
-                {formatCurrency(asset.yearlyDeduction)}
+                <div className="flex items-center justify-end gap-1">
+                  {asset.discrepancy && (
+                    <span className="text-xs text-amber-500" title="Adjusted from AI estimate">*</span>
+                  )}
+                  {formatCurrency(asset.yearlyDeduction)}
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </div>
+    {editable && (
+      <p className="text-xs text-muted-foreground mt-2">
+        * Capital works are typically depreciated at 2.5% (prime cost) over 40 years per ATO rules.
+      </p>
+    )}
+    </>
   );
 }

@@ -11,6 +11,7 @@ export interface TaxPositionInput {
   paygWithheld: number;
   rentalNetResult: number; // negative = loss, positive = profit
   otherDeductions: number;
+  depreciationDeductions: number; // total yearly depreciation from uploaded schedules
   hasHecsDebt: boolean;
   hasPrivateHealth: boolean;
   familyStatus: FamilyStatus;
@@ -28,6 +29,7 @@ export interface TaxPositionResult {
 
   // Deductions
   otherDeductions: number;
+  depreciationDeductions: number;
   totalDeductions: number;
 
   // Tax calculation
@@ -174,10 +176,11 @@ export function calculateTaxPosition(input: TaxPositionInput): TaxPositionResult
   // Calculate taxable income
   // Rental loss reduces taxable income (negative gearing)
   // Rental profit increases taxable income
-  const rentalAdjustment = input.rentalNetResult; // already signed correctly
+  // Depreciation reduces rental income (or increases rental loss)
+  const adjustedRentalResult = input.rentalNetResult - input.depreciationDeductions;
   const taxableIncome = Math.max(
     0,
-    input.grossSalary + rentalAdjustment - input.otherDeductions
+    input.grossSalary + adjustedRentalResult - input.otherDeductions
   );
 
   // Calculate tax components
@@ -193,8 +196,8 @@ export function calculateTaxPosition(input: TaxPositionInput): TaxPositionResult
   );
 
   // HECS repayment income includes salary + rental + any reportable fringe benefits
-  // For simplicity, we use gross salary + rental net result
-  const repaymentIncome = input.grossSalary + input.rentalNetResult;
+  // For simplicity, we use gross salary + adjusted rental net result
+  const repaymentIncome = input.grossSalary + adjustedRentalResult;
   const hecsRepayment = calculateHECS(repaymentIncome, input.hasHecsDebt, table);
 
   // Total tax liability
@@ -203,14 +206,13 @@ export function calculateTaxPosition(input: TaxPositionInput): TaxPositionResult
   // Refund or owing
   const refundOrOwing = input.paygWithheld - totalTaxLiability;
 
-  // Calculate property savings (tax benefit from rental losses)
+  // Calculate property savings (tax benefit from rental losses including depreciation)
   const marginalRate = getMarginalRate(input.grossSalary, table); // Use salary for marginal rate
-  const propertySavings = input.rentalNetResult < 0
-    ? Math.abs(input.rentalNetResult) * marginalRate
-    : 0;
+  const totalPropertyLoss = adjustedRentalResult < 0 ? Math.abs(adjustedRentalResult) : 0;
+  const propertySavings = totalPropertyLoss * marginalRate;
 
   // Total deductions for display
-  const rentalDeduction = input.rentalNetResult < 0 ? Math.abs(input.rentalNetResult) : 0;
+  const rentalDeduction = adjustedRentalResult < 0 ? Math.abs(adjustedRentalResult) : 0;
   const totalDeductions = rentalDeduction + input.otherDeductions;
 
   return {
@@ -219,6 +221,7 @@ export function calculateTaxPosition(input: TaxPositionInput): TaxPositionResult
     rentalNetResult: input.rentalNetResult,
     taxableIncome,
     otherDeductions: input.otherDeductions,
+    depreciationDeductions: input.depreciationDeductions,
     totalDeductions,
     baseTax,
     medicareLevy,

@@ -3,6 +3,7 @@ import { db } from "@/server/db";
 import { bankAccounts } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { createHmac, timingSafeEqual } from "crypto";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
         );
       }
     } else if (process.env.NODE_ENV === "production") {
-      console.error("BASIQ_WEBHOOK_SECRET not configured in production");
+      logger.error("BASIQ_WEBHOOK_SECRET not configured in production", undefined, { domain: "webhooks", provider: "basiq" });
       return NextResponse.json(
         { error: "Webhook not configured" },
         { status: 500 }

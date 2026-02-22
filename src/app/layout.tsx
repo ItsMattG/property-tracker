@@ -25,7 +25,18 @@ export const metadata: Metadata = {
   title: "BrickTrack | Australian Property Investment Tracking",
   description:
     "Track your investment properties, automate bank feeds, and generate tax reports. Built for Australian property investors.",
-  metadataBase: new URL("https://www.propertytracker.com.au"),
+  metadataBase: new URL("https://bricktrack.au"),
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "BrickTrack",
+    statusBarStyle: "default",
+  },
+  icons: [
+    { rel: "apple-touch-icon", url: "/apple-touch-icon.png", sizes: "180x180" },
+    { rel: "icon", url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    { rel: "icon", url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+  ],
   openGraph: {
     title: "BrickTrack | Australian Property Investment Tracking",
     description:
@@ -33,7 +44,7 @@ export const metadata: Metadata = {
     siteName: "BrickTrack",
     type: "website",
     locale: "en_AU",
-    url: "https://www.propertytracker.com.au",
+    url: "https://bricktrack.au",
     images: [
       {
         url: "/og-image.svg",

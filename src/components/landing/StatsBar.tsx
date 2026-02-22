@@ -12,7 +12,7 @@ export function StatsBar() {
           </div>
           <div className="flex flex-col items-center text-center">
             <Users className="w-5 h-5 text-primary mb-1" />
-            <span className="text-2xl font-bold">9</span>
+            <span className="text-2xl font-bold">100+</span>
             <span className="text-sm text-muted-foreground">Banks Supported</span>
           </div>
           <div className="flex flex-col items-center text-center">

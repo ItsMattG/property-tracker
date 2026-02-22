@@ -5,3 +5,4 @@ export { cgtRouter } from "./cgt";
 export { settlementRouter } from "./settlement";
 export { rentalYieldRouter } from "./rentalYield";
 export { similarPropertiesRouter } from "./similarProperties";
+export { rentReviewRouter } from "./rentReview";

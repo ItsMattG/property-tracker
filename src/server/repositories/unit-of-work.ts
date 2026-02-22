@@ -26,6 +26,12 @@ import type {
   IPersonalCategoryRepository,
   IPersonalTransactionRepository,
   IBudgetRepository,
+  ICategorizationRuleRepository,
+  IPropertyGroupRepository,
+  IRentReviewRepository,
+  IInsightsRepository,
+  IReminderRepository,
+  IDepreciationRepository,
 } from "./interfaces";
 
 // Concrete imports
@@ -55,6 +61,12 @@ import { TaxRepository } from "./tax.repository";
 import { PersonalCategoryRepository } from "./personal-category.repository";
 import { PersonalTransactionRepository } from "./personal-transaction.repository";
 import { BudgetRepository } from "./budget.repository";
+import { CategorizationRuleRepository } from "./categorization-rule.repository";
+import { PropertyGroupRepository } from "./property-group.repository";
+import { RentReviewRepository } from "./rent-review.repository";
+import { InsightsRepository } from "./insights.repository";
+import { ReminderRepository } from "./reminder.repository";
+import { DepreciationRepository } from "./depreciation.repository";
 
 export class UnitOfWork {
   // Private backing fields for lazy instantiation
@@ -84,6 +96,12 @@ export class UnitOfWork {
   private _personalCategories?: IPersonalCategoryRepository;
   private _personalTransactions?: IPersonalTransactionRepository;
   private _budgets?: IBudgetRepository;
+  private _categorizationRules?: ICategorizationRuleRepository;
+  private _propertyGroup?: IPropertyGroupRepository;
+  private _rentReview?: IRentReviewRepository;
+  private _insights?: IInsightsRepository;
+  private _reminder?: IReminderRepository;
+  private _depreciation?: IDepreciationRepository;
 
   constructor(private readonly db: DB) {}
 
@@ -165,6 +183,24 @@ export class UnitOfWork {
   }
   get budgets(): IBudgetRepository {
     return (this._budgets ??= new BudgetRepository(this.db));
+  }
+  get categorizationRules(): ICategorizationRuleRepository {
+    return (this._categorizationRules ??= new CategorizationRuleRepository(this.db));
+  }
+  get propertyGroup(): IPropertyGroupRepository {
+    return (this._propertyGroup ??= new PropertyGroupRepository(this.db));
+  }
+  get rentReview(): IRentReviewRepository {
+    return (this._rentReview ??= new RentReviewRepository(this.db));
+  }
+  get insights(): IInsightsRepository {
+    return (this._insights ??= new InsightsRepository(this.db));
+  }
+  get reminder(): IReminderRepository {
+    return (this._reminder ??= new ReminderRepository(this.db));
+  }
+  get depreciation(): IDepreciationRepository {
+    return (this._depreciation ??= new DepreciationRepository(this.db));
   }
 
   /** Execute callback in a transaction — all repositories inside share the tx */

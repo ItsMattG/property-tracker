@@ -31,10 +31,18 @@ import { PortfolioSummaryTable } from "./PortfolioSummaryTable";
 import { PropertyMapWidget } from "./PropertyMapWidget";
 import { LvrGaugeCard } from "./LvrGaugeCard";
 import { EquityProjectionCard } from "./EquityProjectionCard";
+import { BorrowingPowerCard } from "./BorrowingPowerCard";
 import { RecentActivityCard } from "./RecentActivityCard";
+import { RentReviewSummary } from "./RentReviewSummary";
+import { AIInsightsCard } from "./AIInsightsCard";
+import { UpcomingRemindersCard } from "./UpcomingRemindersCard";
 import { DEMO_STATS, DEMO_TRENDS } from "@/lib/demo-data";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Plus } from "lucide-react";
+import { MilestoneModal } from "@/components/celebrations/MilestoneModal";
+import { AchievementProgress } from "@/components/celebrations/AchievementProgress";
+import { useMilestoneCelebration } from "@/components/celebrations/useMilestoneCelebration";
+import type { MilestoneContext } from "@/server/services/milestone/types";
 
 // Server-side data structure from dashboard.getInitialData
 // Note: Dates are Date objects on server but get serialized to strings when passed to client
@@ -158,8 +166,40 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
     autoStart: !showWizard,
   });
 
+  // Build milestone context from available dashboard data
+  const milestoneContext: MilestoneContext | null =
+    stats && trends
+      ? {
+          propertyCount: stats.propertyCount,
+          totalEquity: trends.totalEquity.current,
+          monthsPositiveCashFlow: 0, // TODO: populate when cash flow history is available
+          categorizedTransactionPercent:
+            stats.transactionCount > 0
+              ? Math.round(
+                  ((stats.transactionCount - stats.uncategorizedCount) /
+                    stats.transactionCount) *
+                    100,
+                )
+              : 0,
+          bankAccountsConnected: 0, // TODO: populate from banking query
+          taxReportsGenerated: 0, // TODO: populate from tax query
+        }
+      : null;
+
+  const {
+    currentMilestone,
+    handleDismiss: handleMilestoneDismiss,
+    totalMilestones,
+    achievedCount,
+  } = useMilestoneCelebration(milestoneContext);
+
   return (
     <div className="space-y-6">
+      <MilestoneModal
+        milestone={currentMilestone}
+        onDismiss={handleMilestoneDismiss}
+      />
+
       {showWizard && (
         <EnhancedWizard onClose={() => setWizardClosed(true)} />
       )}
@@ -181,7 +221,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       )}
 
       <div>
-        <h2 className="text-2xl font-bold">Welcome to BrickTrack</h2>
+        <h2 className="text-xl sm:text-2xl font-bold">Welcome to BrickTrack</h2>
         <p className="text-muted-foreground">
           Track your investment properties, automate bank feeds, and generate
           tax reports.
@@ -417,17 +457,24 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       </div>
       )}
 
+      {achievedCount > 0 && (
+        <AchievementProgress achieved={achievedCount} total={totalMilestones} />
+      )}
+
       <ActionItemsWidget />
 
       <StaleLoansDashboardCard />
 
       <PortfolioSummaryTable />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <div className="animate-card-entrance" style={{ '--stagger-index': 0 } as React.CSSProperties}>
           <LvrGaugeCard />
         </div>
         <div className="animate-card-entrance" style={{ '--stagger-index': 1 } as React.CSSProperties}>
+          <BorrowingPowerCard />
+        </div>
+        <div className="animate-card-entrance" style={{ '--stagger-index': 2 } as React.CSSProperties}>
           <EquityProjectionCard />
         </div>
       </div>
@@ -448,14 +495,20 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RentReviewSummary />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {properties && properties.length > 0 && (
           <ClimateRiskSummary properties={properties} />
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <AIInsightsCard />
         <RecentActivityCard />
         <SavingsWidget />
+        <UpcomingRemindersCard />
       </div>
 
       <TopPerformerMatchesWidget />

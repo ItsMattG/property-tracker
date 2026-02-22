@@ -106,15 +106,15 @@ export default function GlobalInboxPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Emails</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Emails</h1>
         <p className="text-muted-foreground">
           Forwarded property emails from your approved senders
         </p>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-4">
         <Select value={propertyFilter} onValueChange={setPropertyFilter}>
-          <SelectTrigger className="w-[250px]">
+          <SelectTrigger className="w-full sm:w-[250px]">
             <SelectValue placeholder="All properties" />
           </SelectTrigger>
           <SelectContent>
@@ -128,7 +128,7 @@ export default function GlobalInboxPage() {
         </Select>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>

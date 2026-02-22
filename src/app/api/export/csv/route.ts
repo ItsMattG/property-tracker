@@ -7,6 +7,7 @@ import {
   generateTransactionsCSV,
   generateAnnualSummaryCSV,
 } from "@/server/services/transaction";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Export error:", error);
+    logger.error("CSV export failed", error instanceof Error ? error : new Error(String(error)), { domain: "export", format: "csv" });
     return NextResponse.json(
       { error: "Export failed" },
       { status: 500 }

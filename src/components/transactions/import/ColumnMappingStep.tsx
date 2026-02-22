@@ -30,7 +30,7 @@ const BRICKTRACK_FIELDS = [
   { value: "isDeductible", label: "Deductible?", required: false },
   { value: "invoiceUrl", label: "Invoice URL", required: false },
   { value: "invoicePresent", label: "Invoice Present?", required: false },
-  { value: "notes", label: "Notes", required: false },
+  { value: "notes", label: "Details", required: false },
   { value: "skip", label: "Skip this column", required: false },
 ] as const;
 
@@ -92,6 +92,7 @@ function buildColumnMap(
 const PREVIEW_FIELDS: { key: keyof CSVColumnMap; label: string }[] = [
   { key: "date", label: "Date" },
   { key: "description", label: "Description" },
+  { key: "notes", label: "Details" },
   { key: "amount", label: "Amount" },
   { key: "property", label: "Property" },
   { key: "category", label: "Category" },

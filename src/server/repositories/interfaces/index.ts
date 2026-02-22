@@ -24,3 +24,9 @@ export type { ITaxRepository, TaxSuggestionWithProperty, DepreciationScheduleWit
 export type { IPersonalCategoryRepository } from "./personal-category.repository.interface";
 export type { IBudgetRepository, BudgetWithSpend } from "./budget.repository.interface";
 export type { IPersonalTransactionRepository, PersonalTransactionWithCategory } from "./personal-transaction.repository.interface";
+export type { ICategorizationRuleRepository } from "./categorization-rule.repository.interface";
+export type { IPropertyGroupRepository, PropertyGroupWithCount } from "./property-group.repository.interface";
+export type { IRentReviewRepository } from "./rent-review.repository.interface";
+export type { IInsightsRepository } from "./insights.repository.interface";
+export type { IReminderRepository } from "./reminder.repository.interface";
+export type { IDepreciationRepository, DepreciationAssetWithClaims, ScheduleWithAssets } from "./depreciation.repository.interface";

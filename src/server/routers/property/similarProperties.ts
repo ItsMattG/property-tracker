@@ -82,8 +82,9 @@ export const similarPropertiesRouter = router({
       })
     )
     .query(async ({ ctx, input }): Promise<SimilarProperty[]> => {
-      const propertyVector = await ctx.uow.similarProperties.findVectorByProperty(
-        input.propertyId
+      const propertyVector = await ctx.uow.similarProperties.findVectorByPropertyAndUser(
+        input.propertyId,
+        ctx.portfolio.ownerId
       );
 
       if (!propertyVector) {

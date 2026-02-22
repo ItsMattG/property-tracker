@@ -159,6 +159,10 @@ describe("document-extraction service", () => {
           propertyAddress: null,
           lineItems: null,
           rawText: "test",
+          gstAmount: null,
+          renewalDate: null,
+          referenceNumber: null,
+          abn: null,
         },
       };
 

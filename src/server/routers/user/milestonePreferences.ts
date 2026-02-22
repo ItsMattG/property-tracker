@@ -55,4 +55,19 @@ export const milestonePreferencesRouter = router({
       await ctx.uow.user.deletePropertyOverride(input.propertyId);
       return { success: true };
     }),
+
+  /** Get IDs of achievement milestones the user has been celebrated for */
+  getAchievedMilestones: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.uow.user.getAchievedMilestones(ctx.portfolio.ownerId);
+  }),
+
+  /** Record newly achieved milestones so they are not shown again */
+  recordAchievedMilestones: writeProcedure
+    .input(z.object({ milestoneIds: z.array(z.string().min(1)) }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.uow.user.addAchievedMilestones(
+        ctx.portfolio.ownerId,
+        input.milestoneIds,
+      );
+    }),
 });

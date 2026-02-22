@@ -14,6 +14,7 @@ export interface TransactionFilters {
   startDate?: string;
   endDate?: string;
   bankAccountId?: string;
+  sortOrder?: "asc" | "desc";
   limit?: number;
   offset?: number;
 }

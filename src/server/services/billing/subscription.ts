@@ -10,6 +10,8 @@ const PLAN_RANK: Record<Plan, number> = {
 export const PLAN_LIMITS = {
   free: {
     maxProperties: 1,
+    maxPropertyGroups: 3,
+    maxReceiptScans: 5,
     bankFeeds: false,
     export: false,
     emailForwarding: false,
@@ -17,9 +19,12 @@ export const PLAN_LIMITS = {
     teamMembers: false,
     advisorAccess: false,
     auditLog: false,
+    canEmailAccountant: false,
   },
   pro: {
     maxProperties: Infinity,
+    maxPropertyGroups: Infinity,
+    maxReceiptScans: Infinity,
     bankFeeds: true,
     export: true,
     emailForwarding: true,
@@ -27,9 +32,12 @@ export const PLAN_LIMITS = {
     teamMembers: false,
     advisorAccess: false,
     auditLog: false,
+    canEmailAccountant: true,
   },
   team: {
     maxProperties: Infinity,
+    maxPropertyGroups: Infinity,
+    maxReceiptScans: Infinity,
     bankFeeds: true,
     export: true,
     emailForwarding: true,
@@ -37,9 +45,12 @@ export const PLAN_LIMITS = {
     teamMembers: true,
     advisorAccess: true,
     auditLog: true,
+    canEmailAccountant: true,
   },
   lifetime: {
     maxProperties: Infinity,
+    maxPropertyGroups: Infinity,
+    maxReceiptScans: Infinity,
     bankFeeds: true,
     export: true,
     emailForwarding: true,
@@ -47,6 +58,7 @@ export const PLAN_LIMITS = {
     teamMembers: true,
     advisorAccess: true,
     auditLog: true,
+    canEmailAccountant: true,
   },
 } as const;
 

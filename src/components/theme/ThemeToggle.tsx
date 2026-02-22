@@ -1,30 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { applyTheme, type Theme } from "./ThemeProvider";
+import { applyTheme, STORAGE_KEY, type Theme } from "./ThemeProvider";
 
-const STORAGE_KEY = "bricktrack-theme";
+const CYCLE_ORDER: Theme[] = ["forest", "dark", "system"];
+
+const THEME_CONFIG: Record<Theme, { icon: typeof Sun; label: string; ariaLabel: string }> = {
+  forest: { icon: Sun, label: "Light mode", ariaLabel: "Switch to dark mode" },
+  dark: { icon: Moon, label: "Dark mode", ariaLabel: "Switch to system mode" },
+  system: { icon: Monitor, label: "System mode", ariaLabel: "Switch to light mode" },
+};
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem(STORAGE_KEY) as Theme) || "forest";
-    }
-    return "forest";
-  });
+  // Always start with "forest" to match SSR, then hydrate from localStorage
+  const [theme, setTheme] = useState<Theme>("forest");
 
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "forest" : "dark";
-    applyTheme(newTheme);
-    setTheme(newTheme);
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    if (stored && CYCLE_ORDER.includes(stored)) {
+      setTheme(stored);
+    }
+  }, []);
+
+  const handleCycle = () => {
+    const currentIndex = CYCLE_ORDER.indexOf(theme);
+    const nextTheme = CYCLE_ORDER[(currentIndex + 1) % CYCLE_ORDER.length];
+    applyTheme(nextTheme);
+    setTheme(nextTheme);
   };
+
+  const config = THEME_CONFIG[theme];
+  const Icon = config.icon;
 
   return (
     <Tooltip>
@@ -32,20 +45,14 @@ export function ThemeToggle() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={toggleTheme}
-          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          onClick={handleCycle}
+          aria-label={config.ariaLabel}
           className="h-8 w-8"
         >
-          {theme === "dark" ? (
-            <Sun className="h-4 w-4" />
-          ) : (
-            <Moon className="h-4 w-4" />
-          )}
+          <Icon className="h-4 w-4" />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>
-        {theme === "dark" ? "Light mode" : "Dark mode"}
-      </TooltipContent>
+      <TooltipContent>{config.label}</TooltipContent>
     </Tooltip>
   );
 }

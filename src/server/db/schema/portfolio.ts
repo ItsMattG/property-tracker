@@ -176,6 +176,8 @@ export const milestonePreferences = pgTable("milestone_preferences", {
   lvrThresholds: jsonb("lvr_thresholds").$type<number[]>().default([80, 60, 40, 20]).notNull(),
   equityThresholds: jsonb("equity_thresholds").$type<number[]>().default([100000, 250000, 500000, 1000000]).notNull(),
   enabled: boolean("enabled").default(true).notNull(),
+  /** IDs of achievement milestones the user has already been celebrated for */
+  achievedMilestones: jsonb("achieved_milestones").$type<string[]>().default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -191,6 +193,33 @@ export const propertyMilestoneOverrides = pgTable("property_milestone_overrides"
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export interface AccountantPackSections {
+  incomeExpenses: boolean;
+  depreciation: boolean;
+  capitalGains: boolean;
+  taxPosition: boolean;
+  portfolioOverview: boolean;
+  loanDetails: boolean;
+}
+
+export const accountantPackSends = pgTable(
+  "accountant_pack_sends",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    accountantEmail: text("accountant_email").notNull(),
+    accountantName: text("accountant_name"),
+    financialYear: integer("financial_year").notNull(),
+    sections: jsonb("sections").$type<AccountantPackSections>().notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("accountant_pack_sends_user_id_idx").on(table.userId),
+  ]
+);
 
 // Relations
 export const sharingPreferencesRelations = relations(sharingPreferences, ({ one }) => ({
@@ -283,6 +312,13 @@ export const propertyMilestoneOverridesRelations = relations(propertyMilestoneOv
   }),
 }));
 
+export const accountantPackSendsRelations = relations(accountantPackSends, ({ one }) => ({
+  user: one(users, {
+    fields: [accountantPackSends.userId],
+    references: [users.id],
+  }),
+}));
+
 // Type exports
 export type PortfolioMember = typeof portfolioMembers.$inferSelect;
 export type NewPortfolioMember = typeof portfolioMembers.$inferInsert;
@@ -304,3 +340,5 @@ export type UserOnboarding = typeof userOnboarding.$inferSelect;
 export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
 export type SharingPreference = typeof sharingPreferences.$inferSelect;
 export type NewSharingPreference = typeof sharingPreferences.$inferInsert;
+export type AccountantPackSend = typeof accountantPackSends.$inferSelect;
+export type NewAccountantPackSend = typeof accountantPackSends.$inferInsert;
