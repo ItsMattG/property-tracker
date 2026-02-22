@@ -27,5 +27,7 @@ export default async function DashboardPage() {
     return <AdvisorDashboard portfolios={advisorPortfolios} />;
   }
 
-  return <DashboardClient initialData={initialData} />;
+  // Next.js serializes Date objects to strings at the RSC→client boundary,
+  // so the runtime value matches the client-side inferred type
+  return <DashboardClient initialData={initialData as Parameters<typeof DashboardClient>[0]["initialData"]} />;
 }
