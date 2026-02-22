@@ -283,9 +283,9 @@ export default function BankingPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-bold">Bank Feeds</h2>
+            <h2 className="text-xl sm:text-2xl font-bold">Bank Feeds</h2>
             <p className="text-muted-foreground">
               Manage your connected bank accounts
             </p>
@@ -310,9 +310,9 @@ export default function BankingPage() {
         />
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Bank Feeds</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">Bank Feeds</h2>
           <p className="text-muted-foreground">
             {accounts?.length ?? 0} account{accounts?.length !== 1 ? "s" : ""}{" "}
             across {groupedAccounts.length} institution
@@ -320,7 +320,7 @@ export default function BankingPage() {
           </p>
         </div>
         {accounts && accounts.length > 0 && (
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/banking/connect">
               <Plus className="w-4 h-4 mr-2" />
               Connect Bank
@@ -509,7 +509,7 @@ export default function BankingPage() {
                                   })
                                 }
                               >
-                                <SelectTrigger className="w-[180px]" size="sm">
+                                <SelectTrigger className="w-full sm:w-[180px]" size="sm">
                                   <SelectValue placeholder="Assign property" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -540,7 +540,7 @@ export default function BankingPage() {
                                   })
                                 }
                               >
-                                <SelectTrigger className="w-[160px]" size="sm">
+                                <SelectTrigger className="w-full sm:w-[160px]" size="sm">
                                   <SelectValue placeholder="Transaction type" />
                                 </SelectTrigger>
                                 <SelectContent>

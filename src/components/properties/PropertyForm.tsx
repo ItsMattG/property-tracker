@@ -205,7 +205,7 @@ export function PropertyForm({
         </div>
 
         {/* Purchase details row: Price + Entity */}
-        <div className="grid grid-cols-2 gap-4" data-tour="purchase-details">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-tour="purchase-details">
           <FormField
             control={form.control}
             name="purchasePrice"
@@ -341,7 +341,7 @@ export function PropertyForm({
         )}
 
         {/* Dates row: Contract Date + Settlement Date */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="contractDate"

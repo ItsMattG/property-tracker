@@ -310,7 +310,7 @@ function NewScenarioContent() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Time Horizon</Label>
               <Select
@@ -574,7 +574,7 @@ function NewScenarioContent() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Sale Price ($)</Label>
                         <Input
@@ -610,7 +610,7 @@ function NewScenarioContent() {
                 {/* Buy Property */}
                 {addingType === "buy_property" && (
                   <>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Purchase Price ($)</Label>
                         <Input
@@ -630,7 +630,7 @@ function NewScenarioContent() {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Loan Amount ($)</Label>
                         <Input
@@ -649,7 +649,7 @@ function NewScenarioContent() {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Expected Rent ($/mo)</Label>
                         <Input
@@ -683,7 +683,7 @@ function NewScenarioContent() {
                 )}
 
                 {/* Timing (shared for all types) */}
-                <div className="grid grid-cols-2 gap-4 border-t pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-2">
                   <div className="space-y-2">
                     <Label>Start Month</Label>
                     <Input

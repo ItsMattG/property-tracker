@@ -59,7 +59,52 @@ export function PortfolioSummaryTable() {
         <TableProperties className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent className="px-0 pb-0">
-        <div className="overflow-x-auto">
+        {/* Mobile: card list */}
+        <div className="md:hidden divide-y">
+          {metrics.map((m) => (
+            <Link
+              key={m.propertyId}
+              href={`/properties/${m.propertyId}`}
+              prefetch={false}
+              className="block px-4 py-3 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-sm font-medium">{m.suburb}, {m.state}</span>
+                <span
+                  className={cn(
+                    "text-sm font-semibold tabular-nums",
+                    m.cashFlow >= 0
+                      ? "text-green-700 dark:text-green-300"
+                      : "text-red-700 dark:text-red-300"
+                  )}
+                >
+                  {formatCurrency(m.cashFlow)}/mo
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>Val {formatCurrency(m.currentValue)}</span>
+                <span>Loan {formatCurrency(m.totalLoans)}</span>
+                <span>LVR {m.lvr === null ? "\u2014" : formatPercent(m.lvr)}</span>
+              </div>
+            </Link>
+          ))}
+          <div className="px-4 py-3 bg-muted/50 flex items-center justify-between text-sm font-bold">
+            <span>Total</span>
+            <span
+              className={cn(
+                "tabular-nums",
+                totals.cash >= 0
+                  ? "text-green-700 dark:text-green-300"
+                  : "text-red-700 dark:text-red-300"
+              )}
+            >
+              {formatCurrency(totals.cash)}/mo
+            </span>
+          </div>
+        </div>
+
+        {/* Desktop: table view */}
+        <div className="hidden md:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

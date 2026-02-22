@@ -241,12 +241,12 @@ export function Header() {
 
   return (
     <>
-      <header className="h-16 border-b border-border bg-card px-4 md:px-6 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+      <header className="h-14 sm:h-16 border-b border-border bg-card px-3 sm:px-4 md:px-6 flex items-center justify-between gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden flex-shrink-0"
+            className="md:hidden flex-shrink-0 h-10 w-10"
             onClick={() => setMobileNavOpen(true)}
             aria-label="Open navigation menu"
           >
@@ -256,15 +256,15 @@ export function Header() {
             {breadcrumbs.length > 0 ? (
               <Breadcrumb items={breadcrumbs} />
             ) : (
-              <h1 className="text-lg font-semibold truncate">{pageTitle}</h1>
+              <h1 className="text-base sm:text-lg font-semibold truncate">{pageTitle}</h1>
             )}
           </div>
         </div>
         <TooltipProvider delayDuration={300}>
-          <div className="flex items-center gap-3 flex-shrink-0" data-tour="quick-actions">
-            {featureFlags.fySelector && <FYSelector />}
-            <ThemeToggle />
-            {featureFlags.helpMenu && <HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} />}
+          <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0" data-tour="quick-actions">
+            {featureFlags.fySelector && <div className="hidden sm:block"><FYSelector /></div>}
+            <div className="hidden sm:block"><ThemeToggle /></div>
+            {featureFlags.helpMenu && <div className="hidden sm:block"><HelpMenu onWhatsNewClick={() => setDrawerOpen(true)} /></div>}
             <AlertBadge />
             {featureFlags.quickAdd && <QuickAddButton />}
             <UserMenu />
@@ -277,7 +277,7 @@ export function Header() {
 
       {/* Mobile navigation drawer */}
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent side="left" className="w-[280px] p-0 md:hidden" showCloseButton={false}>
+        <SheetContent side="left" className="w-[min(280px,calc(100vw-3rem))] p-0 md:hidden" showCloseButton={false}>
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <Sidebar onNavigate={() => setMobileNavOpen(false)} />
         </SheetContent>

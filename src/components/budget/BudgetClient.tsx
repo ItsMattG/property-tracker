@@ -58,7 +58,7 @@ export function BudgetClient() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Budget</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Budget</h1>
           <p className="text-muted-foreground">
             Track your personal spending with monthly budgets.
           </p>
@@ -87,10 +87,10 @@ export function BudgetClient() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Budget</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold">Budget</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Track your personal spending against monthly targets.
           </p>
         </div>
@@ -98,7 +98,7 @@ export function BudgetClient() {
           <Button variant="ghost" size="icon" onClick={() => navigateMonth(-1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="text-sm font-medium min-w-[140px] text-center">
+          <span className="text-sm font-medium min-w-[120px] sm:min-w-[140px] text-center">
             {monthLabel}
           </span>
           <Button variant="ghost" size="icon" onClick={() => navigateMonth(1)}>

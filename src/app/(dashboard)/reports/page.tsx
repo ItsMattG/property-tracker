@@ -65,13 +65,13 @@ export default function ReportsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Reports</h2>
+        <h2 className="text-xl sm:text-2xl font-bold">Reports</h2>
         <p className="text-muted-foreground">
           Generate reports and exports for tax time and portfolio analysis
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         {reportTypes.map((report, i) => (
           <div key={report.href} className="animate-card-entrance" style={{ '--stagger-index': i } as React.CSSProperties}>
             <Link href={report.href}>

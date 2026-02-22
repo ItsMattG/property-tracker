@@ -80,16 +80,16 @@ export function CashFlowClient() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Cash Flow</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">Cash Flow</h2>
           <p className="text-muted-foreground">
             Track upcoming payments, income, and projected balances
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Property filter */}
           <Select value={propertyId} onValueChange={setPropertyId}>
-            <SelectTrigger size="sm" className="w-[180px]">
+            <SelectTrigger size="sm" className="w-full sm:w-[180px]">
               <SelectValue placeholder="All properties" />
             </SelectTrigger>
             <SelectContent>
