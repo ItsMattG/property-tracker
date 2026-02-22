@@ -74,6 +74,8 @@ const routeTitles: Record<string, string> = {
   "/settings/support-admin": "Support Admin",
   "/settings/advisors": "Advisors",
   "/settings/referrals": "Referrals",
+  "/budget": "Budget",
+  "/cash-flow": "Cash Flow",
 };
 
 const parentRoutes: Record<string, string> = {
