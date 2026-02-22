@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileDown, Info } from "lucide-react";
-import { generateMyTaxPDF } from "@/lib/mytax-pdf";
 import { downloadBlob } from "@/lib/export-utils";
 import { MyTaxChecklist } from "./MyTaxChecklist";
 
@@ -33,8 +32,9 @@ export function MyTaxContent() {
       { enabled: !!selectedYear }
     );
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!report) return;
+    const { generateMyTaxPDF } = await import("@/lib/mytax-pdf");
     const blob = generateMyTaxPDF(report);
     downloadBlob(blob, `MyTax-Report-${report.financialYear}.pdf`);
   };
