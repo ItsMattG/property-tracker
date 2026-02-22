@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, ArrowLeftRight, AlertCircle, DollarSign, PiggyBank } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "@/server/routers/_app";
 import Link from "next/link";
 import { TrendIndicator } from "@/components/ui/trend-indicator";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -44,25 +46,7 @@ import { AchievementProgress } from "@/components/celebrations/AchievementProgre
 import { useMilestoneCelebration } from "@/components/celebrations/useMilestoneCelebration";
 import type { MilestoneContext } from "@/server/services/milestone/types";
 
-// Server-side data structure from dashboard.getInitialData
-// Note: Dates are Date objects on server but get serialized to strings when passed to client
-interface DashboardInitialData {
-  stats: {
-    propertyCount: number;
-    transactionCount: number;
-    uncategorizedCount: number;
-  };
-  trends: {
-    propertyCount: { current: number; previous: number };
-    transactionCount: { current: number; previous: number };
-    uncategorizedCount: { current: number; previous: number };
-    portfolioValue: { current: number; previous: number | null };
-    totalEquity: { current: number; previous: number | null };
-  };
-  alerts: unknown[];
-  onboarding: unknown | null;
-  properties: unknown[];
-}
+type DashboardInitialData = inferRouterOutputs<AppRouter>["dashboard"]["getInitialData"];
 
 interface DashboardClientProps {
   initialData: DashboardInitialData | null;
@@ -115,6 +99,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
   });
 
   const { data: dashboardData } = trpc.dashboard.getInitialData.useQuery(undefined, {
+    initialData: initialData ?? undefined,
     staleTime: 60_000,
   });
   const realTrends = dashboardData?.trends ?? initialData?.trends ?? null;
@@ -147,12 +132,17 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
     },
   });
 
-  const handleDismissAllAlerts = async () => {
+  const handleDismissAllAlerts = useCallback(async () => {
     if (!alerts) return;
     for (const alert of alerts) {
       await dismissAlert.mutateAsync({ alertId: alert.id });
     }
-  };
+  }, [alerts, dismissAlert]);
+
+  const handleWizardClose = useCallback(() => setWizardClosed(true), []);
+  const handleShowDemo = useCallback(() => setShowDemoData(true), []);
+  const handleHideDemo = useCallback(() => setShowDemoData(false), []);
+  const handleRetry = useCallback(() => refetch(), [refetch]);
 
   const hasAuthError =
     alerts?.some((a) => a.alertType === "requires_reauth") ?? false;
@@ -201,7 +191,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       />
 
       {showWizard && (
-        <EnhancedWizard onClose={() => setWizardClosed(true)} />
+        <EnhancedWizard onClose={handleWizardClose} />
       )}
 
       {alerts && alerts.length > 0 && (
@@ -235,7 +225,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
               <p className="text-sm font-medium">Curious what BrickTrack looks like with data?</p>
               <p className="text-xs text-muted-foreground">Preview the dashboard with sample properties and transactions.</p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setShowDemoData(true)}>
+            <Button variant="outline" size="sm" onClick={handleShowDemo}>
               <Eye className="h-4 w-4 mr-2" />
               Preview
             </Button>
@@ -256,7 +246,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                   Add Your Property
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setShowDemoData(false)}>
+              <Button variant="ghost" size="sm" onClick={handleHideDemo}>
                 <EyeOff className="h-4 w-4 mr-1" />
                 Dismiss
               </Button>
@@ -274,7 +264,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       )}
 
       {isError ? (
-        <ErrorState message={getErrorMessage(error)} onRetry={() => refetch()} />
+        <ErrorState message={getErrorMessage(error)} onRetry={handleRetry} />
       ) : (
       <div data-tour="portfolio-summary" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Row 1: Properties, Portfolio Value, Total Equity */}

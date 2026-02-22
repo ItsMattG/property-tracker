@@ -142,22 +142,51 @@ export const bankingRouter = router({
         // - 'ask': flag for user review (fall back to property pipeline for V1)
         // For V1, all transactions go through the existing property pipeline regardless
         // of defaultTransactionType. Personal transaction import will be added in a follow-up.
+        // Map all basiq transactions to insert format
+        const newTransactions = basiqTransactions.map((txn) => ({
+          userId: ctx.portfolio.ownerId,
+          bankAccountId: account.id,
+          basiqTransactionId: txn.id,
+          propertyId: account.defaultPropertyId,
+          date: txn.postDate,
+          description: txn.description,
+          amount: txn.direction === "credit" ? txn.amount : `-${txn.amount}`,
+          transactionType: txn.direction === "credit" ? ("income" as const) : ("expense" as const),
+        }));
+
         let transactionsAdded = 0;
-        for (const txn of basiqTransactions) {
+        if (newTransactions.length > 0) {
           try {
-            await ctx.uow.transactions.create({
-              userId: ctx.portfolio.ownerId,
-              bankAccountId: account.id,
-              basiqTransactionId: txn.id,
-              propertyId: account.defaultPropertyId,
-              date: txn.postDate,
-              description: txn.description,
-              amount: txn.direction === "credit" ? txn.amount : `-${txn.amount}`,
-              transactionType: txn.direction === "credit" ? "income" : "expense",
+            // Batch insert — single INSERT for all transactions
+            const created = await ctx.uow.transactions.createMany(newTransactions);
+            transactionsAdded = created.length;
+          } catch (batchError) {
+            // If batch fails due to duplicate key, fall back to individual inserts
+            const isDuplicateKey =
+              batchError instanceof Error &&
+              "code" in batchError &&
+              (batchError as { code: string }).code === "23505";
+
+            if (!isDuplicateKey) throw batchError;
+
+            logger.info("Batch insert hit duplicates, falling back to individual inserts", {
+              accountId: input.accountId,
+              totalTransactions: newTransactions.length,
             });
-            transactionsAdded++;
-          } catch {
-            // Skip duplicates
+
+            for (const txn of newTransactions) {
+              try {
+                await ctx.uow.transactions.create(txn);
+                transactionsAdded++;
+              } catch (insertError) {
+                const isDuplicate =
+                  insertError instanceof Error &&
+                  "code" in insertError &&
+                  (insertError as { code: string }).code === "23505";
+                if (!isDuplicate) throw insertError;
+                // Skip genuine duplicate — already exists
+              }
+            }
           }
         }
 

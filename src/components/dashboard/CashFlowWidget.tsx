@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { keepPreviousData } from "@tanstack/react-query";
 import {
   Card,
@@ -88,7 +88,7 @@ function CustomTooltip({
   );
 }
 
-export function CashFlowWidget() {
+export const CashFlowWidget = memo(function CashFlowWidget() {
   const [months, setMonths] = useState(6);
   const { data, isLoading } = trpc.reports.portfolioSummary.useQuery(
     { months },
@@ -263,4 +263,4 @@ export function CashFlowWidget() {
       </CardContent>
     </Card>
   );
-}
+});

@@ -71,6 +71,13 @@
       "when": 1770393600000,
       "tag": "0029_basiq_user_id",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1771718400000,
+      "tag": "0030_email_performance_indexes",
+      "breakpoints": true
     }
   ]
 }

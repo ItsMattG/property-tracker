@@ -28,7 +28,9 @@ export interface IPropertyManagerRepository {
   findByIdWithDetails(connectionId: string, userId: string): Promise<ConnectionWithDetails | null>;
   findById(connectionId: string, userId: string): Promise<PropertyManagerConnection | null>;
   findMappingByProvider(connectionId: string, providerPropertyId: string): Promise<PropertyManagerMapping | null>;
+  findMappingsByConnection(connectionId: string): Promise<PropertyManagerMapping[]>;
   createMapping(data: NewPropertyManagerMapping): Promise<PropertyManagerMapping>;
+  createMappings(data: NewPropertyManagerMapping[]): Promise<PropertyManagerMapping[]>;
   findMappingWithConnection(mappingId: string): Promise<MappingWithConnection | null>;
   updateMapping(mappingId: string, data: Partial<PropertyManagerMapping>): Promise<void>;
   createSyncLog(data: NewPropertyManagerSyncLog): Promise<PropertyManagerSyncLog>;

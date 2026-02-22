@@ -76,12 +76,23 @@ export class PropertyManagerRepository
     return result ?? null;
   }
 
+  async findMappingsByConnection(connectionId: string): Promise<PropertyManagerMapping[]> {
+    return this.db.query.propertyManagerMappings.findMany({
+      where: eq(propertyManagerMappings.connectionId, connectionId),
+    });
+  }
+
   async createMapping(data: NewPropertyManagerMapping): Promise<PropertyManagerMapping> {
     const [created] = await this.db
       .insert(propertyManagerMappings)
       .values(data)
       .returning();
     return created;
+  }
+
+  async createMappings(data: NewPropertyManagerMapping[]): Promise<PropertyManagerMapping[]> {
+    if (data.length === 0) return [];
+    return this.db.insert(propertyManagerMappings).values(data).returning();
   }
 
   async findMappingWithConnection(mappingId: string): Promise<MappingWithConnection | null> {
