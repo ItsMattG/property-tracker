@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ArrowRight } from "lucide-react";
+import { Bell, ArrowRight, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ function getDaysUntil(dueDate: string): number {
 }
 
 export function UpcomingRemindersCard() {
-  const { data: reminders, isLoading } = trpc.reminder.getUpcoming.useQuery(
+  const { data: reminders, isLoading, isError, refetch } = trpc.reminder.getUpcoming.useQuery(
     { days: 90 },
     { staleTime: 60_000 }
   );
@@ -40,7 +40,15 @@ export function UpcomingRemindersCard() {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {isError ? (
+          <div className="py-4 text-center">
+            <p className="text-sm text-muted-foreground">Unable to load reminders</p>
+            <Button variant="ghost" size="sm" onClick={() => refetch()} className="mt-2">
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Retry
+            </Button>
+          </div>
+        ) : isLoading ? (
           <div className="py-4 text-center text-sm text-muted-foreground">
             Loading...
           </div>

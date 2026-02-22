@@ -61,6 +61,28 @@ export function MobileNav() {
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 rounded-md border bg-background shadow-lg py-2 z-50">
           <Link
+            href="#features"
+            onClick={() => setIsOpen(false)}
+            className="block px-4 py-2 text-sm hover:bg-secondary"
+          >
+            Features
+          </Link>
+          <Link
+            href="#pricing"
+            onClick={() => setIsOpen(false)}
+            className="block px-4 py-2 text-sm hover:bg-secondary"
+          >
+            Pricing
+          </Link>
+          <Link
+            href="#faq"
+            onClick={() => setIsOpen(false)}
+            className="block px-4 py-2 text-sm hover:bg-secondary"
+          >
+            FAQ
+          </Link>
+          <div className="border-t my-1" />
+          <Link
             href="/sign-in"
             onClick={() => setIsOpen(false)}
             className="block px-4 py-2 text-sm hover:bg-secondary"

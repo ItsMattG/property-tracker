@@ -97,12 +97,6 @@ const navGroups: Array<{
       { href: "/tools/borrowing-power", label: "Borrowing Power", icon: Calculator, featureFlag: "borrowingPowerEstimator" },
     ],
   },
-  {
-    label: "Personal Finance",
-    items: [
-      { href: "/budget", label: "Budget", icon: Wallet },
-    ],
-  },
 ];
 
 function NavItem({
@@ -193,6 +187,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const { data: pendingReviews } = trpc.documentExtraction.listPendingReviews.useQuery(undefined, {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
+    enabled: featureFlags.documents,
   });
 
   const handlePrefetch = (href: string) => {
