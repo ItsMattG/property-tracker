@@ -38,6 +38,7 @@ export const properties = pgTable("properties", {
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
   forwardingAddress: text("forwarding_address").unique(),
+  colour: text("colour").notNull().default("#6366F1"),
   locked: boolean("locked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
