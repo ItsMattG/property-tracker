@@ -65,18 +65,20 @@ export const propertyManagerRouter = router({
       const provider = getPropertyMeProvider();
       const pmProperties = await provider.getProperties(decrypt(connection.accessToken));
 
-      for (const pmProp of pmProperties) {
-        const existing = await ctx.uow.propertyManager.findMappingByProvider(
-          connection.id,
-          pmProp.id
-        );
-        if (!existing) {
-          await ctx.uow.propertyManager.createMapping({
-            connectionId: connection.id,
-            providerPropertyId: pmProp.id,
-            providerPropertyAddress: pmProp.address,
-          });
-        }
+      // Batch: fetch all existing mappings in one query, then bulk-insert new ones
+      const existingMappings = await ctx.uow.propertyManager.findMappingsByConnection(connection.id);
+      const existingProviderIds = new Set(existingMappings.map((m) => m.providerPropertyId));
+
+      const newMappings = pmProperties
+        .filter((pmProp) => !existingProviderIds.has(pmProp.id))
+        .map((pmProp) => ({
+          connectionId: connection.id,
+          providerPropertyId: pmProp.id,
+          providerPropertyAddress: pmProp.address,
+        }));
+
+      if (newMappings.length > 0) {
+        await ctx.uow.propertyManager.createMappings(newMappings);
       }
 
       return { count: pmProperties.length };
