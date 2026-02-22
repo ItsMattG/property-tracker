@@ -97,6 +97,12 @@ const navGroups: Array<{
       { href: "/tools/borrowing-power", label: "Borrowing Power", icon: Calculator, featureFlag: "borrowingPowerEstimator" },
     ],
   },
+  {
+    label: "Personal Finance",
+    items: [
+      { href: "/budget", label: "Budget", icon: Wallet },
+    ],
+  },
 ];
 
 function NavItem({
