@@ -42,32 +42,42 @@ export const emailConnections = pgTable(
   ]
 );
 
-export const propertyEmails = pgTable("property_emails", {
-  id: serial("id").primaryKey(),
-  propertyId: uuid("property_id").references(() => properties.id, {
-    onDelete: "set null",
-  }),
-  userId: text("user_id")
-    .references(() => users.id, { onDelete: "cascade" })
-    .notNull(),
-  fromAddress: text("from_address").notNull(),
-  fromName: text("from_name"),
-  subject: text("subject").notNull(),
-  bodyText: text("body_text"),
-  bodyHtml: text("body_html"),
-  messageId: text("message_id").unique(),
-  inReplyTo: text("in_reply_to"),
-  threadId: text("thread_id"),
-  status: emailStatusEnum("status").default("approved").notNull(),
-  isRead: boolean("is_read").default(false).notNull(),
-  receivedAt: timestamp("received_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  source: emailSourceEnum("source").default("forwarded").notNull(),
-  connectionId: integer("connection_id").references(() => emailConnections.id, {
-    onDelete: "set null",
-  }),
-  externalId: text("external_id"),
-});
+export const propertyEmails = pgTable(
+  "property_emails",
+  {
+    id: serial("id").primaryKey(),
+    propertyId: uuid("property_id").references(() => properties.id, {
+      onDelete: "set null",
+    }),
+    userId: text("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    fromAddress: text("from_address").notNull(),
+    fromName: text("from_name"),
+    subject: text("subject").notNull(),
+    bodyText: text("body_text"),
+    bodyHtml: text("body_html"),
+    messageId: text("message_id").unique(),
+    inReplyTo: text("in_reply_to"),
+    threadId: text("thread_id"),
+    status: emailStatusEnum("status").default("approved").notNull(),
+    isRead: boolean("is_read").default(false).notNull(),
+    receivedAt: timestamp("received_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    source: emailSourceEnum("source").default("forwarded").notNull(),
+    connectionId: integer("connection_id").references(
+      () => emailConnections.id,
+      { onDelete: "set null" }
+    ),
+    externalId: text("external_id"),
+  },
+  (table) => [
+    index("property_emails_user_id_idx").on(table.userId),
+    index("property_emails_user_property_idx").on(table.userId, table.propertyId),
+    index("property_emails_user_read_idx").on(table.userId, table.isRead),
+    index("property_emails_user_received_idx").on(table.userId, table.receivedAt),
+  ]
+);
 
 export const propertyEmailAttachments = pgTable("property_email_attachments", {
   id: serial("id").primaryKey(),
