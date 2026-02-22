@@ -8,6 +8,20 @@ import { getPlanFromSubscription, PLAN_LIMITS } from "../../services/billing/sub
 import type { DB } from "../../repositories/base";
 import { logger } from "@/lib/logger";
 
+interface ExtractedData {
+  vendor: string | null;
+  amount: number | null;
+  date: string | null;
+  category: string | null;
+  propertyAddress: string | null;
+  duplicateOf?: string | null;
+}
+
+function safeJsonParse(str: string | null): ExtractedData | null {
+  if (!str) return null;
+  try { return JSON.parse(str) as ExtractedData; } catch { return null; }
+}
+
 async function getUserPlan(db: DB, ownerId: string) {
   // Cross-domain: reads subscription for plan gating
   const sub = await db.query.subscriptions.findFirst({
@@ -173,7 +187,7 @@ export const documentExtractionRouter = router({
 
       return {
         ...extraction,
-        extractedData: extraction.extractedData ? JSON.parse(extraction.extractedData) : null,
+        extractedData: safeJsonParse(extraction.extractedData),
       };
     }),
 
@@ -187,7 +201,7 @@ export const documentExtractionRouter = router({
       .filter((e) => e.draftTransaction?.status === "pending_review")
       .map((e) => ({
         ...e,
-        extractedData: e.extractedData ? JSON.parse(e.extractedData) : null,
+        extractedData: safeJsonParse(e.extractedData),
       }));
   }),
 
