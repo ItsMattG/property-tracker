@@ -108,31 +108,3 @@ export async function dismissDialogsIfVisible(page: Page): Promise<boolean> {
   }
   return dismissed;
 }
-
-/**
- * Dismiss any open Radix Dialog modals (e.g. milestone celebrations).
- * Radix dialogs add aria-hidden to siblings, which blocks getByRole queries.
- * Returns true if a dialog was dismissed.
- */
-export async function dismissDialogsIfVisible(page: Page): Promise<boolean> {
-  let dismissed = false;
-  // Loop to dismiss multiple queued dialogs (e.g. milestone celebrations)
-  for (let i = 0; i < 10; i++) {
-    const dialog = page.getByRole("dialog");
-    if (!(await dialog.isVisible({ timeout: 1000 }).catch(() => false))) break;
-    // Click the close button or "Continue" button inside the dialog
-    const closeBtn = dialog.getByRole("button", { name: /close/i });
-    const continueBtn = dialog.getByRole("button", { name: /continue/i });
-    if (await continueBtn.isVisible().catch(() => false)) {
-      await continueBtn.click();
-    } else if (await closeBtn.isVisible().catch(() => false)) {
-      await closeBtn.click();
-    } else {
-      await page.keyboard.press("Escape");
-    }
-    dismissed = true;
-    // Brief wait for dialog close animation and next dialog to appear
-    await page.waitForTimeout(500);
-  }
-  return dismissed;
-}
