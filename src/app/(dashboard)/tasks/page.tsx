@@ -114,9 +114,9 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Tasks</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Tasks</h1>
           <p className="text-muted-foreground">
             {totalOpen} open task{totalOpen !== 1 ? "s" : ""}
           </p>
@@ -146,9 +146,9 @@ export default function TasksPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -160,7 +160,7 @@ export default function TasksPage() {
         </Select>
 
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -173,7 +173,7 @@ export default function TasksPage() {
         </Select>
 
         <Select value={propertyFilter} onValueChange={setPropertyFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Property" />
           </SelectTrigger>
           <SelectContent>

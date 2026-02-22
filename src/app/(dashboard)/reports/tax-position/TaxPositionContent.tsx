@@ -228,9 +228,9 @@ export function TaxPositionContent() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Tax Position</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">Tax Position</h2>
           <p className="text-muted-foreground">
             Your estimated tax outcome for the financial year
           </p>
@@ -243,7 +243,7 @@ export function TaxPositionContent() {
             setProfileOpen(null);
           }}
         >
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

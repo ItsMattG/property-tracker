@@ -198,14 +198,14 @@ export default function PropertiesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Properties</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">Properties</h2>
           <p className="text-muted-foreground">
             Manage your investment properties
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/properties/new">
             <Plus className="w-4 h-4 mr-2" />
             Add Property

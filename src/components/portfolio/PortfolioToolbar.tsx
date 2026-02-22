@@ -76,7 +76,7 @@ export function PortfolioToolbar({
 
       {/* Period Selector */}
       <Select value={period} onValueChange={(v) => onPeriodChange(v as Period)}>
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="w-full sm:w-[140px]">
           <SelectValue placeholder="Period" />
         </SelectTrigger>
         <SelectContent>
@@ -89,7 +89,7 @@ export function PortfolioToolbar({
       {/* Sort By */}
       {viewMode !== "aggregate" && (
         <Select value={sortBy} onValueChange={(v) => onSortByChange(v as SortBy)}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
@@ -106,7 +106,7 @@ export function PortfolioToolbar({
         value={stateFilter || "all"}
         onValueChange={(v) => onStateFilterChange(v === "all" ? undefined : v)}
       >
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-full sm:w-[120px]">
           <SelectValue placeholder="State" />
         </SelectTrigger>
         <SelectContent>
@@ -124,7 +124,7 @@ export function PortfolioToolbar({
         value={statusFilter || "all"}
         onValueChange={(v) => onStatusFilterChange(v === "all" ? undefined : v)}
       >
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-full sm:w-[120px]">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>

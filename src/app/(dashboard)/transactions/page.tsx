@@ -291,18 +291,19 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Transactions</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold">Transactions</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Review and categorise your transactions
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowReceiptScanner(true)}
+            className="hidden sm:inline-flex"
           >
             <Camera className="w-4 h-4 mr-2" />
             Scan Receipt
@@ -317,12 +318,13 @@ export default function TransactionsPage() {
             size="sm"
             onClick={handleExportCSV}
             disabled={exportCSV.isFetching}
+            className="hidden sm:inline-flex"
           >
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
           <ImportCSVDialog onSuccess={() => utils.transaction.list.invalidate()} />
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/transactions/new">
               <Plus className="w-4 h-4 mr-2" />
               Add Transaction

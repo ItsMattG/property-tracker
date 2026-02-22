@@ -920,7 +920,7 @@ export default function PropertyDepreciationPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="originalCost">Original Cost ($)</Label>
                 <Input
@@ -956,7 +956,7 @@ export default function PropertyDepreciationPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="method">Depreciation Method</Label>
                 <Select
@@ -1033,7 +1033,7 @@ export default function PropertyDepreciationPage() {
                 }
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="constructionDate">Construction Date</Label>
                 <Input

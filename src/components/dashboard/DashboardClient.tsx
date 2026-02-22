@@ -221,7 +221,7 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
       )}
 
       <div>
-        <h2 className="text-2xl font-bold">Welcome to BrickTrack</h2>
+        <h2 className="text-xl sm:text-2xl font-bold">Welcome to BrickTrack</h2>
         <p className="text-muted-foreground">
           Track your investment properties, automate bank feeds, and generate
           tax reports.
