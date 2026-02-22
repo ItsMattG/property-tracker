@@ -23,8 +23,14 @@ export const mobileAuthRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Rate limit login attempts by email to prevent brute-force
-      const rateLimitKey = `login:${input.email.toLowerCase().trim()}`;
+      // Rate limit login attempts by IP to prevent brute-force
+      // Using IP instead of email prevents account enumeration (valid emails
+      // would hit 429 after N attempts while invalid ones never would)
+      const clientIp =
+        ctx.headers?.get("x-forwarded-for") ??
+        ctx.headers?.get("x-real-ip") ??
+        "unknown";
+      const rateLimitKey = `login:${clientIp}`;
       const rateCheck = await authRateLimiter.check(rateLimitKey);
       if (!rateCheck.allowed) {
         throw new TRPCError({

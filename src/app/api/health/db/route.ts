@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/server/db";
 import { sql } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export async function GET() {
     });
   } catch (error) {
     const duration = Date.now() - start;
-    console.error("Health DB check failed:", error);
+    logger.error("Health DB check failed", error instanceof Error ? error : new Error(String(error)), { domain: "health" });
 
     return NextResponse.json({
       status: "error",

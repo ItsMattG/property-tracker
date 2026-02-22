@@ -1,14 +1,21 @@
+// Magic byte signature with optional offset (defaults to 0)
+interface MagicSignature {
+  bytes: number[];
+  offset?: number;
+}
+
 // Magic bytes for common file types
-const MAGIC_BYTES: Record<string, number[][]> = {
+const MAGIC_BYTES: Record<string, MagicSignature[]> = {
   // PDF: %PDF
-  "application/pdf": [[0x25, 0x50, 0x44, 0x46]],
+  "application/pdf": [{ bytes: [0x25, 0x50, 0x44, 0x46] }],
   // JPEG: FFD8FF
-  "image/jpeg": [[0xff, 0xd8, 0xff]],
+  "image/jpeg": [{ bytes: [0xff, 0xd8, 0xff] }],
   // PNG: 89504E47
-  "image/png": [[0x89, 0x50, 0x4e, 0x47]],
-  // HEIC: various ftyp boxes
+  "image/png": [{ bytes: [0x89, 0x50, 0x4e, 0x47] }],
+  // HEIC/HEIF: ISO Base Media File Format — "ftyp" at offset 4
+  // Bytes 0-3 are the box size (varies), bytes 4-7 are always "ftyp" (0x66747970)
   "image/heic": [
-    [0x00, 0x00, 0x00], // ftyp box (variable length prefix)
+    { bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 },
   ],
 };
 
@@ -29,8 +36,8 @@ export function validateFileType(
   }
 
   // Check if any signature matches
-  return signatures.some((signature) =>
-    signature.every((byte, index) => bytes[index] === byte)
+  return signatures.some((sig) =>
+    sig.bytes.every((byte, index) => bytes[(sig.offset ?? 0) + index] === byte)
   );
 }
 
@@ -41,8 +48,8 @@ export function detectFileType(buffer: ArrayBuffer): string | null {
   const bytes = new Uint8Array(buffer);
 
   for (const [mimeType, signatures] of Object.entries(MAGIC_BYTES)) {
-    const matches = signatures.some((signature) =>
-      signature.every((byte, index) => bytes[index] === byte)
+    const matches = signatures.some((sig) =>
+      sig.bytes.every((byte, index) => bytes[(sig.offset ?? 0) + index] === byte)
     );
     if (matches) {
       return mimeType;
