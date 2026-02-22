@@ -5,6 +5,9 @@ import { router, protectedProcedure, writeProcedure } from "../../trpc";
 import { parseCSV } from "../../services/banking";
 import { categoryValues, deriveTransactionFields, formatTransactionsCSV, importCSVRows, importRichCSVRows } from "../../services/transaction";
 import { metrics } from "@/lib/metrics";
+import { logger } from "@/lib/logger";
+
+const MAX_EXPORT_ROWS = 50_000;
 
 export const transactionRouter = router({
   list: protectedProcedure
@@ -37,7 +40,19 @@ export const transactionRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const results = await ctx.uow.transactions.findAllByOwner(ctx.portfolio.ownerId, input);
+      const results = await ctx.uow.transactions.findAllByOwner(
+        ctx.portfolio.ownerId,
+        input,
+        MAX_EXPORT_ROWS
+      );
+
+      if (results.length >= MAX_EXPORT_ROWS) {
+        logger.warn("CSV export hit row limit", {
+          userId: ctx.portfolio.ownerId,
+          limit: MAX_EXPORT_ROWS,
+        });
+      }
+
       return formatTransactionsCSV(results);
     }),
 

@@ -73,11 +73,13 @@ export class TransactionRepository
 
   async findAllByOwner(
     userId: string,
-    filters?: Omit<TransactionFilters, "limit" | "offset">
+    filters?: Omit<TransactionFilters, "limit" | "offset">,
+    limit?: number
   ): Promise<TransactionWithRelations[]> {
     return this.db.query.transactions.findMany({
       where: this.buildWhere(userId, filters),
       orderBy: [desc(transactions.date)],
+      ...(limit !== undefined && { limit }),
       with: {
         property: true,
       },

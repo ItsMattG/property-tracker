@@ -36,8 +36,8 @@ export interface ITransactionRepository {
   /** List transactions with filters and pagination */
   findByOwner(userId: string, filters?: TransactionFilters): Promise<PaginatedTransactions>;
 
-  /** List all transactions matching filters (no pagination, for export) */
-  findAllByOwner(userId: string, filters?: Omit<TransactionFilters, "limit" | "offset">): Promise<TransactionWithRelations[]>;
+  /** List all transactions matching filters (no pagination, for export). Optional limit to cap results. */
+  findAllByOwner(userId: string, filters?: Omit<TransactionFilters, "limit" | "offset">, limit?: number): Promise<TransactionWithRelations[]>;
 
   /** Get a single transaction by id scoped to user */
   findById(id: string, userId: string): Promise<Transaction | null>;
