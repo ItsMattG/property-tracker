@@ -54,18 +54,31 @@ export async function safeGoto(
 
 /**
  * Dismiss the driver.js onboarding tour overlay if visible.
+ * The tour starts with a 500ms delay, so we wait briefly before checking.
+ * After dismissing via Escape, we force-remove overlay DOM elements to
+ * prevent stale SVG overlays from intercepting pointer events.
  * Returns true if a tour was dismissed.
  */
 export async function dismissTourIfVisible(page: Page): Promise<boolean> {
+  // Wait for tour to potentially start (it has a 500ms init delay)
+  await page.waitForTimeout(1000);
+
   const tourOverlay = page.locator(".driver-overlay");
-  if (await tourOverlay.isVisible({ timeout: 3000 }).catch(() => false)) {
+  const wasVisible = await tourOverlay.isVisible({ timeout: 2000 }).catch(() => false);
+
+  if (wasVisible) {
     await page.keyboard.press("Escape");
     await tourOverlay.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
-    // Give React time to settle after tour dismissal
-    await page.waitForTimeout(1000);
-    return true;
+    await page.waitForTimeout(500);
   }
-  return false;
+
+  // Force-remove any remaining driver.js overlay elements from the DOM
+  // to prevent stale overlays from intercepting pointer events
+  await page.evaluate(() => {
+    document.querySelectorAll(".driver-overlay, .driver-popover").forEach((el) => el.remove());
+  });
+
+  return wasVisible;
 }
 
 /**
