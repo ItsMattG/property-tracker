@@ -22,7 +22,7 @@ test.describe("Cash Flow Calendar", () => {
     await page.waitForLoadState("networkidle");
 
     // Page header
-    await expect(page.getByRole("heading", { name: "Cash Flow" })).toBeVisible();
+    await expect(page.locator("main").getByRole("heading", { name: "Cash Flow" })).toBeVisible();
 
     // Controls should be visible
     await expect(page.getByText("All properties")).toBeVisible();
@@ -86,6 +86,6 @@ test.describe("Cash Flow Calendar", () => {
     // Click it and verify navigation
     await navLink.click();
     await page.waitForURL("**/cash-flow", { timeout: 15000 });
-    await expect(page.getByRole("heading", { name: "Cash Flow" })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("main").getByRole("heading", { name: "Cash Flow" })).toBeVisible({ timeout: 10000 });
   });
 });
