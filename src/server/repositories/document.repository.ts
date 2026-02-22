@@ -135,8 +135,8 @@ export class DocumentRepository
       with: { document: true, draftTransaction: true, matchedProperty: true },
       orderBy: desc(documentExtractions.createdAt),
     });
-    // Filter by document ownership
-    return results.filter((e) => e.document.userId === userId);
+    // Filter by document ownership (guard against null document from orphaned extractions)
+    return results.filter((e) => e.document?.userId === userId);
   }
 
   async deleteExtraction(id: string, userId: string): Promise<void> {

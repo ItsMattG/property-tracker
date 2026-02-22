@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,13 +19,15 @@ const THEME_CONFIG: Record<Theme, { icon: typeof Sun; label: string; ariaLabel: 
 };
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-      if (stored && CYCLE_ORDER.includes(stored)) return stored;
+  // Always start with "forest" to match SSR, then hydrate from localStorage
+  const [theme, setTheme] = useState<Theme>("forest");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    if (stored && CYCLE_ORDER.includes(stored)) {
+      setTheme(stored);
     }
-    return "forest";
-  });
+  }, []);
 
   const handleCycle = () => {
     const currentIndex = CYCLE_ORDER.indexOf(theme);
