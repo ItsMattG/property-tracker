@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { trpc } from "@/lib/trpc/client";
@@ -18,7 +19,7 @@ function getLvrLabel(lvr: number): string {
   return "Low Risk";
 }
 
-export function LvrGaugeCard() {
+export const LvrGaugeCard = memo(function LvrGaugeCard() {
   const { data: metrics, isLoading } = trpc.portfolio.getPropertyMetrics.useQuery(
     { period: "annual", sortBy: "alphabetical", sortOrder: "asc" },
     { staleTime: 60_000 }
@@ -126,4 +127,4 @@ export function LvrGaugeCard() {
       </CardContent>
     </Card>
   );
-}
+});

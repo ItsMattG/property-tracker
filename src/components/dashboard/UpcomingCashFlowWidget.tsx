@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -19,7 +19,7 @@ function getNext14Days() {
   };
 }
 
-export function UpcomingCashFlowWidget() {
+export const UpcomingCashFlowWidget = memo(function UpcomingCashFlowWidget() {
   const { startDate, endDate } = useMemo(() => getNext14Days(), []);
 
   const { data, isLoading } = trpc.cashFlowCalendar.getEvents.useQuery({
@@ -169,4 +169,4 @@ export function UpcomingCashFlowWidget() {
       </CardContent>
     </Card>
   );
-}
+});
